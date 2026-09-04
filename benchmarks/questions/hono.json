@@ -2,7 +2,7 @@
   "schema_version": "0.1-draft",
   "target_id": "hono-4.13.7",
   "snapshot": "eebdf7be39abf0a872671835ccce0c4f03ea497a",
-  "status": "candidate-unreviewed",
+  "status": "first-eight-agent-source-reviewed-human-review-pending",
   "instructions": "Source hints are starting points, not gold answers or verified completeness. Before evaluation, review answers against the pinned source. Keep this file and answer rubrics out of analyzer input.",
   "questions": [
     {
@@ -15,9 +15,12 @@
         "src/context.ts"
       ],
       "critical_case": true,
-      "gold_status": "not_authored",
-      "answer_rubric": null,
-      "reviewer": null
+      "gold_status": "agent-source-reviewed-human-review-pending",
+      "answer_rubric": "benchmarks/rubrics/hono-m0.json#hono-q01",
+      "reviewer": {
+        "agent": "Codex",
+        "human_reviewed": false
+      }
     },
     {
       "id": "hono-q02",
@@ -28,9 +31,12 @@
         "src/hono-base.ts"
       ],
       "critical_case": true,
-      "gold_status": "not_authored",
-      "answer_rubric": null,
-      "reviewer": null
+      "gold_status": "agent-source-reviewed-human-review-pending",
+      "answer_rubric": "benchmarks/rubrics/hono-m0.json#hono-q02",
+      "reviewer": {
+        "agent": "Codex",
+        "human_reviewed": false
+      }
     },
     {
       "id": "hono-q03",
@@ -41,9 +47,12 @@
         "src/hono-base.ts"
       ],
       "critical_case": true,
-      "gold_status": "not_authored",
-      "answer_rubric": null,
-      "reviewer": null
+      "gold_status": "agent-source-reviewed-human-review-pending",
+      "answer_rubric": "benchmarks/rubrics/hono-m0.json#hono-q03",
+      "reviewer": {
+        "agent": "Codex",
+        "human_reviewed": false
+      }
     },
     {
       "id": "hono-q04",
@@ -56,9 +65,12 @@
         "src/context.ts"
       ],
       "critical_case": true,
-      "gold_status": "not_authored",
-      "answer_rubric": null,
-      "reviewer": null
+      "gold_status": "agent-source-reviewed-human-review-pending",
+      "answer_rubric": "benchmarks/rubrics/hono-m0.json#hono-q04",
+      "reviewer": {
+        "agent": "Codex",
+        "human_reviewed": false
+      }
     },
     {
       "id": "hono-q05",
@@ -70,9 +82,12 @@
         "src/compose.test.ts"
       ],
       "critical_case": true,
-      "gold_status": "not_authored",
-      "answer_rubric": null,
-      "reviewer": null
+      "gold_status": "agent-source-reviewed-human-review-pending",
+      "answer_rubric": "benchmarks/rubrics/hono-m0.json#hono-q05",
+      "reviewer": {
+        "agent": "Codex",
+        "human_reviewed": false
+      }
     },
     {
       "id": "hono-q06",
@@ -84,9 +99,12 @@
         "src/compose.test.ts"
       ],
       "critical_case": true,
-      "gold_status": "not_authored",
-      "answer_rubric": null,
-      "reviewer": null
+      "gold_status": "agent-source-reviewed-human-review-pending",
+      "answer_rubric": "benchmarks/rubrics/hono-m0.json#hono-q06",
+      "reviewer": {
+        "agent": "Codex",
+        "human_reviewed": false
+      }
     },
     {
       "id": "hono-q07",
@@ -98,9 +116,12 @@
         "src/hono-base.ts"
       ],
       "critical_case": true,
-      "gold_status": "not_authored",
-      "answer_rubric": null,
-      "reviewer": null
+      "gold_status": "agent-source-reviewed-human-review-pending",
+      "answer_rubric": "benchmarks/rubrics/hono-m0.json#hono-q07",
+      "reviewer": {
+        "agent": "Codex",
+        "human_reviewed": false
+      }
     },
     {
       "id": "hono-q08",
@@ -112,9 +133,12 @@
         "src/context.ts"
       ],
       "critical_case": true,
-      "gold_status": "not_authored",
-      "answer_rubric": null,
-      "reviewer": null
+      "gold_status": "agent-source-reviewed-human-review-pending",
+      "answer_rubric": "benchmarks/rubrics/hono-m0.json#hono-q08",
+      "reviewer": {
+        "agent": "Codex",
+        "human_reviewed": false
+      }
     },
     {
       "id": "hono-q09",

@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.1-draft",
+  "schema_version": "0.1.0",
   "target_id": "hono-4.13.7",
   "repository": "https://github.com/honojs/hono.git",
   "commit": "eebdf7be39abf0a872671835ccce0c4f03ea497a",
@@ -68,8 +68,8 @@
   },
   "evaluation": {
     "question_file": "benchmarks/questions/hono.json",
-    "question_status": "candidate-unreviewed",
+    "question_status": "first-eight-agent-source-reviewed-human-review-pending",
     "do_not_include_evaluator_assets_in_analyzer_input": true
   },
-  "status": "Pinned research target; no analyzer run or performance measurement has been performed."
+  "status": "M0 immutable inventory verified at pinned commit/tree; six measured inventory runs, no target writes. Structural and semantic analysis have not run. See benchmarks/results/hono-m0/summary.json."
 }

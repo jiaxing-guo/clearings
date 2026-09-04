@@ -1,0 +1,88 @@
+{
+  "schema_version": "0.1.0",
+  "command": "inventory",
+  "status": "complete",
+  "snapshot_id": "sha256:b80362059d472cc93f3156927a55902c90dd813d0a582ff68ba1250f2a5faf6e",
+  "data": {
+    "tool_version": "0.0.1",
+    "analysis_level": "inventory",
+    "snapshot": {
+      "mode": "git-commit",
+      "object_format": "sha1",
+      "commit_sha": "d6d0cca39e606452643fa5fdacd90c94dc17b373",
+      "tree_sha": "6697fcd44a18c75553d218b97bb0cae72583fa02"
+    },
+    "scope": {
+      "include": [
+        "."
+      ],
+      "exclude": []
+    },
+    "files": [
+      {
+        "path": "format.ts",
+        "object_id": "ff2d89818a143c72522c33755c241afaf9a5fd51",
+        "mode": "100644",
+        "object_type": "blob",
+        "size_bytes": 78,
+        "kind": "source",
+        "test_named": false,
+        "status": "inventoried",
+        "reason": null
+      },
+      {
+        "path": "index.test.ts",
+        "object_id": "d54726e584d16d91c78900e97a713a59d421afc8",
+        "mode": "100644",
+        "object_type": "blob",
+        "size_bytes": 157,
+        "kind": "source",
+        "test_named": true,
+        "status": "inventoried",
+        "reason": null
+      },
+      {
+        "path": "index.ts",
+        "object_id": "d5bdb5559f1de9698f67d42d1fa831ffab8021fc",
+        "mode": "100644",
+        "object_type": "blob",
+        "size_bytes": 116,
+        "kind": "source",
+        "test_named": false,
+        "status": "inventoried",
+        "reason": null
+      },
+      {
+        "path": "package.json",
+        "object_id": "044a86418b6b42ac0d8726344c8f855729fb8725",
+        "mode": "100644",
+        "object_type": "blob",
+        "size_bytes": 71,
+        "kind": "config",
+        "test_named": false,
+        "status": "inventoried",
+        "reason": null
+      },
+      {
+        "path": "tsconfig.json",
+        "object_id": "65846902bb54c495d552bb2adcaa409b06dd599f",
+        "mode": "100644",
+        "object_type": "blob",
+        "size_bytes": 93,
+        "kind": "config",
+        "test_named": false,
+        "status": "inventoried",
+        "reason": null
+      }
+    ]
+  },
+  "diagnostics": [],
+  "coverage": {
+    "tracked_entries": 5,
+    "inventoried_files": 5,
+    "excluded_entries": 0,
+    "inventoried_bytes": 515,
+    "parsed_files": 0,
+    "semantic_analysis": "not-run"
+  }
+}
