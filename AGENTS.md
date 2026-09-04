@@ -2,7 +2,7 @@
 
 Read docs/PROTOTYPE_PLAN.md and docs/FIRST_IMPLEMENTATION_TASK.md before implementation. Treat the current milestone as the scope boundary.
 
-- Build a TypeScript library plus CLI for repository comprehension. This starter is planning material, not an implemented prototype.
+- Build a TypeScript library plus CLI for repository comprehension. M0 implements immutable repository inventory; structural and semantic extraction remain later milestones.
 - Keep repository evidence, semantic interpretation, and presentation as separate responsibilities.
 - Do not execute target-repository scripts, modify its source, or install its dependencies during a scan.
 - Keep compiler API objects and provider SDK types out of the semantic interchange model.

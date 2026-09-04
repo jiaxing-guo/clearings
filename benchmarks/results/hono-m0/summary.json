@@ -1,0 +1,74 @@
+{
+  "schema_version": "0.1.0",
+  "milestone": "M0",
+  "target_id": "hono-4.13.7",
+  "commit_sha": "eebdf7be39abf0a872671835ccce0c4f03ea497a",
+  "tree_sha": "7fd627b257e5b744bf23d4957a93a0d0413c8c19",
+  "recorded_at": "2026-09-04T23:14:42.010Z",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "arch": "x64",
+    "git": "git version 2.51.1"
+  },
+  "measurement": "Three fresh Node processes per scope. Wall time covers inventory, schema/integrity validation, and JSON serialization; excludes process startup/imports and artifact writes. maxRSS is the Node process only, in KiB; excludes Git child memory. Filesystem caches were not flushed. This is inventory, not an M1 extraction performance result.",
+  "observed_counts": {
+    "tracked_files": 486,
+    "src_ts_tsx_files": 311,
+    "colocated_test_named_files": 123,
+    "non_test_named_src_files": 188
+  },
+  "target_files_unchanged": true,
+  "scopes": {
+    "inventory": {
+      "snapshot_id": "sha256:0f9d99585015a5ccc07ebe34da36ea5619029c6788e3c874272e1c6f938ea6e8",
+      "coverage": {
+        "tracked_entries": 486,
+        "inventoried_files": 317,
+        "excluded_entries": 169,
+        "inventoried_bytes": 2520130,
+        "parsed_files": 0,
+        "semantic_analysis": "not-run"
+      },
+      "byte_identical_runs": 3,
+      "artifact_sha256": "ced17399d2a7c1913ae32d42f150bcad25848982bf33bd0b10547b151b8014d8",
+      "duration_ms": [
+        19.587962,
+        22.350446,
+        23.727
+      ],
+      "median_duration_ms": 22.350446,
+      "node_peak_rss_kib": [
+        55124,
+        55852,
+        55472
+      ],
+      "first_artifact": "../local/hono-m0-run/inventory-1/inventory.json"
+    },
+    "deep": {
+      "snapshot_id": "sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9",
+      "coverage": {
+        "tracked_entries": 486,
+        "inventoried_files": 30,
+        "excluded_entries": 456,
+        "inventoried_bytes": 218802,
+        "parsed_files": 0,
+        "semantic_analysis": "not-run"
+      },
+      "byte_identical_runs": 3,
+      "artifact_sha256": "b054ba0199d3cd8a6955dec0bf7cbb2d7f311d2585ffcf538067d897fec72ef3",
+      "duration_ms": [
+        23.493638,
+        24.996123,
+        20.68758
+      ],
+      "median_duration_ms": 23.493638,
+      "node_peak_rss_kib": [
+        55808,
+        55928,
+        55360
+      ],
+      "first_artifact": "../local/hono-m0-run/deep-1/deep.json"
+    }
+  }
+}

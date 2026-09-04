@@ -312,7 +312,9 @@ No source checkout is bundled in the library's npm package. Fetch benchmark sour
 - New abstractions require a concrete use in the current milestone.
 - Report what ran, what failed, and what is still proposed. Do not turn planned performance gates into measured claims.
 
-## 12. Repository bootstrap status and continuation
+## 12. Original repository bootstrap instructions
+
+Implementation update: the private repository now exists and M0 is implemented. See [M0_STATUS.md](M0_STATUS.md) for verified inventory results and remaining M1 work. The text below records the original planning-package bootstrap state; it is not the current implementation status.
 
 This package contains planning documents, candidate benchmark questions, a pinned target manifest, and a private-repository creation helper. It does not contain an implemented analyzer or an existing remote repository.
 
