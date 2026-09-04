@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+!.env.example
+.clearings/cache/
+runs/
+benchmark-checkouts/
+benchmarks/results/local/

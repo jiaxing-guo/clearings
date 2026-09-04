@@ -1,0 +1,283 @@
+{
+  "schema_version": "0.1-draft",
+  "target_id": "hono-4.13.7",
+  "snapshot": "eebdf7be39abf0a872671835ccce0c4f03ea497a",
+  "status": "candidate-unreviewed",
+  "instructions": "Source hints are starting points, not gold answers or verified completeness. Before evaluation, review answers against the pinned source. Keep this file and answer rubrics out of analyzer input.",
+  "questions": [
+    {
+      "id": "hono-q01",
+      "key": "dispatch-entry",
+      "capability": "request-dispatch",
+      "question": "How does a fetch call reach route matching, create its Context, and produce a response?",
+      "candidate_evidence_paths": [
+        "src/hono-base.ts",
+        "src/context.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q02",
+      "key": "dispatch-head",
+      "capability": "request-dispatch",
+      "question": "How does HEAD handling relate to GET handling, and what happens to the response body?",
+      "candidate_evidence_paths": [
+        "src/hono-base.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q03",
+      "key": "dispatch-single",
+      "capability": "request-dispatch",
+      "question": "When is middleware composition bypassed, and how are synchronous and asynchronous results handled on that path?",
+      "candidate_evidence_paths": [
+        "src/hono-base.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q04",
+      "key": "dispatch-unfinalized",
+      "capability": "request-dispatch",
+      "question": "How do no matching response and an unfinalized composed Context differ?",
+      "candidate_evidence_paths": [
+        "src/hono-base.ts",
+        "src/compose.ts",
+        "src/context.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q05",
+      "key": "compose-order",
+      "capability": "middleware-composition",
+      "question": "How does next advance middleware execution, and how does control return to earlier middleware?",
+      "candidate_evidence_paths": [
+        "src/compose.ts",
+        "src/compose.test.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q06",
+      "key": "compose-repeat",
+      "capability": "middleware-composition",
+      "question": "What detects repeated or backward next dispatch, and what happens when it is detected?",
+      "candidate_evidence_paths": [
+        "src/compose.ts",
+        "src/compose.test.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q07",
+      "key": "compose-error",
+      "capability": "middleware-composition",
+      "question": "How are Error objects and other thrown values treated when an error handler is present or absent?",
+      "candidate_evidence_paths": [
+        "src/compose.ts",
+        "src/hono-base.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q08",
+      "key": "compose-stop",
+      "capability": "middleware-composition",
+      "question": "What happens when a handler returns a response without invoking next, and when is Context.res updated?",
+      "candidate_evidence_paths": [
+        "src/compose.ts",
+        "src/context.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q09",
+      "key": "router-default",
+      "capability": "router-selection",
+      "question": "Which router candidates are configured by the default Hono construction, and how can configuration replace them?",
+      "candidate_evidence_paths": [
+        "src/hono.ts"
+      ],
+      "critical_case": false,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q10",
+      "key": "router-fallback",
+      "capability": "router-selection",
+      "question": "Which candidate-router errors cause another candidate to be tried, and which errors propagate?",
+      "candidate_evidence_paths": [
+        "src/router/smart-router/router.ts",
+        "src/router.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q11",
+      "key": "router-lifecycle",
+      "capability": "router-selection",
+      "question": "What changes after SmartRouter chooses a router, and can routes still be added afterward?",
+      "candidate_evidence_paths": [
+        "src/router/smart-router/router.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q12",
+      "key": "type-vs-runtime",
+      "capability": "repository-overview",
+      "question": "Which core dependencies are runtime links versus type-only links, and why should the map distinguish them?",
+      "candidate_evidence_paths": [
+        "src/hono-base.ts",
+        "src/hono.ts",
+        "src/router.ts"
+      ],
+      "critical_case": false,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q13",
+      "key": "route-methods",
+      "capability": "route-registration",
+      "question": "How are the method-specific route registration functions installed and connected to router.add?",
+      "candidate_evidence_paths": [
+        "src/hono-base.ts"
+      ],
+      "critical_case": false,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q14",
+      "key": "route-basepath",
+      "capability": "route-registration",
+      "question": "What does basePath clone, what state is shared, and where are route paths merged?",
+      "candidate_evidence_paths": [
+        "src/hono-base.ts",
+        "src/utils/url.ts"
+      ],
+      "critical_case": false,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q15",
+      "key": "route-child-error",
+      "capability": "route-registration",
+      "question": "How does grouping a child app preserve its custom error-handling behavior?",
+      "candidate_evidence_paths": [
+        "src/hono-base.ts"
+      ],
+      "critical_case": true,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q16",
+      "key": "route-mount",
+      "capability": "route-registration",
+      "question": "How does mount transform the request and options, and when does it continue to the next handler?",
+      "candidate_evidence_paths": [
+        "src/hono-base.ts"
+      ],
+      "critical_case": false,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q17",
+      "key": "context-response",
+      "capability": "request-response-context",
+      "question": "What finalizes a response Context, and how do response access and construction interact?",
+      "candidate_evidence_paths": [
+        "src/context.ts",
+        "src/context.test.ts"
+      ],
+      "critical_case": false,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q18",
+      "key": "request-params",
+      "capability": "request-response-context",
+      "question": "How are matched route parameters exposed through the request abstraction?",
+      "candidate_evidence_paths": [
+        "src/request.ts",
+        "src/router.ts"
+      ],
+      "critical_case": false,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q19",
+      "key": "request-body",
+      "capability": "request-response-context",
+      "question": "How does request body access handle repeated reads or cached results, and what limitations are visible?",
+      "candidate_evidence_paths": [
+        "src/request.ts",
+        "src/request.test.ts"
+      ],
+      "critical_case": false,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    },
+    {
+      "id": "hono-q20",
+      "key": "public-surfaces",
+      "capability": "repository-overview",
+      "question": "How do package exports separate core, middleware, helper, router, and runtime-adapter surfaces?",
+      "candidate_evidence_paths": [
+        "package.json"
+      ],
+      "critical_case": false,
+      "gold_status": "not_authored",
+      "answer_rubric": null,
+      "reviewer": null
+    }
+  ]
+}
