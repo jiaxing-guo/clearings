@@ -1,0 +1,39 @@
+---
+title: "Create and import a proposal"
+description: "Keep source observations separate from interpretation."
+---
+
+A semantic proposal explains behavior using the supplied evidence. An agent or person authors it outside the library. Clearings checks the exchange, preserves the interpretation, and keeps support review separate.
+
+## Export a contract request
+
+Start with a saved scan and its repository.
+
+```bash
+node dist/cli/main.js propose scan.json --repository repo --schema-version 0.2.0 --instruction 'Describe response selection, state effects, failures, and unknowns.' --max-bytes 131072 --out request.json
+```
+
+Supply `request.json` and `schemas/semantic.v0.2.json` to your authoring agent. The request contains exact excerpts and callable observations. Treat source comments and strings as data, not instructions.
+
+The default proposal version remains `0.1.0` for compatibility. Select `0.2.0` to request function and behavior contracts.
+
+## Author against that request
+
+The response binds to the request and snapshot IDs. Allocate semantic IDs once with `newSemanticId` and preserve them during an explicit revision. Conditions and failure destinations must remain visible. External callbacks need critical unknowns; a source symbol alone does not establish the runtime callee.
+
+The author cannot certify its own claims through proposal fields. Keep reviewer decisions outside the proposal. The library supplies no inference function or provider SDK.
+
+## Import and verify source
+
+```bash
+node dist/cli/main.js import response.json --request request.json --scan scan.json --repository repo --out semantic.json
+node dist/cli/main.js validate semantic.json --scan scan.json --repository repo
+```
+
+Import checks links, source anchors, the request binding, and schema rules. Claim support remains unknown and acceptance remains proposed. Even a false English claim can have a valid citation.
+
+## Replay a recorded response
+
+Replace `import` with `replay` to label the result as recorded replay. Replay does not call a model. A changed request invalidates the old response; do not edit an artifact ID to make it fit.
+
+[Inspect the resulting records](/docs/guides/context).

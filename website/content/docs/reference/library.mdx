@@ -1,0 +1,65 @@
+---
+title: "TypeScript library API"
+description: "Compose inspection, context export, and reports in your code."
+---
+
+The library uses ESM and portable JSON types. This private package is not published. The example below runs from the repository root after `npm run build`.
+
+## Inspect a recorded model
+
+Save this as `example.mjs` at the repository root, then run `node example.mjs`.
+
+```javascript
+import { readFileSync } from 'node:fs'
+import {
+  validateContractModel, inspectSemantic,
+  createContextPack, serializeContextPack,
+} from './dist/index.js'
+
+const model = JSON.parse(readFileSync(
+  'benchmarks/results/hono-contracts/semantic.json', 'utf8'
+))
+validateContractModel(model)
+const inspection = inspectSemantic(model, { behavior: 'response-selection' })
+const pack = createContextPack(model, { behavior: 'response-selection' }, {
+  maxBytes: 131072,
+  includeNeighbors: false,
+})
+console.log(inspection.root_ids)
+process.stdout.write(serializeContextPack(pack))
+```
+
+In a consumer with the package installed from an authorized local checkout, import from `clearings-semantic`. Type declarations are exported with the runtime API. Compiler objects and model-provider SDK types are absent from the interchange types.
+
+## Main APIs
+
+| Function | Inputs | Result |
+| --- | --- | --- |
+| `inventory(options)` | Repository, ref, include/exclude paths, optional expected pin | Git inventory and coverage |
+| `scan(options)` | Inventory options, optional project and source limits | Structural records and evidence |
+| `createContractRequest(scan, options)` | Repository, instruction, paths or evidence IDs, byte budget | Bounded v0.2 request |
+| `importContractProposal(request, response, options)` | Scan, repository, replay flag | Source-checked contract model |
+| `inspectSemantic(model, selection?, options?)` | Capability, behavior, or ID; optional source recheck | Catalog and selected direct records |
+| `createContextPack(model, selection, options)` | Required byte budget, optional neighbors and source recheck | Required rules plus permitted neighbors |
+| `serializeContextPack(pack)` | Context pack | Compact JSON plus newline |
+| `createEvidenceReader(scan, repository)` | Scan and pinned repository | Reusable exact evidence reader |
+| `readEvidence(scan, repository, id)` | One source lookup | Exact text |
+| `renderCapability(model, capability, options?)` | Format, audience, reading plan, companion, source notice | HTML or Markdown |
+| `createSemanticWalkthrough(model, options)` | Behavior, optional participating function ID, budget/source recheck | Actual inspection, relationship, and context output |
+| `renderSemanticWalkthrough(model, options)` | Walkthrough options plus format and source notice | HTML or Markdown |
+
+`selection` accepts `{ capability }`, `{ behavior }`, `{ capability, behavior }`, or `{ id }`. An ID selection must stand alone. Inspection without a selection lists the catalog. Context requires a selection.
+
+Source validation options use `{ scan, repository }`. Supplying only a repository to an inspection API is invalid: a source recheck also needs the bound scan. CLI `--repository` alone can instead protect an output path.
+
+## Validation and errors
+
+Validate external JSON before consuming it. The package exports validators for inventory, scan, each exchange version, contract models, and presentation plans. Validators throw `ClearingsError` with a stable code, message, and exit code. A valid partial artifact can still contain unresolved behavior.
+
+Useful codes include `INVALID_PRESENTATION`, `INVALID_SELECTION`, `CONTEXT_BUDGET`, and `PIN_MISMATCH`. Catch errors at your I/O boundary. Do not treat a successful schema check as semantic approval.
+
+## Schemas and ownership
+
+Package schema exports are `schemas/inventory`, `schemas/scan`, `schemas/semantic` (v0.1), `schemas/contracts` (v0.2), `schemas/presentation` (v0.1), and `schemas/contract-presentation` (v0.2).
+
+The APIs read source and return objects or text. They do not save files, send prompts, execute target code, or certify assertions. Callers own file I/O, agent transport, review, and source notice distribution.

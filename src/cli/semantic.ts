@@ -57,7 +57,8 @@ export function semanticCommand(command: string, positionals: string[], values: 
     }
   } else {
     const scan = readScan(required(values, 'scan')); const model = readJson(input);
-    validateSemanticModel(model, { scan, repository });
+    if (isContracts(model)) validateContractModel(model, { scan, repository });
+    else validateSemanticModel(model, { scan, repository });
     const capability = required(values, 'capability');
     const format = values.format ?? 'markdown';
     if (format !== 'markdown' && format !== 'html') throw new ClearingsError('INVALID_ARGUMENTS', 'Supported report formats are markdown and html.');

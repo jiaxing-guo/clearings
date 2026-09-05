@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inspect the internal representation · Clearings</title><style>
+:root{color-scheme:light;--paper:#f8f7f2;--card:#fffefa;--ink:#202f2c;--muted:#65726b;--line:#dce1d8;--green:#245e4b;--soft:#eaf0e7;--amber:#83561b;--warm:#fbf1db;--radius:14px;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:30px}body{margin:0;background:var(--paper);color:var(--ink);font-size:16px;line-height:1.65}a{color:var(--green);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:#13392d}button,summary,a{-webkit-tap-highlight-color:transparent}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #3a806b;outline-offset:4px}button{font:inherit;cursor:pointer}p{margin:0 0 16px}h1,h2,h3,h4{line-height:1.18;letter-spacing:-.035em}h1{font-size:clamp(34px,4.1vw,56px);font-weight:550;max-width:760px;margin:17px 0 22px}h2{font-size:29px;font-weight:550;margin:0 0 12px}h3{font-size:21px;font-weight:580;margin:0 0 12px}h4{font-size:16px;letter-spacing:0;margin:20px 0 8px}code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}pre{font-size:12px;line-height:1.65;background:#f0f2ec;padding:20px;border-radius:9px;overflow:auto;white-space:pre;max-width:100%}code{overflow-wrap:anywhere}.skip{position:fixed;left:16px;top:-90px;z-index:5;background:white;padding:12px}.skip:focus{top:12px}.rail{position:fixed;inset:0 auto 0 0;width:228px;padding:35px 26px;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--paper)}.brand{font-size:23px;font-weight:650;letter-spacing:-1px;display:flex;align-items:center;gap:10px;text-decoration:none}.mark{display:inline-flex;gap:3px;align-items:end;height:24px}.mark i{display:block;width:5px;border-radius:6px;background:var(--green);transform:rotate(20deg)}.mark i:nth-child(1){height:14px}.mark i:nth-child(2){height:24px}.mark i:nth-child(3){height:19px}.rail-label,.eyebrow{font-size:11px;font-weight:650;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}.rail-label{margin:47px 0 13px}.rail nav{display:grid;gap:5px}.rail nav a{text-decoration:none;color:var(--muted);font-size:14px;padding:9px 11px;border-radius:7px}.rail nav a:hover,.rail nav a.current{background:var(--soft);color:var(--green)}.rail-footer{margin-top:auto;font-size:12px;color:var(--muted);line-height:1.7}.shell{margin-left:228px;padding:37px clamp(24px,5vw,80px) 70px;max-width:1480px}.topbar{display:flex;justify-content:space-between;align-items:center;padding-bottom:34px;font-size:12px;color:var(--muted);gap:15px}.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid var(--line);border-radius:99px;font-size:11px;white-space:nowrap}.dot{height:6px;width:6px;background:#bb8237;border-radius:50%}.hero{padding:10px 0 32px;border-bottom:1px solid var(--line)}.lede{font-size:19px;line-height:1.6;max-width:760px}.scope-line{font-size:12px;color:var(--muted);margin:16px 0 0}.hero-links{display:flex;gap:22px;margin:21px 0 0;font-size:13px}.section{margin-top:44px}.section-heading{display:flex;align-items:start;justify-content:space-between;gap:18px;margin-bottom:22px}.section-heading p,.muted{color:var(--muted);font-size:14px}.step-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:9px;margin:22px 0 30px}.step-map a{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:15px 13px;text-decoration:none;line-height:1.4;font-size:13px;font-weight:550;transition:background .15s}.step-map a:hover,.step-map a.selected{background:var(--soft);border-color:#9ab59d}.step-map span{display:block;font-size:11px;color:var(--muted);margin-bottom:9px}.stage{border:1px solid var(--line);background:var(--card);border-radius:var(--radius);margin:14px 0;padding:24px 26px;scroll-margin-top:25px;transition:border-color .15s}.stage.selected{border-color:var(--green);box-shadow:0 0 0 2px #245e4b18}.stage-title{display:flex;gap:15px;align-items:baseline}.number{font-size:12px;color:var(--green);background:var(--soft);padding:3px 8px;border-radius:6px;letter-spacing:0;font-weight:600}.stage-summary{margin:0 0 12px;max-width:780px;font-size:16px}.support{font-size:11px;white-space:normal;color:var(--muted);margin-left:5px;display:inline}.support a{color:var(--muted);margin-right:7px}.caution{font-size:13px;line-height:1.6;border-left:3px solid #d5b271;padding:8px 12px;margin:15px 0;background:var(--warm);border-radius:0 6px 6px 0}.caution strong{font-weight:600;color:var(--amber)}details{min-width:0}summary{cursor:pointer;list-style:none;font-size:13px;font-weight:550;color:var(--green);padding:9px 0}summary::-webkit-details-marker{display:none}summary:before{content:'+';display:inline-block;width:20px;font-weight:400}details[open]>summary:before{content:'−'}details[open]>.detail-body{animation:appear .15s ease-out}.detail-body{padding-top:16px;border-top:1px solid var(--line);margin-top:7px;font-size:14px}.exact{margin-top:20px;background:#f4f5ef;padding:8px 14px;border-radius:8px}.branch{padding:17px 0;border-bottom:1px solid var(--line)}.branch:last-child{border-bottom:0}.branch h4{margin-top:0}.branch ul{padding-left:20px;margin-bottom:8px}.branch li{margin:9px 0}.inventory-link{font-size:12px;margin:18px 0 0}.case-list{border-top:1px solid var(--line)}.case{border-bottom:1px solid var(--line);padding:5px 0}.case>summary{font-size:16px;padding:18px 0;color:var(--ink)}.case[open]{padding-bottom:20px}.case .detail-body{border:0;margin:0;padding:0 22px}.case-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.case-links a{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:5px 12px;text-decoration:none}.case-links a:hover{background:var(--soft)}.unknown-list{font-size:14px;padding-left:20px}.unknown-list li{margin-bottom:18px}.unknown-label{font-size:11px;color:var(--amber);margin-right:7px;font-weight:650}.audit,.source,.metadata{border:1px solid var(--line);border-radius:10px;padding:9px 18px;background:var(--card);margin:10px 0}.claim{padding:17px 0;border-bottom:1px solid var(--line);scroll-margin-top:25px}.claim:last-child{border-bottom:0}.claim-title{font-size:11px;letter-spacing:.06em;color:var(--muted);margin-bottom:7px;text-transform:uppercase}.claim p{font-size:14px}.source>summary{font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}.source-meta{font-size:11px;color:var(--muted);overflow-wrap:anywhere}.metadata dl{display:grid;grid-template-columns:115px minmax(0,1fr);gap:13px;font-size:12px}.metadata dt{color:var(--muted)}.metadata dd{margin:0;overflow-wrap:anywhere}.small-button{border:1px solid var(--line);border-radius:7px;background:transparent;padding:6px 11px;font-size:12px;color:var(--green)}.diagram{border:1px solid var(--line);padding:22px;border-radius:var(--radius);margin:24px 0;background:var(--card)}.diagram h3{font-size:18px}.diagram .assumption{font-size:13px;color:var(--muted)}.sequence{width:100%;height:auto;display:block}.sequence-table{font-size:12px;border-collapse:collapse;width:100%}.sequence-table th,.sequence-table td{text-align:left;padding:8px;border-bottom:1px solid var(--line)}.source-notice{font-size:11px;color:var(--muted);margin-top:18px}.footer{border-top:1px solid var(--line);margin-top:42px;padding-top:19px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:15px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}[hidden]{display:none!important}
+@keyframes appear{from{opacity:.6}to{opacity:1}}@media(max-width:1050px){.rail{width:190px;padding:30px 18px}.shell{margin-left:190px;padding:30px}.step-map{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:720px){.rail{position:static;width:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 20px}.brand{font-size:21px}.rail-label,.rail-footer{display:none}.rail nav{display:flex;gap:3px;flex-wrap:nowrap;overflow-x:auto;margin-top:12px;padding-bottom:5px}.rail nav a{font-size:12px;padding:5px 9px;flex-shrink:0}.shell{margin:0;padding:22px 20px 40px}.topbar{padding-bottom:20px;flex-wrap:wrap}.hero{padding-top:8px}h1{font-size:34px;margin:12px 0 18px}.lede{font-size:16px}.hero-links{gap:17px}.section{margin-top:35px}.step-map{grid-template-columns:repeat(2,minmax(0,1fr))}.stage{padding:20px 17px}.stage-title{gap:10px}h3{font-size:19px}.diagram{padding:15px}.section-heading{display:block}.sequence-table{font-size:10px}.metadata dl{grid-template-columns:1fr;gap:5px}.metadata dd{margin-bottom:12px}.footer{display:block}.pill{white-space:normal}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+@media print{.rail,.topbar,.hero-links,.step-map,.small-button,.skip,.case-links{display:none!important}.shell{margin:0;padding:0;max-width:none}body{background:white;font-size:11pt}.hero{padding-top:0}h1{font-size:30pt}.section{margin-top:25px}.stage,.diagram{break-inside:avoid;box-shadow:none}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:8pt}.support{font-size:8pt}a{color:inherit}details:not([open])>*:not(summary){display:block!important}}
+main{max-width:850px;margin:auto;padding:32px 24px}section{margin:32px 0}pre{overflow:auto;max-width:100%;padding:16px;background:var(--soft)}p,td{overflow-wrap:anywhere}table{width:100%}td,th{text-align:left;padding:8px}</style></head><body><a class="skip" href="#main">Skip to content</a><main id="main"><h1>Inspect the internal representation</h1><p>Partial repository view. Recorded recorded-replay. Claim support needs independent review. Acceptance: proposed. Source rechecked in this walkthrough: true.</p><details><summary>Artifact identity</summary><p>semantic:879ce0fdb5dee3f6f406bfa87e28f0d2f48b65fb58026479f9172bbd54b8c3f0</p><p>sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9</p></details><section><h2>1. Choose a capability</h2><p>Match an incoming request, choose the single-handler or composition path, and produce a response while preserving their different fallback and error behavior.</p><pre tabindex="0" aria-label="Inspection command"><code>node dist/cli/main.js inspect semantic.json</code></pre><details><summary>Open canonical record</summary><pre tabindex="0" aria-label="Canonical JSON"><code>{
+  &quot;id&quot;: &quot;concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8&quot;,
+  &quot;title&quot;: &quot;Dispatch an incoming request&quot;
+}</code></pre></details></section><section><h2>2. Inspect a behavior</h2><p>Conditions select outcomes. The function links below show participation, not observed call order.</p><pre tabindex="0" aria-label="Inspection command"><code>node dist/cli/main.js inspect semantic.json --id &#39;behavior:252223db-4880-4aca-b951-6070c8f7e4c6&#39;</code></pre><details><summary>Open canonical record</summary><pre tabindex="0" aria-label="Canonical JSON"><code>{
+  &quot;alias&quot;: &quot;response-selection&quot;,
+  &quot;capability_id&quot;: &quot;concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8&quot;,
+  &quot;constraint_claim_ids&quot;: [
+    &quot;claim:5b606765-089d-4722-8213-b675dde66bf5&quot;,
+    &quot;claim:d543fd57-c7cb-4a8b-9078-fc6050980cf1&quot;,
+    &quot;claim:f360cf06-1fc5-4b71-891d-37fdddbfeaa4&quot;
+  ],
+  &quot;failures&quot;: [
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:3a465dfd-a823-4297-a867-dc7b31edd393&quot;,
+        &quot;claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56&quot;
+      ],
+      &quot;condition&quot;: &quot;The direct handler throws or its Promise chain rejects.&quot;,
+      &quot;destination_id&quot;: &quot;function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e&quot;
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:bf2950af-c55d-401a-9691-50acf819a3f2&quot;
+      ],
+      &quot;condition&quot;: &quot;The direct nullish fallback throws synchronously.&quot;,
+      &quot;destination_id&quot;: null
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a&quot;,
+        &quot;claim:7af68846-ae57-44cd-8e06-49e5596a226b&quot;
+      ],
+      &quot;condition&quot;: &quot;Composition fails or returns unfinalized context.&quot;,
+      &quot;destination_id&quot;: &quot;function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e&quot;
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15&quot;,
+        &quot;claim:fc07b7ac-e50a-4c46-8293-6c36dcbfbbdb&quot;
+      ],
+      &quot;condition&quot;: &quot;The error callback fails or the error value is not an Error.&quot;,
+      &quot;destination_id&quot;: null
+    }
+  ],
+  &quot;flow_id&quot;: &quot;flow:92594364-a09b-413c-8fed-145a8f64789c&quot;,
+  &quot;function_ids&quot;: [
+    &quot;function:066fbdc1-2b42-4637-b456-7e8f96224eb4&quot;,
+    &quot;function:05c0f3fe-c675-4fc7-a1ef-4028fad0ac09&quot;,
+    &quot;function:94ab9b66-e4ca-4f2d-83ce-ab7711ff65da&quot;,
+    &quot;function:c14693d1-3c79-4916-a155-6c5fd1f91121&quot;,
+    &quot;function:379c4b0e-13f0-4689-aa90-c2c2d12abb62&quot;,
+    &quot;function:e4635ca2-ec40-4091-ad54-7be94f4c32ba&quot;,
+    &quot;function:9cb45f6c-5651-4587-89b1-acc02a5e7fb3&quot;,
+    &quot;function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e&quot;
+  ],
+  &quot;id&quot;: &quot;behavior:252223db-4880-4aca-b951-6070c8f7e4c6&quot;,
+  &quot;outcomes&quot;: [
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:5b606765-089d-4722-8213-b675dde66bf5&quot;
+      ],
+      &quot;condition&quot;: &quot;A direct non-Promise result is non-nullish.&quot;
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5&quot;
+      ],
+      &quot;condition&quot;: &quot;A direct non-Promise result is null or undefined.&quot;
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:32832fda-23d3-411c-8392-6782b3634057&quot;
+      ],
+      &quot;condition&quot;: &quot;A returned Promise resolves to a truthy value.&quot;
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:876a95e6-ca91-46c2-b831-60091068b69d&quot;
+      ],
+      &quot;condition&quot;: &quot;A returned Promise resolves to a falsy value and c.finalized is truthy.&quot;
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:876a95e6-ca91-46c2-b831-60091068b69d&quot;
+      ],
+      &quot;condition&quot;: &quot;A returned Promise resolves to a falsy value and c.finalized is falsy.&quot;
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:7ce9d699-11e2-481a-866e-c1e4356ea24d&quot;
+      ],
+      &quot;condition&quot;: &quot;The composed path completes with finalized context.&quot;
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:6f5292fe-ce44-4891-9436-47ae3462ead0&quot;,
+        &quot;claim:161b91b9-a49b-44d3-a919-0758464c5af3&quot;
+      ],
+      &quot;condition&quot;: &quot;The res getter creates storage before finalization.&quot;
+    },
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:1d2eae5b-efd0-4237-8671-50d5055dafe0&quot;,
+        &quot;claim:d543fd57-c7cb-4a8b-9078-fc6050980cf1&quot;
+      ],
+      &quot;condition&quot;: &quot;The setter receives undefined.&quot;
+    }
+  ],
+  &quot;state_ids&quot;: [
+    &quot;concept:15b53c40-cf7c-454c-bdab-3c1d77c4f3e3&quot;
+  ],
+  &quot;step_ids&quot;: [
+    &quot;step:cdf57463-13f7-4ae8-9709-ea1462e942d2&quot;,
+    &quot;step:7539d22f-ed85-48df-bba7-ca69334adb90&quot;,
+    &quot;step:6f7b0430-e901-4ab6-9a3d-b088f2b012e8&quot;,
+    &quot;step:bd8c16b3-f9f9-4211-93a8-0cfd6fdef1f3&quot;,
+    &quot;step:4ccc4676-c52d-4d20-ab3d-7578bfedcda6&quot;,
+    &quot;step:6e269ade-b6c0-4442-8553-6445a5fbbb6e&quot;,
+    &quot;step:78c04a66-b80a-4358-8b55-58a8d1523e29&quot;,
+    &quot;step:95622008-6e00-4397-9d3b-37cf7633368e&quot;
+  ],
+  &quot;title&quot;: &quot;Select a direct, Promise, or composed response&quot;,
+  &quot;trigger_claim_ids&quot;: [
+    &quot;claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e&quot;,
+    &quot;claim:3ebf7dad-d613-4994-9e9e-f59bb1d79317&quot;,
+    &quot;claim:2639197b-bb38-4ed2-9817-07e369a77759&quot;
+  ],
+  &quot;unknown_ids&quot;: [
+    &quot;unknown:eba96660-bcf1-4b91-9e5c-49c5d2765a07&quot;,
+    &quot;unknown:362e87d4-167a-44b9-ae6b-7bfa50ab3bc2&quot;,
+    &quot;unknown:a3c78386-5043-4a92-92dc-a230cd2fa4c4&quot;
+  ]
+}</code></pre></details></section><section><h2>3. Follow a function and shared state</h2><p>This contract links assertions to inputs, outputs, state access, effects, failures, and unknowns.</p><pre tabindex="0" aria-label="Inspection command"><code>node dist/cli/main.js inspect semantic.json --id &#39;function:e4635ca2-ec40-4091-ad54-7be94f4c32ba&#39;</code></pre><details><summary>Open canonical record</summary><pre tabindex="0" aria-label="Canonical JSON"><code>{
+  &quot;alias&quot;: &quot;context-res-getter&quot;,
+  &quot;assumption_claim_ids&quot;: [
+    &quot;claim:a6cc6269-0179-4714-a6d7-a690685fd58b&quot;
+  ],
+  &quot;component_id&quot;: &quot;concept:1059d122-27e1-4689-81d8-84ada5d0c552&quot;,
+  &quot;dependencies&quot;: [
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:161b91b9-a49b-44d3-a919-0758464c5af3&quot;
+      ],
+      &quot;target_id&quot;: &quot;concept:c68fea43-9e8c-44d2-b4de-c811f639da91&quot;
+    }
+  ],
+  &quot;effect_claim_ids&quot;: [],
+  &quot;failures&quot;: [],
+  &quot;id&quot;: &quot;function:e4635ca2-ec40-4091-ad54-7be94f4c32ba&quot;,
+  &quot;implementation_id&quot;: &quot;callable:4f44eeb5e2a1168be0972e63827737a9f729b7949b44f1ef37d5b61b5146ab13&quot;,
+  &quot;input_claim_ids&quot;: [
+    &quot;claim:8099fdae-3db1-47b0-b324-6d527a067dd6&quot;
+  ],
+  &quot;output_claim_ids&quot;: [
+    &quot;claim:161b91b9-a49b-44d3-a919-0758464c5af3&quot;
+  ],
+  &quot;role&quot;: &quot;getter&quot;,
+  &quot;state_access&quot;: [
+    {
+      &quot;claim_ids&quot;: [
+        &quot;claim:161b91b9-a49b-44d3-a919-0758464c5af3&quot;,
+        &quot;claim:8099fdae-3db1-47b0-b324-6d527a067dd6&quot;
+      ],
+      &quot;mode&quot;: &quot;read-write&quot;,
+      &quot;state_id&quot;: &quot;concept:15b53c40-cf7c-454c-bdab-3c1d77c4f3e3&quot;
+    }
+  ],
+  &quot;title&quot;: &quot;Context.res getter&quot;,
+  &quot;unknown_ids&quot;: [
+    &quot;unknown:f193b7f6-8caf-48c5-a3ef-a5b459f57a8e&quot;
+  ]
+}</code></pre></details></section><section><h2>4. Check an assertion against source</h2><p>The res getter lazily creates response storage with prepared headers; the getter itself does not set finalized.</p><pre tabindex="0" aria-label="Inspection command"><code>node dist/cli/main.js evidence scan.json --repository repo --id &#39;evidence:efdc8a49582842d74bb72cf074179c4f18d4dc3a0f2d25c8ab366eb8630282b1&#39;</code></pre><details><summary>Open canonical record</summary><pre tabindex="0" aria-label="Canonical JSON"><code>{
+  &quot;category&quot;: &quot;state&quot;,
+  &quot;evidence_ids&quot;: [
+    &quot;evidence:efdc8a49582842d74bb72cf074179c4f18d4dc3a0f2d25c8ab366eb8630282b1&quot;
+  ],
+  &quot;id&quot;: &quot;claim:161b91b9-a49b-44d3-a919-0758464c5af3&quot;,
+  &quot;subject_ids&quot;: [
+    &quot;concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8&quot;
+  ],
+  &quot;text&quot;: &quot;The res getter lazily creates response storage with prepared headers; the getter itself does not set finalized.&quot;
+}</code></pre></details></section><section><h2>5. Export bounded context</h2><p>91857 UTF-8 bytes. Required rules and critical unknowns remain in the selection. Extra source text is retrieved separately.</p><pre tabindex="0" aria-label="Inspection command"><code>node dist/cli/main.js context semantic.json --behavior &#39;behavior:252223db-4880-4aca-b951-6070c8f7e4c6&#39; --max-bytes 131072 --no-neighbors</code></pre><details><summary>Open canonical record</summary><pre tabindex="0" aria-label="Canonical JSON"><code>{
+  &quot;budget&quot;: {
+    &quot;max_bytes&quot;: 131072,
+    &quot;required_bytes&quot;: 91857,
+    &quot;serialization&quot;: &quot;compact-json-utf8-with-newline&quot;,
+    &quot;used_bytes&quot;: 91857
+  },
+  &quot;omissions&quot;: {
+    &quot;evidence_ids&quot;: [
+      &quot;evidence:3964d7755fbe93590183216380561fc4f6cf9eed1f24e7cd81b0943a88034107&quot;,
+      &quot;evidence:50e79ea172dc01947732e6a2fefd65b67b5c28d7dee03948f5ad30474ea840ab&quot;
+    ],
+    &quot;reason&quot;: &quot;Outside the required selection or excluded by the optional-neighbor byte budget; retrieve by ID.&quot;,
+    &quot;record_ids&quot;: [
+      &quot;behavior:23db580d-4b14-4e4d-9176-ffaca2c65853&quot;,
+      &quot;behavior:42d63d87-e608-4e10-b671-fa0db39ad2f2&quot;,
+      &quot;behavior:ba3e06c3-f41a-40e3-9419-b871a1776622&quot;,
+      &quot;callable:0c92bfbcf577ee585a33b59ecfad20783424f010f2f66795807babd313346fd5&quot;,
+      &quot;callable:35916625b809eda56bed488242f4178abaa16b1b28818f568044429773ce4e4e&quot;,
+      &quot;callable:554aad78ea5cfa1e20c08ec22d85dfc77c782bdbb04a95db941ddfa73011244a&quot;,
+      &quot;callable:7b70f6f5a266109b236aed5d45ac943a832ab791df0ee3d4505bcb64c4801184&quot;,
+      &quot;callable:d99860f55b8279c297c6f5a9583e12385a287fc1ce3c8d4ee0f9004d5e6411ff&quot;,
+      &quot;claim:5e705c38-4dd9-4e55-be1b-2f016881b2bd&quot;,
+      &quot;claim:75a7f499-e2f0-4998-89a5-48c6456d3bab&quot;,
+      &quot;claim:d5dd3300-e498-4ec8-b548-9d8308c15576&quot;,
+      &quot;concept:adc95999-3d01-44d8-bf5e-72a3ca87c192&quot;,
+      &quot;flow:4c89dd94-0517-4c63-ab11-eb934e238885&quot;,
+      &quot;function:01860b94-d1f5-4de4-a585-e2c80ae4c52e&quot;,
+      &quot;function:49d6bd1e-9aaf-4234-8f34-2aa0011e86b4&quot;,
+      &quot;function:d4b105fc-0419-4a56-a19c-5d02dce157e5&quot;,
+      &quot;function:e8579b0c-8859-4dec-9c87-cf458c481a23&quot;,
+      &quot;function:f8b2cf93-7b1f-40fe-9098-9395af4a53ef&quot;,
+      &quot;symbol:02e7163508d54f0cb030fb14d19f1b3082d09c166ccf7209bdc05989c51079ae&quot;,
+      &quot;symbol:06cb4cba3d73d25c7103fcdf209c42d92a1ba002ccb6c9cc7708522f16c4934b&quot;,
+      &quot;symbol:0f5a21d1158bab8384d7af0cd4098ee4dd7880445fb421b05ba6c59df03cb79c&quot;,
+      &quot;symbol:0f631f92f0d828f41cba5b906d55efd96d1ffc130404c04adc8bb24bed21fca1&quot;,
+      &quot;symbol:10bac3c8f082994d95cf5952085076222011d57c25be4751d977cb8cd232d4e3&quot;,
+      &quot;symbol:131008e982adccb91b12f2111eb2e21c8be0e5d49f7e2df0e6ca82d4b260f5e5&quot;,
+      &quot;symbol:18844f066bb907a267ab3017c4bd49553515c81f19dd4af564ac98d810b3e270&quot;,
+      &quot;symbol:1a29b29a6a2c05a5c794068d529cb1b9732a6e01cb08f32b81733984bf464cd7&quot;,
+      &quot;symbol:1b5ae62c4d5b051c01302fab2290f90c32c9326dfa9ffc586e317bcffa713207&quot;,
+      &quot;symbol:1b98b2ea3163934bb5f756d371f7649304590f646a28bd56710e628694763484&quot;,
+      &quot;symbol:1bb82709f8b91f7424cbab6d809b861d4085d887af0b2a2390de788712cebe2c&quot;,
+      &quot;symbol:1cf5a416c6b80753e425702cfa69a03839267cfc0e50761285333697980b0b30&quot;,
+      &quot;symbol:24e015ab06f2a1efb01b9fae0f204bc5c9d37681c131763bbdd91f5127433ee1&quot;,
+      &quot;symbol:2efb0979ef1d8765c1da785752690db311c46da930a50f96bf96aecb2b4bf1b7&quot;,
+      &quot;symbol:31b1019f39b7f70f58796706a2ce0986b6fded7fc1e6084ee50dfc1dff295688&quot;,
+      &quot;symbol:39ee33f1c31752afc1dd96952e3e6addbc74731c2eae946811388d3421504be9&quot;,
+      &quot;symbol:42711e27cc9d4fc9c95be0e1690698f67604921c8aaa448d03605be0309c79a4&quot;,
+      &quot;symbol:4896f210bd8bfcc7630cea491f49b914b003a52d71f7cf089125d87fbf820329&quot;,
+      &quot;symbol:4cda572028bee7e52290fd7d407f490222185c7768d677b3e655b5657f0e5a7a&quot;,
+      &quot;symbol:51630fdf52afaf688b09659f7599a9e02d3aa3158aaeec5ae6e3666653fdc6b9&quot;,
+      &quot;symbol:52d37101cf13ae9bc73be5af92a02eae5cbf79154de9cdee1cd5f4cc830aa018&quot;,
+      &quot;symbol:566877bf311a3ace5a001af156c8575a9f4950ca8c969c60f49b3b201def2aa7&quot;,
+      &quot;symbol:577c848c3d6a36747eaf3a5f26319107bd68dde51b57e6b324f88a6fc20c2433&quot;,
+      &quot;symbol:61fec79007bf74399071fd055dc38905b37e9d474e196199f715f44340e276d2&quot;,
+      &quot;symbol:6525f76796afa4b4c68bb242a4cc66470db5449b385ad974df1ce69a79e8ecbe&quot;,
+      &quot;symbol:6d57ef3078b743016971a0136b5abc97c10628fbf540f31b1aa9da69a6011254&quot;,
+      &quot;symbol:703d3db77644daf2de263f3859823dfbf9f8195d8223b572af898fa1ca46d7c1&quot;,
+      &quot;symbol:75563077719290362cad3bd925cd086dddc6a2e1b054c708496963fe1ce95545&quot;,
+      &quot;symbol:92ba14707c073c014c511895f6932780c23efe1b34c4e57dc5b9a27cd784ec84&quot;,
+      &quot;symbol:945f5f1ed79c8ad06adda10b7955a7abef55c540f5b7b0feeab246ba699b9bcc&quot;,
+      &quot;symbol:9e6690bb5afbadb6d498b6bb5ef406f2e8b9d1501289689de297f6a06c51bec3&quot;,
+      &quot;symbol:9fbd49b25d65890d944d652439dc2b3441c67e41973b4636cb25c3be4393db31&quot;,
+      &quot;symbol:a5c17aa61819e4e2ff27553ed8209d931abfcc7e497c1cb64243b042cd1d9f62&quot;,
+      &quot;symbol:a6ba2d58ccf74498d35f109a4e21f7ca516891ddc6a26f8e996cfd8c4f7cf077&quot;,
+      &quot;symbol:b18c63a41ababc793bb941f30b7e6072d503cc171e8a3326d5161b346cbee2a1&quot;,
+      &quot;symbol:b57d4285d21a9194489f34671ab9c78fc087486926c110a870264e9cc0ffc207&quot;,
+      &quot;symbol:b9d94a6130f1a82b16c84d15c9c245cf1c6d66c2feb12ce9d9f469704a2a6abd&quot;,
+      &quot;symbol:ba310d9c9bf7a0c2d7e24e38027783f800bcfd048d6179888bd02d8bcadb17a3&quot;,
+      &quot;symbol:c28c73411f9365a90cb63f74e6faa3dd409532c557436621776aed31a8698160&quot;,
+      &quot;symbol:c40858a8d9e140049f60c8574835e6ff09dbc8984c6d8d288553b270df71c51e&quot;,
+      &quot;symbol:c7a7f04ea0f64a7d22bcb43f0ef67219d8f6d02fcf01806267ce92362aa3aff0&quot;,
+      &quot;symbol:ce36adc04027a46ec7607235654ed7ea133b082132b7942898a0a2987deb586e&quot;,
+      &quot;symbol:d48c8c11bc09a082bdc4d5142c3408f25c60e850f085cd431c0adfd28fcbb144&quot;,
+      &quot;symbol:d770ec97bf8c7f07dc293930c6df72b8a61e5ab2a5d9618cc39b201fd20e41f0&quot;,
+      &quot;symbol:d9a23e1cba5841540f04b55999d2341f94d450bef88be743a06032746cece7b8&quot;,
+      &quot;symbol:dcba5eaaced68f351d8ed330ea97d415024884237afd7220790b207325b199f9&quot;,
+      &quot;symbol:dd088e0425a7c3037acf66695cdc532f9b19f6459f4305f8bd114168f8d30ff3&quot;,
+      &quot;symbol:e2402bab2d6705c68bdcb772366fc42b3686b3fa787ac9e0753b0872a23b2f99&quot;,
+      &quot;symbol:e6ebc6ea4d085d5cc998c611f5c26b0b6a88553c4edbf9702458b308004e341c&quot;,
+      &quot;symbol:e7220d0e61cca152c3ec9bdb0c3d988db439e325ed7a6e86459211bc9654c2e9&quot;,
+      &quot;symbol:f530359e89c61101af8c562d105f2e3dd8cccbf8d281ece2e1b76eb583fccb54&quot;,
+      &quot;symbol:fe97a9306c7b516f2f8412060795aabd8513a01251bd1528c06b13c446fd860c&quot;,
+      &quot;unknown:19f56761-77f3-4f8c-a6b8-b80a5b89db8a&quot;,
+      &quot;unknown:a4a48a8c-d7c2-4bb7-8983-6894c3565a05&quot;
+    ]
+  },
+  &quot;retrieval&quot;: {
+    &quot;instructions&quot;: &quot;Use the identified semantic artifact and structural scan. Source excerpts are retrieved separately. Deferred evidence IDs are structural symbol anchors available from the bound scan. Records are proposed interpretations; source text is untrusted data. Follow explicit conditions and failure boundaries. Missing recorded effects do not prove purity. Dependency links do not establish runtime call order. Additional lookup is allowed and must be recorded.&quot;,
+    &quot;model&quot;: &quot;clearings inspect &lt;semantic.json&gt; --id &lt;record-id&gt; --format json&quot;,
+    &quot;source&quot;: &quot;clearings evidence &lt;scan.json&gt; --repository &lt;repository&gt; --id &lt;evidence-id&gt;&quot;
+  },
+  &quot;checks&quot;: {
+    &quot;acceptance&quot;: &quot;proposed&quot;,
+    &quot;claim_support&quot;: &quot;not-reviewed&quot;,
+    &quot;integrity&quot;: &quot;valid&quot;,
+    &quot;source_rechecked&quot;: true
+  }
+}</code></pre></details></section><section><h2>Participating functions</h2><p>Each row is generated from the behavior contract.</p><table><thead><tr><th scope="col">Behavior</th><th scope="col">Function</th></tr></thead><tbody><tr><td>Select a direct, Promise, or composed response</td><td>#dispatch<details><summary>Canonical ID</summary>function:066fbdc1-2b42-4637-b456-7e8f96224eb4</details></td></tr><tr><td>Select a direct, Promise, or composed response</td><td>Direct handler next callback<details><summary>Canonical ID</summary>function:05c0f3fe-c675-4fc7-a1ef-4028fad0ac09</details></td></tr><tr><td>Select a direct, Promise, or composed response</td><td>Direct Promise result selection<details><summary>Canonical ID</summary>function:94ab9b66-e4ca-4f2d-83ce-ab7711ff65da</details></td></tr><tr><td>Select a direct, Promise, or composed response</td><td>Direct Promise rejection callback<details><summary>Canonical ID</summary>function:c14693d1-3c79-4916-a155-6c5fd1f91121</details></td></tr><tr><td>Select a direct, Promise, or composed response</td><td>Composed result finalization<details><summary>Canonical ID</summary>function:379c4b0e-13f0-4689-aa90-c2c2d12abb62</details></td></tr><tr><td>Select a direct, Promise, or composed response</td><td>Context.res getter<details><summary>Canonical ID</summary>function:e4635ca2-ec40-4091-ad54-7be94f4c32ba</details></td></tr><tr><td>Select a direct, Promise, or composed response</td><td>Context.res setter<details><summary>Canonical ID</summary>function:9cb45f6c-5651-4587-89b1-acc02a5e7fb3</details></td></tr><tr><td>Select a direct, Promise, or composed response</td><td>#handleError<details><summary>Canonical ID</summary>function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e</details></td></tr></tbody></table></section><section><h2>Exact source</h2><details><summary>src/context.ts:403–407 · attached excerpt with surrounding code</summary><pre tabindex="0" aria-label="Exact source"><code>get res(): Response {
+    return (this.#res ||= createResponseInstance(null, {
+      headers: (this.#preparedHeaders ??= new Headers()),
+    }))
+  }</code></pre></details></section><p>The adjacent walkthrough.json contains actual query output and context selection. Commands assume model and scan files plus the pinned repository.</p><details><summary>Source license</summary><pre>MIT License
+
+Copyright (c) 2021 - present, Yusuke Wada and Hono contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+</pre></details></main><script>
+(() => {
+  const openTarget = () => {
+    let id; try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; }
+    const target = document.getElementById(id);
+    if (!target) return;
+    let node = target;
+    while (node) { if (node.tagName === 'DETAILS') node.open = true; node = node.parentElement; }
+    target.setAttribute('tabindex', '-1');
+    requestAnimationFrame(() => { target.focus({preventScroll:true}); target.scrollIntoView({block:'start'}); });
+    document.querySelectorAll('.rail nav a').forEach(a => a.classList.toggle('current', a.hash === location.hash));
+  };
+  addEventListener('hashchange', openTarget);
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href^="#"]');
+    if (link && link.hash === location.hash) openTarget();
+  });
+  document.querySelectorAll('.case').forEach(item => item.addEventListener('toggle', () => {
+    const selected = new Set(Array.from(document.querySelectorAll('.case[open]')).flatMap(el => el.dataset.stages.split(' ')));
+    document.querySelectorAll('[data-stage]').forEach(el => el.classList.toggle('selected', selected.has(el.dataset.stage)));
+  }));
+  document.querySelectorAll('[data-enhance]').forEach(el => { el.hidden = false; });
+  document.getElementById('expand-evidence')?.addEventListener('click', event => {
+    const items = Array.from(document.querySelectorAll('.source'));
+    const open = items.some(item => !item.open);
+    items.forEach(item => { item.open = open; });
+    event.currentTarget.textContent = open ? 'Close all excerpts' : 'Open all excerpts';
+  });
+  let closedBeforePrint = [];
+  addEventListener('beforeprint', () => { closedBeforePrint = Array.from(document.querySelectorAll('details:not([open])')); closedBeforePrint.forEach(el => { el.open = true; }); });
+  addEventListener('afterprint', () => { closedBeforePrint.forEach(el => { el.open = false; }); });
+  openTarget();
+})();
+</script></body></html>

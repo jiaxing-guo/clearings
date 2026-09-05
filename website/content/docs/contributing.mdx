@@ -1,0 +1,40 @@
+---
+title: "Contribute to Clearings"
+description: "Make a focused change with inspectable evidence."
+---
+
+Useful contributions include code fixes, clearer documentation, smaller original fixtures, and source-backed corrections to a semantic explanation. Read the root `CONTRIBUTING.md` for the full contribution process.
+
+## Set up the library
+
+```bash
+npm ci --ignore-scripts
+npm run typecheck
+npm test
+```
+
+Use Conventional Commits, such as `fix: preserve a response failure boundary`. PR titles and descriptions explain behavior and omit internal planning labels.
+
+## Work on documentation
+
+```bash
+npm ci --prefix website --ignore-scripts
+npm run docs:build
+npm run docs:check
+```
+
+The site uses Fumadocs, Next.js static export, and local search. `website/content/docs` holds trusted MDX pages. `website/lib/source.ts` builds the page tree. `website/out` is generated and ignored.
+
+The default base path is `/clearings-semantic`. Set `DOCS_BASE_PATH=''` for a root-path build, or supply a different project path without a trailing slash. Use `npm run docs:dev` for local authoring. CI, GitHub Pages serving, and public access are separate future work.
+
+Do not copy semantic records into MDX. Demo assets are copied from the validated review bundle during the build. Update that bundle through its reproduction script.
+
+## Write in reading order
+
+State the task and prerequisites. Give one runnable example, describe the result, then explain alternatives and limits. Put command flags and exact types in reference pages. Keep terms consistent and conditions before consequences. Preserve exact source, commands, and identifiers.
+
+## Review meaning
+
+For a claim correction, include the artifact ID, assertion ID, source span, and the reason. Mark it supported, contradicted, or uncertain. Keep author review distinct from independent review. A passing link check does not establish claim support.
+
+Include the checks you actually ran in the PR. Record blocked browser checks explicitly and use permitted static checks. Do not label historical browser results as new verification.

@@ -1,0 +1,994 @@
+{
+  "schema_version": "0.2.0",
+  "semantic_artifact_id": "semantic:879ce0fdb5dee3f6f406bfa87e28f0d2f48b65fb58026479f9172bbd54b8c3f0",
+  "capability_id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+  "origin": "authored",
+  "review_status": "unreviewed",
+  "introduction": {
+    "text": "Hono receives a request, finds matching handlers, and selects a response. The selected path also determines how it handles missing responses and failures.",
+    "claim_ids": [
+      "claim:be525e2a-9f68-4196-b67c-7bf670fbee39",
+      "claim:8b0483bd-c519-497b-b081-d286863646b7",
+      "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+      "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+      "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+      "claim:2639197b-bb38-4ed2-9817-07e369a77759",
+      "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d",
+      "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15"
+    ],
+    "unknown_indices": []
+  },
+  "stages": [
+    {
+      "key": "method",
+      "title": "Choose the request method",
+      "summary": {
+        "text": "For requests other than HEAD, Hono uses the supplied method. For HEAD, it uses GET and returns a response without a body.",
+        "claim_ids": [
+          "claim:be525e2a-9f68-4196-b67c-7bf670fbee39",
+          "claim:085248c3-81b0-4cad-986d-05fee44fe506",
+          "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:fdc5198f-dec9-4c31-a00f-59b930e9e076",
+        "step:c8e6ec4b-17bf-4637-8e47-40b6b7b992f7"
+      ],
+      "claim_ids": [
+        "claim:be525e2a-9f68-4196-b67c-7bf670fbee39",
+        "claim:085248c3-81b0-4cad-986d-05fee44fe506",
+        "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb",
+        "claim:07e14fa8-6312-422f-920f-8de6ebf3639f",
+        "claim:491da471-0962-4036-8623-5a924a379a28",
+        "claim:5b606765-089d-4722-8213-b675dde66bf5",
+        "claim:d3f7ed18-fd8d-44d4-b50d-11e2dc21e501"
+      ],
+      "notes": [
+        {
+          "text": "The request enters through fetch. Hono passes the request, environment, and execution context to its dispatcher.",
+          "claim_ids": [
+            "claim:be525e2a-9f68-4196-b67c-7bf670fbee39"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "For HEAD, only the dispatch method argument changes to GET. The original Request object stays the same.",
+          "claim_ids": [
+            "claim:085248c3-81b0-4cad-986d-05fee44fe506"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": [
+        {
+          "text": "A failure from the HEAD wrapper is not guaranteed to reach the local error callback.",
+          "claim_ids": [],
+          "unknown_indices": [
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "key": "match",
+      "title": "Find matching handlers",
+      "summary": {
+        "text": "Hono resolves the path, matches routes, and creates the request context.",
+        "claim_ids": [
+          "claim:889f741d-3df0-47f5-9e19-2a06a2a99445",
+          "claim:8b0483bd-c519-497b-b081-d286863646b7",
+          "claim:6ea34fc3-66d3-437b-a99c-f67c5043f6b6"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:c9a85946-abf2-4a8e-9dec-59fa95a966f1"
+      ],
+      "claim_ids": [
+        "claim:889f741d-3df0-47f5-9e19-2a06a2a99445",
+        "claim:8b0483bd-c519-497b-b081-d286863646b7",
+        "claim:6ea34fc3-66d3-437b-a99c-f67c5043f6b6"
+      ],
+      "notes": [
+        {
+          "text": "The router receives the dispatch method and resolved path. The context stores the match result and request data.",
+          "claim_ids": [
+            "claim:8b0483bd-c519-497b-b081-d286863646b7",
+            "claim:6ea34fc3-66d3-437b-a99c-f67c5043f6b6"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": [
+        {
+          "text": "These excerpts do not establish router internals or user handler behavior. Failures during this setup occur before the shown handler catch blocks.",
+          "claim_ids": [],
+          "unknown_indices": [
+            0,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "key": "handlers",
+      "title": "Choose the handler path",
+      "summary": {
+        "text": "One matching handler runs directly. Zero or multiple handlers use middleware composition.",
+        "claim_ids": [
+          "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+          "claim:2639197b-bb38-4ed2-9817-07e369a77759"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:3301e9a4-0b62-40b9-bcc5-74652de3839a",
+        "step:cdf57463-13f7-4ae8-9709-ea1462e942d2",
+        "step:bd8c16b3-f9f9-4211-93a8-0cfd6fdef1f3"
+      ],
+      "claim_ids": [
+        "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+        "claim:d4c7dc38-cdfc-4a47-b9f5-c3628df16210",
+        "claim:3a465dfd-a823-4297-a867-dc7b31edd393",
+        "claim:3ebf7dad-d613-4994-9e9e-f59bb1d79317",
+        "claim:2639197b-bb38-4ed2-9817-07e369a77759",
+        "claim:c3467e33-ffa9-47f6-8a0f-934dcdd6024c",
+        "claim:f551142e-2ef8-4131-9da8-304f6a92329e",
+        "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+        "claim:0df938c1-9773-4d05-84ba-5bcecf66fb6c",
+        "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa",
+        "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+        "claim:2c55a0d3-2faf-413e-8173-4aa184a3094e",
+        "claim:36389804-ee71-4da7-bbdc-e77cb1d247b1",
+        "claim:3744e538-0f07-4ea4-a210-02d1a6c03781",
+        "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa",
+        "claim:39cc9873-5187-41f4-8403-332e355f7db9",
+        "claim:40001f0b-2785-462a-9244-1997813e69cd",
+        "claim:45c03f43-ef8c-4a6b-9f8a-24b2237fb6ca",
+        "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d",
+        "claim:56b29496-273a-4a7a-ba0e-f3b36aff76a3",
+        "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12",
+        "claim:6a188938-736d-4970-a698-88df4b787329",
+        "claim:6a9ded64-407c-492b-904d-328bc04d3373",
+        "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829",
+        "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc",
+        "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+        "claim:957e5bca-529c-4b7b-85cd-d3ad15c57993",
+        "claim:a4808f91-eb8a-4a52-aed2-72effb4a139e",
+        "claim:b1c5caa4-d40d-4e99-a478-a0483a83437a",
+        "claim:b35b5c02-3b31-46cd-b1ac-2845ca7d8424",
+        "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab",
+        "claim:d8b4fcf8-5869-40ef-a225-ff4e3d13bb99",
+        "claim:e1b56a2f-0a30-4965-865a-3ab75c96f399",
+        "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798",
+        "claim:f360cf06-1fc5-4b71-891d-37fdddbfeaa4",
+        "claim:f67de3f4-647c-4c67-86e3-ab561267bf22",
+        "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885"
+      ],
+      "notes": [
+        {
+          "text": "The direct path checks whether the result is a Promise. This choice affects response selection.",
+          "claim_ids": [
+            "claim:3ebf7dad-d613-4994-9e9e-f59bb1d79317"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "The composition path uses the configured error and not-found handlers. The dispatcher waits for the composed runner.",
+          "claim_ids": [
+            "claim:c3467e33-ffa9-47f6-8a0f-934dcdd6024c",
+            "claim:f551142e-2ef8-4131-9da8-304f6a92329e"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "The next callback supplied to a direct handler assigns the configured not-found result to c.res.",
+          "claim_ids": [
+            "claim:d4c7dc38-cdfc-4a47-b9f5-c3628df16210"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": []
+    },
+    {
+      "key": "response",
+      "title": "Select the response",
+      "summary": {
+        "text": "Hono selects a response using the rules for the chosen handler path.",
+        "claim_ids": [
+          "claim:32832fda-23d3-411c-8392-6782b3634057",
+          "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+          "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+          "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+          "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:7539d22f-ed85-48df-bba7-ca69334adb90",
+        "step:6f7b0430-e901-4ab6-9a3d-b088f2b012e8",
+        "step:4ccc4676-c52d-4d20-ab3d-7578bfedcda6",
+        "step:78c04a66-b80a-4358-8b55-58a8d1523e29"
+      ],
+      "claim_ids": [
+        "claim:32832fda-23d3-411c-8392-6782b3634057",
+        "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+        "claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56",
+        "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+        "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+        "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d",
+        "claim:75a7f499-e2f0-4998-89a5-48c6456d3bab",
+        "claim:6f5292fe-ce44-4891-9436-47ae3462ead0",
+        "claim:161b91b9-a49b-44d3-a919-0758464c5af3",
+        "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0",
+        "claim:146991bd-ed7d-4ae1-8868-888a11dedf6e",
+        "claim:0b57c11a-c767-4573-8888-f3d49cbdf5c6",
+        "claim:5e705c38-4dd9-4e55-be1b-2f016881b2bd",
+        "claim:bf2950af-c55d-401a-9691-50acf819a3f2",
+        "claim:8099fdae-3db1-47b0-b324-6d527a067dd6",
+        "claim:a6cc6269-0179-4714-a6d7-a690685fd58b",
+        "claim:b3a42479-5499-4eed-8d21-09169deaf214",
+        "claim:d543fd57-c7cb-4a8b-9078-fc6050980cf1",
+        "claim:d5dd3300-e498-4ec8-b548-9d8308c15576",
+        "claim:f984c4f5-e5e0-4ce9-a0fc-0b8884e34883"
+      ],
+      "notes": [
+        {
+          "text": "If a Promise resolves to a truthy value, Hono returns that value. Otherwise, Hono uses c.res if finalized is true. If finalized is false, Hono calls the not-found handler.",
+          "claim_ids": [
+            "claim:32832fda-23d3-411c-8392-6782b3634057",
+            "claim:876a95e6-ca91-46c2-b831-60091068b69d"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "If a direct result is not a Promise, Hono returns it unless it is null or undefined. For those two values, Hono calls the not-found handler.",
+          "claim_ids": [
+            "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "After composition, Hono requires a finalized context. It then returns context.res. If the context is not finalized, Hono raises an Error.",
+          "claim_ids": [
+            "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+            "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "The context starts with finalized set to false. Reading res alone does not finalize it. The res setter sets finalized to true, even for undefined.",
+          "claim_ids": [
+            "claim:6f5292fe-ce44-4891-9436-47ae3462ead0",
+            "claim:161b91b9-a49b-44d3-a919-0758464c5af3",
+            "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "When old and new responses exist, the setter merges old headers except content-type. Old set-cookie values replace the new cookie collection.",
+          "claim_ids": [
+            "claim:146991bd-ed7d-4ae1-8868-888a11dedf6e",
+            "claim:0b57c11a-c767-4573-8888-f3d49cbdf5c6"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "The supplied default not-found handler returns a text response with status 404. A custom handler can behave differently.",
+          "claim_ids": [
+            "claim:75a7f499-e2f0-4998-89a5-48c6456d3bab"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "Context.notFound installs a fallback callback only when its stored handler is null or undefined. It then calls that handler with the context.",
+          "claim_ids": [
+            "claim:5e705c38-4dd9-4e55-be1b-2f016881b2bd"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": [
+        {
+          "text": "A missing direct result and a falsy Promise result use different fallback rules. Only the Promise fallback checks finalized.",
+          "claim_ids": [
+            "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+            "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5"
+          ],
+          "unknown_indices": []
+        }
+      ]
+    },
+    {
+      "key": "failure",
+      "title": "Handle a failure",
+      "summary": {
+        "text": "The private error handler sends Error instances to the configured callback. It rethrows other values.",
+        "claim_ids": [
+          "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:6e269ade-b6c0-4442-8553-6445a5fbbb6e",
+        "step:95622008-6e00-4397-9d3b-37cf7633368e"
+      ],
+      "claim_ids": [
+        "claim:3a465dfd-a823-4297-a867-dc7b31edd393",
+        "claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56",
+        "claim:7af68846-ae57-44cd-8e06-49e5596a226b",
+        "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15",
+        "claim:4a289f87-40be-45fa-90f8-f07a20dcafb8",
+        "claim:4e81a050-0232-49a7-bf88-ebfbdc1e9576",
+        "claim:bf2950af-c55d-401a-9691-50acf819a3f2",
+        "claim:eb4d17a9-fa20-4ecc-9768-52ed19a28dea",
+        "claim:fc07b7ac-e50a-4c46-8293-6c36dcbfbbdb"
+      ],
+      "notes": [
+        {
+          "text": "The direct handler catch, direct Promise rejection handler, and composed path catch call the private error handler.",
+          "claim_ids": [
+            "claim:3a465dfd-a823-4297-a867-dc7b31edd393",
+            "claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56",
+            "claim:7af68846-ae57-44cd-8e06-49e5596a226b"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "The default error handler can use getResponse. Otherwise, it logs the error and creates a text response with status 500.",
+          "claim_ids": [
+            "claim:4a289f87-40be-45fa-90f8-f07a20dcafb8",
+            "claim:4e81a050-0232-49a7-bf88-ebfbdc1e9576"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": [
+        {
+          "text": "The direct not-found fallback runs outside the direct handler catch block. A throw there can reach the caller.",
+          "claim_ids": [
+            "claim:bf2950af-c55d-401a-9691-50acf819a3f2"
+          ],
+          "unknown_indices": []
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "key": "head",
+      "question": "What happens for a HEAD request?",
+      "answer": [
+        {
+          "text": "Hono dispatches with GET as the method argument, while it keeps the original request. It then creates a response with a null body.",
+          "claim_ids": [
+            "claim:085248c3-81b0-4cad-986d-05fee44fe506",
+            "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "The shown wrapper does not guarantee local handling of every rejection.",
+          "claim_ids": [],
+          "unknown_indices": [
+            4
+          ]
+        }
+      ],
+      "stage_keys": [
+        "method",
+        "failure"
+      ]
+    },
+    {
+      "key": "one-handler",
+      "question": "What happens with one matching handler?",
+      "answer": [
+        {
+          "text": "Hono calls the handler directly. It then selects the Promise or direct return path from the returned value.",
+          "claim_ids": [
+            "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+            "claim:3ebf7dad-d613-4994-9e9e-f59bb1d79317"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "stage_keys": [
+        "handlers",
+        "response"
+      ]
+    },
+    {
+      "key": "many-handlers",
+      "question": "What happens with zero or multiple handlers?",
+      "answer": [
+        {
+          "text": "Both cases use compose with the configured error and not-found handlers. Hono waits for the result, then requires a finalized context.",
+          "claim_ids": [
+            "claim:2639197b-bb38-4ed2-9817-07e369a77759",
+            "claim:c3467e33-ffa9-47f6-8a0f-934dcdd6024c",
+            "claim:f551142e-2ef8-4131-9da8-304f6a92329e",
+            "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "If the context is finalized, Hono returns context.res. Otherwise, the finalization check raises an Error.",
+          "claim_ids": [
+            "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+            "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "stage_keys": [
+        "handlers",
+        "response",
+        "failure"
+      ]
+    },
+    {
+      "key": "missing-response",
+      "question": "What if a handler returns no response?",
+      "answer": [
+        {
+          "text": "For a direct null or undefined result, Hono calls the not-found handler without checking finalized.",
+          "claim_ids": [
+            "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "For a falsy Promise result, Hono first checks finalized. It uses c.res if finalized is true. Otherwise, it calls the not-found handler.",
+          "claim_ids": [
+            "claim:876a95e6-ca91-46c2-b831-60091068b69d"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "After composition, an unfinalized context causes an Error.",
+          "claim_ids": [
+            "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "stage_keys": [
+        "response",
+        "failure"
+      ]
+    },
+    {
+      "key": "fallback-error",
+      "question": "Can a not-found failure escape the local catch?",
+      "answer": [
+        {
+          "text": "Yes. The direct not-found fallback runs outside the direct handler catch block. A synchronous throw there can reach the caller.",
+          "claim_ids": [
+            "claim:bf2950af-c55d-401a-9691-50acf819a3f2"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "Caller handling is outside this source view.",
+          "claim_ids": [],
+          "unknown_indices": [
+            4
+          ]
+        }
+      ],
+      "stage_keys": [
+        "response",
+        "failure"
+      ]
+    },
+    {
+      "key": "context",
+      "question": "Does reading context.res finalize the response?",
+      "answer": [
+        {
+          "text": "No. The getter can create response storage, but it does not set finalized. The setter sets finalized to true, even for undefined.",
+          "claim_ids": [
+            "claim:161b91b9-a49b-44d3-a919-0758464c5af3",
+            "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "stage_keys": [
+        "response"
+      ]
+    }
+  ],
+  "sequence": null,
+  "overview": {
+    "title": "How a web request gets a response",
+    "purpose": {
+      "text": "Hono finds the code that should handle a web request. It then uses that code to select a response.",
+      "claim_ids": [
+        "claim:be525e2a-9f68-4196-b67c-7bf670fbee39",
+        "claim:8b0483bd-c519-497b-b081-d286863646b7",
+        "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+        "claim:2639197b-bb38-4ed2-9817-07e369a77759",
+        "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+      ],
+      "unknown_indices": []
+    },
+    "journey": [
+      {
+        "title": "Receive the request",
+        "summary": {
+          "text": "Read the request method and path.",
+          "claim_ids": [
+            "claim:be525e2a-9f68-4196-b67c-7bf670fbee39",
+            "claim:889f741d-3df0-47f5-9e19-2a06a2a99445",
+            "claim:8b0483bd-c519-497b-b081-d286863646b7"
+          ],
+          "unknown_indices": []
+        }
+      },
+      {
+        "title": "Find the matching code",
+        "summary": {
+          "text": "Select the functions registered for that request.",
+          "claim_ids": [
+            "claim:8b0483bd-c519-497b-b081-d286863646b7",
+            "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+            "claim:2639197b-bb38-4ed2-9817-07e369a77759"
+          ],
+          "unknown_indices": []
+        }
+      },
+      {
+        "title": "Select a response",
+        "summary": {
+          "text": "Use the result, a fallback, or an error path.",
+          "claim_ids": [
+            "claim:32832fda-23d3-411c-8392-6782b3634057",
+            "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+            "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+            "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+            "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d",
+            "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15"
+          ],
+          "unknown_indices": []
+        }
+      }
+    ],
+    "example": {
+      "title": "A simple case",
+      "description": {
+        "text": "One matching function returns a response directly. Hono returns that response to the caller.",
+        "claim_ids": [
+          "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+          "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5"
+        ],
+        "unknown_indices": []
+      }
+    },
+    "outcomes": [
+      {
+        "kind": "normal",
+        "title": "A response is returned",
+        "description": {
+          "text": "Hono selects the response from the chosen handling path.",
+          "claim_ids": [
+            "claim:32832fda-23d3-411c-8392-6782b3634057",
+            "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+            "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+          ],
+          "unknown_indices": []
+        }
+      },
+      {
+        "kind": "fallback",
+        "title": "No direct response",
+        "description": {
+          "text": "Hono can use a response already stored by a function. Other paths call a fallback or raise an error.",
+          "claim_ids": [
+            "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+            "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+            "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a"
+          ],
+          "unknown_indices": []
+        }
+      },
+      {
+        "kind": "failure",
+        "title": "The code fails",
+        "description": {
+          "text": "Some failures reach the configured error handler. Others can pass back to the caller.",
+          "claim_ids": [
+            "claim:3a465dfd-a823-4297-a867-dc7b31edd393",
+            "claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56",
+            "claim:7af68846-ae57-44cd-8e06-49e5596a226b",
+            "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15",
+            "claim:bf2950af-c55d-401a-9691-50acf819a3f2"
+          ],
+          "unknown_indices": []
+        }
+      }
+    ],
+    "limits": [
+      {
+        "text": "Your routes and application functions determine the actual behavior. Their implementation is outside these excerpts.",
+        "claim_ids": [],
+        "unknown_indices": [
+          0
+        ]
+      },
+      {
+        "text": "Some failures leave this part of Hono. The excerpts do not show how the caller handles them.",
+        "claim_ids": [],
+        "unknown_indices": [
+          1,
+          4
+        ]
+      }
+    ]
+  },
+  "guide": {
+    "title": "Follow a request through Hono",
+    "introduction": {
+      "text": "A request enters through fetch. Hono matches its route, runs the selected handlers, and chooses a response. A handler is a function that processes the request.",
+      "claim_ids": [
+        "claim:be525e2a-9f68-4196-b67c-7bf670fbee39",
+        "claim:8b0483bd-c519-497b-b081-d286863646b7",
+        "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+        "claim:2639197b-bb38-4ed2-9817-07e369a77759",
+        "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+      ],
+      "unknown_indices": []
+    },
+    "example": {
+      "title": "Start with one direct response",
+      "description": {
+        "text": "Assume the router finds exactly one handler. If that handler returns a Response directly, Hono returns it. No middleware composition is needed for this case.",
+        "claim_ids": [
+          "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+          "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5"
+        ],
+        "unknown_indices": []
+      }
+    },
+    "sections": [
+      {
+        "key": "route",
+        "title": "First, match the request",
+        "paragraphs": [
+          {
+            "text": "For a request other than HEAD, Hono resolves the path and asks the router for matching handlers.",
+            "claim_ids": [
+              "claim:889f741d-3df0-47f5-9e19-2a06a2a99445",
+              "claim:8b0483bd-c519-497b-b081-d286863646b7"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "It then creates a Context. This object carries the request, match result, environment, and response state through the selected path.",
+            "claim_ids": [
+              "claim:6ea34fc3-66d3-437b-a99c-f67c5043f6b6",
+              "claim:6f5292fe-ce44-4891-9436-47ae3462ead0",
+              "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "HEAD is a special case: Hono dispatches with GET as the method argument, keeps the original Request, and creates a response without a body.",
+            "claim_ids": [
+              "claim:085248c3-81b0-4cad-986d-05fee44fe506",
+              "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb"
+            ],
+            "unknown_indices": []
+          }
+        ],
+        "stage_keys": [
+          "method",
+          "match"
+        ],
+        "code": {
+          "evidence_id": "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+          "start_line": 420,
+          "end_line": 429
+        }
+      },
+      {
+        "key": "handlers",
+        "title": "Then, choose how to run the handlers",
+        "paragraphs": [
+          {
+            "text": "Exactly one handler uses the direct path. Hono calls it with the context and a next callback.",
+            "claim_ids": [
+              "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+              "claim:d4c7dc38-cdfc-4a47-b9f5-c3628df16210"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "Zero or multiple handlers use compose. Hono passes the matching middleware and configured error and not-found handlers, then waits for the composed runner.",
+            "claim_ids": [
+              "claim:2639197b-bb38-4ed2-9817-07e369a77759",
+              "claim:c3467e33-ffa9-47f6-8a0f-934dcdd6024c",
+              "claim:f551142e-2ef8-4131-9da8-304f6a92329e"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "This choice matters when a handler does not return a response. The two paths use different rules.",
+            "claim_ids": [
+              "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+              "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+              "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a"
+            ],
+            "unknown_indices": []
+          }
+        ],
+        "stage_keys": [
+          "handlers"
+        ],
+        "code": {
+          "evidence_id": "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+          "start_line": 431,
+          "end_line": 450
+        }
+      },
+      {
+        "key": "response",
+        "title": "Now, select the response",
+        "paragraphs": [
+          {
+            "text": "The direct path first checks whether the returned value is a Promise.",
+            "claim_ids": [
+              "claim:3ebf7dad-d613-4994-9e9e-f59bb1d79317"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "For a non-Promise result, null or undefined triggers the not-found handler. This branch does not check c.finalized.",
+            "claim_ids": [
+              "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "For a Promise, a truthy resolved value wins. Otherwise, Hono uses c.res if c.finalized is true. If it is false, Hono calls the not-found handler.",
+            "claim_ids": [
+              "claim:32832fda-23d3-411c-8392-6782b3634057",
+              "claim:876a95e6-ca91-46c2-b831-60091068b69d"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "After composition, Hono requires a finalized context and returns context.res. An unfinalized context causes an Error.",
+            "claim_ids": [
+              "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+              "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "The res getter does not finalize the context. The setter sets finalized to true, even when its argument is undefined.",
+            "claim_ids": [
+              "claim:161b91b9-a49b-44d3-a919-0758464c5af3",
+              "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0"
+            ],
+            "unknown_indices": []
+          }
+        ],
+        "stage_keys": [
+          "response"
+        ],
+        "code": {
+          "evidence_id": "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+          "start_line": 442,
+          "end_line": 449
+        }
+      },
+      {
+        "key": "failure",
+        "title": "Finally, follow any failure to its handler",
+        "paragraphs": [
+          {
+            "text": "The direct handler catch, Promise rejection handler, and composition catch call #handleError. It delegates Error instances to the configured callback and rethrows other values.",
+            "claim_ids": [
+              "claim:3a465dfd-a823-4297-a867-dc7b31edd393",
+              "claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56",
+              "claim:7af68846-ae57-44cd-8e06-49e5596a226b",
+              "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "The direct not-found fallback is outside the direct handler catch block. If it throws synchronously, that failure can reach the caller.",
+            "claim_ids": [
+              "claim:bf2950af-c55d-401a-9691-50acf819a3f2"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "The default not-found handler uses status 404. The default error handler can use getResponse; otherwise, it logs the error and uses status 500.",
+            "claim_ids": [
+              "claim:4a289f87-40be-45fa-90f8-f07a20dcafb8",
+              "claim:4e81a050-0232-49a7-bf88-ebfbdc1e9576",
+              "claim:75a7f499-e2f0-4998-89a5-48c6456d3bab"
+            ],
+            "unknown_indices": []
+          }
+        ],
+        "stage_keys": [
+          "failure"
+        ],
+        "code": {
+          "evidence_id": "evidence:d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69",
+          "start_line": 401,
+          "end_line": 406
+        }
+      }
+    ],
+    "limits": [
+      {
+        "text": "Your routes and application functions determine the actual behavior. Their implementation is outside these excerpts.",
+        "claim_ids": [],
+        "unknown_indices": [
+          0
+        ]
+      },
+      {
+        "text": "Some failures leave this part of Hono. The excerpts do not show how the caller handles them.",
+        "claim_ids": [],
+        "unknown_indices": [
+          1,
+          4
+        ]
+      }
+    ]
+  },
+  "function_bindings": [
+    {
+      "function_id": "function:013cff1d-eca2-4834-a4b0-51726491bcf1",
+      "stage_keys": [
+        "method"
+      ]
+    },
+    {
+      "function_id": "function:01860b94-d1f5-4de4-a585-e2c80ae4c52e",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:03f326d3-1de0-4410-808f-b673a2c4cfb3",
+      "stage_keys": [
+        "handlers",
+        "response",
+        "failure"
+      ]
+    },
+    {
+      "function_id": "function:05c0f3fe-c675-4fc7-a1ef-4028fad0ac09",
+      "stage_keys": [
+        "handlers",
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:066fbdc1-2b42-4637-b456-7e8f96224eb4",
+      "stage_keys": [
+        "method",
+        "match",
+        "handlers",
+        "response",
+        "failure"
+      ]
+    },
+    {
+      "function_id": "function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e",
+      "stage_keys": [
+        "failure"
+      ]
+    },
+    {
+      "function_id": "function:2ed115cb-3d2d-4d04-9657-d8829ba4ee56",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:379c4b0e-13f0-4689-aa90-c2c2d12abb62",
+      "stage_keys": [
+        "response",
+        "failure"
+      ]
+    },
+    {
+      "function_id": "function:49d6bd1e-9aaf-4234-8f34-2aa0011e86b4",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:92019dfa-b10c-4b1a-8ba3-914084ae947c",
+      "stage_keys": [
+        "handlers"
+      ]
+    },
+    {
+      "function_id": "function:94ab9b66-e4ca-4f2d-83ce-ab7711ff65da",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:98d308f3-506e-458a-9b99-bfe76154df29",
+      "stage_keys": [
+        "failure"
+      ]
+    },
+    {
+      "function_id": "function:9cb45f6c-5651-4587-89b1-acc02a5e7fb3",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:a30d9cc8-bde8-4f72-8469-44f9b1e91a23",
+      "stage_keys": [
+        "handlers"
+      ]
+    },
+    {
+      "function_id": "function:bc6399ac-1a94-4541-b51b-4cc6cc66aea8",
+      "stage_keys": [
+        "handlers"
+      ]
+    },
+    {
+      "function_id": "function:c14693d1-3c79-4916-a155-6c5fd1f91121",
+      "stage_keys": [
+        "failure"
+      ]
+    },
+    {
+      "function_id": "function:d4b105fc-0419-4a56-a19c-5d02dce157e5",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:d888d262-67d4-4c35-a3d3-b88a00f3deb6",
+      "stage_keys": [
+        "handlers"
+      ]
+    },
+    {
+      "function_id": "function:e4635ca2-ec40-4091-ad54-7be94f4c32ba",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:e677a038-abee-4d92-8888-4b401adf7370",
+      "stage_keys": [
+        "handlers"
+      ]
+    },
+    {
+      "function_id": "function:e8579b0c-8859-4dec-9c87-cf458c481a23",
+      "stage_keys": [
+        "failure"
+      ]
+    },
+    {
+      "function_id": "function:f8b2cf93-7b1f-40fe-9098-9395af4a53ef",
+      "stage_keys": [
+        "method"
+      ]
+    }
+  ],
+  "behavior_ids": [
+    "behavior:42d63d87-e608-4e10-b671-fa0db39ad2f2",
+    "behavior:252223db-4880-4aca-b951-6070c8f7e4c6"
+  ]
+}

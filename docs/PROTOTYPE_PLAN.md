@@ -28,12 +28,12 @@ Product name: **Clearings**. Private repository: **jiaxing-guo/clearings-semanti
 | Bounded TypeScript structure | Implemented | Dynamic callbacks and ambiguous calls remain unresolved |
 | Semantic proposal exchange and replay | Implemented | File exchange; no built-in model endpoint |
 | PM and engineer reports | Implemented; user accepted the reports | Independent claim-support review remains pending |
-| Function contracts | Canonical v0.2 contracts implemented | Existing reports still use historical presentation summaries |
-| Internal semantic JSON | Function/behavior contracts, inspection, and bounded context export implemented | Agent comprehension and report integration remain |
+| Function contracts | Canonical v0.2 contracts integrated into both report views | Author interpretation; independent support review pending |
+| Internal semantic JSON | Shared reports, real-query walkthrough, and bounded context export implemented | Broader agent evaluation remains |
 | Claim support | Author self-review of 73 contract assertions recorded; historical 53-claim model retained | Independent review remains pending |
-| Agent use and code-change benefit | Not demonstrated | Report quality alone does not establish either benefit |
+| Agent use and code-change benefit | Recorded continuing-session author comprehension example | Independent agent trials and code-change benefit remain unestablished |
 
-The contract implementation records 54 passing automated tests, deterministic source-verified replay/context output, and unchanged target files. The historical semantic JSON and all eight audience reports remain byte-identical. The previous report verification records static HTML/Markdown link and source checks. Earlier desktop/mobile browser checks remain historical; browser policy blocked the latest local-file preview. See [the report review](../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
+The shared demo implementation records 58 passing automated tests, deterministic source-verified replay/context output, and unchanged target files. The historical semantic JSON and all eight audience reports remain byte-identical. The new reports use the contract model; see [shared demos](SHARED_DEMOS.md). The previous report verification records static HTML/Markdown link and source checks. Earlier desktop/mobile browser checks remain historical; browser policy blocked the latest local-file preview. See [the report review](../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
 
 The user accepted the report presentation and authorized updating PR #3. Independent claim-support review remains separate from report acceptance.
 
@@ -75,7 +75,7 @@ Milestone labels are for planning documents. Commit messages and PR text continu
 | M1: structural evidence | Bounded TypeScript extraction, evidence lookup, diagnostics | Complete; retain positive/negative fixtures and explicit unresolved facts |
 | M2: semantic exchange and reading prototype | Recorded semantic model, PM and engineer reports in HTML and Markdown | Technically complete; user accepted the reports. Independent claim-support review remains pending |
 | M3: usable internal representation | Function/behavior contracts, import validation, record inspection, bounded agent context | Implemented. Both capabilities have source-linked contracts, inspection, and byte-bounded context. See SEMANTIC_CONTRACTS.md |
-| M4: complete the three required demos | Both reports use the new shared records; internal-representation walkthrough; recorded agent comprehension example | First-prototype completion gate. All three demos are reproducible from the same model, with scope and review status visible |
+| M4: complete the three required demos | Both reports use the new shared records; internal-representation walkthrough; recorded agent comprehension example | Implemented. All three demos are reproducible from the same model, with scope and review status visible; browser interaction and independent review remain pending |
 | M5: optional code-change demo | One small refactor guided by the representation, with before/after evidence and validation | Optional. Report the result and limits; success does not imply general semantic equivalence or coding superiority |
 
 The earlier M3 breadth target moves after this prototype. Its context-selection work moves into M3 because it is needed to use the IR. The earlier M4 integrity checks remain mandatory in M3/M4; broad mutation testing moves after the prototype, with one optional change in M5. The earlier M5 holdout study remains subsequent generalization work.
@@ -192,7 +192,7 @@ Keep one TypeScript package, portable JSON, and local files until a demonstrated
 
 ## Working agreements
 
-- The next implementation scope is M4. Use its detailed task file and retain the existing completed foundation.
+- The three required demos are implemented. Review them before selecting an optional code-change demo or later scope. See SHARED_DEMOS.md.
 - Preserve source observations, semantic assertions, and presentation as separate responsibilities.
 - Keep origin, citation integrity, content support, and acceptance distinct.
 - Preserve source text, unknowns, failure paths, and analysis coverage when compressing output.

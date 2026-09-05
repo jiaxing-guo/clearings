@@ -1,0 +1,859 @@
+{
+  "schema_version": "0.2.0",
+  "semantic_artifact_id": "semantic:879ce0fdb5dee3f6f406bfa87e28f0d2f48b65fb58026479f9172bbd54b8c3f0",
+  "capability_id": "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767",
+  "origin": "authored",
+  "review_status": "unreviewed",
+  "introduction": {
+    "text": "Hono runs middleware with one shared request context. A call to next() enters the next handler. Response and error rules apply as each call completes.",
+    "claim_ids": [
+      "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+      "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+      "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d",
+      "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+      "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+    ],
+    "unknown_indices": []
+  },
+  "stages": [
+    {
+      "key": "start",
+      "title": "Start the request",
+      "summary": {
+        "text": "Each run starts with a new progress index. Dispatch starts at the first middleware entry.",
+        "claim_ids": [
+          "claim:a4808f91-eb8a-4a52-aed2-72effb4a139e",
+          "claim:b1c5caa4-d40d-4e99-a478-a0483a83437a"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:0927dcdd-b4e6-47dc-bb6e-67ec8e86ee7d"
+      ],
+      "claim_ids": [
+        "claim:a4808f91-eb8a-4a52-aed2-72effb4a139e",
+        "claim:b1c5caa4-d40d-4e99-a478-a0483a83437a",
+        "claim:39cc9873-5187-41f4-8403-332e355f7db9"
+      ],
+      "notes": [
+        {
+          "text": "The progress index starts at -1. It belongs to this invocation of the runner.",
+          "claim_ids": [
+            "claim:a4808f91-eb8a-4a52-aed2-72effb4a139e"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": []
+    },
+    {
+      "key": "guard",
+      "title": "Reject repeated next calls",
+      "summary": {
+        "text": "Dispatch rejects an index that is not greater than the previous index.",
+        "claim_ids": [
+          "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:6b664680-e522-4784-922d-8f7b80992b82"
+      ],
+      "claim_ids": [
+        "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+        "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12",
+        "claim:45c03f43-ef8c-4a6b-9f8a-24b2237fb6ca",
+        "claim:d8b4fcf8-5869-40ef-a225-ff4e3d13bb99",
+        "claim:e1b56a2f-0a30-4965-865a-3ab75c96f399"
+      ],
+      "notes": [
+        {
+          "text": "The guard prevents repeated or backward dispatch. It raises an Error before the current handler catch block.",
+          "claim_ids": [
+            "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+            "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": [
+        {
+          "text": "A parent handler can still catch a failure from a child call. The guard does not bypass every error handler.",
+          "claim_ids": [],
+          "unknown_indices": [
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "key": "call",
+      "title": "Run the next handler",
+      "summary": {
+        "text": "A call to next() enters the next middleware with the same context.",
+        "claim_ids": [
+          "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:a249dba7-bb8d-475a-a38d-a1a9cf7a9472",
+        "step:6c021307-7902-43bc-9ed0-420de09fc078"
+      ],
+      "claim_ids": [
+        "claim:b35b5c02-3b31-46cd-b1ac-2845ca7d8424",
+        "claim:36389804-ee71-4da7-bbdc-e77cb1d247b1",
+        "claim:957e5bca-529c-4b7b-85cd-d3ad15c57993",
+        "claim:0df938c1-9773-4d05-84ba-5bcecf66fb6c",
+        "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+        "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+        "claim:2c55a0d3-2faf-413e-8173-4aa184a3094e",
+        "claim:56b29496-273a-4a7a-ba0e-f3b36aff76a3",
+        "claim:f360cf06-1fc5-4b71-891d-37fdddbfeaa4"
+      ],
+      "notes": [
+        {
+          "text": "Dispatch updates the progress index and selects a handler. It also sets context.req.routeIndex.",
+          "claim_ids": [
+            "claim:b35b5c02-3b31-46cd-b1ac-2845ca7d8424",
+            "claim:36389804-ee71-4da7-bbdc-e77cb1d247b1",
+            "claim:957e5bca-529c-4b7b-85cd-d3ad15c57993"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "At exactly middleware.length, dispatch can select the outer next callback if no middleware entry exists.",
+          "claim_ids": [
+            "claim:0df938c1-9773-4d05-84ba-5bcecf66fb6c"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "Dispatch waits for each handler result. It accepts both direct return values and promises.",
+          "claim_ids": [
+            "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": [
+        {
+          "text": "The return order in the example requires await next(). Whether a user handler waits is outside these excerpts.",
+          "claim_ids": [],
+          "unknown_indices": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "key": "response",
+      "title": "Keep or update the response",
+      "summary": {
+        "text": "A truthy result can update context.res. An existing finalized response is kept unless the result came from onError.",
+        "claim_ids": [
+          "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+          "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa",
+          "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab",
+          "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:d21a3bf3-b439-475c-9894-7cd0977c85ed",
+        "step:9394aaf0-1e44-40f5-b32c-3af2d70a285f",
+        "step:0f2e7303-9908-4bae-9695-1247c8ce948a"
+      ],
+      "claim_ids": [
+        "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798",
+        "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829",
+        "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+        "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa",
+        "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab",
+        "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc",
+        "claim:f67de3f4-647c-4c67-86e3-ab561267bf22",
+        "claim:0b57c11a-c767-4573-8888-f3d49cbdf5c6",
+        "claim:146991bd-ed7d-4ae1-8868-888a11dedf6e",
+        "claim:161b91b9-a49b-44d3-a919-0758464c5af3",
+        "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0",
+        "claim:5e705c38-4dd9-4e55-be1b-2f016881b2bd",
+        "claim:8099fdae-3db1-47b0-b324-6d527a067dd6",
+        "claim:a6cc6269-0179-4714-a6d7-a690685fd58b",
+        "claim:b3a42479-5499-4eed-8d21-09169deaf214",
+        "claim:d543fd57-c7cb-4a8b-9078-fc6050980cf1",
+        "claim:d5dd3300-e498-4ec8-b548-9d8308c15576",
+        "claim:f984c4f5-e5e0-4ce9-a0fc-0b8884e34883"
+      ],
+      "notes": [
+        {
+          "text": "If no handler exists, onNotFound runs only when finalized is false and the callback exists.",
+          "claim_ids": [
+            "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "A falsy result does not update context.res. A completed dispatch call returns the shared context.",
+          "claim_ids": [
+            "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc",
+            "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": [
+        {
+          "text": "The not-found callback runs outside the current handler catch block. A truthy onError result can replace a finalized response.",
+          "claim_ids": [
+            "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829",
+            "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab"
+          ],
+          "unknown_indices": []
+        }
+      ]
+    },
+    {
+      "key": "failure",
+      "title": "Handle or pass on an error",
+      "summary": {
+        "text": "The handler catch uses onError only for an Error instance when that callback exists.",
+        "claim_ids": [
+          "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d"
+        ],
+        "unknown_indices": []
+      },
+      "step_ids": [
+        "step:6d99d430-1030-4bbe-8278-8707ffcc2e1f",
+        "step:2b229a25-c063-4a7c-ab4a-5b90f609670e"
+      ],
+      "claim_ids": [
+        "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+        "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d",
+        "claim:6a188938-736d-4970-a698-88df4b787329",
+        "claim:3744e538-0f07-4ea4-a210-02d1a6c03781",
+        "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa",
+        "claim:40001f0b-2785-462a-9244-1997813e69cd",
+        "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829",
+        "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12",
+        "claim:eb4d17a9-fa20-4ecc-9768-52ed19a28dea"
+      ],
+      "notes": [
+        {
+          "text": "Before onError runs, dispatch stores the Error in context.error. It marks the returned result as an error response.",
+          "claim_ids": [
+            "claim:6a188938-736d-4970-a698-88df4b787329",
+            "claim:3744e538-0f07-4ea4-a210-02d1a6c03781"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "If the thrown value is not an Error, or onError is absent, the call rethrows the value.",
+          "claim_ids": [
+            "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "A failure inside onError escapes the current handler catch block.",
+          "claim_ids": [
+            "claim:40001f0b-2785-462a-9244-1997813e69cd"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "cautions": [
+        {
+          "text": "A failure from a child dispatch can reach an awaiting parent or the application dispatcher. Handling depends on that caller.",
+          "claim_ids": [],
+          "unknown_indices": [
+            3
+          ]
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "key": "return-order",
+      "question": "Why does code after await next() run later?",
+      "answer": [
+        {
+          "text": "next() enters the next dispatch call. If the middleware waits with await next(), it resumes after that child call completes.",
+          "claim_ids": [
+            "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+            "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c"
+          ],
+          "unknown_indices": [
+            2
+          ]
+        },
+        {
+          "text": "The diagram assumes this waiting behavior. User handlers can choose a different behavior.",
+          "claim_ids": [],
+          "unknown_indices": [
+            2
+          ]
+        }
+      ],
+      "stage_keys": [
+        "call",
+        "response"
+      ]
+    },
+    {
+      "key": "repeat",
+      "question": "What happens if next() is called twice?",
+      "answer": [
+        {
+          "text": "The progress guard rejects a repeated index. Its Error occurs before that call enters its own handler catch block.",
+          "claim_ids": [
+            "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+            "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "An awaiting parent can still handle the failure. The source does not establish that all error callbacks are bypassed.",
+          "claim_ids": [],
+          "unknown_indices": [
+            3
+          ]
+        }
+      ],
+      "stage_keys": [
+        "guard",
+        "failure"
+      ]
+    },
+    {
+      "key": "replace",
+      "question": "Can a returned response replace an existing response?",
+      "answer": [
+        {
+          "text": "A normal result does not overwrite a finalized response through this assignment. A truthy result from onError can replace it.",
+          "claim_ids": [
+            "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+            "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa",
+            "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "A falsy result causes no response assignment.",
+          "claim_ids": [
+            "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "key": "no-handler",
+      "question": "What happens when there is no handler?",
+      "answer": [
+        {
+          "text": "At exactly middleware.length, dispatch can use the supplied outer next callback.",
+          "claim_ids": [
+            "claim:0df938c1-9773-4d05-84ba-5bcecf66fb6c"
+          ],
+          "unknown_indices": []
+        },
+        {
+          "text": "If no handler is selected, onNotFound runs only when finalized is false and that callback exists. Its invocation is outside the current handler catch block.",
+          "claim_ids": [
+            "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798",
+            "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829"
+          ],
+          "unknown_indices": []
+        }
+      ],
+      "stage_keys": [
+        "call",
+        "response",
+        "failure"
+      ]
+    },
+    {
+      "key": "error-handler",
+      "question": "What if the error handler also throws?",
+      "answer": [
+        {
+          "text": "That failure escapes the current handler catch block. An awaiting parent or application dispatcher may handle it.",
+          "claim_ids": [
+            "claim:40001f0b-2785-462a-9244-1997813e69cd"
+          ],
+          "unknown_indices": [
+            3
+          ]
+        }
+      ],
+      "stage_keys": [
+        "failure"
+      ]
+    }
+  ],
+  "sequence": {
+    "title": "Follow a call into the next middleware and back",
+    "assumption": {
+      "text": "Example: two middleware handlers use await next(), and the last handler returns normally. This is a possible sequence, not an observed execution.",
+      "claim_ids": [
+        "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+        "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+        "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+      ],
+      "unknown_indices": [
+        2
+      ]
+    },
+    "participants": [
+      {
+        "key": "first",
+        "label": "First middleware"
+      },
+      {
+        "key": "second",
+        "label": "Second middleware"
+      },
+      {
+        "key": "last",
+        "label": "Last handler"
+      }
+    ],
+    "messages": [
+      {
+        "from": "first",
+        "to": "second",
+        "label": "await next()",
+        "kind": "call",
+        "claim_ids": [
+          "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+          "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c"
+        ]
+      },
+      {
+        "from": "second",
+        "to": "last",
+        "label": "await next()",
+        "kind": "call",
+        "claim_ids": [
+          "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+          "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c"
+        ]
+      },
+      {
+        "from": "last",
+        "to": "second",
+        "label": "Child dispatch completes",
+        "kind": "return",
+        "claim_ids": [
+          "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+          "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+        ]
+      },
+      {
+        "from": "second",
+        "to": "first",
+        "label": "Parent dispatch completes",
+        "kind": "return",
+        "claim_ids": [
+          "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+          "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+        ]
+      }
+    ]
+  },
+  "overview": {
+    "title": "How request steps work together",
+    "purpose": {
+      "text": "Hono lets several functions work on the same request. Each function can pass work to the next one and use the shared result.",
+      "claim_ids": [
+        "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+        "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+        "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+        "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+      ],
+      "unknown_indices": []
+    },
+    "journey": [
+      {
+        "title": "Share the request",
+        "summary": {
+          "text": "Each function receives the same request context.",
+          "claim_ids": [
+            "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5"
+          ],
+          "unknown_indices": []
+        }
+      },
+      {
+        "title": "Pass work forward",
+        "summary": {
+          "text": "A function can call the next function.",
+          "claim_ids": [
+            "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5"
+          ],
+          "unknown_indices": []
+        }
+      },
+      {
+        "title": "Continue when work finishes",
+        "summary": {
+          "text": "If a function waits for later work, it resumes after that work completes.",
+          "claim_ids": [
+            "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+            "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c"
+          ],
+          "unknown_indices": [
+            2
+          ]
+        }
+      }
+    ],
+    "example": {
+      "title": "A simple case",
+      "description": {
+        "text": "Two functions pass work forward and wait for it to finish. The second completes before the first resumes.",
+        "claim_ids": [
+          "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+          "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+          "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+        ],
+        "unknown_indices": [
+          2
+        ]
+      }
+    },
+    "outcomes": [
+      {
+        "kind": "normal",
+        "title": "A response is available",
+        "description": {
+          "text": "Hono can keep a response already set by an earlier step.",
+          "claim_ids": [
+            "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+            "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa"
+          ],
+          "unknown_indices": []
+        }
+      },
+      {
+        "kind": "fallback",
+        "title": "No function is available",
+        "description": {
+          "text": "A configured fallback can run. Its use depends on the response state.",
+          "claim_ids": [
+            "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798"
+          ],
+          "unknown_indices": []
+        }
+      },
+      {
+        "kind": "failure",
+        "title": "A function fails",
+        "description": {
+          "text": "An error callback may handle the failure and replace the response. Otherwise, the failure can pass to the caller.",
+          "claim_ids": [
+            "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d",
+            "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa",
+            "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab"
+          ],
+          "unknown_indices": []
+        }
+      }
+    ],
+    "limits": [
+      {
+        "text": "Each application function chooses whether to pass work onward and wait. These excerpts do not show those choices.",
+        "claim_ids": [],
+        "unknown_indices": [
+          2
+        ]
+      },
+      {
+        "text": "An error can move back to an earlier function or to the application. What happens there is outside this review.",
+        "claim_ids": [],
+        "unknown_indices": [
+          3
+        ]
+      }
+    ]
+  },
+  "guide": {
+    "title": "Follow a request through middleware",
+    "introduction": {
+      "text": "Middleware functions share one Context. Each function can call next() to enter the next function. This guide follows that call and the return path.",
+      "claim_ids": [
+        "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+        "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+        "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+      ],
+      "unknown_indices": []
+    },
+    "example": {
+      "title": "Start with two functions that wait",
+      "description": {
+        "text": "Assume both middleware functions use await next(), and later work returns normally. The second function resumes before the first. This is an example, not an observed execution.",
+        "claim_ids": [
+          "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+          "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+          "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+        ],
+        "unknown_indices": [
+          2
+        ]
+      }
+    },
+    "sections": [
+      {
+        "key": "start",
+        "title": "First, start a fresh run",
+        "paragraphs": [
+          {
+            "text": "compose returns a runner. Each runner call creates its own index, sets it to -1, and starts dispatch at index zero.",
+            "claim_ids": [
+              "claim:a4808f91-eb8a-4a52-aed2-72effb4a139e",
+              "claim:b1c5caa4-d40d-4e99-a478-a0483a83437a"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "Before selecting a handler, dispatch requires its index to be greater than the previous one. A repeated or backward index raises an Error.",
+            "claim_ids": [
+              "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+              "claim:b35b5c02-3b31-46cd-b1ac-2845ca7d8424"
+            ],
+            "unknown_indices": []
+          }
+        ],
+        "stage_keys": [
+          "start",
+          "guard"
+        ],
+        "code": {
+          "evidence_id": "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+          "start_line": 21,
+          "end_line": 23
+        }
+      },
+      {
+        "key": "next",
+        "title": "Then, follow next() into the next function",
+        "paragraphs": [
+          {
+            "text": "dispatch selects the middleware handler and updates context.req.routeIndex. At exactly middleware.length, it can select the supplied outer next callback.",
+            "claim_ids": [
+              "claim:36389804-ee71-4da7-bbdc-e77cb1d247b1",
+              "claim:957e5bca-529c-4b7b-85cd-d3ad15c57993",
+              "claim:0df938c1-9773-4d05-84ba-5bcecf66fb6c"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "The callback passed to the handler calls dispatch(i + 1). It uses the same context, so later work can update shared response state.",
+            "claim_ids": [
+              "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+              "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "The dispatcher waits for the handler result. If the handler uses await next(), it waits for the child dispatch before continuing.",
+            "claim_ids": [
+              "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+              "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c"
+            ],
+            "unknown_indices": [
+              2
+            ]
+          }
+        ],
+        "stage_keys": [
+          "call"
+        ],
+        "code": {
+          "evidence_id": "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+          "start_line": 51,
+          "end_line": 51
+        }
+      },
+      {
+        "key": "response",
+        "title": "As calls complete, select the response state",
+        "paragraphs": [
+          {
+            "text": "A truthy result updates context.res only when the context is not finalized or the result came from onError.",
+            "claim_ids": [
+              "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "A normal result therefore keeps an already finalized response. A truthy onError result can replace it. A falsy result makes no assignment.",
+            "claim_ids": [
+              "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa",
+              "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab",
+              "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "If no handler is selected, onNotFound runs only when finalized is false and the callback exists. A completed dispatch call returns the shared context.",
+            "claim_ids": [
+              "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798",
+              "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+            ],
+            "unknown_indices": []
+          }
+        ],
+        "stage_keys": [
+          "response"
+        ],
+        "code": {
+          "evidence_id": "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+          "start_line": 67,
+          "end_line": 70
+        }
+      },
+      {
+        "key": "errors",
+        "title": "If a call fails, check which frame can catch it",
+        "paragraphs": [
+          {
+            "text": "The handler catch invokes onError only for an Error instance when that callback exists. It first stores the Error in context.error.",
+            "claim_ids": [
+              "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d",
+              "claim:6a188938-736d-4970-a698-88df4b787329"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "Other thrown values are rethrown. A failure inside onError also escapes the current catch.",
+            "claim_ids": [
+              "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa",
+              "claim:40001f0b-2785-462a-9244-1997813e69cd"
+            ],
+            "unknown_indices": []
+          },
+          {
+            "text": "The repeated-next guard and not-found callback are outside the current handler catch block. An awaiting parent may still catch a child failure.",
+            "claim_ids": [
+              "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829",
+              "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12"
+            ],
+            "unknown_indices": [
+              3
+            ]
+          }
+        ],
+        "stage_keys": [
+          "failure"
+        ],
+        "code": {
+          "evidence_id": "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+          "start_line": 50,
+          "end_line": 60
+        }
+      }
+    ],
+    "limits": [
+      {
+        "text": "Each application function chooses whether to pass work onward and wait. These excerpts do not show those choices.",
+        "claim_ids": [],
+        "unknown_indices": [
+          2
+        ]
+      },
+      {
+        "text": "An error can move back to an earlier function or to the application. What happens there is outside this review.",
+        "claim_ids": [],
+        "unknown_indices": [
+          3
+        ]
+      }
+    ]
+  },
+  "function_bindings": [
+    {
+      "function_id": "function:01860b94-d1f5-4de4-a585-e2c80ae4c52e",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:03f326d3-1de0-4410-808f-b673a2c4cfb3",
+      "stage_keys": [
+        "guard",
+        "call",
+        "response",
+        "failure"
+      ]
+    },
+    {
+      "function_id": "function:2ed115cb-3d2d-4d04-9657-d8829ba4ee56",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:49d6bd1e-9aaf-4234-8f34-2aa0011e86b4",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:92019dfa-b10c-4b1a-8ba3-914084ae947c",
+      "stage_keys": [
+        "start"
+      ]
+    },
+    {
+      "function_id": "function:98d308f3-506e-458a-9b99-bfe76154df29",
+      "stage_keys": [
+        "failure"
+      ]
+    },
+    {
+      "function_id": "function:9cb45f6c-5651-4587-89b1-acc02a5e7fb3",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:a30d9cc8-bde8-4f72-8469-44f9b1e91a23",
+      "stage_keys": [
+        "call"
+      ]
+    },
+    {
+      "function_id": "function:bc6399ac-1a94-4541-b51b-4cc6cc66aea8",
+      "stage_keys": [
+        "start"
+      ]
+    },
+    {
+      "function_id": "function:d888d262-67d4-4c35-a3d3-b88a00f3deb6",
+      "stage_keys": [
+        "call"
+      ]
+    },
+    {
+      "function_id": "function:e4635ca2-ec40-4091-ad54-7be94f4c32ba",
+      "stage_keys": [
+        "response"
+      ]
+    },
+    {
+      "function_id": "function:e677a038-abee-4d92-8888-4b401adf7370",
+      "stage_keys": [
+        "call"
+      ]
+    }
+  ],
+  "behavior_ids": [
+    "behavior:23db580d-4b14-4e4d-9176-ffaca2c65853",
+    "behavior:ba3e06c3-f41a-40e3-9419-b871a1776622"
+  ]
+}

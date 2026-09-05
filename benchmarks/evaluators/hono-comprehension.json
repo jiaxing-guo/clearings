@@ -1,0 +1,91 @@
+{
+  "artifact_id": "semantic:879ce0fdb5dee3f6f406bfa87e28f0d2f48b65fb58026479f9172bbd54b8c3f0",
+  "origin": "author source review after initial answers; not independent",
+  "excluded_from_agent_input": true,
+  "questions": [
+    {
+      "id": "head",
+      "kind": "behavior",
+      "critical_distinctions": [
+        "Recursive dispatch receives GET; the original Request is retained.",
+        "The wrapper creates a null-body Response from the awaited dispatch result.",
+        "Wrapper rejection does not imply guaranteed local error handling."
+      ],
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "id": "missing-result",
+      "kind": "behavior",
+      "critical_distinctions": [
+        "Direct nullish fallback does not consult finalized and is outside the direct handler catch.",
+        "Truthy Promise results win; falsy results use finalized response or not-found.",
+        "Composition awaits handlers, skips falsy assignments, and checks finalization in the application catch scope."
+      ],
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+        "evidence:d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69"
+      ]
+    },
+    {
+      "id": "replacement",
+      "kind": "behavior",
+      "critical_distinctions": [
+        "Composition assigns a truthy result only for finalized === false or isError.",
+        "The setter can replace storage; earlier merge failure can prevent final assignment.",
+        "The getter does not finalize; cookie and content-type handling remain distinct."
+      ],
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+        "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5",
+        "evidence:efdc8a49582842d74bb72cf074179c4f18d4dc3a0f2d25c8ab366eb8630282b1"
+      ]
+    },
+    {
+      "id": "repeated-next",
+      "kind": "behavior",
+      "critical_distinctions": [
+        "i <= index rejects before the child handler catch.",
+        "An awaiting parent can handle an Error with onError; callback await behavior is unknown.",
+        "Guard failure is not claimed to bypass every error handler."
+      ],
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "id": "finalization",
+      "kind": "behavior",
+      "critical_distinctions": [
+        "Storage existence and finalized are distinct.",
+        "Getter, setter, direct next, Promise selection, nested middleware, and composed finalization participate.",
+        "No claim of complete application-state coverage."
+      ],
+      "evidence_ids": [
+        "evidence:81a4d8ab57de79a1d20f794795058cd6a0ca7721a9a8c8d8f71e8f8f764e2dca",
+        "evidence:efdc8a49582842d74bb72cf074179c4f18d4dc3a0f2d25c8ab366eb8630282b1",
+        "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5",
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "id": "unknown-handlers",
+      "kind": "expected-unknown",
+      "critical_distinctions": [
+        "Unknown runtime handler selection, returns, effects, writes, failures, and await behavior.",
+        "Custom callback behavior is not inferred from local defaults.",
+        "No purity or complete runtime graph claim."
+      ],
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+        "evidence:4634461b115dd4a1479717296128dc6517427f5529a42e3937146f069d9ac09a",
+        "evidence:50e79ea172dc01947732e6a2fefd65b67b5c28d7dee03948f5ad30474ea840ab"
+      ]
+    }
+  ]
+}

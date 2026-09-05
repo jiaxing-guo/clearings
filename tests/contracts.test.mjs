@@ -174,3 +174,27 @@ test('narrative text that resembles record IDs does not create query dependencie
   assert.equal(pack.records.functions[0].title, p.data.functions[0].title);
   assert(!pack.deferred_evidence_ids.some(id => id.includes('this is')));
 });
+
+test('canonical report references work on original shared-state and callback fixtures', async t => {
+  const d = setup(t);
+  const { renderCapability, createPresentationPlan, createSemanticWalkthrough } = await import('../dist/index.js');
+  const presentation = createPresentationPlan(d.model, 'select-response');
+  for (const format of ['html', 'markdown']) {
+    const page = renderCapability(d.model, 'select-response', { presentation, format });
+    assert(page.includes('Canonical contracts'));
+    assert(page.includes('function-00000000-0000-4000-8000-000000000005'));
+    assert(page.includes('external-callback'));
+    assert(page.includes('What effects can the supplied handler cause?'));
+    assert(page.includes('If a result is undefined'));
+  }
+  const view = createSemanticWalkthrough(d.model, { behavior: 'response-selection', scan: d.structural, repository: d.repository });
+  assert.equal(view.checks.source_rechecked, true);
+  assert(view.queries.every(q => q.checks.source_rechecked));
+  const modelPath=join(d.directory,'report-model.json'), scanPath=join(d.directory,'report-scan.json');
+  writeFileSync(modelPath,JSON.stringify(d.model)); writeFileSync(scanPath,JSON.stringify(d.structural));
+  const args=[join(root,'dist/cli/main.js'),'explain',modelPath,'--scan',scanPath,'--repository',d.repository,'--capability','select-response','--format','html'];
+  const result=spawnSync(process.execPath,args,{encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr); assert(result.stdout.includes('Canonical contracts'));
+  const blocked=spawnSync(process.execPath,[...args,'--out',join(d.repository,'report.html')],{encoding:'utf8'});
+  assert.notEqual(blocked.status,0); assert.equal(existsSync(join(d.repository,'report.html')),false);
+});

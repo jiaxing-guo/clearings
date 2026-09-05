@@ -1,0 +1,32 @@
+---
+title: "How the representation fits together"
+description: "One set of linked records supports people and agents."
+---
+
+The representation separates observations from interpretation and presentation.
+
+| Layer | Owns | Example |
+| --- | --- | --- |
+| Source | Git snapshot, declarations, callables, spans, diagnostics | A getter's exact byte range |
+| Function contract | Inputs, outputs, state, effects, failures, dependencies, assumptions | The setter writes response storage and finalization state |
+| Behavior contract | Triggers, functions, state, conditions, outcomes, ordering, unknowns | Response selection across dispatcher and context |
+| Capability | Purpose and responsibility | Handle an incoming request |
+| Presentation | Audience wording and reading order | An overview or engineer article |
+
+## Conditions carry meaning
+
+A function name tells you where code lives. It does not explain when an outcome occurs. A behavior can cross functions and shared state, while one function can support several behaviors.
+
+Contracts reference assertions rather than copying their text into each field. An outcome pairs a condition with assertion IDs. A failure adds a destination ID; a null destination means propagation beyond the represented boundary.
+
+## Links have specific meanings
+
+A resolved declaration reference is not a known runtime callee. A participating-function link is not an execution trace. A displayed sequence describes possible behavior under its stated assumptions.
+
+Flows can branch, cycle, and recurse. An absent recorded effect does not prove purity. Configuration, state, helpers, and callbacks remain relevant even when a function is the main source unit.
+
+## Versions bind content
+
+v0.1 covers source-backed concepts, claims, relations, flows, and unknowns. v0.2 adds callable observations, function/behavior contracts, and stable unknown IDs. Each version has an explicit schema.
+
+Requests bind evidence and instructions to a snapshot. Models bind the request, proposal, transport, checks, and coverage. Presentation plans bind to the resulting artifact. Historical artifacts are preserved; no automatic semantic migration or cross-run identity matching is implemented.
