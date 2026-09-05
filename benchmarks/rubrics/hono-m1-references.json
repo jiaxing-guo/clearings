@@ -1,0 +1,113 @@
+{
+  "schema_version": "0.1.0",
+  "snapshot": "eebdf7be39abf0a872671835ccce0c4f03ea497a",
+  "review": {
+    "method": "Agent source review of pinned HonoBase dispatch, compose, and SmartRouter source; selected examples, not a random precision sample.",
+    "human_reviewed": false,
+    "limitations": "The sample checks six direct declaration targets and six dynamic/callback cases. It does not establish whole-program call graph accuracy or semantic understanding."
+  },
+  "cases": [
+    {
+      "path": "src/hono-base.ts",
+      "line": 423,
+      "callee": "Context",
+      "resolution": "resolved",
+      "target": {
+        "path": "src/context.ts",
+        "name": "Context"
+      }
+    },
+    {
+      "path": "src/hono-base.ts",
+      "line": 452,
+      "callee": "compose",
+      "resolution": "resolved",
+      "target": {
+        "path": "src/compose.ts",
+        "name": "compose"
+      }
+    },
+    {
+      "path": "src/hono-base.ts",
+      "line": 417,
+      "callee": "this.#dispatch",
+      "resolution": "resolved",
+      "target": {
+        "path": "src/hono-base.ts",
+        "name": "#dispatch"
+      }
+    },
+    {
+      "path": "src/hono-base.ts",
+      "line": 486,
+      "callee": "this.#dispatch",
+      "resolution": "resolved",
+      "target": {
+        "path": "src/hono-base.ts",
+        "name": "#dispatch"
+      }
+    },
+    {
+      "path": "src/compose.ts",
+      "line": 23,
+      "callee": "dispatch",
+      "resolution": "resolved",
+      "target": {
+        "path": "src/compose.ts",
+        "name": "dispatch"
+      }
+    },
+    {
+      "path": "src/compose.ts",
+      "line": 51,
+      "callee": "dispatch",
+      "resolution": "resolved",
+      "target": {
+        "path": "src/compose.ts",
+        "name": "dispatch"
+      }
+    },
+    {
+      "path": "src/hono-base.ts",
+      "line": 421,
+      "callee": "this.router.match",
+      "resolution": "unresolved",
+      "target": null
+    },
+    {
+      "path": "src/hono-base.ts",
+      "line": 435,
+      "callee": "matchResult[0][0][0][0]",
+      "resolution": "unresolved",
+      "target": null
+    },
+    {
+      "path": "src/compose.ts",
+      "line": 51,
+      "callee": "handler",
+      "resolution": "unresolved",
+      "target": null
+    },
+    {
+      "path": "src/compose.ts",
+      "line": 55,
+      "callee": "onError",
+      "resolution": "unresolved",
+      "target": null
+    },
+    {
+      "path": "src/compose.ts",
+      "line": 63,
+      "callee": "onNotFound",
+      "resolution": "unresolved",
+      "target": null
+    },
+    {
+      "path": "src/router/smart-router/router.ts",
+      "line": 38,
+      "callee": "router.match",
+      "resolution": "unresolved",
+      "target": null
+    }
+  ]
+}

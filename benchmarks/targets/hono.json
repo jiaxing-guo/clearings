@@ -71,5 +71,5 @@
     "question_status": "first-eight-agent-source-reviewed-human-review-pending",
     "do_not_include_evaluator_assets_in_analyzer_input": true
   },
-  "status": "M0 immutable inventory verified at pinned commit/tree; six measured inventory runs, no target writes. Structural and semantic analysis have not run. See benchmarks/results/hono-m0/summary.json."
+  "status": "M0 inventory and M1 source-only structural extraction verified at the pinned commit/tree. M1 parsed 25 selected files plus 10 supporting files with deterministic output and no target writes. Semantic analysis has not run. See benchmarks/results/hono-m1/summary.json."
 }

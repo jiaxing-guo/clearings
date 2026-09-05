@@ -1,6 +1,6 @@
 # Clearings: repository comprehension prototype
 
-Prepared 4 September 2026. Status: implementation plan; the analyzer is not implemented by this starter package.
+Prepared 4 September 2026. This is the original implementation plan. M0-M1 are now implemented; see [M1_STATUS.md](M1_STATUS.md) for verified results and remaining limits.
 
 ## Decision and first outcome
 
@@ -314,7 +314,7 @@ No source checkout is bundled in the library's npm package. Fetch benchmark sour
 
 ## 12. Original repository bootstrap instructions
 
-Implementation update: the private repository now exists and M0 is implemented. See [M0_STATUS.md](M0_STATUS.md) for verified inventory results and remaining M1 work. The text below records the original planning-package bootstrap state; it is not the current implementation status.
+Implementation update: the private repository now exists and M0-M1 are implemented. See [M1_STATUS.md](M1_STATUS.md) for verified structural extraction results and the proposed M2 scope. The text below records the original planning-package bootstrap state; it is not the current implementation status.
 
 This package contains planning documents, candidate benchmark questions, a pinned target manifest, and a private-repository creation helper. It does not contain an implemented analyzer or an existing remote repository.
 

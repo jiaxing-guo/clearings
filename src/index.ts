@@ -4,3 +4,7 @@ export { readTarget, fetchTarget } from './repository/target.js';
 export type { Target } from './repository/target.js';
 export { validateInventory } from './model/validate.js';
 export * from './model/types.js';
+export { scan } from './analysis/scan.js';
+export type { ScanOptions } from './analysis/scan.js';
+export { validateScan, readEvidence } from './model/validate-scan.js';
+export type * from './model/structural.js';

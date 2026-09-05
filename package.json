@@ -2,19 +2,39 @@
   "name": "clearings-semantic",
   "version": "0.0.1",
   "private": true,
-  "description": "Evidence-backed repository comprehension: M0 inventory foundations",
+  "description": "Evidence-backed repository comprehension: immutable source and structural facts",
   "type": "module",
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "packageManager": "npm@11.9.0",
-  "bin": { "clearings": "dist/cli/main.js" },
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }, "./schemas/inventory": "./schemas/inventory.v0.1.json" },
-  "files": ["dist", "schemas", "README.md"],
+  "bin": {
+    "clearings": "dist/cli/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/inventory": "./schemas/inventory.v0.1.json",
+    "./schemas/scan": "./schemas/scan.v0.1.json"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.mjs",
     "benchmark:fetch": "node dist/cli/main.js benchmark-fetch --target benchmarks/targets/hono.json --out benchmark-checkouts/hono.git"
   },
-  "dependencies": { "ajv": "8.20.0" },
-  "devDependencies": { "@types/node": "24.13.3", "typescript": "5.9.3" }
+  "dependencies": {
+    "ajv": "8.20.0",
+    "typescript": "5.9.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3"
+  }
 }
