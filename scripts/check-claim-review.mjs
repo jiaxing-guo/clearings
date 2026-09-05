@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validateSemanticModel } from '../dist/index.js';
+import { validateSemanticModel, validateContractModel } from '../dist/index.js';
 
 /** Check declared review records against an already validated semantic model. */
 export function checkClaimReview(model, review) {
@@ -29,6 +29,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const [modelPath, scanPath, repository, reviewPath] = process.argv.slice(2);
   if (!reviewPath) throw new Error('Usage: node scripts/check-claim-review.mjs <semantic.json> <scan.json> <repository> <review.json>');
   const read = (path) => JSON.parse(readFileSync(path, 'utf8'));
-  const model = read(modelPath); validateSemanticModel(model, { scan: read(scanPath), repository });
+  const model = read(modelPath);
+  const validate = model.schema_version === '0.2.0' ? validateContractModel : validateSemanticModel;
+  validate(model, { scan: read(scanPath), repository });
   console.log(JSON.stringify(checkClaimReview(model, read(reviewPath)), null, 2));
 }

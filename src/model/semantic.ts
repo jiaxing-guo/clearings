@@ -17,7 +17,7 @@ export interface ProposalRequest {
   diagnostics: ScanDiagnostic[];
   coverage: { scope_files: number; evidence_records: number; omitted_scope_evidence: number };
 }
-export type SemanticKind = 'concept' | 'claim' | 'relation' | 'flow' | 'step';
+export type SemanticKind = 'concept' | 'claim' | 'relation' | 'flow' | 'step' | 'function' | 'behavior' | 'unknown';
 export interface Concept {
   id: string; kind: 'component' | 'capability' | 'state' | 'external';
   alias: string; title: string; description: string;

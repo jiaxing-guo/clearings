@@ -19,7 +19,8 @@
     "./schemas/inventory": "./schemas/inventory.v0.1.json",
     "./schemas/scan": "./schemas/scan.v0.1.json",
     "./schemas/semantic": "./schemas/semantic.v0.1.json",
-    "./schemas/presentation": "./schemas/presentation.v0.1.json"
+    "./schemas/presentation": "./schemas/presentation.v0.1.json",
+    "./schemas/contracts": "./schemas/semantic.v0.2.json"
   },
   "files": [
     "dist",
