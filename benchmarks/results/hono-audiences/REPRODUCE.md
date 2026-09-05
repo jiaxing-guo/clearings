@@ -25,7 +25,7 @@ Hono commit: `eebdf7be39abf0a872671835ccce0c4f03ea497a`.
 - `*.presentation.json`: authored reading plans and function summaries.
 - `summary.json`: the latest replay measurements and report hashes.
 - `review.json`: current automated verification, prior browser results, user acceptance, and the latest regeneration checks.
-- `browser-review.json`: prior desktop, mobile, keyboard, and rendered Markdown checks. The regenerated reports are byte-identical to those checked versions.
+- `browser-review.json`: prior desktop, mobile, keyboard, and rendered Markdown checks. Later source-link additions passed static checks. Browser policy blocked the latest local-file preview; these browser results remain historical.
 - `LICENSE-HONO`: the source license.
 - `SHA256SUMS`: hashes for all other packaged files.
 

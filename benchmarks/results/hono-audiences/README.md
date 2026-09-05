@@ -22,4 +22,4 @@ For review, ask:
 3. Does the engineer guide explain enough to let you predict one result?
 4. Can you find the source when you want to check a statement?
 
-The [verification record](review.json) and [browser checks](browser-review.json) describe checks that passed. They do not measure comprehension. The [replay summary](summary.json) records unchanged semantic output and source files. The [reproduction guide](REPRODUCE.md) gives the commands to regenerate the reports from the full repository. The [file hashes](SHA256SUMS) identify the packaged contents.
+The [verification record](review.json) describes the current automated and static checks. The [browser checks](browser-review.json) are historical; browser policy blocked the latest local-file preview. They do not measure comprehension. The [replay summary](summary.json) records unchanged semantic output and source files. The [reproduction guide](REPRODUCE.md) gives the commands to regenerate the reports from the full repository. The [file hashes](SHA256SUMS) identify the packaged contents.

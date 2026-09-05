@@ -55,11 +55,11 @@ A function can call the next function\.
 
 If a function waits for later work, it resumes after that work completes\.
 
-[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
 
 Two functions pass work forward and wait for it to finish\. The second completes before the first resumes\.
 
-[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
 
 Hono can keep a response already set by an earlier step\.
 
@@ -75,11 +75,11 @@ An error callback may handle the failure and replace the response\. Otherwise, t
 
 Each application function chooses whether to pass work onward and wait\. These excerpts do not show those choices\.
 
-[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
 
 An error can move back to an earlier function or to the application\. What happens there is outside this review\.
 
-[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 4](#unknown-3)
 
 </details>
 

@@ -63,8 +63,8 @@
     },
     {
       "path": "request-dispatch.html",
-      "sha256": "3660c015377cde2ef20f21916c3392d49235184b2839f190703a10a561c92ee7",
-      "bytes": 69711
+      "sha256": "ba9de17c4bd8fc0ce2c764b8fe9656e4935dd3d3b24d95d7e7fa9d06dd47282a",
+      "bytes": 69712
     },
     {
       "path": "middleware-composition.md",
@@ -73,8 +73,8 @@
     },
     {
       "path": "middleware-composition.html",
-      "sha256": "8c32c1bf782d990affb364b3eb9422ae728b9716af4a0f49819f46987714bd12",
-      "bytes": 59401
+      "sha256": "e86f182b45b1ba2eaabb07d2664c043c06e89a3d4866506bf6b89b48e512fce8",
+      "bytes": 59402
     }
   ]
 }

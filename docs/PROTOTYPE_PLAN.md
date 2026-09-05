@@ -33,7 +33,7 @@ Product name: **Clearings**. Private repository: **jiaxing-guo/clearings-semanti
 | Claim support | Author self-review of 53 claims recorded | Independent review remains pending |
 | Agent use and code-change benefit | Not demonstrated | Report quality alone does not establish either benefit |
 
-The latest verification records 45 passing automated tests, desktop/mobile browser checks, rendered Markdown checks, unchanged semantic output, and unchanged target files. See [the report review](../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
+The latest verification records 48 passing automated tests, static HTML/Markdown link and source checks, unchanged semantic output, and unchanged target files. Earlier desktop/mobile browser checks remain historical; browser policy blocked the latest local-file preview. See [the report review](../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
 
 The user accepted the report presentation and authorized updating PR #3. Independent claim-support review remains separate from report acceptance.
 

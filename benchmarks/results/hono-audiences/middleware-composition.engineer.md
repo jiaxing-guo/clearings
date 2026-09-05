@@ -2,6 +2,8 @@
 
 Middleware functions share one Context\. Each function can call next\(\) to enter the next function\. This guide follows that call and the return path\.
 
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
+
 Recorded example · Partial repository view · Needs independent review
 
 [Overview version](middleware-composition.overview.md)
@@ -11,6 +13,8 @@ Recorded example · Partial repository view · Needs independent review
 ## Start with two functions that wait
 
 Assume both middleware functions use await next\(\), and later work returns normally\. The second function resumes before the first\. This is an example, not an observed execution\.
+
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
 
 <a id="guide-start"></a>
 <a id="stage-start"></a>
@@ -189,7 +193,7 @@ compose = <E extends Env = Env>(
 
 </details>
 
-Sources: [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/context\.ts:414](#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5)
+Sources: [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/context\.ts:414](#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5) · [Scope note 3](#unknown-2)
 
 Implementation: [compose](#function-compose), [dispatch](#function-dispatch)
 
@@ -382,7 +386,7 @@ compose = <E extends Env = Env>(
 
 </details>
 
-Sources: [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+Sources: [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 4](#unknown-3)
 
 Implementation: [dispatch](#function-dispatch)
 
@@ -397,13 +401,17 @@ Example: two middleware handlers use await next\(\), and the last handler return
 | 3 | Last handler | Second middleware | Child dispatch completes | return | [C9](#claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c), [C21](#claim-f67de3f4-647c-4c67-86e3-ab561267bf22) |
 | 4 | Second middleware | First middleware | Parent dispatch completes | return | [C9](#claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c), [C21](#claim-f67de3f4-647c-4c67-86e3-ab561267bf22) |
 
-[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
 
 ## Limits of this explanation
 
 Each application function chooses whether to pass work onward and wait\. These excerpts do not show those choices\.
 
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
+
 An error can move back to an earlier function or to the application\. What happens there is outside this review\.
+
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 4](#unknown-3)
 
 <a id="functions"></a>
 
@@ -428,9 +436,9 @@ Create a middleware runner with the supplied callbacks\.
 
 **State and effects:** Capture the supplied middleware and callbacks\. Each invocation of the returned runner creates a new progress index\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
 
-**Failures:** Creating the runner does not establish whether its later handlers will succeed\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
+**Failures:** Creating the runner does not establish whether its later handlers will succeed\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
 
-**Limits:** The supplied middleware determines its own behavior and whether it waits for next\(\)\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
+**Limits:** The supplied middleware determines its own behavior and whether it waits for next\(\)\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
 
 Behavior: [Start the request](#stage-start), [Run the next handler](#stage-call)
 
@@ -452,7 +460,7 @@ Run one middleware position and handle its result\.
 
 **Failures:** Reject repeated next calls\. Rethrow ineligible errors\. Failures from fallback and onError can leave the current frame\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
 
-**Limits:** An awaiting parent or the application can still handle a child failure\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+**Limits:** An awaiting parent or the application can still handle a child failure\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 4](#unknown-3)
 
 Behavior: [Start the request](#stage-start), [Reject repeated next calls](#stage-guard), [Run the next handler](#stage-call), [Keep or update the response](#stage-response), [Handle or pass on an error](#stage-failure)
 
@@ -492,8 +500,8 @@ next\(\) enters the next dispatch call\. If the middleware waits with await next
 
 The diagram assumes this waiting behavior\. User handlers can choose a different behavior\.
 
-[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
-[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
 
 ### What happens if next\(\) is called twice?
 
@@ -502,7 +510,7 @@ The progress guard rejects a repeated index\. Its Error occurs before that call 
 An awaiting parent can still handle the failure\. The source does not establish that all error callbacks are bypassed\.
 
 [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
-[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 4](#unknown-3)
 
 ### Can a returned response replace an existing response?
 
@@ -526,7 +534,7 @@ If no handler is selected, onNotFound runs only when finalized is false and that
 
 That failure escapes the current handler catch block\. An awaiting parent or application dispatcher may handle it\.
 
-[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+[src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 4](#unknown-3)
 
 <a id="sources"></a>
 

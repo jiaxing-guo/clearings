@@ -2,6 +2,8 @@
 
 A request enters through fetch\. Hono matches its route, runs the selected handlers, and chooses a response\. A handler is a function that processes the request\.
 
+[src/hono\-base\.ts:481](#evidence-d973f31095c0885ec6968e6dfe05b9be07c8109174fa09d64d9941765210c070) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+
 Recorded example · Partial repository view · Needs independent review
 
 [Overview version](request-dispatch.overview.md)
@@ -11,6 +13,8 @@ Recorded example · Partial repository view · Needs independent review
 ## Start with one direct response
 
 Assume the router finds exactly one handler\. If that handler returns a Response directly, Hono returns it\. No middleware composition is needed for this case\.
+
+[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
 
 <a id="guide-route"></a>
 <a id="stage-method"></a>
@@ -358,7 +362,11 @@ Implementation: [\#dispatch](#function-dispatch), [compose](#function-compose), 
 
 Your routes and application functions determine the actual behavior\. Their implementation is outside these excerpts\.
 
+[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 1](#unknown-0)
+
 Some failures leave this part of Hono\. The excerpts do not show how the caller handles them\.
+
+[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 2](#unknown-1) · [Scope note 5](#unknown-4)
 
 <a id="functions"></a>
 
@@ -385,7 +393,7 @@ Forward the incoming request to \#dispatch\.
 
 **Failures:** No local catch appears in this wrapper\. [src/hono\-base\.ts:481](#evidence-d973f31095c0885ec6968e6dfe05b9be07c8109174fa09d64d9941765210c070)
 
-**Limits:** This wrapper does not establish what the router or user handlers do\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+**Limits:** This wrapper does not establish what the router or user handlers do\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 1](#unknown-0)
 
 Behavior: [Choose the request method](#stage-method)
 
@@ -401,13 +409,13 @@ Select the route, handler path, response, and local error path\.
 
 **Inputs:** Request, execution context, environment, and dispatch method\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
 
-**Returns:** Return a Response or Promise&lt;Response&gt;; some failures escape to the caller\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+**Returns:** Return a Response or Promise&lt;Response&gt;; some failures escape to the caller\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 2](#unknown-1) · [Scope note 5](#unknown-4)
 
-**State and effects:** Create a context and invoke configured callbacks\. User callback effects remain outside this source view\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+**State and effects:** Create a context and invoke configured callbacks\. User callback effects remain outside this source view\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 1](#unknown-0)
 
 **Failures:** Handle eligible Error instances\. The direct synchronous fallback can throw outside its local catch\. [src/hono\-base\.ts:401](#evidence-d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
 
-**Limits:** Route matching, callback behavior, and caller\-level error handling remain incomplete\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+**Limits:** Route matching, callback behavior, and caller\-level error handling remain incomplete\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 1](#unknown-0) · [Scope note 2](#unknown-1) · [Scope note 5](#unknown-4)
 
 Behavior: [Choose the request method](#stage-method), [Find matching handlers](#stage-match), [Choose the handler path](#stage-handlers), [Select the response](#stage-response), [Handle a failure](#stage-failure)
 
@@ -429,7 +437,7 @@ Create the middleware runner used by the composition path\.
 
 **Failures:** The caller catches failures from the composed path and its finalization check\. [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
 
-**Limits:** User middleware determines its own effects and whether it awaits next\(\)\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370)
+**Limits:** User middleware determines its own effects and whether it awaits next\(\)\. [src/compose\.ts:15](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370) · [Scope note 3](#unknown-2)
 
 Behavior: [Choose the handler path](#stage-handlers), [Select the response](#stage-response), [Handle a failure](#stage-failure)
 
@@ -495,7 +503,7 @@ Delegate Error instances and rethrow other values\.
 
 **Failures:** Non\-Error values are rethrown\. [src/hono\-base\.ts:401](#evidence-d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69)
 
-**Limits:** The callback choice determines its behavior\. This helper does not catch every possible caller failure\. [src/hono\-base\.ts:401](#evidence-d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+**Limits:** The callback choice determines its behavior\. This helper does not catch every possible caller failure\. [src/hono\-base\.ts:401](#evidence-d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69) · [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 5](#unknown-4)
 
 Behavior: [Handle a failure](#stage-failure)
 
@@ -514,7 +522,7 @@ Hono dispatches with GET as the method argument, while it keeps the original req
 The shown wrapper does not guarantee local handling of every rejection\.
 
 [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
-[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 5](#unknown-4)
 
 ### What happens with one matching handler?
 
@@ -550,7 +558,7 @@ Yes\. The direct not\-found fallback runs outside the direct handler catch block
 Caller handling is outside this source view\.
 
 [src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
-[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 5](#unknown-4)
 
 ### Does reading context\.res finalize the response?
 

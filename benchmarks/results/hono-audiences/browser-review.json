@@ -93,5 +93,6 @@
       "details": true,
       "mobile_no_overflow": true
     }
-  ]
+  ],
+  "verification_scope": "Historical browser checks from the accepted report versions, before the latest source-link additions. The latest local-file preview was blocked by browser URL policy."
 }

@@ -39,10 +39,10 @@
   "target_files_unchanged": true,
   "measurements": {
     "node": "v24.19.0",
-    "scan_ms": 2140.103305,
-    "request_ms": 1084.0284780000002,
-    "import_with_source_validation_ms": 629.1835300000002,
-    "node_peak_rss_kib": 534908
+    "scan_ms": 2312.1502060000003,
+    "request_ms": 1155.669918,
+    "import_with_source_validation_ms": 732.8268980000003,
+    "node_peak_rss_kib": 535280
   },
   "measurement_note": "One process; request and import timings include source verification. RSS includes two imports/rendering and excludes Git children. Replay is recorded agent output, not a fresh inference or independent semantic-quality assessment. Producer token counts/model ID were not available.",
   "presentation_plans": [
@@ -58,43 +58,43 @@
   "pages": [
     {
       "path": "request-dispatch.overview.md",
-      "sha256": "5eb8f7a62c8e7fd862cec56f544ef93bc9fa660204e9b307b35fa9e5ee11729b",
-      "bytes": 34118
+      "sha256": "b61aa508a87ddea0b7ff9df6240e2384d41035dc0f3c3d0a8d22de17d5c1aada",
+      "bytes": 34208
     },
     {
       "path": "request-dispatch.overview.html",
-      "sha256": "134f6051ee2b7ede856774369972908acbd1fa45ebb6118b41647c8bb4cbcf62",
-      "bytes": 61767
+      "sha256": "79faf295661f0fc52a5570eb1fc4224f1927b668ba78bbf15650794ed7853c2c",
+      "bytes": 61890
     },
     {
       "path": "request-dispatch.engineer.md",
-      "sha256": "47ed3fd52c706e4c1dc84f2a3ef24028d4e0c0972c4f4aa560f37466929504a0",
-      "bytes": 54370
+      "sha256": "8a51a9739d8cde03a5e600044f700474a634d668078d47aaa9fcf8115e1e0e67",
+      "bytes": 55302
     },
     {
       "path": "request-dispatch.engineer.html",
-      "sha256": "7f46f93cc2d2709419ab36a2651ee751a523384e186c0bdfd16b0bc896858793",
-      "bytes": 87721
+      "sha256": "03bba82549530a0054b47a7dd84c3a49e18c7110315c7310688ca3290247dc1a",
+      "bytes": 88964
     },
     {
       "path": "middleware-composition.overview.md",
-      "sha256": "7981c2f9a39be0e5877d54da417c1e59a729ffe4c60cf1c076ceb9a4893bde20",
-      "bytes": 25723
+      "sha256": "29bc4c7c2914bc742dd5e633c3973d72827ac0252a4846152d5ce170d608fbff",
+      "bytes": 25843
     },
     {
       "path": "middleware-composition.overview.html",
-      "sha256": "b82033485d424ec857ba257d91742d7efa810c9176af445014f25b1cc8bc7fa1",
-      "bytes": 50987
+      "sha256": "81d114c1beed6af77cd0a4ca5253c390b8d98bf9765585ae250ed3fd714890c1",
+      "bytes": 51151
     },
     {
       "path": "middleware-composition.engineer.md",
-      "sha256": "3b1a43e3085f6492e8d86a11a72ab4949cf08c6f6f7f824dc349482d28c4e2f9",
-      "bytes": 42067
+      "sha256": "a2d114e085ea1f78241f147e8b2916efeabc6b1bd1ef884ee3c0c2459f8beed2",
+      "bytes": 42953
     },
     {
       "path": "middleware-composition.engineer.html",
-      "sha256": "96421fed963d7b50dd4ff9f0b038e4e28b5eae8eb4076c7c087fe41e889e93da",
-      "bytes": 74437
+      "sha256": "2d41a80aca626dc91de806f438ff715c679d45962cf3d0773bf7037572c45916",
+      "bytes": 75586
     }
   ]
 }

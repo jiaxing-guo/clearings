@@ -170,3 +170,28 @@ test('Markdown fences preserve large excerpts with many separate backtick runs',
   const text = '` '.repeat(200_000) + '\n// ``````\n';
   assert.equal(codeFence(text), '```````typescript\n' + text + '```````');
 });
+
+test('engineer introductions, examples, and limits retain evidence and unknown links in both formats', () => {
+  for (const alias of ['request-dispatch', 'middleware-composition']) {
+    const presentation = planFor(alias); const guide = presentation.guide;
+    const html = renderCapability(model, alias, { presentation, format: 'html' });
+    const markdown = renderCapability(model, alias, { presentation });
+    const hero = html.split('<section class="hero">')[1].split('</section>')[0];
+    const example = html.split('id="example">')[1].split('</section>')[0];
+    const limits = html.split('id="limits">')[1].split('</section>')[0];
+    const introMarkdown = markdown.split('<a id="example"></a>')[0];
+    const exampleMarkdown = markdown.split('<a id="example"></a>')[1].split('<a id="guide-')[0];
+    const limitsMarkdown = markdown.split('## Limits of this explanation')[1].split('<a id="functions"></a>')[0];
+    const check = (explanation, region, markdownRegion) => {
+      const evidence = new Set([...(explanation.evidence_ids ?? []), ...explanation.claim_ids.flatMap(id => proposal.data.claims.find(item => item.id === id).evidence_ids), ...explanation.unknown_indices.flatMap(index => proposal.data.unknowns[index].evidence_ids)]);
+      const ids = [...evidence].map(id => id.replace(':', '-')).concat(explanation.unknown_indices.map(index => `unknown-${index}`));
+      assert(ids.length > 0);
+      for (const id of ids) { assert(region.includes(`href="#${id}"`)); assert(markdownRegion.includes(`](#${id})`)); }
+    };
+    check(guide.introduction, hero, introMarkdown); check(guide.example.description, example, exampleMarkdown);
+    guide.limits.forEach(item => check(item, limits, limitsMarkdown));
+  }
+  const fallback = renderCapability(model, 'request-dispatch', { format: 'html' });
+  assert(fallback.includes('claims describe this capability.'));
+  assert(!fallback.includes('claims support this capability.'));
+});

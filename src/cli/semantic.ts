@@ -7,6 +7,7 @@ import { createProposalRequest, importProposal } from '../semantics/exchange.js'
 import { validatePresentationPlan } from '../presentation/plan.js';
 import { renderCapability } from '../renderers/capability.js';
 import { writeInventory } from '../repository/output.js';
+import { terminalText } from './output.js';
 
 type Values = Record<string, string | string[] | boolean | undefined>;
 function required(values: Values, key: string): string {
@@ -59,7 +60,7 @@ export function semanticCommand(command: string, positionals: string[], values: 
   }
   const text = page ?? `${JSON.stringify(output, null, 2)}\n`;
   if (values.out) writeInventory(repository, required(values, 'out'), text);
-  process.stdout.write(text);
+  process.stdout.write(process.stdout.isTTY ? terminalText(text) : text);
 }
 
 export function validateSemanticArtifact(value: unknown, values: Values): { snapshot_id: string; coverage: unknown } {

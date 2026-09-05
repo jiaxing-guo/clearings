@@ -5,7 +5,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { scan, createProposalRequest, importProposal, validateRequest, validateProposal, validateSemanticModel, renderCapability, createEvidenceReader, createPresentationPlan } from '../dist/index.js';
 import { contentId, digest } from '../dist/semantics/identity.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -87,6 +87,31 @@ test('proposal validation rejects dangling, stale, self-certified, and contradic
   validateProposal(cyclic, request);
 });
 
+test('every step with multiple outgoing edges requires nonblank labels', (t) => {
+  const { request } = setup(t);
+  for (const kind of ['action', 'branch', 'repeat', 'failure', 'unresolved']) {
+    const proposal = proposalFor(request);
+    const flow = proposal.data.flows[0]; const step = flow.steps[0];
+    flow.steps.push({ ...structuredClone(step), id: id('step', 2) });
+    step.kind = kind;
+    step.next = [
+      { step_id: step.id, condition: 'retry', evidence_ids: step.evidence_ids },
+      { step_id: id('step', 2), condition: 'finish', evidence_ids: step.evidence_ids },
+    ];
+    validateProposal(proposal, request);
+    for (const condition of [null, ' ', '\t\n']) {
+      for (const index of [0, 1]) {
+        const invalid = structuredClone(proposal);
+        invalid.data.flows[0].steps[0].next[index].condition = condition;
+        assert.throws(() => validateProposal(invalid, request), { code: 'INVALID_SEMANTICS' });
+      }
+    }
+  }
+  const single = proposalFor(request); const step = single.data.flows[0].steps[0];
+  step.next = [{ step_id: step.id, condition: null, evidence_ids: step.evidence_ids }];
+  validateProposal(single, request);
+});
+
 test('request and model tampering cannot reuse source evidence from another scan', (t) => {
   const data = setup(t); const request = structuredClone(data.request);
   const excerpt = request.data.evidence[0]; excerpt.text = excerpt.text.replace(/[a-z]/, 'Z');
@@ -166,4 +191,38 @@ test('CLI exports, imports, replays, validates and renders without target writes
   assert.equal(run('replay', ...args, '--out', join(repository, 'forbidden.json')).status, 2);
   assert(!existsSync(join(repository, 'forbidden.json')));
   assert.equal(git(repository, 'status', '--porcelain'), before);
+});
+
+test('report CLI encodes terminal controls while preserving exact files and redirected output', (t) => {
+  const data = setup(t); const { repository, directory } = data;
+  const payload = '\u001b[31mred\u001b[0m \u001b]0;title\u0007 \u009b2J \u009d0;title\u009c';
+  const sourcePath = join(repository, 'index.ts');
+  writeFileSync(sourcePath, readFileSync(sourcePath, 'utf8').replace('  return ', `  // ${payload}\n  return `));
+  git(repository, 'add', 'index.ts');
+  git(repository, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'Add source controls');
+  const structural = scan({ repository });
+  const request = createProposalRequest(structural, { repository, instruction: 'Explain greeting.' });
+  assert(request.data.evidence.some(item => item.text.includes(payload)));
+  const proposal = proposalFor(request); proposal.data.claims[0].text += ` ${payload}\r\b`;
+  const model = importProposal(request, proposal, { scan: structural, repository, replay: true });
+  const scanPath = join(directory, 'scan.json'); const modelPath = join(directory, 'semantic.json');
+  writeFileSync(scanPath, JSON.stringify(structural)); writeFileSync(modelPath, JSON.stringify(model));
+  const cliArgs = ['explain', modelPath, '--scan', scanPath, '--repository', repository, '--capability', 'greet'];
+  for (const format of ['markdown', 'html']) {
+    const exact = renderCapability(model, 'greet', { format });
+    assert(exact.includes(payload));
+    const pipe = spawnSync(process.execPath, [cli, ...cliArgs, '--format', format], { encoding: 'utf8' });
+    assert.equal(pipe.status, 0, pipe.stderr); assert.equal(pipe.stdout, exact);
+    for (const save of [false, true]) {
+      const outputPath = join(directory, `report-${format}.${format === 'html' ? 'html' : 'md'}`);
+      const args = [...cliArgs, '--format', format, ...(save ? ['--out', outputPath] : [])];
+      const bootstrap = `Object.defineProperty(process.stdout, 'isTTY', { value: true }); process.argv = [process.execPath, ${JSON.stringify(cli)}, ...${JSON.stringify(args)}]; await import(${JSON.stringify(pathToFileURL(cli).href)});`;
+      const tty = spawnSync(process.execPath, ['--input-type=module', '-e', bootstrap], { encoding: 'utf8' });
+      assert.equal(tty.status, 0, tty.stderr);
+      assert(!/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/.test(tty.stdout));
+      assert(tty.stdout.includes('\\u001b[31mred\\u001b[0m'));
+      assert(tty.stdout.includes('\\u009b2J'));
+      if (save) assert.equal(readFileSync(outputPath, 'utf8'), exact);
+    }
+  }
 });

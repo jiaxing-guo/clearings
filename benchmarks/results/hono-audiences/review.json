@@ -3,9 +3,9 @@
   "semantic_sha256": "6b6c0bbe9f02b3c1779ec0e7e47b2f6716cbadc53ed9c6bfadb6a7cde8d1aac5",
   "semantic_matches_previous_review": true,
   "automated_tests": {
-    "passed": 45,
+    "passed": 48,
     "failed": 0,
-    "presentation_regression_tests": 7,
+    "presentation_regression_tests": 8,
     "claim_review_regression_tests": 2
   },
   "target_files_unchanged": true,
@@ -15,8 +15,8 @@
   "function_summaries": "authored review data; no new automatic function analyzer",
   "reader_comprehension": "not measured",
   "browser_checks": "browser-review.json",
-  "git_action": "PR update authorized; no merge",
-  "presentation_status": "accepted by user for prototype use; review fixes verified",
+  "git_action": "Review fixes and merge authorized by the user.",
+  "presentation_status": "Accepted reading structure retained; source-link corrections verified with static checks.",
   "presentation_fixes": [
     "The single-handler example includes the full branch through its closing brace.",
     "Other focuses select complete statements where practical.",
@@ -32,15 +32,17 @@
     "independent_claim_support_review": false
   },
   "regeneration": {
-    "at_utc": "2026-09-05T04:48:05.936237+00:00",
+    "at_utc": "2026-09-05T05:32:35.954260+00:00",
     "build": "passed",
     "reports_regenerated": 8,
-    "reports_byte_identical_to_previous_review": true,
     "semantic_sha256": "6b6c0bbe9f02b3c1779ec0e7e47b2f6716cbadc53ed9c6bfadb6a7cde8d1aac5",
+    "semantic_unchanged": true,
     "byte_identical_replays": 2,
     "target_files_unchanged": true,
-    "verification_note": "Typecheck, all 45 tests, recorded replay, file comparisons, and package inspection pass after the review fixes. Browser checks are retained from the prior check of identical reports.",
-    "local_html_links_checked": 697
+    "local_links_checked": 1441,
+    "source_blocks_checked_against_markdown_and_evidence": 43,
+    "markdown_parser": "marked",
+    "browser_check": "Blocked by browser URL policy for local file preview; no alternative browser route attempted. Prior browser results remain historical."
   },
   "pr_review_fixes": [
     {
@@ -58,6 +60,22 @@
     {
       "comment_id": 3939031180,
       "change": "Validate assessments and review flags; derive support gate and reject conflicting declarations."
+    },
+    {
+      "comment_id": 3939521395,
+      "change": "Require nonblank labels for every multi-edge flow step."
+    },
+    {
+      "comment_id": 3939575911,
+      "change": "Encode unsafe controls on terminal stdout while preserving files and pipes."
+    },
+    {
+      "comment_id": 3939575915,
+      "change": "Retain source and scope-note links beside engineer introductions, examples, and limits in both formats."
+    },
+    {
+      "comment_id": 3939575924,
+      "change": "Use neutral wording for unreviewed capability claims."
     }
   ],
   "portability_check": {

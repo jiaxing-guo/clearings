@@ -4,11 +4,16 @@ import { sourceCodeHtml } from './code.js';
 function supportingIds(report: Report, text: Explanation | Explanation[]): string[] {
   return [...new Set((Array.isArray(text) ? text : [text]).flatMap(report.evidenceFor))];
 }
+function supportingUnknowns(text: Explanation | Explanation[]): number[] {
+  return [...new Set((Array.isArray(text) ? text : [text]).flatMap((item) => item.unknown_indices))];
+}
 export function supportingHtml(report: Report, text: Explanation | Explanation[]): string {
-  return supportingIds(report, text).map((id) => `<a href="#${anchor(id)}">${h(report.evidenceMap.get(id)!.path)}:${report.evidenceMap.get(id)!.start_line}</a>`).join(' · ');
+  return [...supportingIds(report, text).map((id) => `<a href="#${anchor(id)}">${h(report.evidenceMap.get(id)!.path)}:${report.evidenceMap.get(id)!.start_line}</a>`),
+    ...supportingUnknowns(text).map((index) => `<a href="#unknown-${index}">Scope note ${index + 1}</a>`)].join(' · ');
 }
 export function supportingMarkdown(report: Report, text: Explanation | Explanation[]): string {
-  return supportingIds(report, text).map((id) => `[${md(report.evidenceMap.get(id)!.path)}:${report.evidenceMap.get(id)!.start_line}](#${anchor(id)})`).join(' · ');
+  return [...supportingIds(report, text).map((id) => `[${md(report.evidenceMap.get(id)!.path)}:${report.evidenceMap.get(id)!.start_line}](#${anchor(id)})`),
+    ...supportingUnknowns(text).map((index) => `[Scope note ${index + 1}](#unknown-${index})`)].join(' · ');
 }
 export function referenceHtml(report: Report): string {
   const { model, claims, claimLabels, flow, steps, unknowns, evidence, evidenceMap } = report;

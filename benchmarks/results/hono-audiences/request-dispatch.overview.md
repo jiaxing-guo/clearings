@@ -75,11 +75,11 @@ Some failures reach the configured error handler\. Others can pass back to the c
 
 Your routes and application functions determine the actual behavior\. Their implementation is outside these excerpts\.
 
-[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 1](#unknown-0)
 
 Some failures leave this part of Hono\. The excerpts do not show how the caller handles them\.
 
-[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2)
+[src/hono\-base\.ts:408](#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2) · [Scope note 2](#unknown-1) · [Scope note 5](#unknown-4)
 
 </details>
 

@@ -84,7 +84,8 @@ export function validateProposal(value: unknown, request: ProposalRequest): asse
     for (const step of flow.steps) {
       checkEvidence(step.evidence_ids);
       if (step.claim_ids.some((id) => !claimMap.get(id)?.subject_ids.includes(flow.capability_id))) invalid('Flow claims must describe its capability.');
-      if (step.kind === 'branch' && (step.next.length < 2 || step.next.some((edge) => edge.condition === null))) invalid('Branches require at least two labeled alternatives.');
+      if (step.kind === 'branch' && step.next.length < 2) invalid('Branches require at least two labeled alternatives.');
+      if (step.next.length > 1 && step.next.some((edge) => !edge.condition?.trim())) invalid('Multiple outgoing edges require nonblank alternative labels.');
       for (const edge of step.next) { checkEvidence(edge.evidence_ids); if (!steps.has(edge.step_id)) invalid('Flow edge leaves its flow.'); }
     }
     const reached = new Set<string>(); const pending = [...flow.entry_step_ids];
