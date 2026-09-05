@@ -149,11 +149,19 @@ function evidenceText(sources: Map<string, SourceText>, item: Evidence): string 
   return span.toString('utf8');
 }
 
+/** Verify once and retain immutable evidence/byte indexes for bounded retrieval. */
+export function createEvidenceReader(result: ScanResult, repository: string): { read: (evidenceId: string) => string } {
+  validateScan(result);
+  const sources = verifySources(result, repository);
+  const evidence = new Map(result.data.evidence.map((item) => [item.id, { ...item }]));
+  return Object.freeze({ read(evidenceId: string): string {
+    const item = evidence.get(evidenceId);
+    if (!item) throw new ClearingsError('UNKNOWN_EVIDENCE', 'Evidence ID is not in this scan.');
+    return evidenceText(sources, item);
+  } });
+}
+
 /** Resolve and verify an evidence span against immutable source, never the working tree. */
 export function readEvidence(result: ScanResult, repository: string, evidenceId: string): string {
-  validateScan(result);
-  const item = result.data.evidence.find((item) => item.id === evidenceId);
-  if (!item) throw new ClearingsError('UNKNOWN_EVIDENCE', 'Evidence ID is not in this scan.');
-  const sources = verifySources(result, repository);
-  return evidenceText(sources, item);
+  return createEvidenceReader(result, repository).read(evidenceId);
 }

@@ -2,7 +2,7 @@
 
 Understand and maintain agent-built codebases through evidence-backed semantic representations.
 
-**M1 implemented:** a TypeScript library and CLI for immutable Git inventory, bounded structural extraction, and verifiable source evidence. Capability explanations and human/LLM presentation are subsequent milestones. The package and GitHub repository remain private.
+**Implemented:** immutable Git inventory, bounded structural extraction, semantic proposal file exchange, recorded replay, and evidence-linked capability pages. The package and GitHub repository remain private.
 
 ## Install and verify
 
@@ -34,7 +34,36 @@ A resolved **reference** identifies a source declaration. A resolved **call** is
 
 Source-only mode never loads installed target dependencies or ambient standard-library types, runs target scripts, or performs a full typecheck. Import `usage` distinguishes explicit type-only syntax from value/side-effect syntax; it is not an emitted-JavaScript prediction. Parse/read failures remain in the denominator and yield `status: partial`. Unresolved relationships can occur in a completed bounded scan. Add `--strict` to return exit code 3 when errors or unresolved facts remain; the artifact is still emitted.
 
-See [M1 results and limits](docs/M1_STATUS.md) and [a computed fixture scan](benchmarks/results/fixtures/m1-direct.scan.json). Semantic grouping and separate human/LLM projections remain M2 work.
+See [structural results and limits](docs/M1_STATUS.md) and [a computed fixture scan](benchmarks/results/fixtures/m1-direct.scan.json). Semantic proposals consume this structural evidence through the workflow below.
+
+## Propose and inspect capabilities
+
+```bash
+node dist/cli/main.js propose /tmp/clearings-scan.json --repository /path/to/repository --instruction "Explain request handling and its failure paths" --include src/index.ts --out /tmp/request.json
+# Give request.json and schemas/semantic.v0.1.json to your coding agent.
+# Save its response as /tmp/proposal.json; Clearings does not call a model.
+node dist/cli/main.js import /tmp/proposal.json --request /tmp/request.json --scan /tmp/clearings-scan.json --repository /path/to/repository --out /tmp/semantic.json
+node dist/cli/main.js explain /tmp/semantic.json --scan /tmp/clearings-scan.json --repository /path/to/repository --capability request-handling --out /tmp/request-handling.md
+```
+
+Use an alias actually supplied by your proposal for `--capability`. For `propose`, `--include` names exact source paths already present in the scan, including explicitly selected support files. Without it, all selected source files are considered. Default retrieval chooses maximal declaration spans; repeat `--evidence` to request exact known anchors. The default request budget is 256 KiB, including metadata; `--max-bytes` can explicitly raise it up to 2 MiB. Over-budget requests fail instead of silently truncating source. The request reports omitted structural evidence and source failures.
+
+`evidence <scan.json> --repository <repo> --id <evidence-id>` retrieves a verified span. Re-export a request after changing evidence selection and obtain a response bound to the new request ID; imports reject responses from other requests or snapshots.
+
+`replay` accepts the same arguments as `import` and explicitly records `recorded-replay`. Replaying an identical request/response produces byte-identical semantic JSON. The model retains both inputs, stable UUID record IDs, source excerpts, and provenance. It does not execute instructions found in source or proposal text.
+
+Citation integrity, claim support, and acceptance are separate: imported claims remain **proposed**, **verification unknown**, and labeled as model inference or human declaration. A well-formed false claim can have valid citations. No automatic acceptance or English-entailment certification is performed.
+
+The [semantic exchange guide](docs/SEMANTIC_EXCHANGE.md) explains the schemas, API, validation boundaries, and recorded demonstration. Read the generated [request dispatch](benchmarks/results/hono-semantics/request-dispatch.md) and [middleware composition](benchmarks/results/hono-semantics/middleware-composition.md) pages.
+
+To reproduce those pages from pinned source and a recorded response:
+
+```bash
+node scripts/replay-semantics.mjs benchmark-checkouts/hono.git benchmarks/results/local/hono-semantic-replay
+node scripts/check-claim-review.mjs benchmarks/results/local/hono-semantic-replay/semantic.json benchmarks/results/local/hono-semantic-replay/scan.json benchmark-checkouts/hono.git benchmarks/results/hono-semantics/claim-review.json
+```
+
+Skip fetching when the pinned checkout already exists, and choose a new output directory. The 53-claim review is an author self-review with a recorded correction; independent human support review is pending. Replay and review accounting do not constitute a fresh inference or an independent precision result.
 
 ## Inventory a local repository
 
@@ -95,25 +124,27 @@ const first = result.data.evidence[0]
 if (first) console.log(readEvidence(result, repository, first.id))
 ```
 
-The library is synchronous, runs bounded Git subprocesses, and performs no writes during inventory or scan. `scan` accepts optional source byte/file/project budgets through its `limits` option. `max_projects` bounds loaded configuration records; exhaustion adds an error diagnostic and preserves unassigned selected files in at most one additional fallback program. `readEvidence` verifies the artifact and sources before returning text; repeated retrieval is not yet cached across calls. `readTarget(path)` and `fetchTarget(target, destination)` support explicit benchmark setup. `fetchTarget` performs writes and network access only when called.
+The library is synchronous, runs bounded Git subprocesses, and performs no writes during inventory or scan. `scan` accepts optional source byte/file/project budgets through its `limits` option. `max_projects` bounds loaded configuration records; exhaustion adds an error diagnostic and preserves unassigned selected files in at most one additional fallback program. `readEvidence` verifies the artifact and sources before returning text. `createEvidenceReader(result, repository)` verifies once and returns a reader with immutable evidence and source indexes for repeated retrieval. `readTarget(path)` and `fetchTarget(target, destination)` support explicit benchmark setup. `fetchTarget` performs writes and network access only when called.
 
 - `src/repository/`: Git revision/object access, inventory, scope, and output handling.
 - `src/model/`: portable JSON types, artifact integrity, and source-span verification.
 - `src/adapters/typescript/`: isolated compiler host, project discovery, and structural extraction.
 - `src/analysis/`: scan orchestration, deterministic record IDs, and coverage.
-- `src/cli/`: arguments, JSON output, and exit codes.
+- `src/semantics/`: bounded requests, proposal/model validation, stable IDs, and recorded import/replay.
+- `src/renderers/`: human Markdown projection over shared semantic records.
+- `src/cli/`: arguments, requested output, and exit codes.
 - `schemas/`: versioned interchange schema, shipped alongside the compiled package.
 - `tests/fixtures/`: original code samples, never executed by inventory.
 - `benchmarks/` and evaluator scripts: pins, questions, source reviews, and measured results; separate from production imports.
 
-JSON is the initial machine interface. Future human renderers and LLM context exporters will consume shared evidence/semantic records separately; The structural extractor does not infer conceptual groups or capability explanations. See [the prototype plan](docs/PROTOTYPE_PLAN.md) for those later boundaries.
+JSON is the machine interface. The human Markdown renderer consumes the same proposal/model records; a future LLM context packer can select from them without owning a second semantic model. The structural extractor itself does not infer conceptual groups.
 
 The snapshot ID hashes canonical inventory data including schema/tool versions, commit/tree, normalized scope, and every entry's Git object ID. It excludes local paths, timestamps, and performance measurements. `validate` checks schema, digest, counts, ordering, and scope consistency; without `--repository`, it does **not** re-read source. Neither mode proves semantic claims. For scan artifacts, `artifact_id` additionally hashes adapter/version/budget information and all structural records. This is an integrity check, not an authenticity signature.
 
-Successful command output and structured failures go to stdout as JSON; progress/errors go to stderr. Help/version are plain text. Exit codes are 0 for success, 1 for operational failure (including missing Git objects/revisions), and 2 for invalid arguments, pins, schema, or output destination. Scan also uses exit code 3 for its requested strict structural gate. A normal partial scan returns 0 and retains its errors in the output.
+Structured output and failures go to stdout as JSON; `explain` emits Markdown. Progress/errors go to stderr. Help/version are plain text. Exit codes are 0 for success, 1 for operational failure (including missing Git objects/revisions), and 2 for invalid arguments, pins, schema, or output destination. Scan also uses exit code 3 for its requested strict structural gate. A normal partial scan returns 0 and retains its errors in the output.
 
-## Next milestone and licensing
+## Next work and licensing
 
-M0-M1 now provide the source and structural foundation described in [the first implementation task](docs/FIRST_IMPLEMENTATION_TASK.md). Review the structural results before M2: bounded file-based proposal requests/imports, evidence validation, and separate human/LLM projections for request dispatch and middleware composition. See [the M1 handoff](docs/M1_STATUS.md) for known limitations and the smallest proposed semantic slice.
+The semantic exchange and two capability pages are implemented. Independent claim adjudication, additional capabilities, repository overview, flow diagrams, budgeted LLM context selection, explicit acceptance, and broader mutation/generalization tests remain open. See [the semantic exchange guide](docs/SEMANTIC_EXCHANGE.md) for measured results and limitations.
 
-Select an open-source license before public distribution. Nothing in this private prototype applies Hono's license to Clearings or publishes an npm package.
+Select an open-source license before public distribution. Nothing in this private prototype applies Hono's license to Clearings or publishes an npm package. Recorded upstream excerpts retain their [MIT notice](benchmarks/proposals/hono/LICENSE).

@@ -1,0 +1,10 @@
+{
+  "reviewed": 53,
+  "recorded_assessments": {
+    "supported-within-cited-source": 53
+  },
+  "independent": false,
+  "human_reviewed": false,
+  "support_gate": "not-established-with-independent-human-review",
+  "note": "Checks review coverage and citation integrity; does not score English entailment automatically."
+}

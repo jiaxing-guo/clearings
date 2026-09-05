@@ -1,6 +1,6 @@
 # M1 structural extraction handoff
 
-M1 implements immutable source access, compiler-backed structural facts, inspectable evidence, and a source-only CLI. Semantic interpretation and human/LLM rendering remain M2 work.
+M1 implements immutable source access, compiler-backed structural facts, inspectable evidence, and a source-only CLI. The subsequent semantic exchange and two capability pages are documented in [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md); this file records the structural handoff.
 
 ## What changed
 
@@ -72,4 +72,4 @@ Fetch and output destinations must be new. Reuse an already verified bare checko
 3. Validate proposed concept/claim references against M1 evidence, then review claim support independently of citation integrity.
 4. Add separate human Markdown/diagram rendering and an LLM context exporter over the same accepted records, using explicit context budgets.
 
-Review the M1 structure and its unresolved cases before starting this semantic slice. No M2 interfaces or model integration have been implemented here.
+The file exchange, recorded replay, and initial capability pages are now implemented; see [the semantic exchange guide](SEMANTIC_EXCHANGE.md) for the current handoff. Provider transport and broader context selection remain deferred.

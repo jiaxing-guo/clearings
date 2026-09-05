@@ -1,6 +1,6 @@
 # Clearings: repository comprehension prototype
 
-Prepared 4 September 2026. This is the original implementation plan. M0-M1 are now implemented; see [M1_STATUS.md](M1_STATUS.md) for verified results and remaining limits.
+Prepared 4 September 2026. This is the original implementation plan. The structural foundation and first semantic exchange are implemented; see [M1_STATUS.md](M1_STATUS.md) and [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md). The independent human claim-support gate remains pending.
 
 ## Decision and first outcome
 

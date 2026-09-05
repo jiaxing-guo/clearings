@@ -2,7 +2,7 @@
   "name": "clearings-semantic",
   "version": "0.0.1",
   "private": true,
-  "description": "Evidence-backed repository comprehension: immutable source and structural facts",
+  "description": "Evidence-backed repository comprehension with structural scans and semantic proposal exchange",
   "type": "module",
   "engines": {
     "node": ">=24 <25"
@@ -17,7 +17,8 @@
       "import": "./dist/index.js"
     },
     "./schemas/inventory": "./schemas/inventory.v0.1.json",
-    "./schemas/scan": "./schemas/scan.v0.1.json"
+    "./schemas/scan": "./schemas/scan.v0.1.json",
+    "./schemas/semantic": "./schemas/semantic.v0.1.json"
   },
   "files": [
     "dist",

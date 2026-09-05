@@ -1,0 +1,60 @@
+{
+  "schema_version": "0.1.0",
+  "transport": "recorded-replay",
+  "model_called": false,
+  "snapshot_id": "sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9",
+  "scan_artifact_id": "scan:fb8827cf671eeb148410a7e6967bb3025665851e64ae359a7bad515b72855f93",
+  "request_id": "request:030d427439a3c248fb1229e513d19e0a5fe4b2cdd33905e3aa842bbbc01351b7",
+  "semantic_artifact_id": "semantic:3b600ce62677cd56b9d3172a4cd2841f739dd41effc439a2d27acbb230142d56",
+  "request_bytes": 45704,
+  "semantic_bytes": 122414,
+  "semantic_sha256": "6b6c0bbe9f02b3c1779ec0e7e47b2f6716cbadc53ed9c6bfadb6a7cde8d1aac5",
+  "excerpts": 11,
+  "omitted_scope_evidence": 1731,
+  "coverage": {
+    "capabilities": 2,
+    "cited_evidence_records": 11,
+    "claim_support": "not-reviewed",
+    "claims": 53,
+    "unknowns": 5
+  },
+  "source_coverage": {
+    "tracked_entries": 486,
+    "selected_source_files": 25,
+    "parsed_source_files": 25,
+    "failed_source_files": 0,
+    "support_source_files": 10,
+    "failed_support_files": 0,
+    "inventory_only_entries": 451,
+    "facts": 14289,
+    "resolved_references": 10304,
+    "unresolved_references": 764,
+    "resolved_calls": 117,
+    "unresolved_calls": 353,
+    "resolved_imports": 153,
+    "unresolved_imports": 0,
+    "semantic_analysis": "not-run"
+  },
+  "byte_identical_replays": 2,
+  "target_files_unchanged": true,
+  "measurements": {
+    "node": "v24.19.0",
+    "scan_ms": 2123.146356,
+    "request_ms": 1140.5448969999998,
+    "import_with_source_validation_ms": 645.2090040000003,
+    "node_peak_rss_kib": 457332
+  },
+  "measurement_note": "One process; request and import timings include source verification. RSS includes two imports/rendering and excludes Git children. Replay is recorded agent output, not a fresh inference or independent semantic-quality assessment. Producer token counts/model ID were not available.",
+  "pages": [
+    {
+      "path": "request-dispatch.md",
+      "sha256": "df7f6db6128353e70ce61f2ce4523cba16de509c31513ad021ddf6b6b36ce896",
+      "bytes": 28218
+    },
+    {
+      "path": "middleware-composition.md",
+      "sha256": "1b86f95aa72bd97312452de50bda463adf83f3721f2000d731db45ede6dcb1ea",
+      "bytes": 19788
+    }
+  ]
+}
