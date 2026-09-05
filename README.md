@@ -2,7 +2,7 @@
 
 Understand and maintain agent-built codebases through evidence-backed semantic representations.
 
-**M0 implemented:** a TypeScript library and CLI that inventory immutable Git commits. Structural extraction, capability explanations, and human/LLM presentation are subsequent milestones. The package and GitHub repository remain private.
+**M1 implemented:** a TypeScript library and CLI for immutable Git inventory, bounded structural extraction, and verifiable source evidence. Capability explanations and human/LLM presentation are subsequent milestones. The package and GitHub repository remain private.
 
 ## Install and verify
 
@@ -15,7 +15,26 @@ npm test
 node dist/cli/main.js --help
 ```
 
-Dependencies are exact and locked: TypeScript 5.9.3, @types/node 24.13.3, and Ajv 8.20.0. M0 uses Node's test runner and argument parser. The compiler version can be revisited with the M1 adapter; target repositories do not select Clearings' compiler version.
+Dependencies are exact and locked: TypeScript 5.9.3, @types/node 24.13.3, and Ajv 8.20.0. TypeScript is a runtime dependency of structural extraction. The project uses Node's test runner and argument parser; target repositories do not select Clearings' compiler version.
+
+## Extract repository structure
+
+```bash
+node dist/cli/main.js scan /path/to/repository --include src --mode source-only --out /tmp/clearings-scan.json
+node dist/cli/main.js validate /tmp/clearings-scan.json --repository /path/to/repository
+```
+
+`scan` discovers ancestor tsconfig files, follows project references and inherited settings, and resolves repository imports through a virtual filesystem backed by Git blobs. An empty root `files` array does not hide referenced projects. `--project path/to/tsconfig.json` restricts project discovery to that config and its references. Explicit configs must be tracked, available `.json` files; custom names such as `compiler-settings.json` are supported and TypeScript parses their contents. Selected files with no usable project use explicit source-only defaults. Overlapping config membership is reported and assigned deterministically; explicit scope does not silently disappear because a build config excludes it.
+
+The JSON contains the inventory manifest, project/config records, selected and supporting source units, declarations, imports/exports, references, calls, property writes, evidence, diagnostics, and coverage. Files imported beyond the selected scope are labeled `support`: their declarations can resolve references, but their entire bodies are not extracted. Explicit exclusions and symlinks are never followed.
+
+Every evidence record identifies its snapshot/blob/content hash, UTF-8 byte interval, one-based line and UTF-16 column interval, and span hash. `validate` checks schema, IDs, references, digest, and coverage; `--repository` also re-reads immutable blobs and checks source spans. It cannot establish that an English explanation follows from the evidence.
+
+A resolved **reference** identifies a source declaration. A resolved **call** is a bounded static implementation link: named functions, const function initializers, constructors, namespace function imports, and private methods when a unique implementation is available and no recognized reassignment intervenes. Callbacks, public method dispatch, indexed calls, overload ambiguity, and missing implementations remain unresolved. These records are not a complete runtime call graph or a whole-program mutation proof.
+
+Source-only mode never loads installed target dependencies or ambient standard-library types, runs target scripts, or performs a full typecheck. Import `usage` distinguishes explicit type-only syntax from value/side-effect syntax; it is not an emitted-JavaScript prediction. Parse/read failures remain in the denominator and yield `status: partial`. Unresolved relationships can occur in a completed bounded scan. Add `--strict` to return exit code 3 when errors or unresolved facts remain; the artifact is still emitted.
+
+See [M1 results and limits](docs/M1_STATUS.md) and [a computed fixture scan](benchmarks/results/fixtures/m1-direct.scan.json). Semantic grouping and separate human/LLM projections remain M2 work.
 
 ## Inventory a local repository
 
@@ -37,6 +56,10 @@ npm run benchmark:fetch
 node dist/cli/main.js inventory benchmark-checkouts/hono.git --target benchmarks/targets/hono.json --scope inventory --out benchmarks/results/local/hono-inventory.json
 node dist/cli/main.js inventory benchmark-checkouts/hono.git --target benchmarks/targets/hono.json --scope deep --out benchmarks/results/local/hono-deep.json
 node dist/cli/main.js validate benchmarks/results/local/hono-deep.json
+node dist/cli/main.js scan benchmark-checkouts/hono.git --target benchmarks/targets/hono.json --scope deep --project tsconfig.build.json --out benchmarks/results/local/hono-scan.json
+node dist/cli/main.js validate benchmarks/results/local/hono-scan.json --repository benchmark-checkouts/hono.git
+node scripts/evaluate-m1.mjs benchmarks/results/local/hono-scan.json benchmark-checkouts/hono.git
+node scripts/measure-m1.mjs benchmark-checkouts/hono.git benchmarks/results/local/hono-m1-run
 node scripts/verify-rubrics.mjs benchmark-checkouts/hono.git
 node scripts/measure-m0.mjs benchmark-checkouts/hono.git benchmarks/results/local/hono-m0-run
 ```
@@ -45,7 +68,7 @@ Fetch requires a new destination and downloads the pinned commit into a **bare r
 
 Hono 4.13.7 is pinned at `eebdf7be39abf0a872671835ccce0c4f03ea497a`. Its inventory has 486 tracked entries, including 311 `src` TS/TSX files. The broad scope selects 317 files: 311 TS/TSX, one JSON fixture, and five supporting configs. Deep scope selects 25 source files and those five configs. All 486 entries remain in each denominator, with exclusions recorded.
 
-See [measured M0 results](benchmarks/results/hono-m0/summary.json) and [the M0 handoff](docs/M0_STATUS.md). The first eight [benchmark questions](benchmarks/questions/hono.json) have [source-backed rubrics](benchmarks/rubrics/hono-m0.json), authored through agent source review. They have not received independent human review and are not adjudicated gold answers. Evaluation files are never read by the analyzer; the target reader projects only repository pins and scope settings.
+See [measured M1 results](benchmarks/results/hono-m1/summary.json), [the M1 handoff](docs/M1_STATUS.md), [measured M0 results](benchmarks/results/hono-m0/summary.json) and [the M0 handoff](docs/M0_STATUS.md). The first eight [benchmark questions](benchmarks/questions/hono.json) have [source-backed rubrics](benchmarks/rubrics/hono-m0.json), authored through agent source review. They have not received independent human review and are not adjudicated gold answers. Evaluation files are never read by the analyzer; the target reader projects only repository pins and scope settings.
 
 ## Original fixture walkthrough
 
@@ -63,30 +86,34 @@ Use a new fixture directory. The [committed sample](benchmarks/results/fixtures/
 ## Library interface and boundaries
 
 ```ts
-import { inventory, validateInventory } from 'clearings-semantic'
+import { scan, validateScan, readEvidence } from 'clearings-semantic'
 
-const result = inventory({ repository: '/path/to/repository', ref: 'HEAD', include: ['src'] })
-validateInventory(result)
-console.log(result.snapshot_id, result.coverage)
+const repository = '/path/to/repository'
+const result = scan({ repository, ref: 'HEAD', include: ['src'] })
+validateScan(result, { repository })
+const first = result.data.evidence[0]
+if (first) console.log(readEvidence(result, repository, first.id))
 ```
 
-The M0 library is synchronous, runs bounded Git subprocesses, and performs no writes during inventory. `readTarget(path)` and `fetchTarget(target, destination)` support explicit benchmark setup. `fetchTarget` performs writes and network access only when called.
+The library is synchronous, runs bounded Git subprocesses, and performs no writes during inventory or scan. `scan` accepts optional source byte/file/project budgets through its `limits` option. `max_projects` bounds loaded configuration records; exhaustion adds an error diagnostic and preserves unassigned selected files in at most one additional fallback program. `readEvidence` verifies the artifact and sources before returning text; repeated retrieval is not yet cached across calls. `readTarget(path)` and `fetchTarget(target, destination)` support explicit benchmark setup. `fetchTarget` performs writes and network access only when called.
 
 - `src/repository/`: Git revision/object access, inventory, scope, and output handling.
-- `src/model/`: portable JSON types and artifact validation.
+- `src/model/`: portable JSON types, artifact integrity, and source-span verification.
+- `src/adapters/typescript/`: isolated compiler host, project discovery, and structural extraction.
+- `src/analysis/`: scan orchestration, deterministic record IDs, and coverage.
 - `src/cli/`: arguments, JSON output, and exit codes.
 - `schemas/`: versioned interchange schema, shipped alongside the compiled package.
 - `tests/fixtures/`: original code samples, never executed by inventory.
 - `benchmarks/` and evaluator scripts: pins, questions, source reviews, and measured results; separate from production imports.
 
-JSON is the initial machine interface. Future human renderers and LLM context exporters will consume shared evidence/semantic records separately; M0 does not invent a semantic layer from file names. See [the prototype plan](docs/PROTOTYPE_PLAN.md) for those later boundaries.
+JSON is the initial machine interface. Future human renderers and LLM context exporters will consume shared evidence/semantic records separately; The structural extractor does not infer conceptual groups or capability explanations. See [the prototype plan](docs/PROTOTYPE_PLAN.md) for those later boundaries.
 
-The snapshot ID hashes canonical inventory data including schema/tool versions, commit/tree, normalized scope, and every entry's Git object ID. It excludes local paths, timestamps, and performance measurements. `validate` checks schema, digest, counts, ordering, and scope consistency; it does **not** re-read the repository or prove source claims. This is an integrity check, not an authenticity signature.
+The snapshot ID hashes canonical inventory data including schema/tool versions, commit/tree, normalized scope, and every entry's Git object ID. It excludes local paths, timestamps, and performance measurements. `validate` checks schema, digest, counts, ordering, and scope consistency; without `--repository`, it does **not** re-read source. Neither mode proves semantic claims. For scan artifacts, `artifact_id` additionally hashes adapter/version/budget information and all structural records. This is an integrity check, not an authenticity signature.
 
-Successful command output and structured failures go to stdout as JSON; progress/errors go to stderr. Help/version are plain text. Exit codes are 0 for success, 1 for operational failure (including missing Git objects/revisions), and 2 for invalid arguments, pins, schema, or output destination. M0 has no partial analysis or strict semantic completeness gate.
+Successful command output and structured failures go to stdout as JSON; progress/errors go to stderr. Help/version are plain text. Exit codes are 0 for success, 1 for operational failure (including missing Git objects/revisions), and 2 for invalid arguments, pins, schema, or output destination. Scan also uses exit code 3 for its requested strict structural gate. A normal partial scan returns 0 and retains its errors in the output.
 
 ## Next milestone and licensing
 
-M1 adds compiler-backed structure: source spans, evidence/fact IDs, tsconfig/project-reference discovery, import/export resolution, and honest unresolved relationships. Its `scan` command is intentionally absent from M0. Follow [the first implementation task](docs/FIRST_IMPLEMENTATION_TASK.md), which spans M0 and M1, after reviewing [remaining M1 work](docs/M0_STATUS.md).
+M0-M1 now provide the source and structural foundation described in [the first implementation task](docs/FIRST_IMPLEMENTATION_TASK.md). Review the structural results before M2: bounded file-based proposal requests/imports, evidence validation, and separate human/LLM projections for request dispatch and middleware composition. See [the M1 handoff](docs/M1_STATUS.md) for known limitations and the smallest proposed semantic slice.
 
 Select an open-source license before public distribution. Nothing in this private prototype applies Hono's license to Clearings or publishes an npm package.

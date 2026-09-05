@@ -1,5 +1,7 @@
 # M0 implementation handoff
 
+Historical M0 results. M1 is now implemented; see [M1_STATUS.md](M1_STATUS.md) for current structural extraction results.
+
 M0 provides reproducible source inventory and a reviewable benchmark foundation. It does not yet break repositories into semantic representations; M1 supplies the structural evidence those representations need.
 
 ## Completed
