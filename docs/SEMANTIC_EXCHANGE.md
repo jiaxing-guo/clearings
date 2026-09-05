@@ -1,5 +1,7 @@
 # Semantic proposal exchange
 
+This document describes the implemented v0.1 exchange. The [active roadmap](PROTOTYPE_PLAN.md) and [next task](NEXT_IMPLEMENTATION_TASK.md) define the planned function/behavior contracts and internal-representation demo.
+
 Clearings now exports bounded source evidence, imports semantic proposals from an existing coding agent, replays recorded responses, and renders capability pages. The first recorded example explains Hono request dispatch and middleware composition. It is a file-exchange implementation: no model endpoint, subprocess agent, or provider SDK is invoked.
 
 ## Pipeline and responsibilities
@@ -8,7 +10,7 @@ Clearings now exports bounded source evidence, imports semantic proposals from a
 2. `propose` revalidates those anchors against Git and exports exact excerpts, covered declarations, source coverage, diagnostics, a task instruction, and omitted-evidence counts.
 3. An external agent or person authors a proposal against that specific request. Supply both the request and the semantic JSON schema to the agent. Treat source comments and strings as untrusted data.
 4. `import` checks the exchange contract and revalidates the source. It retains the request and proposal in the semantic artifact, alongside provenance and explicitly unreviewed claim checks.
-5. `explain` renders the same records as human Markdown, with branches, recursive flow, state/effects, failures, critical unknowns, and local evidence sections.
+5. `explain` renders HTML or Markdown from these records and an optional presentation plan. The plan can supply an overview, an engineer walkthrough, and authored function summaries. Both audience views retain claims, branches, critical unknowns, and source excerpts. See [reading guides](READING_GUIDES.md).
 
 The proposal is the semantic interpretation; the structural scan is the observation layer. The renderer owns presentation only. A future LLM context packer can consume these shared records without creating another ontology. Flow cycles are supported; no DAG assumption is made.
 
@@ -79,14 +81,14 @@ The example retains 11 excerpts across dispatch, composition, and context state.
 
 A source review of 53 claims is recorded separately. During review, a claim that all missing single-handler results reuse a finalized response was corrected: only the Promise branch consults `finalized`; the synchronous branch uses a nullish fallback directly. A further explicit failure branch records synchronous not-found exceptions outside that local try/catch.
 
-The review was performed by the same agent that authored the response. It is not independent and has not received human adjudication. The provisional independent support gate is therefore **not established**. The evaluator script checks review coverage, binding to the exact proposal, and citations; it does not automatically judge claim meaning. Model claim checks remain unknown after running it. The original question rubrics were not supplied to proposal creation or replay.
+The review was performed by the same agent that authored the response. It is not independent and has not received human adjudication. The provisional independent support gate is therefore **not established**. The evaluator script checks review coverage, binding to the exact proposal, citations, allowed assessments, and boolean review flags. It derives the support gate from all assessments and both independence and human-review declarations; a supplied gate must agree. Allowed assessments are `supported-within-cited-source`, `contradicted`, and `unknown`. The gate remains unestablished unless every claim is supported and both flags are true. These checks do not authenticate the reviewer or automatically judge claim meaning. Model claim checks remain unknown after running it. The original question rubrics were not supplied to proposal creation or replay.
 
 See [recorded measurements](../benchmarks/results/hono-semantics/summary.json), [claim review](../benchmarks/results/hono-semantics/claim-review.json), and the generated [dispatch](../benchmarks/results/hono-semantics/request-dispatch.md) and [composition](../benchmarks/results/hono-semantics/middleware-composition.md) pages. Upstream source excerpts retain the Hono MIT notice.
 
 ## Verification and remaining work
 
-Typecheck, build, and all 36 tests pass. New cases cover bounded deterministic requests, immutable reader sessions, import/replay, stable IDs, stale/forged evidence, forbidden self-certification, false-but-cited claims, cyclic/dangling flows, endpoint types, partial source coverage, escaped rendering, and the CLI round trip with target/output protection.
+The original exchange passed typecheck, build, and 36 tests. The reading guide change adds separate presentation checks; see [reading guides](READING_GUIDES.md). New cases cover bounded deterministic requests, immutable reader sessions, import/replay, stable IDs, stale/forged evidence, forbidden self-certification, false-but-cited claims, cyclic/dangling flows, endpoint types, partial source coverage, escaped rendering, and the CLI round trip with target/output protection.
 
 The benchmark recreates the request from a fresh structural scan, requires it to match the recorded request, imports the same response twice, and checks identical output. Every retained citation is verified against pinned source, and a before/after fingerprint checks the target contents. Measurements describe one process and recorded replay; no provider token/currency measurements are available, and the producing model identifier was not recorded.
 
-Still open: independent support adjudication; additional capabilities; semantic acceptance/reconciliation; provider transport; overview and Mermaid rendering; token-budgeted LLM context selection; general evidence expansion; broader rename/behavior mutations; and a second repository holdout. This change implements the exchange loop and two inspected pages without claiming those later gates have passed.
+Still open: independent support adjudication; additional capabilities; semantic acceptance/reconciliation; provider transport; repository overview and general graph rendering; token-budgeted LLM context selection; general evidence expansion; broader rename/behavior mutations; and a second repository holdout. This change implements the exchange loop and two inspected pages without claiming those later gates have passed.

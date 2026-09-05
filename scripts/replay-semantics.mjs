@@ -2,6 +2,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, realpathSync, existsSync } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { scan, readTarget, createProposalRequest, importProposal, renderCapability } from '../dist/index.js';
 import { writeInventory } from '../dist/repository/output.js';
@@ -12,7 +13,7 @@ if (!repositoryArg || !outputArg) throw new Error('Usage: node scripts/replay-se
 const repository = realpathSync(repositoryArg); const output = resolve(outputArg);
 if (existsSync(output)) throw new Error('Use a new output directory.');
 const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
-const target = readTarget(new URL('../benchmarks/targets/hono.json', import.meta.url).pathname);
+const target = readTarget(fileURLToPath(new URL('../benchmarks/targets/hono.json', import.meta.url)));
 const selection = read('../benchmarks/targets/hono-semantic.json');
 const response = read('../benchmarks/proposals/hono/response.json');
 const recorded = read('../benchmarks/proposals/hono/request.json');
@@ -42,7 +43,18 @@ const imported = performance.now();
 const second = importProposal(request, response, { scan: result, repository, replay: true });
 const json = JSON.stringify(first, null, 2) + '\n';
 if (json !== JSON.stringify(second, null, 2) + '\n') throw new Error('Replay is not byte-stable.');
-const pages = first.data.proposal.data.concepts.filter((concept) => concept.kind === 'capability').map((concept) => [concept.alias, renderCapability(first, concept.id)]);
+const presentations = first.data.proposal.data.concepts.filter((concept) => concept.kind === 'capability').map((concept) => ({
+  concept, plan: read(`../benchmarks/presentations/hono/${concept.alias}.json`),
+}));
+const sourceNotice = readFileSync(new URL('../benchmarks/proposals/hono/LICENSE', import.meta.url), 'utf8');
+const pages = presentations.flatMap(({ concept, plan }) => ['overview', 'engineer'].flatMap((audience) => ['markdown', 'html'].map((format) => {
+  const extension = format === 'html' ? 'html' : 'md';
+  const companion = `${concept.alias}.${audience === 'overview' ? 'engineer' : 'overview'}.${extension}`;
+  const options = { format, audience, companion, sourceNotice, presentation: plan };
+  const page = renderCapability(first, concept.id, options);
+  if (page !== renderCapability(second, concept.id, options)) throw new Error('Report rendering is not byte-stable.');
+  return [`${concept.alias}.${audience}.${extension}`, page];
+})));
 if (fingerprint() !== before) throw new Error('Target content changed.');
 const summary = {
   schema_version: '0.1.0', transport: 'recorded-replay', model_called: false,
@@ -52,14 +64,16 @@ const summary = {
   coverage: first.coverage, source_coverage: result.coverage, byte_identical_replays: 2, target_files_unchanged: true,
   measurements: { node: process.version, scan_ms: scanned - start, request_ms: requested - scanned, import_with_source_validation_ms: imported - requested, node_peak_rss_kib: process.resourceUsage().maxRSS },
   measurement_note: 'One process; request and import timings include source verification. RSS includes two imports/rendering and excludes Git children. Replay is recorded agent output, not a fresh inference or independent semantic-quality assessment. Producer token counts/model ID were not available.',
-  pages: pages.map(([alias, page]) => ({ path: `${alias}.md`, sha256: hash(page), bytes: Buffer.byteLength(page) })),
+  presentation_plans: presentations.map(({ concept, plan }) => ({ path: `${concept.alias}.presentation.json`, sha256: hash(JSON.stringify(plan, null, 2) + '\n') })),
+  pages: pages.map(([path, page]) => ({ path, sha256: hash(page), bytes: Buffer.byteLength(page) })),
 };
 // The first write uses the existing target/symlink protection before creating directories.
 writeInventory(repository, join(output, 'scan.json'), JSON.stringify(result, null, 2) + '\n');
-writeInventory(repository, join(output, 'LICENSE-HONO'), readFileSync(new URL('../benchmarks/proposals/hono/LICENSE', import.meta.url), 'utf8'));
+writeInventory(repository, join(output, 'LICENSE-HONO'), sourceNotice);
 writeInventory(repository, join(output, 'request.json'), JSON.stringify(request, null, 2) + '\n');
 writeInventory(repository, join(output, 'response.json'), JSON.stringify(response, null, 2) + '\n');
 writeInventory(repository, join(output, 'semantic.json'), json);
-for (const [alias, page] of pages) writeInventory(repository, join(output, `${alias}.md`), page);
+for (const [path, page] of pages) writeInventory(repository, join(output, path), page);
+for (const { concept, plan } of presentations) writeInventory(repository, join(output, `${concept.alias}.presentation.json`), JSON.stringify(plan, null, 2) + '\n');
 writeInventory(repository, join(output, 'summary.json'), JSON.stringify(summary, null, 2) + '\n');
 console.log(JSON.stringify(summary, null, 2));

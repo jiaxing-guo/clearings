@@ -65,7 +65,9 @@ Fetch and output destinations must be new. Reuse an already verified bare checko
 - Each scan recomputes the scoped program. In-run source reads are cached; source verification caches each file buffer, line starts, and sparse byte-to-UTF-16 adjustments once per validation; persistent syntax caches and incremental invalidation are deferred. readEvidence currently verifies the whole artifact/source set per call; repeated interactive retrieval needs a validated session cache.
 - Facts describe supported syntax and bounded references. There is no control-flow graph, complete call graph, runtime trace, capability grouping, or semantic model. Parser errors and unknowns remain visible.
 
-## Smallest M2 slice after structural review
+## Historical next slice after structural review
+
+The current next task is [semantic contracts and inspection](NEXT_IMPLEMENTATION_TASK.md). The list below records the earlier structural handoff.
 
 1. Build a bounded evidence request for request dispatch and middleware composition, exposing lookup by evidence/declaration IDs and explicit scope expansion.
 2. Exchange proposal files with the user's existing coding agent; preserve input/output and label replay separately from fresh inference.

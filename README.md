@@ -1,8 +1,12 @@
 # Clearings
 
-Understand and maintain agent-built codebases through evidence-backed semantic representations.
+**Internal representation for AI coding**
 
-**Implemented:** immutable Git inventory, bounded structural extraction, semantic proposal file exchange, recorded replay, and evidence-linked capability pages. The package and GitHub repository remain private.
+Clearings represents repository behavior with inspectable source evidence. People and coding agents use the same model through different views.
+
+**Implemented:** immutable Git inventory, bounded structural extraction, semantic proposal file exchange, recorded replay, and capability guides in HTML and Markdown. The package and GitHub repository remain private.
+
+**First prototype:** a PM/vibe-coder report, an engineer report, and an inspectable semantic representation with a bounded agent context export. A small code-change demo is optional. The reports exist; canonical function/behavior contracts and context export are the next implementation task. See the [realigned roadmap](docs/PROTOTYPE_PLAN.md) and [next task](docs/NEXT_IMPLEMENTATION_TASK.md).
 
 ## Install and verify
 
@@ -54,9 +58,15 @@ Use an alias actually supplied by your proposal for `--capability`. For `propose
 
 Citation integrity, claim support, and acceptance are separate: imported claims remain **proposed**, **verification unknown**, and labeled as model inference or human declaration. A well-formed false claim can have valid citations. No automatic acceptance or English-entailment certification is performed.
 
-The [semantic exchange guide](docs/SEMANTIC_EXCHANGE.md) explains the schemas, API, validation boundaries, and recorded demonstration. Read the generated [request dispatch](benchmarks/results/hono-semantics/request-dispatch.md) and [middleware composition](benchmarks/results/hono-semantics/middleware-composition.md) pages.
+The [semantic exchange guide](docs/SEMANTIC_EXCHANGE.md) explains the schemas, API, validation boundaries, and recorded demonstration. Read the current [request dispatch](benchmarks/results/hono-audiences/request-dispatch.engineer.md) and [middleware composition](benchmarks/results/hono-audiences/middleware-composition.engineer.md) guides.
 
-To reproduce those pages from pinned source and a recorded response:
+Each capability now has two reading views. The overview starts with purpose, three main actions, and possible outcomes. The engineer guide starts with a concrete case, then explains the mechanism with short source excerpts. Function summaries and the complete audit remain available as reference.
+
+Use `--audience overview --format html --presentation plan.json` with `explain` to produce the overview. Use `--audience engineer` for the engineer guide. Omit `--format` for Markdown. Both formats use the same presentation plan, bound to the exact semantic artifact.
+
+The [reading guide reference](docs/READING_GUIDES.md) describes the interface, writing rules, and review tasks. The accepted prototype reports are under [hono-audiences](benchmarks/results/hono-audiences). Each HTML file opens directly in a browser. Keep the files together to switch between audience views. The [review package](benchmarks/results/hono-audiences/clearings-reading-review.zip) includes all eight reports, the semantic model, and verification records.
+
+To reproduce both audiences and formats from pinned source and a recorded response:
 
 ```bash
 node scripts/replay-semantics.mjs benchmark-checkouts/hono.git benchmarks/results/local/hono-semantic-replay
@@ -131,20 +141,21 @@ The library is synchronous, runs bounded Git subprocesses, and performs no write
 - `src/adapters/typescript/`: isolated compiler host, project discovery, and structural extraction.
 - `src/analysis/`: scan orchestration, deterministic record IDs, and coverage.
 - `src/semantics/`: bounded requests, proposal/model validation, stable IDs, and recorded import/replay.
-- `src/renderers/`: human Markdown projection over shared semantic records.
+- `src/presentation/`: version-bound reading order, summaries, cases, and validation.
+- `src/renderers/`: HTML and Markdown reports over shared semantic records and presentation plans.
 - `src/cli/`: arguments, requested output, and exit codes.
 - `schemas/`: versioned interchange schema, shipped alongside the compiled package.
 - `tests/fixtures/`: original code samples, never executed by inventory.
 - `benchmarks/` and evaluator scripts: pins, questions, source reviews, and measured results; separate from production imports.
 
-JSON is the machine interface. The human Markdown renderer consumes the same proposal/model records; a future LLM context packer can select from them without owning a second semantic model. The structural extractor itself does not infer conceptual groups.
+JSON is the machine interface. The HTML and Markdown renderers consume the same proposal/model records; a future LLM context packer can select from them without owning a second semantic model. The structural extractor itself does not infer conceptual groups.
 
 The snapshot ID hashes canonical inventory data including schema/tool versions, commit/tree, normalized scope, and every entry's Git object ID. It excludes local paths, timestamps, and performance measurements. `validate` checks schema, digest, counts, ordering, and scope consistency; without `--repository`, it does **not** re-read source. Neither mode proves semantic claims. For scan artifacts, `artifact_id` additionally hashes adapter/version/budget information and all structural records. This is an integrity check, not an authenticity signature.
 
-Structured output and failures go to stdout as JSON; `explain` emits Markdown. Progress/errors go to stderr. Help/version are plain text. Exit codes are 0 for success, 1 for operational failure (including missing Git objects/revisions), and 2 for invalid arguments, pins, schema, or output destination. Scan also uses exit code 3 for its requested strict structural gate. A normal partial scan returns 0 and retains its errors in the output.
+Structured output and failures go to stdout as JSON; `explain` emits Markdown by default, or HTML with `--format html`. Progress/errors go to stderr. Help/version are plain text. Exit codes are 0 for success, 1 for operational failure (including missing Git objects/revisions), and 2 for invalid arguments, pins, schema, or output destination. Scan also uses exit code 3 for its requested strict structural gate. A normal partial scan returns 0 and retains its errors in the output.
 
 ## Next work and licensing
 
-The semantic exchange and two capability pages are implemented. Independent claim adjudication, additional capabilities, repository overview, flow diagrams, budgeted LLM context selection, explicit acceptance, and broader mutation/generalization tests remain open. See [the semantic exchange guide](docs/SEMANTIC_EXCHANGE.md) for measured results and limitations.
+Next: canonical function and behavior contracts, record inspection, and bounded agent context. Then connect both reports to those records and package the three required demos. A small refactor guided by the representation is optional. Additional capabilities, a second repository, other languages, and broader change studies follow the first prototype. Independent claim review remains pending. See the [active roadmap](docs/PROTOTYPE_PLAN.md) and [semantic exchange guide](docs/SEMANTIC_EXCHANGE.md).
 
 Select an open-source license before public distribution. Nothing in this private prototype applies Hono's license to Clearings or publishes an npm package. Recorded upstream excerpts retain their [MIT notice](benchmarks/proposals/hono/LICENSE).

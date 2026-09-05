@@ -1,9 +1,10 @@
 # Clearings development instructions
 
-Read docs/PROTOTYPE_PLAN.md, docs/FIRST_IMPLEMENTATION_TASK.md, and docs/SEMANTIC_EXCHANGE.md before implementation. Treat the current milestone as the scope boundary.
+Read docs/PROTOTYPE_PLAN.md, docs/NEXT_IMPLEMENTATION_TASK.md, and docs/SEMANTIC_EXCHANGE.md before implementation. The active scope is semantic contracts, inspection, and bounded agent context. Historical plans and handoffs do not override the active task.
 
-- Build a TypeScript library plus CLI for repository comprehension. The current scope is file-based semantic proposal requests/import, recorded replay, evidence validation, and two capability pages, built on immutable inventory and structural extraction. Broader context selection and diagrams remain subsequent work.
-- Keep repository evidence, semantic interpretation, and presentation as separate responsibilities.
+- Product name: Clearings. Slogan: "Internal representation for AI coding".
+- Build one TypeScript library plus CLI. The first prototype needs PM and engineer reports plus an internal-representation demo over the same Hono model. The next task promotes source-reviewed function and behavior contracts into semantic records, adds inspection, and exports bounded context. A code-change demo is optional and separate. Broader Hono coverage and other repositories/languages remain subsequent work.
+- Keep repository evidence, semantic interpretation, and presentation as separate responsibilities. Reports and agent context consume the same canonical contracts; presentation data owns audience prose and layout.
 - Do not execute target-repository scripts, modify its source, or install its dependencies during a scan.
 - Keep compiler API objects and provider SDK types out of the semantic interchange model.
 - Preserve unknowns and coverage information. An evidence pointer resolving does not establish that it supports a narrative claim.
@@ -16,3 +17,11 @@ Read docs/PROTOTYPE_PLAN.md, docs/FIRST_IMPLEMENTATION_TASK.md, and docs/SEMANTI
 - Report completed work, verification actually run, and remaining limitations separately.
 
 - Use Conventional Commits. PR titles, descriptions, and commit messages describe behavior and must not include internal milestone labels.
+
+## Technical prose
+
+Write all technical explanations in ASD-STE100 Simplified Technical English while preserving necessary domain-specific terms. Use in every Codex conversation for technical answers, plans, reports, diagnoses, instructions, status updates, and explanations. Do not change code, equations, commands, identifiers, citations, quotations, logs, or exact formal text unless the user asks for that change.
+
+- Keep one consistent term for each concept. Put conditions before their consequences.
+- Follow the reading order in docs/READING_GUIDES.md for human reports. Keep presentation data separate from semantic records. Preserve exact source text and make partial code ranges clear.
+- Start the overview with purpose and outcomes. Start the engineer guide with one concrete case, then explain its mechanism and alternatives. Keep function summaries and source audit as reference material.

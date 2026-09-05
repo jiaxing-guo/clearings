@@ -1,0 +1,97 @@
+{
+  "browser": "149.0.7827.0",
+  "pages": [
+    {
+      "alias": "request-dispatch",
+      "audience": "overview",
+      "code_context": false,
+      "keyboard_code_scroll": false,
+      "initial_visible_words": 192,
+      "keyboard_details": true,
+      "companion_navigation": true,
+      "source_text_exact": true,
+      "nested_fragment_links": true,
+      "desktop_mobile_no_overflow": true,
+      "print_state_restored": true,
+      "no_javascript_details": true
+    },
+    {
+      "alias": "request-dispatch",
+      "audience": "engineer",
+      "code_context": true,
+      "keyboard_code_scroll": true,
+      "initial_visible_words": 734,
+      "keyboard_details": true,
+      "companion_navigation": true,
+      "source_text_exact": true,
+      "nested_fragment_links": true,
+      "desktop_mobile_no_overflow": true,
+      "print_state_restored": true,
+      "no_javascript_details": true
+    },
+    {
+      "alias": "middleware-composition",
+      "audience": "overview",
+      "code_context": false,
+      "keyboard_code_scroll": false,
+      "initial_visible_words": 210,
+      "keyboard_details": true,
+      "companion_navigation": true,
+      "source_text_exact": true,
+      "nested_fragment_links": true,
+      "desktop_mobile_no_overflow": true,
+      "print_state_restored": true,
+      "no_javascript_details": true
+    },
+    {
+      "alias": "middleware-composition",
+      "audience": "engineer",
+      "code_context": true,
+      "keyboard_code_scroll": true,
+      "initial_visible_words": 675,
+      "keyboard_details": true,
+      "companion_navigation": true,
+      "source_text_exact": true,
+      "nested_fragment_links": true,
+      "desktop_mobile_no_overflow": true,
+      "print_state_restored": true,
+      "no_javascript_details": true
+    }
+  ],
+  "external_requests": [],
+  "errors": [],
+  "markdown": [
+    {
+      "alias": "request-dispatch",
+      "audience": "overview",
+      "renderer": "marked",
+      "code_matches_html": true,
+      "details": true,
+      "mobile_no_overflow": true
+    },
+    {
+      "alias": "request-dispatch",
+      "audience": "engineer",
+      "renderer": "marked",
+      "code_matches_html": true,
+      "details": true,
+      "mobile_no_overflow": true
+    },
+    {
+      "alias": "middleware-composition",
+      "audience": "overview",
+      "renderer": "marked",
+      "code_matches_html": true,
+      "details": true,
+      "mobile_no_overflow": true
+    },
+    {
+      "alias": "middleware-composition",
+      "audience": "engineer",
+      "renderer": "marked",
+      "code_matches_html": true,
+      "details": true,
+      "mobile_no_overflow": true
+    }
+  ]
+}

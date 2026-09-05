@@ -4,6 +4,7 @@ import type { ScanResult } from '../model/structural.js';
 import { validateScan, createEvidenceReader } from '../model/validate-scan.js';
 import { validateRequest, validateProposal, validateSemanticModel } from '../semantics/validate.js';
 import { createProposalRequest, importProposal } from '../semantics/exchange.js';
+import { validatePresentationPlan } from '../presentation/plan.js';
 import { renderCapability } from '../renderers/capability.js';
 import { writeInventory } from '../repository/output.js';
 
@@ -25,7 +26,7 @@ export function semanticCommand(command: string, positionals: string[], values: 
   if (positionals.length !== 2) throw new ClearingsError('INVALID_ARGUMENTS', 'Semantic commands require one input artifact path.');
   const repository = required(values, 'repository');
   const input = positionals[1]!;
-  let output: unknown; let markdown: string | undefined;
+  let output: unknown; let page: string | undefined;
   process.stderr.write('Processing recorded evidence and semantic proposals; no model endpoint is invoked\n');
   if (command === 'propose') {
     const scan = readScan(input);
@@ -47,9 +48,16 @@ export function semanticCommand(command: string, positionals: string[], values: 
   } else {
     const scan = readScan(required(values, 'scan')); const model = readJson(input);
     validateSemanticModel(model, { scan, repository });
-    markdown = renderCapability(model, required(values, 'capability'));
+    const capability = required(values, 'capability');
+    const format = values.format ?? 'markdown';
+    if (format !== 'markdown' && format !== 'html') throw new ClearingsError('INVALID_ARGUMENTS', 'Supported report formats are markdown and html.');
+    const presentation = values.presentation ? readJson(required(values, 'presentation')) : undefined;
+    if (presentation !== undefined) validatePresentationPlan(presentation, model, capability);
+    const audience = values.audience ?? 'engineer';
+    if (audience !== 'engineer' && audience !== 'overview') throw new ClearingsError('INVALID_ARGUMENTS', 'Supported audiences are engineer and overview.');
+    page = renderCapability(model, capability, { format, audience, ...(values.companion ? { companion: required(values, 'companion') } : {}), ...(presentation === undefined ? {} : { presentation }) });
   }
-  const text = markdown ?? `${JSON.stringify(output, null, 2)}\n`;
+  const text = page ?? `${JSON.stringify(output, null, 2)}\n`;
   if (values.out) writeInventory(repository, required(values, 'out'), text);
   process.stdout.write(text);
 }

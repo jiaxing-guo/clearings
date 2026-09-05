@@ -39,42 +39,62 @@
   "target_files_unchanged": true,
   "measurements": {
     "node": "v24.19.0",
-    "scan_ms": 2056.420636,
-    "request_ms": 1122.066813,
-    "import_with_source_validation_ms": 652.8336060000001,
-    "node_peak_rss_kib": 531992
+    "scan_ms": 2140.103305,
+    "request_ms": 1084.0284780000002,
+    "import_with_source_validation_ms": 629.1835300000002,
+    "node_peak_rss_kib": 534908
   },
   "measurement_note": "One process; request and import timings include source verification. RSS includes two imports/rendering and excludes Git children. Replay is recorded agent output, not a fresh inference or independent semantic-quality assessment. Producer token counts/model ID were not available.",
   "presentation_plans": [
     {
-      "path": "../../presentations/hono/request-dispatch.json",
-      "sha256": "2a026bc1972b3752fcc2845560bdf505ff883b0df131e6fbc7fa89610ee8f5d1"
+      "path": "request-dispatch.presentation.json",
+      "sha256": "a351eed52a1199e9fa16811eeee299278dcd27f681495e23153a18de4fc1e0b1"
     },
     {
-      "path": "../../presentations/hono/middleware-composition.json",
-      "sha256": "05ffe6c4a9c4f7496d25a425fa4e8cd233046f98d6832315fabfe0b459699b86"
+      "path": "middleware-composition.presentation.json",
+      "sha256": "173bfdefb6a60ce99df71b006af94951d2f484d62f3d5317d86f037002af2ab4"
     }
   ],
   "pages": [
     {
-      "path": "request-dispatch.md",
-      "sha256": "6fb6d3d216463185909294161731b5a9f0883356067b65e5e52920dc903211e5",
-      "bytes": 43558
+      "path": "request-dispatch.overview.md",
+      "sha256": "5eb8f7a62c8e7fd862cec56f544ef93bc9fa660204e9b307b35fa9e5ee11729b",
+      "bytes": 34118
     },
     {
-      "path": "request-dispatch.html",
-      "sha256": "3660c015377cde2ef20f21916c3392d49235184b2839f190703a10a561c92ee7",
-      "bytes": 69711
+      "path": "request-dispatch.overview.html",
+      "sha256": "134f6051ee2b7ede856774369972908acbd1fa45ebb6118b41647c8bb4cbcf62",
+      "bytes": 61767
     },
     {
-      "path": "middleware-composition.md",
-      "sha256": "e9774f282c2fd5d6737639f5b9dc76a4d58848cf6e971ce25e2c51c4a08731c2",
-      "bytes": 32854
+      "path": "request-dispatch.engineer.md",
+      "sha256": "47ed3fd52c706e4c1dc84f2a3ef24028d4e0c0972c4f4aa560f37466929504a0",
+      "bytes": 54370
     },
     {
-      "path": "middleware-composition.html",
-      "sha256": "8c32c1bf782d990affb364b3eb9422ae728b9716af4a0f49819f46987714bd12",
-      "bytes": 59401
+      "path": "request-dispatch.engineer.html",
+      "sha256": "7f46f93cc2d2709419ab36a2651ee751a523384e186c0bdfd16b0bc896858793",
+      "bytes": 87721
+    },
+    {
+      "path": "middleware-composition.overview.md",
+      "sha256": "7981c2f9a39be0e5877d54da417c1e59a729ffe4c60cf1c076ceb9a4893bde20",
+      "bytes": 25723
+    },
+    {
+      "path": "middleware-composition.overview.html",
+      "sha256": "b82033485d424ec857ba257d91742d7efa810c9176af445014f25b1cc8bc7fa1",
+      "bytes": 50987
+    },
+    {
+      "path": "middleware-composition.engineer.md",
+      "sha256": "3b1a43e3085f6492e8d86a11a72ab4949cf08c6f6f7f824dc349482d28c4e2f9",
+      "bytes": 42067
+    },
+    {
+      "path": "middleware-composition.engineer.html",
+      "sha256": "96421fed963d7b50dd4ff9f0b038e4e28b5eae8eb4076c7c087fe41e889e93da",
+      "bytes": 74437
     }
   ]
 }

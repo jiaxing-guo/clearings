@@ -1,6 +1,6 @@
 # First implementation task: M0-M1
 
-This structural task is completed. Current semantic exchange behavior and remaining gates are documented in [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md).
+Historical task: this structural work is complete. The instructions below record that earlier scope. The active implementation task is [NEXT_IMPLEMENTATION_TASK.md](NEXT_IMPLEMENTATION_TASK.md), under the [realigned roadmap](PROTOTYPE_PLAN.md). Current exchange behavior is documented in [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md).
 
 Implement only the structural foundation of Clearings, following PROTOTYPE_PLAN.md. Do not attempt the whole roadmap in one change.
 

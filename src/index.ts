@@ -14,3 +14,6 @@ export type { RequestOptions } from './semantics/exchange.js';
 export { newSemanticId } from './semantics/identity.js';
 export { validateRequest, validateProposal, validateSemanticModel } from './semantics/validate.js';
 export { renderCapability } from './renderers/capability.js';
+export type { RenderCapabilityOptions } from './renderers/capability.js';
+export { createPresentationPlan, validatePresentationPlan, PRESENTATION_INSTRUCTIONS } from './presentation/plan.js';
+export type * from './presentation/plan.js';

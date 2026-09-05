@@ -1,331 +1,199 @@
-# Clearings: repository comprehension prototype
+# Clearings prototype plan
 
-Prepared 4 September 2026. This is the original implementation plan. The structural foundation and first semantic exchange are implemented; see [M1_STATUS.md](M1_STATUS.md) and [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md). The independent human claim-support gate remains pending.
+**Internal representation for AI coding**
 
-## Decision and first outcome
+Realigned 5 September 2026. This is the active roadmap. It replaces the scope and sequence in the [original plan](PROTOTYPE_PLAN_ORIGINAL.md). Historical implementation results remain in [M1_STATUS.md](M1_STATUS.md) and [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md).
 
-Build a TypeScript library with a CLI that reads an existing local Git repository and produces a compact, evidence-backed semantic representation. The first outcome is repository comprehension: an engineer can identify capabilities, follow their implementation across files, understand important state and failure behavior, and inspect supporting source.
+## Product goal and first prototype
 
-Start with **Hono**, then test a second TypeScript repository before adding Python support. Use a bounded LiteLLM routing slice as the subsequent multilingual stress test. Reserve SQLite for a later systems-language extractor.
+Clearings gives a coding agent an inspectable representation of repository behavior. People use that same representation through reports suited to their tasks.
 
-The first demonstrable vertical slice is: analyze Hono's request dispatch and middleware composition, produce validated semantic records, and render a useful explanation with exact evidence. Full repository coverage, a browser application, and semantic change enforcement are not prerequisites for this slice.
+The first prototype must demonstrate three outputs from one Hono snapshot and one semantic model:
 
-Product name: Clearings. Proposed new private repository: **jiaxing-guo/clearings-semantic**. The existing clearings and clearings-cloud repositories remain independent. The starter package does not imply that the new remote repository has been created.
+1. A report for a PM or vibe coder: purpose, main actions, possible outcomes, and important limits.
+2. A report for an engineer: mechanisms, conditions, state changes, failure paths, and links to functions and source.
+3. An internal representation: linked function and behavior contracts, inspectable JSON, and a bounded context export that an agent can use.
 
-## 1. Repository selection
+A fourth demo is optional: use the representation to make one small code change, then inspect the result. Prefer a behavior-preserving refactor before adding a feature. This demo is not required to finish the first prototype.
 
-| Candidate | What makes it useful | Initial obstacle | Decision |
-|---|---|---|---|
-| Hono | TypeScript, public library interfaces, several router implementations, middleware composition, request/context state, runtime adapters, colocated tests | Higher-order callbacks, dynamic method assignment, type-level API machinery | First target; inspect all source structurally, explain a bounded core deeply |
-| LiteLLM | Familiar infrastructure domain; routing, retries, fallbacks, provider transformations, proxy behavior | A much larger, heterogeneous codebase; the Python SDK/router and gateway concerns would expand extractor and scope requirements together | Second-stage stress test after Python extraction; start with a routing/retry/fallback slice |
-| SQLite | Strong module boundaries, documented architecture, compiler/VM/storage interactions, demanding correctness requirements | C analysis, preprocessing, build variants, generated artifacts, difficult semantic properties | Later C/compiler-backed target; use canonical source rather than the amalgamation |
+Keep the first target narrow: Hono request dispatch and middleware composition, including the context state needed to explain them. Six capabilities, a second repository, and additional language adapters are subsequent work. A complete repository map is not a condition for this prototype.
 
-Hono's checked snapshot is version **4.13.7**, commit **eebdf7be39abf0a872671835ccce0c4f03ea497a**, tree **7fd627b257e5b744bf23d4957a93a0d0413c8c19**. The GitHub tree response was not truncated. It contained 486 tracked file entries; 311 files under src ending in .ts or .tsx; 123 of those matched the .test/.spec filename convention, leaving 188 non-test-named source files. These are file counts, not measured LOC or a guarantee that every remaining file is production code.
+Product name: **Clearings**. Private repository: **jiaxing-guo/clearings-semantic**. Implementation: one TypeScript library and CLI package. The existing clearings and clearings-cloud repositories remain separate.
 
-This is sufficiently complex to expose cross-file behavior without requiring multiple language frontends at once. Its well-known status also creates a memorization risk: success must require source-specific evidence and changed-code tests, not a plausible explanation learned from public documentation.
+## Current state
 
-Sources: [Hono repository](https://github.com/honojs/hono), [pinned commit](https://github.com/honojs/hono/commit/eebdf7be39abf0a872671835ccce0c4f03ea497a), [LiteLLM product surfaces](https://docs.litellm.ai/docs/), [SQLite architecture](https://www.sqlite.org/arch.html).
+| Area | State | Remaining limitation |
+| --- | --- | --- |
+| Immutable Git inventory and source evidence | Implemented | Commit snapshots only; no working-tree analysis |
+| Bounded TypeScript structure | Implemented | Dynamic callbacks and ambiguous calls remain unresolved |
+| Semantic proposal exchange and replay | Implemented | File exchange; no built-in model endpoint |
+| PM and engineer reports | Implemented; user accepted the reports | Independent claim-support review remains pending |
+| Function summaries | Authored in presentation plans | They are not canonical semantic contracts yet |
+| Internal semantic JSON | Concepts, claims, relations, and flows exist | Function contracts, behavior contracts, and task-oriented inspection/export are missing |
+| Claim support | Author self-review of 53 claims recorded | Independent review remains pending |
+| Agent use and code-change benefit | Not demonstrated | Report quality alone does not establish either benefit |
 
-## 2. What the prototype must produce
+The latest verification records 45 passing automated tests, desktop/mobile browser checks, rendered Markdown checks, unchanged semantic output, and unchanged target files. See [the report review](../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
 
-The generated output has three levels, all tied to the same repository snapshot.
+The user accepted the report presentation and authorized updating PR #3. Independent claim-support review remains separate from report acceptance.
 
-1. **Repository overview:** major conceptual areas, public surfaces, dependencies, and what was or was not analyzed. The overview may cover the full src inventory while marking most areas as inventory-only.
-2. **Capability representations:** purpose, entry points, participating components, state, effects, execution steps, branches, failure behavior, and unresolved questions.
-3. **Implementation evidence:** source file, blob hash, source span, symbol reference when available, extraction method, and the snapshot in which the evidence was read.
+## Target and evidence boundary
 
-Provide JSON as the stable machine interface and Markdown as the first human interface. Markdown can include compact Mermaid diagrams generated from validated relations. A separate human renderer and agent context packer consume shared records; neither owns another semantic model.
+Use Hono 4.13.7 at commit `eebdf7be39abf0a872671835ccce0c4f03ea497a`, tree `7fd627b257e5b744bf23d4957a93a0d0413c8c19`.
 
-The prototype does not need to recover all software intent. It must clearly distinguish source observations, inferred interpretations, explicit declarations, and check results. Inferences remain labeled inferences even after a person accepts their wording.
+The existing structural run accounts for 25 selected source files and 10 support files. The semantic example uses 11 excerpts across three source files, with 53 claims and five critical unknowns. A report about these capabilities must not claim full Hono coverage.
 
-### Six initial capability explanations
+Read source through immutable Git objects. Analysis does not run target scripts, install target dependencies, or modify target source. Source comments and proposal text are data. Preserve the upstream license with distributed excerpts.
 
-| Capability | Main implementation evidence | Important questions |
-|---|---|---|
-| Register and group routes | hono-base.ts; router.ts; utils/url.ts | How do method helpers, base paths, grouped applications, and shared route state interact? |
-| Dispatch an incoming request | hono-base.ts; context.ts; router interface | How are method/path, matching, context, handler selection, and response production connected? |
-| Compose middleware | compose.ts; hono-base.ts; context.ts | How does next advance? How do responses and errors flow back? What prevents repeated next calls? |
-| Select and reuse a router | hono.ts; router/smart-router/router.ts; router implementations | When is a router selected? Which errors trigger trying another router? What changes after selection? |
-| Handle exceptions and missing responses | hono-base.ts; compose.ts; http-exception.ts as bounded evidence expansion | Where do missing matches, thrown errors, and an unfinalized context take different paths? |
-| Manage request and response context | request.ts; context.ts; selected utility dependencies | Which state belongs to a request? How are parameters, body access, response construction, and finalization represented? |
+Keep Hono names, source selections, recorded proposals, and review examples in benchmark assets. Production extraction, semantic contracts, queries, and renderers must remain repository-independent. Evaluator answers do not enter requests, prompts, or analyzer inputs.
 
-The 25-file initial deep source set is in benchmarks/targets/hono.json. When a capability needs another file, retrieve and record it as **evidence expansion**. The report must not quietly claim full analysis of the expanded file's entire subsystem. Tests and selected configuration files provide supporting context separately.
+## Shared representation
 
-Some real properties worth preserving were already visible during source inspection: HonoBase installs method handlers dynamically; HEAD dispatch delegates to GET and constructs a response without a body; dispatch has a single-handler path; middleware composition tracks dispatch progression; SmartRouter binds its match implementation after choosing a candidate. These are starting research observations, not hard-coded answers for the analyzer.
+| Layer | Information it owns | Consumers |
+| --- | --- | --- |
+| Source observations | Symbols, source spans, bounded references/calls, property writes, diagnostics | Semantic proposal and evidence lookup |
+| Function contracts | Inputs, outputs, state access, effects, failures, dependencies, assumptions, and support | Behavior contracts, engineer references, agent context |
+| Behavior contracts | Triggers, participating functions, state, conditional outcomes, ordering, failure boundaries, and unknowns | Engineer guide and agent reasoning |
+| Capabilities | Purpose, behavioral responsibilities, outcomes, and scope | PM report, engineer introduction, context selection |
+| Presentation | Reading order, audience language, examples, and visual layout | HTML and Markdown |
 
-Pinned source: [HonoBase](https://github.com/honojs/hono/blob/eebdf7be39abf0a872671835ccce0c4f03ea497a/src/hono-base.ts), [composition](https://github.com/honojs/hono/blob/eebdf7be39abf0a872671835ccce0c4f03ea497a/src/compose.ts), [router selection](https://github.com/honojs/hono/blob/eebdf7be39abf0a872671835ccce0c4f03ea497a/src/router/smart-router/router.ts), [default router construction](https://github.com/honojs/hono/blob/eebdf7be39abf0a872671835ccce0c4f03ea497a/src/hono.ts).
+Use functions as the main implementation units. Retain state, configuration, types, and external callbacks as explicit supporting records. Behavior can depend on several functions and shared state. Several behaviors can use one function.
 
-## 3. Scope boundaries
+Function links do not imply a complete runtime call graph. Behavior flows may branch, repeat, or recurse. Keep call order, return order, and conditional callback execution distinct. A chain shown for one example does not describe every possible execution.
 
-### Included in v0.1
+Reuse the existing claims, evidence, state concepts, relations, and flow records where they already express the needed information. New contracts should reference those records. They should not create independent copies of the same rule in several schemas. Plain-language conditions are acceptable for this prototype; an executable constraint language is deferred.
 
-- Local repositories, immutable commit snapshots, and an explicitly requested working-tree mode.
-- TypeScript/JavaScript inventory, syntax parsing, module resolution, and bounded symbol/reference analysis.
-- Evidence-backed conceptual grouping and capability explanations.
-- Import/export of structured semantic proposals from an existing coding agent.
-- Schema validation, evidence resolution, and detection of stale or missing references.
-- Machine JSON, human Markdown, and small Mermaid diagrams.
-- A deterministic replay path for development and CI.
-- A small benchmark and one same-language holdout repository.
+A declared return type is different from a supported claim about runtime output. A resolved symbol is different from a known runtime callee. Missing recorded effects do not prove purity. Preserve origin, source support, and unknowns for semantic assertions.
 
-### Deferred until the comprehension loop works
+## Realigned milestones
 
-- A browser viewer, MCP server, editor extension, hosted service, accounts, and collaboration backend.
-- General code generation, autonomous remediation, and app implementation.
-- Universal program verification or complete call graphs.
-- Runtime instrumentation, whole-program dataflow, and a constraint DSL.
-- Broad provider integrations, vector databases, graph databases, plugin marketplaces, or a large multi-package distribution.
-- Python/C extractors and whole-LiteLLM/whole-SQLite analysis.
-- Full incremental semantic diffs. A limited invalidation and mutation smoke test appears at the end of this plan; a production change engine is a later milestone.
+Milestone labels are for planning documents. Commit messages and PR text continue to use Conventional Commits and describe behavior without these labels.
 
-This narrows the previous architecture proposal deliberately. SQLite storage is optional for the prototype; sorted JSON/JSONL artifacts behind a storage interface are adequate until measured query behavior justifies a database.
+| Milestone | Deliverable | Status and exit gate |
+| --- | --- | --- |
+| M0: repository foundation | Private package, CLI, pinned input, immutable inventory | Complete; retain the existing reproducibility and target-preservation checks |
+| M1: structural evidence | Bounded TypeScript extraction, evidence lookup, diagnostics | Complete; retain positive/negative fixtures and explicit unresolved facts |
+| M2: semantic exchange and reading prototype | Recorded semantic model, PM and engineer reports in HTML and Markdown | Technically complete; user accepted the reports. Independent claim-support review remains pending |
+| M3: usable internal representation | Function/behavior contracts, import validation, record inspection, bounded agent context | Next implementation scope. Both capabilities have contracts that retain critical distinctions and resolve to source |
+| M4: complete the three required demos | Both reports use the new shared records; internal-representation walkthrough; recorded agent comprehension example | First-prototype completion gate. All three demos are reproducible from the same model, with scope and review status visible |
+| M5: optional code-change demo | One small refactor guided by the representation, with before/after evidence and validation | Optional. Report the result and limits; success does not imply general semantic equivalence or coding superiority |
 
-## 4. Data model: small and explicit
+The earlier M3 breadth target moves after this prototype. Its context-selection work moves into M3 because it is needed to use the IR. The earlier M4 integrity checks remain mandatory in M3/M4; broad mutation testing moves after the prototype, with one optional change in M5. The earlier M5 holdout study remains subsequent generalization work.
 
-Use one semantic identity space and separate record collections. Graphs are derived from these records.
+The original 15-day estimate no longer describes this scope. Implement in the increments below and record actual effort. Independent reader and claim review depend on reviewer availability; pending review must remain explicit and must not be reported as completed.
 
-| Record | Required information | Responsibility |
-|---|---|---|
-| Snapshot | repository identity, commit/tree or working-tree digest, selected roots, file manifest, config hash, extractor/schema versions | Defines exactly what was analyzed |
-| Evidence | snapshot ID, path, blob/content hash, byte or line span, optional symbol ID, method | Makes a statement inspectable |
-| Fact | kind, subject/object or value, evidence IDs, resolution status | Stores a bounded source observation |
-| Concept | immutable ID, kind, alias, title, purpose, evidence and mappings | Represents a component, capability, state/resource, or external system |
-| Relation | typed endpoints, relation kind, evidence IDs, origin | Connects concepts without duplicating them |
-| Claim | text or structured proposition, subject IDs, evidence IDs, origin, verification state, interpretation acceptance | Represents meaning and its evidential status |
-| Capability flow | entry points, ordered or branching steps, effects, failures, unresolved edges | Gives humans a useful cross-file behavioral explanation |
-| Coverage | analysis unit, attempted methods, parsed/resolved/interpreted status, exclusions and errors | Prevents a partial analysis from appearing complete |
+## M3: usable internal representation
 
-Initial concept kinds: component, capability, state, external. Initial relations: contains, exposes, implements, depends_on, reads, writes, invokes, produces, constrained_by. Runtime ordering belongs in capability-flow steps; an import edge is never automatically converted into an execution-order edge.
+The detailed next task is [NEXT_IMPLEMENTATION_TASK.md](NEXT_IMPLEMENTATION_TASK.md).
 
-Every claim records both **origin** (source observation, model inference, human declaration) and **verification** (supported within stated scope, contradicted, unknown). Interpretation acceptance is a separate status. Avoid uncalibrated confidence percentages.
+### Increment 1: contracts and one end-to-end behavior
 
-Flow steps may be sequential, conditional, repeated, or unresolved. Do not force a library's behavior into a DAG: callbacks and retries can create cycles. A diagram may omit implementation detail, but must retain consequential branches and failures.
+Define a versioned contract extension using one function and one behavior before expanding the model. Use response selection as the first Hono behavior. It needs direct, Promise, and composed paths, plus the shared response state.
 
-Semantic IDs must not be hashes of their current title or file path. Assign IDs when concepts first enter a run/model; preserve them during replay and accepted-model revisions. Aliases can change. If matching a prior concept is ambiguous, propose a replacement relationship rather than silently reusing an identity.
+Add source-bound callable identities for functions, methods, and accessors. Getters and setters can share a structural property symbol, so their implementation role and evidence spans must remain distinct. Retain relevant nested and anonymous callables; name uncertainty explicitly instead of inventing a public function.
 
-For the first bootstrap, fixed fact ordering plus a recorded proposal response yields reproducible outputs. Regenerating a model response is a new run and need not reproduce the same wording. Cross-run identity preservation is evaluated after initial comprehension is useful.
+Define behavior rules through conditions, outcomes, state effects, failure destinations, participating functions, and links to existing flow steps/claims. Do not use a list of function names as a substitute for those rules.
 
-### Evidence checks are necessary but not sufficient
+Choose a schema version explicitly. Preserve existing v0.1 recorded inputs and replay support. Create a new proposal/model when meanings or record structure change. Do not silently attach old presentation plans or assertions to a new artifact ID.
 
-The validator can establish that a cited source span exists and matches its hash. It cannot infer merely from that fact that the citation entails an English claim. Content support must be evaluated separately by reviewed benchmark answers and sampled claim review. A test associated with a function is supporting evidence; it is not a universal proof of that function's behavior.
+### Increment 2: both capabilities and inspection
 
-## 5. Analysis pipeline
+Extend the contracts to the existing dispatch and composition scope. Use current authored summaries as candidates for source review. They are not automatically accepted facts.
 
-### Stage A: snapshot and inventory
+Add a minimal read-only query API and CLI. It must list capabilities and show a selected capability, behavior, or function with its direct links, relevant unknowns, and source references. JSON is the machine interface. A concise text view can make the live walkthrough easier to follow. A new web application is not required.
 
-Accept a local path and optional Git revision. Read Git objects for commit mode without changing the user's branch. Working-tree mode records a digest of included files and reports dirty/untracked inclusion explicitly. Default to tracked source, configuration, and tests. Respect explicit exclusions, skip build outputs/vendor code, and never follow a symlink outside the selected root.
+### Increment 3: bounded agent context
 
-Do not execute target repository scripts or install its dependencies during scanning. Source is data. Read tsconfig files as configuration; resolve project references and path aliases as data. Optional dependency installation for richer resolution is a separate, explicit setup operation in a disposable benchmark checkout.
+Export a task-focused context pack for an explicitly selected behavior or capability. Use deterministic selection and a byte budget first. Include the snapshot/model identity, required rules, relevant function/state links, critical unknowns, and evidence references. Additional exact source remains available through evidence lookup.
 
-Hono's root tsconfig has an empty files list and project references. Following only root files would falsely produce an empty program. The extractor must understand the project graph or create a documented source-only analysis program for the selected roots.
+Report omitted optional records and how to retrieve them. If required rules and critical unknowns cannot fit, reject the budget or require a narrower selection. Do not silently remove a consequential branch.
 
-### Stage B: deterministic extraction
+Record one new file-exchange proposal run for the contract schema and retain its input/output. Record producer/model and usage when available; otherwise mark them unavailable. Use recorded replay for repeatable demonstrations and label it as replay.
 
-Wrap the supported TypeScript compiler API in an adapter. Extract declarations, exports and re-exports, imports, resolved module links, and direct call/reference information where justified. Distinguish type-only and runtime dependencies. Record unresolved dynamic dispatch and missing external types; do not invent target symbols.
+### Exit gate
 
-Use syntax parsing even when complete type resolution fails. Store parse diagnostics and a declared resolution level. For a scoped benchmark, absence of unrelated runtime dependency types need not prevent useful analysis of the core.
+- Both capabilities have source-linked function and behavior contracts.
+- Import rejects stale bindings, absent records, invalid endpoints, and unsupported self-certification.
+- Inspection and context export preserve the required decision rules and relevant critical unknowns.
+- A repeated run with the same recorded input produces the same normalized output.
+- Original fixtures cover at least one shared-state behavior across functions and one unresolved callback boundary. No Hono-only production logic is needed.
+- Existing v0.1 replay and current reports remain available for comparison.
 
-Cache per-file syntax facts by content hash and adapter version. Resolution caches also depend on compiler options, project references, dependency state, and resolver inputs. The prototype may recompute the entire selected program after a resolution-affecting change; correct invalidation is more important than premature incrementality.
+## M4: complete the three required demos
 
-### Stage C: bounded evidence retrieval
+| Demo | What to show | Completion check |
+| --- | --- | --- |
+| PM / vibe coder | Purpose, three main actions, simple case, possible outcomes, and limits for each capability | A reader can locate purpose, a normal outcome, a failure outcome, and a scope limit without opening the full audit |
+| Engineer / serious coder | Example-led article, exact source focuses, conditional behavior, function contracts, failure paths | A reader can find the direct/Promise distinction, finalization rules, call/return order, and error boundaries |
+| Internal representation | Select a capability; inspect one behavior and its functions/state; follow a rule to source; export context; let an agent answer a bounded question | The walkthrough uses canonical records and actual query output. It shows preserved conditions, provenance, unknowns, and source retrieval |
 
-Build an evidence bundle from public exports, neighboring symbols, imports, test references, and selected source bodies. Use deterministic ranking and explicit budgets first; do not add embeddings initially.
+Both human views must use the same canonical contracts and IDs as the internal demo. Keep audience prose and layout in presentation data. Contract fields shown as reference should come from the model directly. Authored summaries can remain in the reading plan, with support links and separate review status.
 
-The proposer can ask for another symbol or source span by ID. Log these retrievals. An edge discovered during retrieval does not prove that every neighboring concept was analyzed. Include a list of omitted or unresolved material.
+The internal demo must do more than open a large JSON file. Use a short path through real records. A JSON excerpt, CLI inspection, and a compact relationship view are sufficient. Any visual relationship view must be generated from the model, not drawn from a separate hand-maintained map.
 
-### Stage D: semantic proposal
+### Rendering work
 
-Provide an open, versioned proposal-request schema to the user's existing coding agent. Ask it to propose conceptual groups, names, capability flow, claims, failures, and unknowns using evidence IDs from the bundle. Allow repository docs as labeled supporting context in one evaluation track; keep a code-only track to test whether code is actually being examined.
+The reported single-handler range has been extended from `src/hono-base.ts:431–440` to `431–450`, so it includes the full branch. Other ranges now select complete statements where practical. Partial excerpts are labeled, and readers can open the surrounding recorded source in place. Do not add braces or ellipses to source evidence as if they were original code.
 
-Do not seed Hono component names or benchmark answers in production code. General instructions can ask for public capabilities and their participating state; a Hono-specific gold map belongs only in evaluator assets.
+Check HTML and Markdown for generics such as `ReturnType<H>`, nested indexing, backticks in comments, indentation, line breaks, and code overflow. A source focus does not need to compile by itself, but its boundary must be clear. Keep the code text intact when changing its presentation. These cases now have source-fidelity and rendered-output checks. Repeat the relevant checks when the reports are connected to the new contract model. The user accepted the current report presentation. Repeat reader review when the new contracts change the explanations.
 
-The transport has two initial implementations:
+Keep the article reading order. Avoid another broad visual redesign. Complete desktop/mobile, keyboard, source-navigation, companion-link, and offline checks on final output.
 
-- **File exchange:** export a request, run it through the user's current agent, and import the resulting JSON. This supplies a concrete model-assisted path without a provider SDK or new paid service.
-- **Recorded replay:** use saved proposal responses to exercise validation/rendering deterministically in CI. Replay is a test mode and must never be presented as a fresh inferred analysis.
+### Agent comprehension check
 
-A one-command model adapter is optional after the first useful output. Its public interface accepts an inference function supplied by the host application. No subprocess or model endpoint runs unless the user has configured it. Any adapter failure produces an explicit partial run.
+Use a short task set with source-reviewed answers held outside the analyzer:
 
-### Stage E: validate and reconcile
+1. What changes for HEAD dispatch, and what remains in the original Request?
+2. How do direct, Promise, and composed paths handle a missing result?
+3. When can an existing response be replaced?
+4. What happens when next is called repeatedly, and which frame can handle the failure?
+5. Which functions and shared state participate in response finalization?
+6. What cannot be concluded about user-supplied handlers from this scope?
 
-Validate JSON Schema, known IDs, evidence resolution, evidence/snapshot consistency, relation endpoint types, and the declared bounds of the proposal. Reject dangling references and unsupported schema fields. A single bounded repair request may correct malformed output. After the repair limit, keep the failed proposal for inspection and report an incomplete run.
+Give the agent the selected IR first. Log requests for additional evidence, final answers, and unresolved questions. Score correctness, unsupported assertions, source use, and requested context size. Count expected unknowns separately from answered behavior questions. A source lookup is allowed and must remain visible in the trace.
 
-Model output is proposed data, not executable instructions. The engine only accepts defined record operations. It does not execute commands found in source comments or generated narratives.
+For the demo task set, require correct answers to the known critical distinctions and no unsupported assertion about an unknown callback. Correct unsupported claims before packaging the demo. Report review origin and any remaining limits. A recorded demo pass is a narrow result, not a general benchmark win.
 
-### Stage F: render and query
+Use the existing file/rg/source workflow as a comparison if making an efficiency claim. Keep model, question, source access, and budget comparable. Record model-building cost separately from repeated use. No speed or token reduction is required for the first demonstration; any claimed benefit needs a measured comparison.
 
-Produce a concise repository overview, one Markdown capability page per accepted or unaccepted-labeled capability, and a JSON representation. Each capability page shows purpose, entry points, flow, state/effects, failures, evidence, and unknowns. Generated diagrams reference the same concept IDs as the text.
+### First-prototype completion
 
-The context command selects a concept and related evidence for an agent. Mandatory declared constraints and unresolved critical claims must not be silently dropped to meet a budget. Report truncation with continuation references or reject an insufficient budget.
+Provide four standalone HTML reports, four Markdown reports, semantic JSON, a sample context pack, an inspection transcript, the agent task trace, source notices, and a short reproduction guide. Include coverage, verification results, and review status. The three demo views must identify the same semantic artifact.
 
-### Stage G: preserve and inspect
+Independent claim review remains a quality gate for stronger reliability claims. It does not prevent an explicitly labeled review prototype from being inspected. Do not describe pending independent review as passed.
 
-Keep manifests, facts, proposals, validated model, coverage, and run metrics in a chosen output directory outside the target repository by default. A separate accept operation can write chosen interpretations to a Clearings model directory. The analysis command must not write to the target's source or commit any changes.
+## M5: optional code-change demonstration
 
-## 6. Proposed CLI contract
+Prefer one small refactor that makes a selected dispatch section easier to follow while preserving its synchronous and Promise behavior. A small feature can be a later alternative with its own explicit behavior contract.
 
-These commands are a specification for implementation, not commands available in this starter package.
+1. State the change and the behavior that must remain stable in terms of selected contracts.
+2. Give the agent the relevant context pack, with source retrieval available and logged.
+3. Apply the patch in a separate disposable workspace derived from the pinned source. Keep the analysis target unchanged.
+4. Run the relevant checks in that workspace. Keep test execution and any necessary dependency setup separate from the read-only analysis path.
+5. Re-scan the changed snapshot. Show changed evidence, affected contracts, and review decisions. Do not silently reuse assertions from the old artifact.
+6. Present the patch, validation output, and known gaps together.
 
-~~~bash
-clearings scan ./hono --ref eebdf7be39abf0a872671835ccce0c4f03ea497a --out ./runs/hono
-clearings propose ./runs/hono --scope request-dispatch --export ./request.json
-# The configured external agent produces response.json from request.json.
-clearings import ./runs/hono --proposal ./response.json
-clearings overview ./runs/hono --format markdown
-clearings explain ./runs/hono --capability request-dispatch --format markdown
-clearings context ./runs/hono --capability request-dispatch --max-tokens 8000 --format json
-clearings validate ./runs/hono
-~~~
+The optional demo cannot claim full equivalence from a passing test suite. Record the tested conditions, including direct/Promise behavior and failure boundaries. If a critical behavior changes unintentionally, retain the failed result and revise the patch or contract.
 
-No arguments may implicitly opt into sending source to a model. File exchange makes that step explicit; a later configured adapter can streamline it.
+No optional code change runs as part of the roadmap update. No target mutation, dependency installation, commit, push, or deployment is implied by running a scan or opening a report.
 
-CLI JSON uses a versioned envelope with schema_version, command, status, snapshot_id, data, diagnostics, and coverage. Status is complete, partial, or failed; complete means the requested analysis steps completed, not that every program property is known. stdout contains the requested output only; progress goes to stderr. Deterministic commands have stable ordering. Proposed exit codes: 0 successful command, 1 operational failure, 2 invalid input/schema, 3 requested strict completeness or validation gate not met. Unsupported semantic properties remain unknown and are not automatically command failures.
+## Scope after the first prototype
 
-User-facing JSON and Markdown default to redacting absolute local roots in portable exports while retaining repo-relative paths. Evidence can be resolved locally from the manifest. No account, cloud service, or GitHub write permission is required to analyze a checkout.
+- More Hono capabilities and a repository-wide overview.
+- A pinned non-Hono TypeScript holdout using unchanged production code.
+- Larger reader and agent studies, plus broader rename and behavior mutations.
+- Semantic revision matching, incremental analysis, and accepted-model maintenance.
+- Python support and a bounded LiteLLM routing slice; C/SQLite later.
+- Model adapters, editor/MCP integration, and public packaging when justified by use.
 
-## 7. Implementation structure and stack
+Keep one TypeScript package, portable JSON, and local files until a demonstrated requirement needs more infrastructure. Full program verification, complete runtime call graphs, hosted accounts, and autonomous repository-wide rewriting remain outside this prototype.
 
-Start with one npm package and clear internal modules. Extract publishable packages only when a second consumer creates a concrete need.
+## Working agreements
 
-| Path | Responsibility |
-|---|---|
-| src/model/ | Records, identity, JSON Schema validation, migrations |
-| src/repository/ | Git snapshots, manifests, safe file access, project discovery |
-| src/extractors/typescript/ | Compiler-backed and syntax-only extraction |
-| src/evidence/ | Source anchors, resolution, bounded retrieval |
-| src/semantics/ | Proposal requests/import, reconciliation, capability grouping |
-| src/query/ | Overview, explain, context selection |
-| src/renderers/ | JSON, Markdown, Mermaid projections |
-| src/storage/ | File-based artifacts behind a storage interface |
-| src/cli/ | Thin command parsing and output/exit handling |
-| schemas/ | Versioned interchange schemas; generate TS types or verify correspondence |
-| tests/fixtures/ | Small original programs for extraction and interpretation edge cases |
-| benchmarks/ | Pinned targets, evaluator-only questions, run scripts and results |
-
-Use TypeScript strict mode, Node.js 24 LTS, native Git through argument-array subprocess calls, JSON Schema validation, and a small CLI parser. Vitest or Node's test runner is sufficient; choose one in M0. Pin dependency versions and commit the lockfile when actual scaffolding is created. Use the TypeScript compiler version supported by the extractor rather than automatically inheriting an arbitrary target dependency version.
-
-The current TypeScript Compiler API documentation covers TypeScript 6.0 and earlier and warns of a different 7.1 API. Keep compiler API objects out of all public record types. This is an adapter compatibility concern, not a reason to abandon TypeScript.
-
-Sources: [Node.js release/download status](https://nodejs.org/en/download), [TypeScript Compiler API](https://github.com/microsoft/TypeScript/wiki/Using-the-Compiler-API).
-
-## 8. Milestones and acceptance gates
-
-Planning estimate: **15 engineering days for one engineer**, with a useful vertical slice around day 6-8. Model-assisted implementation may shorten coding time; evaluation, schema correction, and source review still require attention. These are estimates, not measured delivery commitments.
-
-| Milestone | Estimate | Deliverables | Exit gate |
-|---|---:|---|---|
-| M0: benchmark and foundations | 1 day | Actual TS/CLI scaffold; pinned target fetch; manifest reader; initial JSON envelopes; eight reviewed questions for two capabilities | One fixture and the pinned Hono checkout can be enumerated reproducibly; no target source is modified |
-| M1: structural extraction | 3 days | Snapshot builder, project-reference discovery, imports/exports/symbols, evidence IDs, diagnostics, scan command | Positive/negative fixtures pass; all selected Hono units are accounted for as parsed or explicitly failed; direct references are measured against a small manual sample |
-| M2: first semantic slice | 3 days | Proposal request/import, recorded replay, schema and evidence validation; dispatch and composition records | Both capability explanations include entry points, branches/failures, and inspectable evidence; reviewed support precision reaches the provisional gate below |
-| M3: six capabilities and human output | 3 days | Overview, six capability explanations, JSON/Markdown/Mermaid renderers, context selection | At least 16/20 benchmark questions are answerable correctly; remaining gaps are visible; semantic model does not merely list files |
-| M4: robustness and limited change tests | 2 days | Stale-evidence detection, replay stability, rename and behavior-mutation cases, resource metrics | Identical replay is stable; changed evidence is never silently reused; tested semantic mutations affect the relevant explanation or produce an explicit uncertainty |
-| M5: generalization and handoff | 3 days | A pinned non-Hono TypeScript holdout, small comprehension study, README walkthrough, packaged CLI | General extraction works without Hono-specific logic; measured human benefit is plausible without accuracy loss; limitations and costs are reported |
-
-### Concrete tasks within each milestone
-
-**M0:** create the minimal package; select exact versions; implement Git revision normalization and input inventory; add two original fixtures (simple cross-file calls and callbacks/dynamic dispatch); pin Hono; review the first eight questions using source. The question file in this starter contains candidates and source hints, not an independently adjudicated gold answer set.
-
-**M1:** implement schema validation, file/symbol IDs, tsconfig graph discovery, type/runtime import distinction, alias/re-export resolution, directly justified references, and coverage reports. Store unresolved relationships explicitly. Implement scan stdout/stderr and exit-code behavior. Do not implement a full call graph.
-
-**M2:** define proposal requests and responses; export/import through files; implement evidence ID lookup and a source-span retrieval primitive; add exact replay; render two capability pages; manually review a sample of claims; fix a model or schema failure before adding more capability types.
-
-**M3:** extend the same pipeline to the six target capabilities; add repository overview and focused flow diagrams; support explicit evidence expansion; implement budgeted context selection; review the full 20-question set. If more than two new ontology types appear necessary, document the missing question they enable before adding them.
-
-**M4:** test source changes in disposable worktrees: helper extraction or rename; modification of the repeated-next guard; a change to the router fallback condition; documentation-only edits. Validate the mutation's actual effect with an appropriately scoped source review or test before using it as a semantic benchmark. Compare behavior fields separately from evidence/mapping changes. Re-scan the whole bounded program if necessary.
-
-**M5:** choose and pin a different TypeScript library, such as Zod, after inspecting its then-current structure. Define five new capability questions before generating its semantic model. Exercise unchanged production extraction code. Recruit two or three engineers for an exploratory task study, or report explicitly if only a self-study was possible. Package reproducible runs and known failure examples.
-
-## 9. Evaluation design
-
-### Keep the evaluator separate
-
-The analyzer sees source, selected docs, and ordinary task instructions. It must never read evaluator answers or a prewritten expected semantic map. Scope files may select paths and query areas, but cannot supply the desired grouping or answers. The benchmark harness runs outside the target's scanned roots.
-
-Questions in benchmarks/questions/hono.json have candidate evidence paths and are marked unreviewed. M0/M3 add source-backed answer rubrics and independent review where possible. A model-generated rubric alone is not ground truth.
-
-### Baselines
-
-1. File tree, rg searches, public API/docs, and ordinary source browsing.
-2. A coding assistant with the same repository access, model, tool budget, and documentation allowance but no persistent Clearings model.
-3. Clearings output with expandable evidence; optionally the same coding assistant using that output.
-
-Report the cold cost of building the semantic model separately from the cost of using it on repeated questions. A model trained on Hono can answer broad questions from memory; require exact pinned-code evidence and include validated local mutations or name-perturbed fixtures. Do not claim that these controls completely eliminate training-data familiarity.
-
-### Provisional gates
-
-These thresholds are targets for the prototype, not achieved results.
-
-| Measure | Gate or reporting rule |
-|---|---|
-| Evidence integrity | 100% of retained citations resolve to the declared snapshot/hash/span |
-| Claim support | At least 90% precision on at least 50 manually reviewed substantive claims; report sample and severity, not only a percentage |
-| Question utility | At least 16 of 20 reviewed Hono questions answered correctly from the output and its linked evidence |
-| Failure-path omissions | No unflagged omission among the benchmark's explicitly designated critical error/control-flow cases |
-| Inventory completeness | Every selected file has an explicit parsed, excluded, or failed status; never hide parse failures in a smaller denominator |
-| Unsupported resolution | Dynamic/ambiguous examples produce unresolved records rather than fabricated exact targets |
-| Human comprehension | Exploratory target: at least 30% lower median task time with no reduction in scored accuracy versus the matched baseline |
-| Model maintenance | Record correction time, rejected claims, and stale interpretations; no claim of near-zero maintenance without measurement |
-| Determinism | Byte-stable normalized JSON for identical snapshot/config and recorded proposal replay; run timestamps/metrics excluded from the semantic digest |
-| Cold scan | Initial budget: under 60 seconds and 2 GiB peak RSS for the bounded Hono scan on a declared 4-vCPU/8-GiB machine; record hardware and adjust only with an explanation |
-| Model use | Default initial cap: 200k input tokens, 20k output tokens, 12 proposal/repair calls per full six-capability run; disclose partial results when exhausted |
-| Cost reporting | Record actual token usage and model identity; report currency only when a known rate or provider receipt is available |
-
-Question-utility scoring must distinguish a correct answer, a properly flagged unknown, and an incorrect assertion. Unknown is preferable to invented behavior but does not count as a correct substantive answer. Support precision must be paired with coverage so a tool cannot pass by making almost no claims.
-
-With two or three participants, the human study is exploratory. Counterbalance task order or use equivalent mutation variants to reduce learning effects. Do not present a small internal result as established general superiority.
-
-### Stop and revise conditions
-
-- If the output is essentially a folder summary, redesign capability selection before adding UI.
-- If citations resolve but do not support claims, tighten evidence packets and claim granularity before scaling targets.
-- If major control-flow differences disappear in compression, enrich capability-flow representation.
-- If reviewer correction time exceeds the browsing time saved across repeated tasks, investigate maintenance and selection costs.
-- If a second TypeScript repository needs hard-coded concepts in the extractor, revise the extraction/proposal boundary.
-- If source indexing is fast enough, do not introduce Rust or a graph database merely to appear scalable.
-
-## 10. Artifacts expected from a completed run
-
-| Artifact | Purpose |
-|---|---|
-| manifest.json | Reproducible repository/config/tool identity |
-| facts.jsonl | Deterministically extracted facts |
-| evidence.jsonl | Source anchors and extraction methods |
-| proposal-request.json | Recorded model input and retrieval references |
-| proposal-response.json | Recorded model output and model metadata |
-| semantic.json | Validated concepts, claims, relations, and flows |
-| coverage.json | Scope, unsupported constructs, exclusions, failures |
-| overview.md | Human overview with explicit coverage |
-| capabilities/*.md | Focused explanations with evidence |
-| metrics.json | Timing, memory, token usage, cache behavior |
-| evaluation.json | Separately generated question and claim scores |
-
-No source checkout is bundled in the library's npm package. Fetch benchmark sources by pinned commit in a dedicated directory. If small upstream excerpts become checked-in fixtures, preserve their applicable notices. New Clearings fixtures should preferably be original and minimal.
-
-## 11. Working agreements for the local implementation agent
-
-- Deliver milestones in sequence. First implement M0-M1, then stop for the structural extraction review.
-- Do not describe a replayed or hand-authored model as a newly inferred result.
-- Do not import benchmark gold answers into extraction or prompting.
-- Preserve the target checkout. Scanner code does not run target scripts or write target source.
-- Keep model-provider SDKs and compiler internals outside core record/query interfaces.
-- Every capability explanation must expose unknowns and inspectable evidence.
-- New abstractions require a concrete use in the current milestone.
-- Report what ran, what failed, and what is still proposed. Do not turn planned performance gates into measured claims.
-
-## 12. Original repository bootstrap instructions
-
-Implementation update: the private repository now exists and M0-M1 are implemented. See [M1_STATUS.md](M1_STATUS.md) for verified structural extraction results and the proposed M2 scope. The text below records the original planning-package bootstrap state; it is not the current implementation status.
-
-This package contains planning documents, candidate benchmark questions, a pinned target manifest, and a private-repository creation helper. It does not contain an implemented analyzer or an existing remote repository.
-
-The GitHub connection available while preparing this package was authenticated as jiaxing-guo and could inspect/edit repositories. It did not expose repository creation. Therefore no remote creation or privacy verification is claimed.
-
-After extracting the starter archive on a machine with Git and GitHub CLI authenticated as jiaxing-guo, run:
-
-~~~bash
-bash clearings-semantic/scripts/create-private-repo.sh
-~~~
-
-The helper checks the account, refuses an existing repository or an already-initialized local checkout, initializes a new main branch, commits only the starter files, creates jiaxing-guo/clearings-semantic with private visibility, verifies visibility before pushing, and reads it back afterward. It never changes the old repositories or broadens access. If remote creation succeeds but pushing fails, it stops and leaves the local commit intact for recovery.
-
-[GitHub CLI repository creation reference](https://cli.github.com/manual/gh_repo_create).
+- The next implementation scope is M3. Use its detailed task file and retain the existing completed foundation.
+- Preserve source observations, semantic assertions, and presentation as separate responsibilities.
+- Keep origin, citation integrity, content support, and acceptance distinct.
+- Preserve source text, unknowns, failure paths, and analysis coverage when compressing output.
+- Keep target scripts and mutations outside analysis.
+- Use Conventional Commits; omit internal milestone labels from commits and PR messages.
+- Keep changes local for review until commit/push is authorized. Do not publish packages or change repository visibility.

@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Follow a request through middleware · Clearings</title><style>
+:root{color-scheme:light;--paper:#f8f7f2;--card:#fffefa;--ink:#202f2c;--muted:#65726b;--line:#dce1d8;--green:#245e4b;--soft:#eaf0e7;--amber:#83561b;--warm:#fbf1db;--radius:14px;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:30px}body{margin:0;background:var(--paper);color:var(--ink);font-size:16px;line-height:1.65}a{color:var(--green);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:#13392d}button,summary,a{-webkit-tap-highlight-color:transparent}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #3a806b;outline-offset:4px}button{font:inherit;cursor:pointer}p{margin:0 0 16px}h1,h2,h3,h4{line-height:1.18;letter-spacing:-.035em}h1{font-size:clamp(34px,4.1vw,56px);font-weight:550;max-width:760px;margin:17px 0 22px}h2{font-size:29px;font-weight:550;margin:0 0 12px}h3{font-size:21px;font-weight:580;margin:0 0 12px}h4{font-size:16px;letter-spacing:0;margin:20px 0 8px}code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}pre{font-size:12px;line-height:1.65;background:#f0f2ec;padding:20px;border-radius:9px;overflow:auto;white-space:pre;max-width:100%}code{overflow-wrap:anywhere}.skip{position:fixed;left:16px;top:-90px;z-index:5;background:white;padding:12px}.skip:focus{top:12px}.rail{position:fixed;inset:0 auto 0 0;width:228px;padding:35px 26px;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--paper)}.brand{font-size:23px;font-weight:650;letter-spacing:-1px;display:flex;align-items:center;gap:10px;text-decoration:none}.mark{display:inline-flex;gap:3px;align-items:end;height:24px}.mark i{display:block;width:5px;border-radius:6px;background:var(--green);transform:rotate(20deg)}.mark i:nth-child(1){height:14px}.mark i:nth-child(2){height:24px}.mark i:nth-child(3){height:19px}.rail-label,.eyebrow{font-size:11px;font-weight:650;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}.rail-label{margin:47px 0 13px}.rail nav{display:grid;gap:5px}.rail nav a{text-decoration:none;color:var(--muted);font-size:14px;padding:9px 11px;border-radius:7px}.rail nav a:hover,.rail nav a.current{background:var(--soft);color:var(--green)}.rail-footer{margin-top:auto;font-size:12px;color:var(--muted);line-height:1.7}.shell{margin-left:228px;padding:37px clamp(24px,5vw,80px) 70px;max-width:1480px}.topbar{display:flex;justify-content:space-between;align-items:center;padding-bottom:34px;font-size:12px;color:var(--muted);gap:15px}.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid var(--line);border-radius:99px;font-size:11px;white-space:nowrap}.dot{height:6px;width:6px;background:#bb8237;border-radius:50%}.hero{padding:10px 0 32px;border-bottom:1px solid var(--line)}.lede{font-size:19px;line-height:1.6;max-width:760px}.scope-line{font-size:12px;color:var(--muted);margin:16px 0 0}.hero-links{display:flex;gap:22px;margin:21px 0 0;font-size:13px}.section{margin-top:44px}.section-heading{display:flex;align-items:start;justify-content:space-between;gap:18px;margin-bottom:22px}.section-heading p,.muted{color:var(--muted);font-size:14px}.step-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:9px;margin:22px 0 30px}.step-map a{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:15px 13px;text-decoration:none;line-height:1.4;font-size:13px;font-weight:550;transition:background .15s}.step-map a:hover,.step-map a.selected{background:var(--soft);border-color:#9ab59d}.step-map span{display:block;font-size:11px;color:var(--muted);margin-bottom:9px}.stage{border:1px solid var(--line);background:var(--card);border-radius:var(--radius);margin:14px 0;padding:24px 26px;scroll-margin-top:25px;transition:border-color .15s}.stage.selected{border-color:var(--green);box-shadow:0 0 0 2px #245e4b18}.stage-title{display:flex;gap:15px;align-items:baseline}.number{font-size:12px;color:var(--green);background:var(--soft);padding:3px 8px;border-radius:6px;letter-spacing:0;font-weight:600}.stage-summary{margin:0 0 12px;max-width:780px;font-size:16px}.support{font-size:11px;white-space:normal;color:var(--muted);margin-left:5px;display:inline}.support a{color:var(--muted);margin-right:7px}.caution{font-size:13px;line-height:1.6;border-left:3px solid #d5b271;padding:8px 12px;margin:15px 0;background:var(--warm);border-radius:0 6px 6px 0}.caution strong{font-weight:600;color:var(--amber)}details{min-width:0}summary{cursor:pointer;list-style:none;font-size:13px;font-weight:550;color:var(--green);padding:9px 0}summary::-webkit-details-marker{display:none}summary:before{content:'+';display:inline-block;width:20px;font-weight:400}details[open]>summary:before{content:'−'}details[open]>.detail-body{animation:appear .15s ease-out}.detail-body{padding-top:16px;border-top:1px solid var(--line);margin-top:7px;font-size:14px}.exact{margin-top:20px;background:#f4f5ef;padding:8px 14px;border-radius:8px}.branch{padding:17px 0;border-bottom:1px solid var(--line)}.branch:last-child{border-bottom:0}.branch h4{margin-top:0}.branch ul{padding-left:20px;margin-bottom:8px}.branch li{margin:9px 0}.inventory-link{font-size:12px;margin:18px 0 0}.case-list{border-top:1px solid var(--line)}.case{border-bottom:1px solid var(--line);padding:5px 0}.case>summary{font-size:16px;padding:18px 0;color:var(--ink)}.case[open]{padding-bottom:20px}.case .detail-body{border:0;margin:0;padding:0 22px}.case-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.case-links a{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:5px 12px;text-decoration:none}.case-links a:hover{background:var(--soft)}.unknown-list{font-size:14px;padding-left:20px}.unknown-list li{margin-bottom:18px}.unknown-label{font-size:11px;color:var(--amber);margin-right:7px;font-weight:650}.audit,.source,.metadata{border:1px solid var(--line);border-radius:10px;padding:9px 18px;background:var(--card);margin:10px 0}.claim{padding:17px 0;border-bottom:1px solid var(--line);scroll-margin-top:25px}.claim:last-child{border-bottom:0}.claim-title{font-size:11px;letter-spacing:.06em;color:var(--muted);margin-bottom:7px;text-transform:uppercase}.claim p{font-size:14px}.source>summary{font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}.source-meta{font-size:11px;color:var(--muted);overflow-wrap:anywhere}.metadata dl{display:grid;grid-template-columns:115px minmax(0,1fr);gap:13px;font-size:12px}.metadata dt{color:var(--muted)}.metadata dd{margin:0;overflow-wrap:anywhere}.small-button{border:1px solid var(--line);border-radius:7px;background:transparent;padding:6px 11px;font-size:12px;color:var(--green)}.diagram{border:1px solid var(--line);padding:22px;border-radius:var(--radius);margin:24px 0;background:var(--card)}.diagram h3{font-size:18px}.diagram .assumption{font-size:13px;color:var(--muted)}.sequence{width:100%;height:auto;display:block}.sequence-table{font-size:12px;border-collapse:collapse;width:100%}.sequence-table th,.sequence-table td{text-align:left;padding:8px;border-bottom:1px solid var(--line)}.source-notice{font-size:11px;color:var(--muted);margin-top:18px}.footer{border-top:1px solid var(--line);margin-top:42px;padding-top:19px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:15px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}[hidden]{display:none!important}
+@keyframes appear{from{opacity:.6}to{opacity:1}}@media(max-width:1050px){.rail{width:190px;padding:30px 18px}.shell{margin-left:190px;padding:30px}.step-map{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:720px){.rail{position:static;width:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 20px}.brand{font-size:21px}.rail-label,.rail-footer{display:none}.rail nav{display:flex;gap:3px;flex-wrap:nowrap;overflow-x:auto;margin-top:12px;padding-bottom:5px}.rail nav a{font-size:12px;padding:5px 9px;flex-shrink:0}.shell{margin:0;padding:22px 20px 40px}.topbar{padding-bottom:20px;flex-wrap:wrap}.hero{padding-top:8px}h1{font-size:34px;margin:12px 0 18px}.lede{font-size:16px}.hero-links{gap:17px}.section{margin-top:35px}.step-map{grid-template-columns:repeat(2,minmax(0,1fr))}.stage{padding:20px 17px}.stage-title{gap:10px}h3{font-size:19px}.diagram{padding:15px}.section-heading{display:block}.sequence-table{font-size:10px}.metadata dl{grid-template-columns:1fr;gap:5px}.metadata dd{margin-bottom:12px}.footer{display:block}.pill{white-space:normal}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+@media print{.rail,.topbar,.hero-links,.step-map,.small-button,.skip,.case-links{display:none!important}.shell{margin:0;padding:0;max-width:none}body{background:white;font-size:11pt}.hero{padding-top:0}h1{font-size:30pt}.section{margin-top:25px}.stage,.diagram{break-inside:avoid;box-shadow:none}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:8pt}.support{font-size:8pt}a{color:inherit}details:not([open])>*:not(summary){display:block!important}}
+
+.audience-shell{max-width:1100px;margin:0 auto;padding:27px 35px 55px}.audience-header{display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid var(--line);padding-bottom:22px}.view-tabs{display:flex;gap:3px;background:#ecefe7;border-radius:8px;padding:4px;font-size:12px}.view-tabs a,.view-tabs span{padding:5px 13px;border-radius:5px;text-decoration:none;color:var(--muted)}.view-tabs .active{background:var(--card);color:var(--ink);box-shadow:0 1px 3px #20302c10}.overview-page{max-width:970px;margin:auto}.overview-hero{padding:39px 0 27px}.overview-hero h1{max-width:760px;font-size:43px;margin:10px 0 18px}.overview-hero .lede{max-width:730px;font-size:19px}.overview-body h2{font-size:22px;margin:0 0 18px}.journey{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:23px;padding:0;margin:0 0 25px}.journey li{padding:0 0 18px;border-bottom:2px solid var(--line)}.journey .number{display:inline-block;margin-bottom:13px}.journey h3{font-size:17px;margin:0 0 8px;letter-spacing:-.02em}.journey p{font-size:14px;margin:0;color:var(--muted)}.example-box{background:var(--soft);border-left:3px solid #749b80;padding:19px 23px;border-radius:0 8px 8px 0;margin:25px 0 31px}.example-box h2,.example-box h3{font-size:16px;letter-spacing:0;margin:0 0 8px}.example-box p{margin:0;font-size:15px}.outcomes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin:0 0 28px}.outcome{padding:0 0 0 14px;border-left:2px solid #b5c4b4}.outcome[data-kind=fallback]{border-color:#d7be8d}.outcome[data-kind=failure]{border-color:#c9aea1}.outcome h3{font-size:16px;letter-spacing:0;margin:0 0 8px}.outcome p{font-size:14px;color:var(--muted);margin:0}.limits-note{border-top:1px solid var(--line);padding-top:22px;margin-top:27px}.limits-note h2,.limits-note h3{font-size:16px;letter-spacing:0;margin:0 0 8px}.limits-note p{font-size:13px;color:var(--muted);margin:0 0 7px}.review-line{font-size:11px;color:var(--muted);margin:18px 0}.proof{border-top:1px solid var(--line);padding:12px 0;margin-top:18px}.proof>summary{font-size:13px}.reference-body{font-size:13px;overflow-wrap:anywhere;padding-top:18px}.reference-body>h3{margin-top:25px;font-size:19px}.reference-body li{margin-bottom:12px}.reference-body .claim-title{font-size:11px}.reference-body .license{white-space:pre-wrap}.reference-body h4{font-size:14px}.reference-body pre{overflow-wrap:normal}.reference-index{border:1px solid var(--line);padding:12px 15px;border-radius:8px;margin-bottom:20px}.reference-index a{margin-right:12px}.guide-grid{display:grid;grid-template-columns:minmax(0,750px) 195px;gap:60px;align-items:start}.guide-main{min-width:0;width:100%}.guide-main .hero{padding-top:38px;border:0;padding-bottom:0}.guide-main .hero h1{font-size:41px;margin-top:12px}.guide-main .hero .lede{font-size:17px;line-height:1.75}.guide-toc{position:sticky;top:30px;margin-top:50px;padding-left:18px;border-left:1px solid var(--line);font-size:12px;line-height:1.6}.guide-toc strong{display:block;margin-bottom:12px;font-weight:550}.guide-toc a{display:block;text-decoration:none;color:var(--muted);margin:10px 0}.guide-section{margin-top:39px;scroll-margin-top:26px}.guide-section h2{font-size:25px;letter-spacing:-.02em;margin-bottom:17px}.guide-section p{font-size:16px;line-height:1.8;margin-bottom:15px}.guide-section .section-source{font-size:11px;color:var(--muted);margin:14px 0 0}.code-focus{margin:20px 0;border:1px solid var(--line);border-radius:9px;overflow:hidden}.code-focus pre{border-radius:0;margin:0;padding:18px 20px;font-size:13px;line-height:1.75;background:#eef1e9}.code-focus figcaption{display:flex;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;font-size:12px;padding:9px 14px;background:var(--card);color:var(--muted);overflow-wrap:anywhere}.code-scope{font-size:11px;line-height:1.6;padding:7px 14px;background:var(--card);color:var(--muted);border-top:1px solid var(--line)}.code-context{background:var(--card);border-top:1px solid var(--line);padding:0 14px}.code-context>summary{font-size:12px}.code-context pre{margin:0 0 14px;border:1px solid var(--line);border-radius:6px}.source-code{tab-size:2;font-variant-ligatures:none}.source-code:focus-visible{outline:3px solid #3a806b;outline-offset:-3px}.source-code code{white-space:inherit;overflow-wrap:normal;word-break:normal}.implementation-note{font-size:12px;color:var(--muted);margin:14px 0}.implementation-note a{margin-right:9px}.function-ref{padding:18px 0;border-bottom:1px solid var(--line)}.function-ref h3{font-family:ui-monospace,monospace;font-size:16px;letter-spacing:0;margin:0 0 9px}.function-ref>p{font-size:14px;margin-bottom:8px}.function-ref dl{display:grid;grid-template-columns:105px minmax(0,1fr);gap:12px;font-size:13px;line-height:1.7}.function-ref dt{font-weight:550}.function-ref dd{margin:0}.function-ref .support{display:block;margin:3px 0 0}.function-ref .evidence-id{font-size:11px;overflow-wrap:anywhere}.function-section{margin-top:35px;border-top:1px solid var(--line);padding-top:20px}.function-section>h2{font-size:23px}.function-section>p{font-size:14px;color:var(--muted)}.function-section>details>summary{font-size:15px}.guide-main .diagram{margin:26px 0}.guide-main .diagram .assumption{font-size:13px}.guide-main .diagram h3{font-size:17px}.guide-main .case-list{margin-top:25px}.guide-main .case>summary{font-size:15px}.guide-main .case p{font-size:14px}.guide-main .case .detail-body{padding-top:6px}.guide-main .guide-limits{margin-top:33px}.guide-main .guide-limits p{font-size:14px}.audit-notice{font-size:12px;color:var(--muted)}.audience-footer{border-top:1px solid var(--line);padding-top:17px;margin-top:24px;display:flex;justify-content:space-between;font-size:12px;color:var(--muted);gap:20px}
+@media(max-width:950px){.guide-grid{grid-template-columns:minmax(0,1fr);gap:0}.guide-toc{display:none}.guide-main{max-width:760px;margin:auto}.audience-shell{padding:24px}.overview-hero h1{font-size:37px}.journey,.outcomes{gap:15px}}
+@media(max-width:600px){.audience-shell{padding:20px}.audience-header{gap:10px;padding-bottom:16px}.brand{font-size:21px}.view-tabs a,.view-tabs span{padding:4px 8px;font-size:11px}.overview-hero{padding:28px 0 16px}.overview-hero h1{font-size:33px}.overview-hero .lede{font-size:17px}.journey{grid-template-columns:1fr;gap:12px}.journey li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:0 12px;border:0;padding:8px 0}.journey .number{grid-row:1 / 3;align-self:start;margin-top:1px;padding:3px 8px}.journey h3{margin-bottom:5px}.journey p{grid-column:2}.outcomes{grid-template-columns:1fr;gap:18px}.example-box{padding:17px;margin:21px 0 26px}.overview-body h2{font-size:20px}.guide-main .hero{padding-top:27px}.guide-main .hero h1{font-size:34px}.guide-main .hero .lede{font-size:16px}.guide-section h2{font-size:23px}.guide-section p{font-size:15px}.function-ref dl{grid-template-columns:1fr;gap:4px}.function-ref dd{margin-bottom:12px}.code-focus pre{font-size:12px;padding:14px}.audience-footer{flex-wrap:wrap}.reference-body .metadata{padding:10px}.view-tabs{flex-shrink:0}}
+@media print{.audience-header,.guide-toc,.view-tabs{display:none}.audience-shell{padding:0;max-width:none}.guide-grid{display:block}.overview-hero,.guide-main .hero{padding-top:0}.proof:not([open]){display:none}.overview-body .proof[open]{break-before:page}.code-focus{break-inside:avoid}.code-focus pre,.source-code code{white-space:pre-wrap;overflow-wrap:anywhere}.function-ref{break-inside:avoid}.audience-footer{display:none}}
+</style></head><body class="engineer-report"><a class="skip" href="#main">Skip to content</a><div class="audience-shell" id="top"><header class="audience-header"><a class="brand" href="#top"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>clearings</a><nav class="view-tabs" aria-label="Reading view"><a href="middleware-composition.overview.html">Overview</a><span class="active" aria-current="page">Engineer</span></nav></header><div class="guide-grid"><main class="guide-main" id="main"><section class="hero"><span class="eyebrow">The engineer guide</span><h1>Follow a request through middleware</h1><p class="lede">Middleware functions share one Context. Each function can call next() to enter the next function. This guide follows that call and the return path.</p><p class="review-line">Recorded example · Partial repository view · Needs independent review</p></section><section class="example-box" id="example"><h2>Start with two functions that wait</h2><p>Assume both middleware functions use await next(), and later work returns normally. The second function resumes before the first. This is an example, not an observed execution.</p></section><section class="guide-section" id="guide-start"><span id="stage-start"></span><span id="stage-guard"></span><h2>First, start a fresh run</h2><p>compose returns a runner. Each runner call creates its own index, sets it to -1, and starts dispatch at index zero.</p><p>Before selecting a handler, dispatch requires its index to be greater than the previous one. A repeated or backward index raises an Error.</p><figure class="code-focus"><figcaption><span>src/compose.ts:21–23</span><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">Source record</a></figcaption><div class="code-scope">Partial excerpt. Code before and after this range is omitted.</div><pre class="source-code" tabindex="0" role="region" aria-label="Source code at src/compose.ts:21–23"><code>    let index = -1
+
+    return dispatch(0)
+</code></pre><details class="code-context"><summary>Show surrounding source · lines 15–73</summary><pre class="source-code" tabindex="0" role="region" aria-label="Surrounding source at src/compose.ts:15–73"><code>compose = &lt;E extends Env = Env&gt;(
+  middleware: [[Function, unknown], unknown][] | [[Function]][],
+  onError?: ErrorHandler&lt;E&gt;,
+  onNotFound?: NotFoundHandler&lt;E&gt;
+): ((context: Context, next?: Next) =&gt; Promise&lt;Context&gt;) =&gt; {
+  return (context, next) =&gt; {
+    let index = -1
+
+    return dispatch(0)
+
+    /**
+     * Dispatch the middleware functions.
+     *
+     * @param {number} i - The current index in the middleware array.
+     *
+     * @returns {Promise&lt;Context&gt;} - A promise that resolves to the context.
+     */
+    async function dispatch(i: number): Promise&lt;Context&gt; {
+      if (i &lt;= index) {
+        throw new Error(&#39;next() called multiple times&#39;)
+      }
+      index = i
+
+      let res
+      let isError = false
+      let handler
+
+      if (middleware[i]) {
+        handler = middleware[i][0][0]
+        context.req.routeIndex = i
+      } else {
+        handler = (i === middleware.length &amp;&amp; next) || undefined
+      }
+
+      if (handler) {
+        try {
+          res = await handler(context, () =&gt; dispatch(i + 1))
+        } catch (err) {
+          if (err instanceof Error &amp;&amp; onError) {
+            context.error = err
+            res = await onError(err, context)
+            isError = true
+          } else {
+            throw err
+          }
+        }
+      } else {
+        if (context.finalized === false &amp;&amp; onNotFound) {
+          res = await onNotFound(context)
+        }
+      }
+
+      if (res &amp;&amp; (context.finalized === false || isError)) {
+        context.res = res
+      }
+      return context
+    }
+  }
+}</code></pre></details></figure><p class="section-source">Sources: <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><p class="implementation-note">Implementation: <a href="#function-compose">compose</a> · <a href="#function-dispatch">dispatch</a></p></section><section class="guide-section" id="guide-next"><span id="stage-call"></span><h2>Then, follow next() into the next function</h2><p>dispatch selects the middleware handler and updates context.req.routeIndex. At exactly middleware.length, it can select the supplied outer next callback.</p><p>The callback passed to the handler calls dispatch(i + 1). It uses the same context, so later work can update shared response state.</p><p>The dispatcher waits for the handler result. If the handler uses await next(), it waits for the child dispatch before continuing.</p><figure class="code-focus"><figcaption><span>src/compose.ts:51–51</span><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">Source record</a></figcaption><div class="code-scope">Partial excerpt. Code before and after this range is omitted.</div><pre class="source-code" tabindex="0" role="region" aria-label="Source code at src/compose.ts:51–51"><code>          res = await handler(context, () =&gt; dispatch(i + 1))
+</code></pre><details class="code-context"><summary>Show surrounding source · lines 15–73</summary><pre class="source-code" tabindex="0" role="region" aria-label="Surrounding source at src/compose.ts:15–73"><code>compose = &lt;E extends Env = Env&gt;(
+  middleware: [[Function, unknown], unknown][] | [[Function]][],
+  onError?: ErrorHandler&lt;E&gt;,
+  onNotFound?: NotFoundHandler&lt;E&gt;
+): ((context: Context, next?: Next) =&gt; Promise&lt;Context&gt;) =&gt; {
+  return (context, next) =&gt; {
+    let index = -1
+
+    return dispatch(0)
+
+    /**
+     * Dispatch the middleware functions.
+     *
+     * @param {number} i - The current index in the middleware array.
+     *
+     * @returns {Promise&lt;Context&gt;} - A promise that resolves to the context.
+     */
+    async function dispatch(i: number): Promise&lt;Context&gt; {
+      if (i &lt;= index) {
+        throw new Error(&#39;next() called multiple times&#39;)
+      }
+      index = i
+
+      let res
+      let isError = false
+      let handler
+
+      if (middleware[i]) {
+        handler = middleware[i][0][0]
+        context.req.routeIndex = i
+      } else {
+        handler = (i === middleware.length &amp;&amp; next) || undefined
+      }
+
+      if (handler) {
+        try {
+          res = await handler(context, () =&gt; dispatch(i + 1))
+        } catch (err) {
+          if (err instanceof Error &amp;&amp; onError) {
+            context.error = err
+            res = await onError(err, context)
+            isError = true
+          } else {
+            throw err
+          }
+        }
+      } else {
+        if (context.finalized === false &amp;&amp; onNotFound) {
+          res = await onNotFound(context)
+        }
+      }
+
+      if (res &amp;&amp; (context.finalized === false || isError)) {
+        context.res = res
+      }
+      return context
+    }
+  }
+}</code></pre></details></figure><p class="section-source">Sources: <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></p><p class="implementation-note">Implementation: <a href="#function-compose">compose</a> · <a href="#function-dispatch">dispatch</a></p></section><section class="guide-section" id="guide-response"><span id="stage-response"></span><h2>As calls complete, select the response state</h2><p>A truthy result updates context.res only when the context is not finalized or the result came from onError.</p><p>A normal result therefore keeps an already finalized response. A truthy onError result can replace it. A falsy result makes no assignment.</p><p>If no handler is selected, onNotFound runs only when finalized is false and the callback exists. A completed dispatch call returns the shared context.</p><figure class="code-focus"><figcaption><span>src/compose.ts:67–70</span><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">Source record</a></figcaption><div class="code-scope">Partial excerpt. Code before and after this range is omitted.</div><pre class="source-code" tabindex="0" role="region" aria-label="Source code at src/compose.ts:67–70"><code>      if (res &amp;&amp; (context.finalized === false || isError)) {
+        context.res = res
+      }
+      return context
+</code></pre><details class="code-context"><summary>Show surrounding source · lines 15–73</summary><pre class="source-code" tabindex="0" role="region" aria-label="Surrounding source at src/compose.ts:15–73"><code>compose = &lt;E extends Env = Env&gt;(
+  middleware: [[Function, unknown], unknown][] | [[Function]][],
+  onError?: ErrorHandler&lt;E&gt;,
+  onNotFound?: NotFoundHandler&lt;E&gt;
+): ((context: Context, next?: Next) =&gt; Promise&lt;Context&gt;) =&gt; {
+  return (context, next) =&gt; {
+    let index = -1
+
+    return dispatch(0)
+
+    /**
+     * Dispatch the middleware functions.
+     *
+     * @param {number} i - The current index in the middleware array.
+     *
+     * @returns {Promise&lt;Context&gt;} - A promise that resolves to the context.
+     */
+    async function dispatch(i: number): Promise&lt;Context&gt; {
+      if (i &lt;= index) {
+        throw new Error(&#39;next() called multiple times&#39;)
+      }
+      index = i
+
+      let res
+      let isError = false
+      let handler
+
+      if (middleware[i]) {
+        handler = middleware[i][0][0]
+        context.req.routeIndex = i
+      } else {
+        handler = (i === middleware.length &amp;&amp; next) || undefined
+      }
+
+      if (handler) {
+        try {
+          res = await handler(context, () =&gt; dispatch(i + 1))
+        } catch (err) {
+          if (err instanceof Error &amp;&amp; onError) {
+            context.error = err
+            res = await onError(err, context)
+            isError = true
+          } else {
+            throw err
+          }
+        }
+      } else {
+        if (context.finalized === false &amp;&amp; onNotFound) {
+          res = await onNotFound(context)
+        }
+      }
+
+      if (res &amp;&amp; (context.finalized === false || isError)) {
+        context.res = res
+      }
+      return context
+    }
+  }
+}</code></pre></details></figure><p class="section-source">Sources: <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></p><p class="implementation-note">Implementation: <a href="#function-dispatch">dispatch</a> · <a href="#function-response-setter">Context.res setter</a></p></section><section class="guide-section" id="guide-errors"><span id="stage-failure"></span><h2>If a call fails, check which frame can catch it</h2><p>The handler catch invokes onError only for an Error instance when that callback exists. It first stores the Error in context.error.</p><p>Other thrown values are rethrown. A failure inside onError also escapes the current catch.</p><p>The repeated-next guard and not-found callback are outside the current handler catch block. An awaiting parent may still catch a child failure.</p><figure class="code-focus"><figcaption><span>src/compose.ts:50–60</span><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">Source record</a></figcaption><div class="code-scope">Partial excerpt. Code before and after this range is omitted.</div><pre class="source-code" tabindex="0" role="region" aria-label="Source code at src/compose.ts:50–60"><code>        try {
+          res = await handler(context, () =&gt; dispatch(i + 1))
+        } catch (err) {
+          if (err instanceof Error &amp;&amp; onError) {
+            context.error = err
+            res = await onError(err, context)
+            isError = true
+          } else {
+            throw err
+          }
+        }
+</code></pre><details class="code-context"><summary>Show surrounding source · lines 15–73</summary><pre class="source-code" tabindex="0" role="region" aria-label="Surrounding source at src/compose.ts:15–73"><code>compose = &lt;E extends Env = Env&gt;(
+  middleware: [[Function, unknown], unknown][] | [[Function]][],
+  onError?: ErrorHandler&lt;E&gt;,
+  onNotFound?: NotFoundHandler&lt;E&gt;
+): ((context: Context, next?: Next) =&gt; Promise&lt;Context&gt;) =&gt; {
+  return (context, next) =&gt; {
+    let index = -1
+
+    return dispatch(0)
+
+    /**
+     * Dispatch the middleware functions.
+     *
+     * @param {number} i - The current index in the middleware array.
+     *
+     * @returns {Promise&lt;Context&gt;} - A promise that resolves to the context.
+     */
+    async function dispatch(i: number): Promise&lt;Context&gt; {
+      if (i &lt;= index) {
+        throw new Error(&#39;next() called multiple times&#39;)
+      }
+      index = i
+
+      let res
+      let isError = false
+      let handler
+
+      if (middleware[i]) {
+        handler = middleware[i][0][0]
+        context.req.routeIndex = i
+      } else {
+        handler = (i === middleware.length &amp;&amp; next) || undefined
+      }
+
+      if (handler) {
+        try {
+          res = await handler(context, () =&gt; dispatch(i + 1))
+        } catch (err) {
+          if (err instanceof Error &amp;&amp; onError) {
+            context.error = err
+            res = await onError(err, context)
+            isError = true
+          } else {
+            throw err
+          }
+        }
+      } else {
+        if (context.finalized === false &amp;&amp; onNotFound) {
+          res = await onNotFound(context)
+        }
+      }
+
+      if (res &amp;&amp; (context.finalized === false || isError)) {
+        context.res = res
+      }
+      return context
+    }
+  }
+}</code></pre></details></figure><p class="section-source">Sources: <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2">src/hono-base.ts:408</a></p><p class="implementation-note">Implementation: <a href="#function-dispatch">dispatch</a></p></section><figure class="diagram"><h3>Follow a call into the next middleware and back</h3><p class="assumption">Example: two middleware handlers use await next(), and the last handler returns normally. This is a possible sequence, not an observed execution.</p><svg class="sequence" role="img" aria-labelledby="sequence-title sequence-desc" viewBox="0 0 780 330" xmlns="http://www.w3.org/2000/svg">
+<title id="sequence-title">Follow a call into the next middleware and back</title><desc id="sequence-desc">Example: two middleware handlers use await next(), and the last handler returns normally. This is a possible sequence, not an observed execution. The ordered text version follows this diagram.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#245e4b"/></marker></defs>
+<rect x="13" y="10" width="154" height="36" rx="7" fill="#eaf0e7"/><text x="90" y="33" text-anchor="middle" font-size="12" fill="#202f2c">First middleware</text><line x1="90" x2="90" y1="50" y2="315" stroke="#c7d1c5" stroke-dasharray="4 5"/><rect x="313" y="10" width="154" height="36" rx="7" fill="#eaf0e7"/><text x="390" y="33" text-anchor="middle" font-size="12" fill="#202f2c">Second middleware</text><line x1="390" x2="390" y1="50" y2="315" stroke="#c7d1c5" stroke-dasharray="4 5"/><rect x="613" y="10" width="154" height="36" rx="7" fill="#eaf0e7"/><text x="690" y="33" text-anchor="middle" font-size="12" fill="#202f2c">Last handler</text><line x1="690" x2="690" y1="50" y2="315" stroke="#c7d1c5" stroke-dasharray="4 5"/>
+<line x1="90" x2="390" y1="90" y2="90" stroke="#245e4b" stroke-width="1.5"  marker-end="url(#arrow)"/><text x="240" y="80" text-anchor="middle" font-size="12" fill="#202f2c">await next()</text><line x1="390" x2="690" y1="148" y2="148" stroke="#245e4b" stroke-width="1.5"  marker-end="url(#arrow)"/><text x="540" y="138" text-anchor="middle" font-size="12" fill="#202f2c">await next()</text><line x1="690" x2="390" y1="206" y2="206" stroke="#245e4b" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/><text x="540" y="196" text-anchor="middle" font-size="12" fill="#202f2c">Child dispatch completes</text><line x1="390" x2="90" y1="264" y2="264" stroke="#245e4b" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/><text x="240" y="254" text-anchor="middle" font-size="12" fill="#202f2c">Parent dispatch completes</text></svg><figcaption class="muted">Dashed arrows show returns. <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></figcaption><details><summary>Read the sequence as text</summary><ol><li>First middleware → Second middleware: await next() (call). <span class="support"><a href="#claim-87cd957c-bb51-49fe-b9a4-291c106e08c5">C8</a>, <a href="#claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c">C9</a></span></li><li>Second middleware → Last handler: await next() (call). <span class="support"><a href="#claim-87cd957c-bb51-49fe-b9a4-291c106e08c5">C8</a>, <a href="#claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c">C9</a></span></li><li>Last handler → Second middleware: Child dispatch completes (return). <span class="support"><a href="#claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c">C9</a>, <a href="#claim-f67de3f4-647c-4c67-86e3-ab561267bf22">C21</a></span></li><li>Second middleware → First middleware: Parent dispatch completes (return). <span class="support"><a href="#claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c">C9</a>, <a href="#claim-f67de3f4-647c-4c67-86e3-ab561267bf22">C21</a></span></li></ol></details></figure><section class="limits-note guide-limits" id="limits"><h2>Limits of this explanation</h2><p>Each application function chooses whether to pass work onward and wait. These excerpts do not show those choices.</p><p>An error can move back to an earlier function or to the application. What happens there is outside this review.</p></section><section class="function-section" id="functions"><h2>Functions behind this behavior</h2><p>Each summary links code to the behavior it supports. These are authored summaries for review.</p><details><summary>Open 3 function summaries</summary><article class="function-ref" id="function-compose"><h3>compose</h3><p>Create a middleware runner with the supplied callbacks. <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></p><p class="implementation-note">Behavior: <a href="#stage-start">Start the request</a> · <a href="#stage-call">Run the next handler</a></p><dl><dt>Inputs</dt><dd>Middleware entries and optional onError and onNotFound callbacks.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></dd><dt>Returns</dt><dd>Return a function that accepts Context and optional next, then returns Promise&lt;Context&gt;.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></dd><dt>State and effects</dt><dd>Capture the supplied middleware and callbacks. Each invocation of the returned runner creates a new progress index.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></dd><dt>Failures</dt><dd>Creating the runner does not establish whether its later handlers will succeed.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></dd><dt>Limits</dt><dd>The supplied middleware determines its own behavior and whether it waits for next().<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></dd></dl><p class="evidence-id">Source symbols: symbol:fbb7a9c75ec9d7373e3089e10aa1cb7f38e800e860c16f443f5b9c7b43fc2036</p></article><article class="function-ref" id="function-dispatch"><h3>dispatch</h3><p>Run one middleware position and handle its result. <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></p><p class="implementation-note">Behavior: <a href="#stage-start">Start the request</a> · <a href="#stage-guard">Reject repeated next calls</a> · <a href="#stage-call">Run the next handler</a> · <a href="#stage-response">Keep or update the response</a> · <a href="#stage-failure">Handle or pass on an error</a></p><dl><dt>Inputs</dt><dd>The current index, captured context, middleware, and callbacks.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></dd><dt>Returns</dt><dd>Resolve to the shared Context, or reject with a failure.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></dd><dt>State and effects</dt><dd>Update progression and routeIndex. Error handling can set context.error. A qualifying result updates context.res.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></dd><dt>Failures</dt><dd>Reject repeated next calls. Rethrow ineligible errors. Failures from fallback and onError can leave the current frame.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></dd><dt>Limits</dt><dd>An awaiting parent or the application can still handle a child failure.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2">src/hono-base.ts:408</a></span></dd></dl><p class="evidence-id">Source symbols: symbol:6b9f86bce23c7d4e36db898b312e4103fd9434fe9b433035082969764d80499e</p></article><article class="function-ref" id="function-response-setter"><h3>Context.res setter</h3><p>Store a response when the dispatcher assignment condition permits it. <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></p><p class="implementation-note">Behavior: <a href="#stage-response">Keep or update the response</a></p><dl><dt>Inputs</dt><dd>A Response or undefined.<span class="support"><a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></dd><dt>Returns</dt><dd>Store the response value; the setter has no explicit return value.<span class="support"><a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></dd><dt>State and effects</dt><dd>The setter can merge headers and sets finalized to true.<span class="support"><a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></dd><dt>Failures</dt><dd>This excerpt has no local catch around response or header operations.<span class="support"><a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></dd><dt>Limits</dt><dd>Normal assignment and onError assignment use different overwrite rules in dispatch.<span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></dd></dl><p class="evidence-id">Source symbols: symbol:a15fde6e273b8379ca4f9b939d8c499a573c57f94c11f2f8b31cd6df2684db6c</p></article></details></section><section class="guide-section" id="questions"><h2>Specific questions</h2><div class="case-list"><details class="case" id="case-return-order" data-stages="call response"><summary>Why does code after await next() run later?</summary><div class="detail-body"><p>next() enters the next dispatch call. If the middleware waits with await next(), it resumes after that child call completes.</p><p>The diagram assumes this waiting behavior. User handlers can choose a different behavior.</p><p class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><div class="case-links"><a href="#stage-call">Run the next handler</a><a href="#stage-response">Keep or update the response</a></div></div></details><details class="case" id="case-repeat" data-stages="guard failure"><summary>What happens if next() is called twice?</summary><div class="detail-body"><p>The progress guard rejects a repeated index. Its Error occurs before that call enters its own handler catch block.</p><p>An awaiting parent can still handle the failure. The source does not establish that all error callbacks are bypassed.</p><p class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2">src/hono-base.ts:408</a></p><div class="case-links"><a href="#stage-guard">Reject repeated next calls</a><a href="#stage-failure">Handle or pass on an error</a></div></div></details><details class="case" id="case-replace" data-stages="response"><summary>Can a returned response replace an existing response?</summary><div class="detail-body"><p>A normal result does not overwrite a finalized response through this assignment. A truthy result from onError can replace it.</p><p>A falsy result causes no response assignment.</p><p class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></p><div class="case-links"><a href="#stage-response">Keep or update the response</a></div></div></details><details class="case" id="case-no-handler" data-stages="call response failure"><summary>What happens when there is no handler?</summary><div class="detail-body"><p>At exactly middleware.length, dispatch can use the supplied outer next callback.</p><p>If no handler is selected, onNotFound runs only when finalized is false and that callback exists. Its invocation is outside the current handler catch block.</p><p class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><div class="case-links"><a href="#stage-call">Run the next handler</a><a href="#stage-response">Keep or update the response</a><a href="#stage-failure">Handle or pass on an error</a></div></div></details><details class="case" id="case-error-handler" data-stages="failure"><summary>What if the error handler also throws?</summary><div class="detail-body"><p>That failure escapes the current handler catch block. An awaiting parent or application dispatcher may handle it.</p><p class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2">src/hono-base.ts:408</a></p><div class="case-links"><a href="#stage-failure">Handle or pass on an error</a></div></div></details></div></section><details class="proof" id="sources"><summary>Check all claims, branches, and source excerpts</summary><div class="reference-body"><p>Source-based explanation. Claim support and the new explanations need independent review.</p>
+<h3>Scope and unknowns</h3><ul><li id="unknown-0">Router matching internals and the runtime behavior of user handlers are outside these excerpts. <span class="support"><a href="#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2">src/hono-base.ts:408</a></span></li><li id="unknown-1">Thrown failures from path resolution, router matching, or Context construction occur before the shown handler try/catch blocks; caller-level handling is outside this request. <span class="support"><a href="#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2">src/hono-base.ts:408</a></span></li><li id="unknown-2">Recursive next returns a Promise; whether a user handler awaits it is determined by that handler, not established by compose alone. The flow describes frame recursion, not a flat scheduler. <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li><li id="unknown-3">An error that escapes a child dispatch may be caught by an awaiting parent handler frame or by the application dispatcher. No claim is made that every repeated-next error bypasses all error handlers. <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2">src/hono-base.ts:408</a></span></li><li id="unknown-4">The synchronous not-found fallback lies outside the direct-handler try/catch. Caller handling of a throw there, or rejection from the HEAD wrapper, is not represented as a guaranteed local error callback. <span class="support"><a href="#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2">src/hono-base.ts:408</a></span></li></ul>
+<details class="audit"><summary>All 22 claims</summary><article class="claim" id="claim-a4808f91-eb8a-4a52-aed2-72effb4a139e"><h4>C1 · state</h4><p>Each invocation of the runner returned by compose initializes its own progression index to -1.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-b1c5caa4-d40d-4e99-a478-a0483a83437a"><h4>C2 · behavior</h4><p>The runner begins asynchronous dispatch at middleware index zero.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b"><h4>C3 · constraint</h4><p>Dispatch rejects an index less than or equal to the last dispatched index with the repeated-next Error.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-b35b5c02-3b31-46cd-b1ac-2845ca7d8424"><h4>C4 · state</h4><p>The progression index is updated before the current handler is selected or invoked.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-36389804-ee71-4da7-bbdc-e77cb1d247b1"><h4>C5 · behavior</h4><p>A present middleware entry supplies its handler from middleware[i][0][0].</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-957e5bca-529c-4b7b-85cd-d3ad15c57993"><h4>C6 · state</h4><p>Selecting a middleware entry also assigns i to context.req.routeIndex.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-0df938c1-9773-4d05-84ba-5bcecf66fb6c"><h4>C7 · behavior</h4><p>The supplied outer next callback is eligible only at exactly middleware.length when no middleware entry exists.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-87cd957c-bb51-49fe-b9a4-291c106e08c5"><h4>C8 · behavior</h4><p>A handler receives a continuation that recursively dispatches i + 1 using the same context.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c"><h4>C9 · behavior</h4><p>The dispatcher awaits each handler result, allowing synchronous return values and promises to feed the same response handling.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-544dbd7e-acd1-4040-8b00-00b91c0e8f8d"><h4>C10 · failure</h4><p>The handler catch uses onError only when the thrown value is an Error and an onError callback exists.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-6a188938-736d-4970-a698-88df4b787329"><h4>C11 · state</h4><p>Before invoking onError, the handler catch writes the caught Error into context.error.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-3744e538-0f07-4ea4-a210-02d1a6c03781"><h4>C12 · failure</h4><p>After awaiting onError, the dispatcher marks the result as an error response.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-37cba2c0-333b-4a16-b503-49cd1b020ffa"><h4>C13 · failure</h4><p>A non-Error throw or an Error without an onError callback is rethrown by that dispatch frame.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-40001f0b-2785-462a-9244-1997813e69cd"><h4>C14 · failure</h4><p>A failure inside the awaited onError callback escapes the current frame&#39;s handler catch block.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-e8b03c7a-182a-46d4-aeb8-bf4295b82798"><h4>C15 · behavior</h4><p>Without a selected handler, onNotFound runs only when context.finalized is exactly false and the callback exists.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-6b252ce9-9a3f-4cdb-9248-b0e515420829"><h4>C16 · failure</h4><p>The onNotFound invocation is awaited outside the current handler try/catch.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-fca39081-cbda-4fe7-8212-cf21fdc9a885"><h4>C17 · state</h4><p>A truthy response result is assigned to context.res only when context is not finalized or the result came through onError.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></article><article class="claim" id="claim-1724bbd4-e936-42d3-a4cd-dabd7f2051aa"><h4>C18 · state</h4><p>A normal returned response does not overwrite already finalized context through this assignment condition.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-d5e3c85d-4a1d-4991-87d8-bd5369c091ab"><h4>C19 · failure</h4><p>A truthy onError result may replace response state even when the context was already finalized.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></article><article class="claim" id="claim-7f3aafe6-876f-4b5a-9bac-698144b2adfc"><h4>C20 · state</h4><p>A falsy result does not trigger the final response assignment.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-f67de3f4-647c-4c67-86e3-ab561267bf22"><h4>C21 · behavior</h4><p>A successfully completed dispatch frame returns the shared context object.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article><article class="claim" id="claim-5a6d5b53-546a-4ad0-bb93-b028876d1d12"><h4>C22 · failure</h4><p>The repeated-next guard throws before the current frame&#39;s handler try/catch, so that frame does not process its own guard error through onError.</p><span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></article></details>
+<details class="audit"><summary>Exact control flow</summary><div class="branch" id="step-0927dcdd-b4e6-47dc-bb6e-67ec8e86ee7d"><h4>Initialize invocation progression</h4><p class="support"><a href="#claim-a4808f91-eb8a-4a52-aed2-72effb4a139e">C1</a>, <a href="#claim-b1c5caa4-d40d-4e99-a478-a0483a83437a">C2</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><ul><li>Then → <a href="#step-6b664680-e522-4784-922d-8f7b80992b82">Reject repeated or backward progression</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li></ul></div><div class="branch" id="step-6b664680-e522-4784-922d-8f7b80992b82"><h4>Reject repeated or backward progression</h4><p class="support"><a href="#claim-25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b">C3</a>, <a href="#claim-5a6d5b53-546a-4ad0-bb93-b028876d1d12">C22</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><ul><li>Index is greater than previous index → <a href="#step-a249dba7-bb8d-475a-a38d-a1a9cf7a9472">Select middleware or the terminal next callback</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li><li>Index is less than or equal to previous index → <a href="#step-2b229a25-c063-4a7c-ab4a-5b90f609670e">Propagate the failure from this frame</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li></ul></div><div class="branch" id="step-a249dba7-bb8d-475a-a38d-a1a9cf7a9472"><h4>Select middleware or the terminal next callback</h4><p class="support"><a href="#claim-b35b5c02-3b31-46cd-b1ac-2845ca7d8424">C4</a>, <a href="#claim-36389804-ee71-4da7-bbdc-e77cb1d247b1">C5</a>, <a href="#claim-957e5bca-529c-4b7b-85cd-d3ad15c57993">C6</a>, <a href="#claim-0df938c1-9773-4d05-84ba-5bcecf66fb6c">C7</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><ul><li>A handler exists → <a href="#step-6c021307-7902-43bc-9ed0-420de09fc078">Await handler and its recursive next continuation</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li><li>No handler exists → <a href="#step-d21a3bf3-b439-475c-9894-7cd0977c85ed">Invoke not-found only if unfinalized</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li></ul></div><div class="branch" id="step-6c021307-7902-43bc-9ed0-420de09fc078"><h4>Await handler and its recursive next continuation</h4><p class="support"><a href="#claim-87cd957c-bb51-49fe-b9a4-291c106e08c5">C8</a>, <a href="#claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c">C9</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><ul><li>Handler invokes next: enter child frame at i + 1 → <a href="#step-6b664680-e522-4784-922d-8f7b80992b82">Reject repeated or backward progression</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li><li>Handler returns without another next, or resumes after child context returns → <a href="#step-9394aaf0-1e44-40f5-b32c-3af2d70a285f">Conditionally write response state</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li><li>Handler or its awaited child throws → <a href="#step-6d99d430-1030-4bbe-8278-8707ffcc2e1f">Handle eligible Error values</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li></ul></div><div class="branch" id="step-6d99d430-1030-4bbe-8278-8707ffcc2e1f"><h4>Handle eligible Error values</h4><p class="support"><a href="#claim-544dbd7e-acd1-4040-8b00-00b91c0e8f8d">C10</a>, <a href="#claim-6a188938-736d-4970-a698-88df4b787329">C11</a>, <a href="#claim-3744e538-0f07-4ea4-a210-02d1a6c03781">C12</a>, <a href="#claim-37cba2c0-333b-4a16-b503-49cd1b020ffa">C13</a>, <a href="#claim-40001f0b-2785-462a-9244-1997813e69cd">C14</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><ul><li>onError succeeds for an Error value → <a href="#step-9394aaf0-1e44-40f5-b32c-3af2d70a285f">Conditionally write response state</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li><li>No eligible error handler, non-Error throw, or onError fails → <a href="#step-2b229a25-c063-4a7c-ab4a-5b90f609670e">Propagate the failure from this frame</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li></ul></div><div class="branch" id="step-d21a3bf3-b439-475c-9894-7cd0977c85ed"><h4>Invoke not-found only if unfinalized</h4><p class="support"><a href="#claim-e8b03c7a-182a-46d4-aeb8-bf4295b82798">C15</a>, <a href="#claim-6b252ce9-9a3f-4cdb-9248-b0e515420829">C16</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><ul><li>Fallback completes or is not eligible → <a href="#step-9394aaf0-1e44-40f5-b32c-3af2d70a285f">Conditionally write response state</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li><li>Not-found callback throws → <a href="#step-2b229a25-c063-4a7c-ab4a-5b90f609670e">Propagate the failure from this frame</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li></ul></div><div class="branch" id="step-9394aaf0-1e44-40f5-b32c-3af2d70a285f"><h4>Conditionally write response state</h4><p class="support"><a href="#claim-fca39081-cbda-4fe7-8212-cf21fdc9a885">C17</a>, <a href="#claim-1724bbd4-e936-42d3-a4cd-dabd7f2051aa">C18</a>, <a href="#claim-d5e3c85d-4a1d-4991-87d8-bd5369c091ab">C19</a>, <a href="#claim-7f3aafe6-876f-4b5a-9bac-698144b2adfc">C20</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></p><ul><li>Then → <a href="#step-0f2e7303-9908-4bae-9695-1247c8ce948a">Return shared context to the caller</a> <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></li></ul></div><div class="branch" id="step-0f2e7303-9908-4bae-9695-1247c8ce948a"><h4>Return shared context to the caller</h4><p class="support"><a href="#claim-f67de3f4-647c-4c67-86e3-ab561267bf22">C21</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><p>This branch ends within the recorded flow.</p></div><div class="branch" id="step-2b229a25-c063-4a7c-ab4a-5b90f609670e"><h4>Propagate the failure from this frame</h4><p class="support"><a href="#claim-25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b">C3</a>, <a href="#claim-37cba2c0-333b-4a16-b503-49cd1b020ffa">C13</a>, <a href="#claim-40001f0b-2785-462a-9244-1997813e69cd">C14</a>, <a href="#claim-6b252ce9-9a3f-4cdb-9248-b0e515420829">C16</a>, <a href="#claim-5a6d5b53-546a-4ad0-bb93-b028876d1d12">C22</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></p><p>This branch ends within the recorded flow.</p></div></details>
+<h3>Source excerpts</h3><details class="source" id="evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"><summary>src/compose.ts:15–73</summary><p class="source-meta">evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370<br>Blob: b1d4508ffe490fe4eaf1fa25a182c95f486685e5<br>UTF-8 bytes [676, 2202).</p><pre class="source-code" tabindex="0" role="region" aria-label="Source code at src/compose.ts:15–73"><code>compose = &lt;E extends Env = Env&gt;(
+  middleware: [[Function, unknown], unknown][] | [[Function]][],
+  onError?: ErrorHandler&lt;E&gt;,
+  onNotFound?: NotFoundHandler&lt;E&gt;
+): ((context: Context, next?: Next) =&gt; Promise&lt;Context&gt;) =&gt; {
+  return (context, next) =&gt; {
+    let index = -1
+
+    return dispatch(0)
+
+    /**
+     * Dispatch the middleware functions.
+     *
+     * @param {number} i - The current index in the middleware array.
+     *
+     * @returns {Promise&lt;Context&gt;} - A promise that resolves to the context.
+     */
+    async function dispatch(i: number): Promise&lt;Context&gt; {
+      if (i &lt;= index) {
+        throw new Error(&#39;next() called multiple times&#39;)
+      }
+      index = i
+
+      let res
+      let isError = false
+      let handler
+
+      if (middleware[i]) {
+        handler = middleware[i][0][0]
+        context.req.routeIndex = i
+      } else {
+        handler = (i === middleware.length &amp;&amp; next) || undefined
+      }
+
+      if (handler) {
+        try {
+          res = await handler(context, () =&gt; dispatch(i + 1))
+        } catch (err) {
+          if (err instanceof Error &amp;&amp; onError) {
+            context.error = err
+            res = await onError(err, context)
+            isError = true
+          } else {
+            throw err
+          }
+        }
+      } else {
+        if (context.finalized === false &amp;&amp; onNotFound) {
+          res = await onNotFound(context)
+        }
+      }
+
+      if (res &amp;&amp; (context.finalized === false || isError)) {
+        context.res = res
+      }
+      return context
+    }
+  }
+}</code></pre></details><details class="source" id="evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"><summary>src/context.ts:414–434</summary><p class="source-meta">evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5<br>Blob: d611cc504c7eaa59cc273daccafd1e3d56066a7a<br>UTF-8 bytes [12385, 12997).</p><pre class="source-code" tabindex="0" role="region" aria-label="Source code at src/context.ts:414–434"><code>set res(_res: Response | undefined) {
+    if (this.#res &amp;&amp; _res) {
+      _res = createResponseInstance(_res.body, _res)
+      for (const [k, v] of this.#res.headers.entries()) {
+        if (k === &#39;content-type&#39;) {
+          continue
+        }
+        if (k === &#39;set-cookie&#39;) {
+          const cookies = this.#res.headers.getSetCookie()
+          _res.headers.delete(&#39;set-cookie&#39;)
+          for (const cookie of cookies) {
+            _res.headers.append(&#39;set-cookie&#39;, cookie)
+          }
+        } else {
+          _res.headers.set(k, v)
+        }
+      }
+    }
+    this.#res = _res
+    this.finalized = true
+  }</code></pre></details><details class="source" id="evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"><summary>src/hono-base.ts:408–468</summary><p class="source-meta">evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2<br>Blob: 387fe89bf3cc95a2216251db919432ef7b0ddaeb<br>UTF-8 bytes [12203, 13918).</p><pre class="source-code" tabindex="0" role="region" aria-label="Source code at src/hono-base.ts:408–468"><code>#dispatch(
+    request: Request,
+    executionCtx: ExecutionContext | FetchEventLike | undefined,
+    env: E[&#39;Bindings&#39;],
+    method: string
+  ): Response | Promise&lt;Response&gt; {
+    // Handle HEAD method
+    if (method === &#39;HEAD&#39;) {
+      return (async () =&gt;
+        new Response(null, await this.#dispatch(request, executionCtx, env, &#39;GET&#39;)))()
+    }
+
+    const path = this.getPath(request, { env })
+    const matchResult = this.router.match(method, path)
+
+    const c = new Context(request, {
+      path,
+      matchResult,
+      env,
+      executionCtx,
+      notFoundHandler: this.#notFoundHandler,
+    })
+
+    // Do not `compose` if it has only one handler
+    if (matchResult[0].length === 1) {
+      let res: ReturnType&lt;H&gt;
+      try {
+        res = matchResult[0][0][0][0](c, async () =&gt; {
+          c.res = await this.#notFoundHandler(c)
+        })
+      } catch (err) {
+        return this.#handleError(err, c)
+      }
+
+      return res instanceof Promise
+        ? res
+            .then(
+              (resolved: Response | undefined) =&gt;
+                resolved || (c.finalized ? c.res : this.#notFoundHandler(c))
+            )
+            .catch((err: Error) =&gt; this.#handleError(err, c))
+        : (res ?? this.#notFoundHandler(c))
+    }
+
+    const composed = compose(matchResult[0], this.errorHandler, this.#notFoundHandler)
+
+    return (async () =&gt; {
+      try {
+        const context = await composed(c)
+        if (!context.finalized) {
+          throw new Error(
+            &#39;Context is not finalized. Did you forget to return a Response object or `await next()`?&#39;
+          )
+        }
+
+        return context.res
+      } catch (err) {
+        return this.#handleError(err, c)
+      }
+    })()
+  }</code></pre></details>
+<details class="metadata"><summary>Analysis and review details</summary><dl><dt>Transport</dt><dd>recorded-replay</dd><dt>Producer</dt><dd>Codex source-reading session</dd><dt>Model</dt><dd>not recorded</dd><dt>Review</dt><dd>Claim support: unreviewed. Acceptance: proposed. Presentation: authored, unreviewed.</dd><dt>Semantic artifact</dt><dd>semantic:3b600ce62677cd56b9d3172a4cd2841f739dd41effc439a2d27acbb230142d56</dd><dt>Snapshot</dt><dd>sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9</dd><dt>Structural scan</dt><dd>scan:fb8827cf671eeb148410a7e6967bb3025665851e64ae359a7bad515b72855f93</dd><dt>Entry points</dt><dd>compose in src/compose.ts</dd><dt>Flow entries</dt><dd><a href="#step-0927dcdd-b4e6-47dc-bb6e-67ec8e86ee7d">Initialize invocation progression</a></dd><dt>Selected paths</dt><dd>src/compose.ts<br>src/context.ts<br>src/hono-base.ts</dd><dt>Coverage</dt><dd>11 excerpts; 1731 other structural evidence records omitted.</dd><dt>Source scan</dt><dd>25/25 selected files parsed; 0 failed; 10 support files.</dd></dl><h4>Source diagnostics</h4><ul><li>EXTERNAL_TYPES_UNAVAILABLE: Source-only mode does not load ambient type packages: node</li></ul><h4>Related state and components</h4><ul><li>Middleware composer — implements → Compose middleware <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li><li>Dispatch an incoming request — invokes → Compose middleware <span class="support"><a href="#evidence-98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2">src/hono-base.ts:408</a> · <a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li><li>Compose middleware — writes → Response and finalization state <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a> · <a href="#evidence-aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5">src/context.ts:414</a></span></li><li>Compose middleware — writes → Middleware progression <span class="support"><a href="#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370">src/compose.ts:15</a></span></li></ul></details>
+<details class="metadata"><summary>Source license</summary><pre class="license">MIT License
+
+Copyright (c) 2021 - present, Yusuke Wada and Hono contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+</pre></details></div></details></main><nav class="guide-toc" aria-label="On this page"><strong>On this page</strong><a href="#example">Start with an example</a><a href="#guide-start">First, start a fresh run</a><a href="#guide-next">Then, follow next() into the next function</a><a href="#guide-response">As calls complete, select the response state</a><a href="#guide-errors">If a call fails, check which frame can catch it</a><a href="#functions">Function summaries</a><a href="#questions">Specific questions</a><a href="#sources">Source evidence</a></nav></div><footer class="audience-footer"><span>Clearings · Source-based explanation</span><a href="#top">Back to top ↑</a></footer></div><script>
+(() => {
+  const openTarget = () => {
+    let id; try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; }
+    const target = document.getElementById(id);
+    if (!target) return;
+    let node = target;
+    while (node) { if (node.tagName === 'DETAILS') node.open = true; node = node.parentElement; }
+    target.setAttribute('tabindex', '-1');
+    requestAnimationFrame(() => { target.focus({preventScroll:true}); target.scrollIntoView({block:'start'}); });
+    document.querySelectorAll('.rail nav a').forEach(a => a.classList.toggle('current', a.hash === location.hash));
+  };
+  addEventListener('hashchange', openTarget);
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href^="#"]');
+    if (link && link.hash === location.hash) openTarget();
+  });
+  document.querySelectorAll('.case').forEach(item => item.addEventListener('toggle', () => {
+    const selected = new Set(Array.from(document.querySelectorAll('.case[open]')).flatMap(el => el.dataset.stages.split(' ')));
+    document.querySelectorAll('[data-stage]').forEach(el => el.classList.toggle('selected', selected.has(el.dataset.stage)));
+  }));
+  document.querySelectorAll('[data-enhance]').forEach(el => { el.hidden = false; });
+  document.getElementById('expand-evidence')?.addEventListener('click', event => {
+    const items = Array.from(document.querySelectorAll('.source'));
+    const open = items.some(item => !item.open);
+    items.forEach(item => { item.open = open; });
+    event.currentTarget.textContent = open ? 'Close all excerpts' : 'Open all excerpts';
+  });
+  let closedBeforePrint = [];
+  addEventListener('beforeprint', () => { closedBeforePrint = Array.from(document.querySelectorAll('details:not([open])')); closedBeforePrint.forEach(el => { el.open = true; }); });
+  addEventListener('afterprint', () => { closedBeforePrint.forEach(el => { el.open = false; }); });
+  openTarget();
+})();
+</script></body></html>

@@ -17,12 +17,14 @@ clearings propose <scan.json> --repository repo --instruction text [--include pa
 clearings evidence <scan.json> --repository repo --id evidence-id [--out excerpt.json]
 clearings import <proposal.json> --request request.json --scan scan.json --repository repo [--out semantic.json]
 clearings replay <proposal.json> --request request.json --scan scan.json --repository repo [--out replay.json]
-clearings explain <semantic.json> --scan scan.json --repository repo --capability alias [--out page.md]
+clearings explain <semantic.json> --scan scan.json --repository repo --capability alias [--format markdown|html] [--audience engineer|overview] [--presentation plan.json] [--out page]
 clearings validate <artifact.json> [--scan scan.json] [--request request.json] [--repository repo]
 
 Repeat --include/--exclude for literal repository-relative paths. Default: all tracked entries.
 Target mode uses the pinned commit; custom include/exclude overrides are not accepted.
-JSON goes to stdout; explain emits Markdown. --out saves a new file outside the target.
+JSON goes to stdout; explain emits Markdown or HTML. --out saves a new file outside the target.
+Explain defaults to the engineer view. --audience overview requires an overview in the presentation plan.
+Use --companion filename.html (or filename.md) to link a report in the same directory.
 For propose, --include selects exact source paths already present in the scan.
 Scan follows repository imports as labeled supporting source; it never installs dependencies.
 Validate checks internal integrity; --repository also verifies scan source blobs and evidence spans.
@@ -36,13 +38,13 @@ let command = process.argv[2] ?? 'help';
 try {
   const { values, positionals } = parseArgs({
     args: process.argv.slice(2), allowPositionals: true, strict: true,
-    options: { help: { type: 'boolean' }, version: { type: 'boolean' }, ref: { type: 'string' }, target: { type: 'string' }, scope: { type: 'string' }, include: { type: 'string', multiple: true }, exclude: { type: 'string', multiple: true }, out: { type: 'string' }, project: { type: 'string' }, mode: { type: 'string' }, strict: { type: 'boolean' }, repository: { type: 'string' }, instruction: { type: 'string' }, evidence: { type: 'string', multiple: true }, 'max-bytes': { type: 'string' }, id: { type: 'string' }, request: { type: 'string' }, scan: { type: 'string' }, capability: { type: 'string' } },
+    options: { help: { type: 'boolean' }, version: { type: 'boolean' }, ref: { type: 'string' }, target: { type: 'string' }, scope: { type: 'string' }, include: { type: 'string', multiple: true }, exclude: { type: 'string', multiple: true }, out: { type: 'string' }, project: { type: 'string' }, mode: { type: 'string' }, strict: { type: 'boolean' }, repository: { type: 'string' }, instruction: { type: 'string' }, evidence: { type: 'string', multiple: true }, 'max-bytes': { type: 'string' }, id: { type: 'string' }, request: { type: 'string' }, scan: { type: 'string' }, capability: { type: 'string' }, format: { type: 'string' }, audience: { type: 'string' }, companion: { type: 'string' }, presentation: { type: 'string' } },
   });
   command = positionals[0] ?? 'help';
   if (values.version) process.stdout.write(`${TOOL_VERSION}\n`);
   else if (values.help || command === 'help') process.stdout.write(help);
   else {
-    const allowed: Record<string, string[]> = { inventory: ['ref', 'target', 'scope', 'include', 'exclude', 'out'], scan: ['ref', 'target', 'scope', 'include', 'exclude', 'out', 'project', 'mode', 'strict'], 'benchmark-fetch': ['target', 'out'], validate: ['repository', 'scan', 'request'], propose: ['repository', 'instruction', 'include', 'evidence', 'max-bytes', 'out'], evidence: ['repository', 'id', 'out'], import: ['repository', 'request', 'scan', 'out'], replay: ['repository', 'request', 'scan', 'out'], explain: ['repository', 'scan', 'capability', 'out'] };
+    const allowed: Record<string, string[]> = { inventory: ['ref', 'target', 'scope', 'include', 'exclude', 'out'], scan: ['ref', 'target', 'scope', 'include', 'exclude', 'out', 'project', 'mode', 'strict'], 'benchmark-fetch': ['target', 'out'], validate: ['repository', 'scan', 'request'], propose: ['repository', 'instruction', 'include', 'evidence', 'max-bytes', 'out'], evidence: ['repository', 'id', 'out'], import: ['repository', 'request', 'scan', 'out'], replay: ['repository', 'request', 'scan', 'out'], explain: ['repository', 'scan', 'capability', 'out', 'format', 'presentation', 'audience', 'companion'] };
     if (!allowed[command] || Object.keys(values).some((key) => !allowed[command]?.includes(key))) throw new ClearingsError('INVALID_ARGUMENTS', 'Unknown command or unsupported option; use --help.');
     if (command === 'inventory' || command === 'scan') {
       if (positionals.length !== 2) throw new ClearingsError('INVALID_ARGUMENTS', 'Inventory/scan requires one local repository path.');
