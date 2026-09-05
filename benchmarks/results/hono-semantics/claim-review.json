@@ -1,0 +1,503 @@
+{
+  "schema_version": "0.1.0",
+  "reviewer": "Same Codex source-reading session as proposal author",
+  "independent": false,
+  "human_reviewed": false,
+  "method": "Each recorded claim was checked against the supplied pinned-source excerpt. This is an author self-review, not an independent support-precision estimate. Citation validation remains separate and model claim checks remain unknown.",
+  "reviewed": 53,
+  "cases": [
+    {
+      "claim_id": "claim:be525e2a-9f68-4196-b67c-7bf670fbee39",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "fetch forwards the original request, its method, the environment, and the execution context into the private dispatcher.",
+      "evidence_ids": [
+        "evidence:d973f31095c0885ec6968e6dfe05b9be07c8109174fa09d64d9941765210c070"
+      ]
+    },
+    {
+      "claim_id": "claim:085248c3-81b0-4cad-986d-05fee44fe506",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "HEAD dispatch recursively uses GET as the dispatch method argument while retaining the original Request object.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "HEAD constructs a new Response with a null body and the awaited GET-dispatch response as its initialization argument.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:889f741d-3df0-47f5-9e19-2a06a2a99445",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "For non-HEAD dispatch, the configured path resolver receives the request and an object containing env.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:8b0483bd-c519-497b-b081-d286863646b7",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Router matching receives the dispatch method and the resolved path.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:6ea34fc3-66d3-437b-a99c-f67c5043f6b6",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Dispatch creates a Context with the request, path, match result, env, execution context, and configured not-found handler.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Exactly one matched handler takes a direct path that bypasses compose.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:d4c7dc38-cdfc-4a47-b9f5-c3628df16210",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The direct handler receives an async next callback that assigns the configured not-found result to c.res.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:3a465dfd-a823-4297-a867-dc7b31edd393",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A synchronous throw from the direct handler is sent to the private error handler.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:3ebf7dad-d613-4994-9e9e-f59bb1d79317",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The direct path distinguishes a returned Promise using instanceof Promise.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:32832fda-23d3-411c-8392-6782b3634057",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A truthy resolved response from that Promise is returned before consulting finalized context state.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A falsy resolved Promise value falls back to c.res when finalized, otherwise to the configured not-found handler.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Rejection in the direct Promise chain is sent to the private error handler.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A non-Promise nullish direct result invokes the not-found handler; this expression does not consult c.finalized.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:2639197b-bb38-4ed2-9817-07e369a77759",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Zero handlers and more than one handler both enter the composition path.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:c3467e33-ffa9-47f6-8a0f-934dcdd6024c",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The dispatcher constructs compose with the matched middleware, configured error handler, and configured not-found handler.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:f551142e-2ef8-4131-9da8-304f6a92329e",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The composition path awaits the composed runner with the newly constructed context.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "An unfinalized context returned by composition causes an Error about returning a Response or awaiting next.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The composition path returns context.res after checking finalized.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:7af68846-ae57-44cd-8e06-49e5596a226b",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A throw during the awaited composed path or its finalization check is passed to the private error handler.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    },
+    {
+      "claim_id": "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The private error handler delegates Error instances to the configured error callback and rethrows other values.",
+      "evidence_ids": [
+        "evidence:d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69"
+      ]
+    },
+    {
+      "claim_id": "claim:4a289f87-40be-45fa-90f8-f07a20dcafb8",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The initial error callback is the local default errorHandler; its getResponse branch forwards the response body and initialization data through c.newResponse.",
+      "evidence_ids": [
+        "evidence:e6e723339481e57866817eae505f437cf7cf9fcc9938197fc569fb0760769e2b",
+        "evidence:4634461b115dd4a1479717296128dc6517427f5529a42e3937146f069d9ac09a"
+      ]
+    },
+    {
+      "claim_id": "claim:4e81a050-0232-49a7-bf88-ebfbdc1e9576",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Outside that getResponse branch, the default error handler logs the error and requests a text response with status 500.",
+      "evidence_ids": [
+        "evidence:4634461b115dd4a1479717296128dc6517427f5529a42e3937146f069d9ac09a"
+      ]
+    },
+    {
+      "claim_id": "claim:75a7f499-e2f0-4998-89a5-48c6456d3bab",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The supplied local notFoundHandler implementation requests a text response with status 404; custom handler behavior is not established by this excerpt.",
+      "evidence_ids": [
+        "evidence:50e79ea172dc01947732e6a2fefd65b67b5c28d7dee03948f5ad30474ea840ab"
+      ]
+    },
+    {
+      "claim_id": "claim:6f5292fe-ce44-4891-9436-47ae3462ead0",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The Context finalized field is initialized to false.",
+      "evidence_ids": [
+        "evidence:81a4d8ab57de79a1d20f794795058cd6a0ca7721a9a8c8d8f71e8f8f764e2dca"
+      ]
+    },
+    {
+      "claim_id": "claim:161b91b9-a49b-44d3-a919-0758464c5af3",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The res getter lazily creates response storage with prepared headers; the getter itself does not set finalized.",
+      "evidence_ids": [
+        "evidence:efdc8a49582842d74bb72cf074179c4f18d4dc3a0f2d25c8ab366eb8630282b1"
+      ]
+    },
+    {
+      "claim_id": "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The res setter stores its argument and sets finalized to true, including when the argument is undefined.",
+      "evidence_ids": [
+        "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+      ]
+    },
+    {
+      "claim_id": "claim:146991bd-ed7d-4ae1-8868-888a11dedf6e",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "When both old and new responses exist, the res setter copies the new response before merging old headers, skipping the old content-type.",
+      "evidence_ids": [
+        "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+      ]
+    },
+    {
+      "claim_id": "claim:0b57c11a-c767-4573-8888-f3d49cbdf5c6",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The res setter replaces the new set-cookie collection with cookies from the previous response when merging that header.",
+      "evidence_ids": [
+        "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+      ]
+    },
+    {
+      "claim_id": "claim:5e705c38-4dd9-4e55-be1b-2f016881b2bd",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Context.notFound installs a fallback callback only when its private handler is nullish, then invokes the handler with this context.",
+      "evidence_ids": [
+        "evidence:3964d7755fbe93590183216380561fc4f6cf9eed1f24e7cd81b0943a88034107"
+      ]
+    },
+    {
+      "claim_id": "claim:a4808f91-eb8a-4a52-aed2-72effb4a139e",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Each invocation of the runner returned by compose initializes its own progression index to -1.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:b1c5caa4-d40d-4e99-a478-a0483a83437a",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The runner begins asynchronous dispatch at middleware index zero.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Dispatch rejects an index less than or equal to the last dispatched index with the repeated-next Error.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:b35b5c02-3b31-46cd-b1ac-2845ca7d8424",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The progression index is updated before the current handler is selected or invoked.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:36389804-ee71-4da7-bbdc-e77cb1d247b1",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A present middleware entry supplies its handler from middleware[i][0][0].",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:957e5bca-529c-4b7b-85cd-d3ad15c57993",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Selecting a middleware entry also assigns i to context.req.routeIndex.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:0df938c1-9773-4d05-84ba-5bcecf66fb6c",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The supplied outer next callback is eligible only at exactly middleware.length when no middleware entry exists.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A handler receives a continuation that recursively dispatches i + 1 using the same context.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The dispatcher awaits each handler result, allowing synchronous return values and promises to feed the same response handling.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The handler catch uses onError only when the thrown value is an Error and an onError callback exists.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:6a188938-736d-4970-a698-88df4b787329",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Before invoking onError, the handler catch writes the caught Error into context.error.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:3744e538-0f07-4ea4-a210-02d1a6c03781",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "After awaiting onError, the dispatcher marks the result as an error response.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A non-Error throw or an Error without an onError callback is rethrown by that dispatch frame.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:40001f0b-2785-462a-9244-1997813e69cd",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A failure inside the awaited onError callback escapes the current frame's handler catch block.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "Without a selected handler, onNotFound runs only when context.finalized is exactly false and the callback exists.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The onNotFound invocation is awaited outside the current handler try/catch.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A truthy response result is assigned to context.res only when context is not finalized or the result came through onError.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+        "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+      ]
+    },
+    {
+      "claim_id": "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A normal returned response does not overwrite already finalized context through this assignment condition.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A truthy onError result may replace response state even when the context was already finalized.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+        "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+      ]
+    },
+    {
+      "claim_id": "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A falsy result does not trigger the final response assignment.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:f67de3f4-647c-4c67-86e3-ab561267bf22",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "A successfully completed dispatch frame returns the shared context object.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The repeated-next guard throws before the current frame's handler try/catch, so that frame does not process its own guard error through onError.",
+      "evidence_ids": [
+        "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+      ]
+    },
+    {
+      "claim_id": "claim:bf2950af-c55d-401a-9691-50acf819a3f2",
+      "assessment": "supported-within-cited-source",
+      "severity": "none",
+      "note": "The synchronous direct-result fallback invokes not-found outside the direct handler try/catch, so a throw there can propagate to the caller.",
+      "evidence_ids": [
+        "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+      ]
+    }
+  ],
+  "corrections": [
+    {
+      "claim_id": "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+      "before": "Every missing single-handler response reuses c.res when finalized.",
+      "after": "A non-Promise nullish direct result invokes the not-found handler; this expression does not consult c.finalized.",
+      "reason": "The non-Promise path uses nullish coalescing directly with the not-found handler. Only the Promise path consults c.finalized."
+    }
+  ],
+  "provisional_support_gate": "not-established-with-independent-human-review",
+  "snapshot_id": "sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9",
+  "request_id": "request:030d427439a3c248fb1229e513d19e0a5fe4b2cdd33905e3aa842bbbc01351b7",
+  "proposal_id": "proposal:f4739d95557971ccd8780413a0dec9ae87d36fd6cc38d00da1e3899fb1fc736a"
+}

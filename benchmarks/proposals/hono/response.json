@@ -1,0 +1,1342 @@
+{
+  "schema_version": "0.1.0",
+  "command": "proposal",
+  "snapshot_id": "sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9",
+  "request_id": "request:030d427439a3c248fb1229e513d19e0a5fe4b2cdd33905e3aa842bbbc01351b7",
+  "producer": {
+    "kind": "agent",
+    "name": "Codex source-reading session",
+    "model": null,
+    "input_tokens": null,
+    "output_tokens": null
+  },
+  "data": {
+    "concepts": [
+      {
+        "id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+        "kind": "capability",
+        "alias": "request-dispatch",
+        "title": "Dispatch an incoming request",
+        "description": "Match an incoming request, choose the single-handler or composition path, and produce a response while preserving their different fallback and error behavior.",
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+          "evidence:d973f31095c0885ec6968e6dfe05b9be07c8109174fa09d64d9941765210c070"
+        ],
+        "symbol_ids": [
+          "symbol:119258d066ed3a743c6851abbbe4fc15972884261aecb77836a227eceb2c9d56",
+          "symbol:f3c8abb5972f0b2eb19d776e9960c2e22ce24424b12a710b06c8fb03fca2cc3d"
+        ]
+      },
+      {
+        "id": "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767",
+        "kind": "capability",
+        "alias": "middleware-composition",
+        "title": "Compose middleware",
+        "description": "Run middleware through recursive next continuations, track progression, and unwind responses or failures through shared request context.",
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "symbol_ids": [
+          "symbol:fbb7a9c75ec9d7373e3089e10aa1cb7f38e800e860c16f443f5b9c7b43fc2036"
+        ]
+      },
+      {
+        "id": "concept:8c38eabe-0538-415d-8356-2cca6ca20e8c",
+        "kind": "component",
+        "alias": "request-dispatcher",
+        "title": "Request dispatcher",
+        "description": "The fetch entry point and private dispatch/error methods connect matching to request handling.",
+        "evidence_ids": [
+          "evidence:d973f31095c0885ec6968e6dfe05b9be07c8109174fa09d64d9941765210c070",
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+          "evidence:d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69"
+        ],
+        "symbol_ids": [
+          "symbol:119258d066ed3a743c6851abbbe4fc15972884261aecb77836a227eceb2c9d56",
+          "symbol:f3c8abb5972f0b2eb19d776e9960c2e22ce24424b12a710b06c8fb03fca2cc3d"
+        ]
+      },
+      {
+        "id": "concept:67514c73-dd6b-4750-bef8-0b0102f737c4",
+        "kind": "component",
+        "alias": "middleware-composer",
+        "title": "Middleware composer",
+        "description": "The compose function supplies a reusable runner and per-invocation dispatch progression.",
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "symbol_ids": [
+          "symbol:fbb7a9c75ec9d7373e3089e10aa1cb7f38e800e860c16f443f5b9c7b43fc2036"
+        ]
+      },
+      {
+        "id": "concept:15b53c40-cf7c-454c-bdab-3c1d77c4f3e3",
+        "kind": "state",
+        "alias": "response-state",
+        "title": "Response and finalization state",
+        "description": "Context response storage and the finalized flag govern whether returned middleware responses replace existing response state.",
+        "evidence_ids": [
+          "evidence:81a4d8ab57de79a1d20f794795058cd6a0ca7721a9a8c8d8f71e8f8f764e2dca",
+          "evidence:efdc8a49582842d74bb72cf074179c4f18d4dc3a0f2d25c8ab366eb8630282b1",
+          "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+        ],
+        "symbol_ids": []
+      },
+      {
+        "id": "concept:132172da-47ee-48c0-93f3-1fae3ee7800c",
+        "kind": "state",
+        "alias": "middleware-progress",
+        "title": "Middleware progression",
+        "description": "A per-invocation index guards continuation progression and the request route index records the selected middleware position.",
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "symbol_ids": []
+      }
+    ],
+    "claims": [
+      {
+        "id": "claim:be525e2a-9f68-4196-b67c-7bf670fbee39",
+        "text": "fetch forwards the original request, its method, the environment, and the execution context into the private dispatcher.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:d973f31095c0885ec6968e6dfe05b9be07c8109174fa09d64d9941765210c070"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:085248c3-81b0-4cad-986d-05fee44fe506",
+        "text": "HEAD dispatch recursively uses GET as the dispatch method argument while retaining the original Request object.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb",
+        "text": "HEAD constructs a new Response with a null body and the awaited GET-dispatch response as its initialization argument.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:889f741d-3df0-47f5-9e19-2a06a2a99445",
+        "text": "For non-HEAD dispatch, the configured path resolver receives the request and an object containing env.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:8b0483bd-c519-497b-b081-d286863646b7",
+        "text": "Router matching receives the dispatch method and the resolved path.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:6ea34fc3-66d3-437b-a99c-f67c5043f6b6",
+        "text": "Dispatch creates a Context with the request, path, match result, env, execution context, and configured not-found handler.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+        "text": "Exactly one matched handler takes a direct path that bypasses compose.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:d4c7dc38-cdfc-4a47-b9f5-c3628df16210",
+        "text": "The direct handler receives an async next callback that assigns the configured not-found result to c.res.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:3a465dfd-a823-4297-a867-dc7b31edd393",
+        "text": "A synchronous throw from the direct handler is sent to the private error handler.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:3ebf7dad-d613-4994-9e9e-f59bb1d79317",
+        "text": "The direct path distinguishes a returned Promise using instanceof Promise.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:32832fda-23d3-411c-8392-6782b3634057",
+        "text": "A truthy resolved response from that Promise is returned before consulting finalized context state.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+        "text": "A falsy resolved Promise value falls back to c.res when finalized, otherwise to the configured not-found handler.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56",
+        "text": "Rejection in the direct Promise chain is sent to the private error handler.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+        "text": "A non-Promise nullish direct result invokes the not-found handler; this expression does not consult c.finalized.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:2639197b-bb38-4ed2-9817-07e369a77759",
+        "text": "Zero handlers and more than one handler both enter the composition path.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:c3467e33-ffa9-47f6-8a0f-934dcdd6024c",
+        "text": "The dispatcher constructs compose with the matched middleware, configured error handler, and configured not-found handler.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:f551142e-2ef8-4131-9da8-304f6a92329e",
+        "text": "The composition path awaits the composed runner with the newly constructed context.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+        "text": "An unfinalized context returned by composition causes an Error about returning a Response or awaiting next.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d",
+        "text": "The composition path returns context.res after checking finalized.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:7af68846-ae57-44cd-8e06-49e5596a226b",
+        "text": "A throw during the awaited composed path or its finalization check is passed to the private error handler.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15",
+        "text": "The private error handler delegates Error instances to the configured error callback and rethrows other values.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:4a289f87-40be-45fa-90f8-f07a20dcafb8",
+        "text": "The initial error callback is the local default errorHandler; its getResponse branch forwards the response body and initialization data through c.newResponse.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:e6e723339481e57866817eae505f437cf7cf9fcc9938197fc569fb0760769e2b",
+          "evidence:4634461b115dd4a1479717296128dc6517427f5529a42e3937146f069d9ac09a"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:4e81a050-0232-49a7-bf88-ebfbdc1e9576",
+        "text": "Outside that getResponse branch, the default error handler logs the error and requests a text response with status 500.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:4634461b115dd4a1479717296128dc6517427f5529a42e3937146f069d9ac09a"
+        ],
+        "category": "effect"
+      },
+      {
+        "id": "claim:75a7f499-e2f0-4998-89a5-48c6456d3bab",
+        "text": "The supplied local notFoundHandler implementation requests a text response with status 404; custom handler behavior is not established by this excerpt.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:50e79ea172dc01947732e6a2fefd65b67b5c28d7dee03948f5ad30474ea840ab"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:6f5292fe-ce44-4891-9436-47ae3462ead0",
+        "text": "The Context finalized field is initialized to false.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:81a4d8ab57de79a1d20f794795058cd6a0ca7721a9a8c8d8f71e8f8f764e2dca"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:161b91b9-a49b-44d3-a919-0758464c5af3",
+        "text": "The res getter lazily creates response storage with prepared headers; the getter itself does not set finalized.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:efdc8a49582842d74bb72cf074179c4f18d4dc3a0f2d25c8ab366eb8630282b1"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0",
+        "text": "The res setter stores its argument and sets finalized to true, including when the argument is undefined.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:146991bd-ed7d-4ae1-8868-888a11dedf6e",
+        "text": "When both old and new responses exist, the res setter copies the new response before merging old headers, skipping the old content-type.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:0b57c11a-c767-4573-8888-f3d49cbdf5c6",
+        "text": "The res setter replaces the new set-cookie collection with cookies from the previous response when merging that header.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:5e705c38-4dd9-4e55-be1b-2f016881b2bd",
+        "text": "Context.notFound installs a fallback callback only when its private handler is nullish, then invokes the handler with this context.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:3964d7755fbe93590183216380561fc4f6cf9eed1f24e7cd81b0943a88034107"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:a4808f91-eb8a-4a52-aed2-72effb4a139e",
+        "text": "Each invocation of the runner returned by compose initializes its own progression index to -1.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:b1c5caa4-d40d-4e99-a478-a0483a83437a",
+        "text": "The runner begins asynchronous dispatch at middleware index zero.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+        "text": "Dispatch rejects an index less than or equal to the last dispatched index with the repeated-next Error.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "constraint"
+      },
+      {
+        "id": "claim:b35b5c02-3b31-46cd-b1ac-2845ca7d8424",
+        "text": "The progression index is updated before the current handler is selected or invoked.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:36389804-ee71-4da7-bbdc-e77cb1d247b1",
+        "text": "A present middleware entry supplies its handler from middleware[i][0][0].",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:957e5bca-529c-4b7b-85cd-d3ad15c57993",
+        "text": "Selecting a middleware entry also assigns i to context.req.routeIndex.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:0df938c1-9773-4d05-84ba-5bcecf66fb6c",
+        "text": "The supplied outer next callback is eligible only at exactly middleware.length when no middleware entry exists.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+        "text": "A handler receives a continuation that recursively dispatches i + 1 using the same context.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+        "text": "The dispatcher awaits each handler result, allowing synchronous return values and promises to feed the same response handling.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d",
+        "text": "The handler catch uses onError only when the thrown value is an Error and an onError callback exists.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:6a188938-736d-4970-a698-88df4b787329",
+        "text": "Before invoking onError, the handler catch writes the caught Error into context.error.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:3744e538-0f07-4ea4-a210-02d1a6c03781",
+        "text": "After awaiting onError, the dispatcher marks the result as an error response.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa",
+        "text": "A non-Error throw or an Error without an onError callback is rethrown by that dispatch frame.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:40001f0b-2785-462a-9244-1997813e69cd",
+        "text": "A failure inside the awaited onError callback escapes the current frame's handler catch block.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798",
+        "text": "Without a selected handler, onNotFound runs only when context.finalized is exactly false and the callback exists.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829",
+        "text": "The onNotFound invocation is awaited outside the current handler try/catch.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+        "text": "A truthy response result is assigned to context.res only when context is not finalized or the result came through onError.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+          "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa",
+        "text": "A normal returned response does not overwrite already finalized context through this assignment condition.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab",
+        "text": "A truthy onError result may replace response state even when the context was already finalized.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+          "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc",
+        "text": "A falsy result does not trigger the final response assignment.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "state"
+      },
+      {
+        "id": "claim:f67de3f4-647c-4c67-86e3-ab561267bf22",
+        "text": "A successfully completed dispatch frame returns the shared context object.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "behavior"
+      },
+      {
+        "id": "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12",
+        "text": "The repeated-next guard throws before the current frame's handler try/catch, so that frame does not process its own guard error through onError.",
+        "subject_ids": [
+          "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767"
+        ],
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ],
+        "category": "failure"
+      },
+      {
+        "id": "claim:bf2950af-c55d-401a-9691-50acf819a3f2",
+        "text": "The synchronous direct-result fallback invokes not-found outside the direct handler try/catch, so a throw there can propagate to the caller.",
+        "subject_ids": [
+          "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8"
+        ],
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ],
+        "category": "failure"
+      }
+    ],
+    "relations": [
+      {
+        "id": "relation:3a4b72a1-3499-4fa9-a7cf-25efcfad1c06",
+        "kind": "implements",
+        "from_id": "concept:8c38eabe-0538-415d-8356-2cca6ca20e8c",
+        "to_id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ]
+      },
+      {
+        "id": "relation:a891400d-cc53-4411-846e-a649203cd4e9",
+        "kind": "implements",
+        "from_id": "concept:67514c73-dd6b-4750-bef8-0b0102f737c4",
+        "to_id": "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767",
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ]
+      },
+      {
+        "id": "relation:ae527ce6-498a-461a-90a3-613de4d40c84",
+        "kind": "invokes",
+        "from_id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+        "to_id": "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767",
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ]
+      },
+      {
+        "id": "relation:b230ecf3-bde0-452f-adc0-f0c28a96f071",
+        "kind": "reads",
+        "from_id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+        "to_id": "concept:15b53c40-cf7c-454c-bdab-3c1d77c4f3e3",
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ]
+      },
+      {
+        "id": "relation:88925126-8035-48ea-a7d3-cf1bb651604b",
+        "kind": "writes",
+        "from_id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+        "to_id": "concept:15b53c40-cf7c-454c-bdab-3c1d77c4f3e3",
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+          "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+        ]
+      },
+      {
+        "id": "relation:54c936b7-0fac-439f-8a0e-0475d8d30a3d",
+        "kind": "writes",
+        "from_id": "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767",
+        "to_id": "concept:15b53c40-cf7c-454c-bdab-3c1d77c4f3e3",
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+          "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+        ]
+      },
+      {
+        "id": "relation:686308fd-a67d-412e-b466-586fca31c8dc",
+        "kind": "writes",
+        "from_id": "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767",
+        "to_id": "concept:132172da-47ee-48c0-93f3-1fae3ee7800c",
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ]
+      }
+    ],
+    "flows": [
+      {
+        "id": "flow:92594364-a09b-413c-8fed-145a8f64789c",
+        "capability_id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+        "entry_symbol_ids": [
+          "symbol:119258d066ed3a743c6851abbbe4fc15972884261aecb77836a227eceb2c9d56",
+          "symbol:f3c8abb5972f0b2eb19d776e9960c2e22ce24424b12a710b06c8fb03fca2cc3d"
+        ],
+        "entry_step_ids": [
+          "step:fdc5198f-dec9-4c31-a00f-59b930e9e076"
+        ],
+        "steps": [
+          {
+            "id": "step:fdc5198f-dec9-4c31-a00f-59b930e9e076",
+            "title": "Select dispatch method",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:be525e2a-9f68-4196-b67c-7bf670fbee39",
+              "claim:085248c3-81b0-4cad-986d-05fee44fe506",
+              "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb"
+            ],
+            "evidence_ids": [
+              "evidence:d973f31095c0885ec6968e6dfe05b9be07c8109174fa09d64d9941765210c070",
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": [
+              {
+                "step_id": "step:c8e6ec4b-17bf-4637-8e47-40b6b7b992f7",
+                "condition": "HEAD",
+                "evidence_ids": [
+                  "evidence:d973f31095c0885ec6968e6dfe05b9be07c8109174fa09d64d9941765210c070",
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              },
+              {
+                "step_id": "step:c9a85946-abf2-4a8e-9dec-59fa95a966f1",
+                "condition": "Other methods",
+                "evidence_ids": [
+                  "evidence:d973f31095c0885ec6968e6dfe05b9be07c8109174fa09d64d9941765210c070",
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:c8e6ec4b-17bf-4637-8e47-40b6b7b992f7",
+            "title": "Dispatch GET and remove the response body",
+            "kind": "action",
+            "claim_ids": [
+              "claim:085248c3-81b0-4cad-986d-05fee44fe506",
+              "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": []
+          },
+          {
+            "id": "step:c9a85946-abf2-4a8e-9dec-59fa95a966f1",
+            "title": "Resolve path, match routes, create context",
+            "kind": "action",
+            "claim_ids": [
+              "claim:889f741d-3df0-47f5-9e19-2a06a2a99445",
+              "claim:8b0483bd-c519-497b-b081-d286863646b7",
+              "claim:6ea34fc3-66d3-437b-a99c-f67c5043f6b6"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": [
+              {
+                "step_id": "step:3301e9a4-0b62-40b9-bcc5-74652de3839a",
+                "condition": null,
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:3301e9a4-0b62-40b9-bcc5-74652de3839a",
+            "title": "Choose handling path",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+              "claim:2639197b-bb38-4ed2-9817-07e369a77759"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": [
+              {
+                "step_id": "step:cdf57463-13f7-4ae8-9709-ea1462e942d2",
+                "condition": "Exactly one handler",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              },
+              {
+                "step_id": "step:bd8c16b3-f9f9-4211-93a8-0cfd6fdef1f3",
+                "condition": "Zero or multiple handlers",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:cdf57463-13f7-4ae8-9709-ea1462e942d2",
+            "title": "Invoke the direct handler and classify its result",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:d4c7dc38-cdfc-4a47-b9f5-c3628df16210",
+              "claim:3a465dfd-a823-4297-a867-dc7b31edd393",
+              "claim:3ebf7dad-d613-4994-9e9e-f59bb1d79317"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": [
+              {
+                "step_id": "step:7539d22f-ed85-48df-bba7-ca69334adb90",
+                "condition": "Returns a Promise",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              },
+              {
+                "step_id": "step:6f7b0430-e901-4ab6-9a3d-b088f2b012e8",
+                "condition": "Returns a non-Promise value",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              },
+              {
+                "step_id": "step:6e269ade-b6c0-4442-8553-6445a5fbbb6e",
+                "condition": "Throws synchronously",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:7539d22f-ed85-48df-bba7-ca69334adb90",
+            "title": "Resolve the response or context/not-found fallback",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:32832fda-23d3-411c-8392-6782b3634057",
+              "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+              "claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": [
+              {
+                "step_id": "step:78c04a66-b80a-4358-8b55-58a8d1523e29",
+                "condition": "Promise chain fulfills",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              },
+              {
+                "step_id": "step:6e269ade-b6c0-4442-8553-6445a5fbbb6e",
+                "condition": "Promise chain rejects",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:6f7b0430-e901-4ab6-9a3d-b088f2b012e8",
+            "title": "Use a non-nullish result or invoke not-found",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+              "claim:bf2950af-c55d-401a-9691-50acf819a3f2"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": [
+              {
+                "step_id": "step:78c04a66-b80a-4358-8b55-58a8d1523e29",
+                "condition": "Result or fallback completes",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              },
+              {
+                "step_id": "step:95622008-6e00-4397-9d3b-37cf7633368e",
+                "condition": "Synchronous not-found fallback throws",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:bd8c16b3-f9f9-4211-93a8-0cfd6fdef1f3",
+            "title": "Await middleware composition",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:c3467e33-ffa9-47f6-8a0f-934dcdd6024c",
+              "claim:f551142e-2ef8-4131-9da8-304f6a92329e"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+            ],
+            "next": [
+              {
+                "step_id": "step:4ccc4676-c52d-4d20-ab3d-7578bfedcda6",
+                "condition": "Composition fulfills",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              },
+              {
+                "step_id": "step:6e269ade-b6c0-4442-8553-6445a5fbbb6e",
+                "condition": "Composition throws",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:4ccc4676-c52d-4d20-ab3d-7578bfedcda6",
+            "title": "Require a finalized context",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+              "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": [
+              {
+                "step_id": "step:78c04a66-b80a-4358-8b55-58a8d1523e29",
+                "condition": "Context finalized",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              },
+              {
+                "step_id": "step:6e269ade-b6c0-4442-8553-6445a5fbbb6e",
+                "condition": "Context unfinalized: throw Error",
+                "evidence_ids": [
+                  "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:6e269ade-b6c0-4442-8553-6445a5fbbb6e",
+            "title": "Delegate Error values or rethrow other values",
+            "kind": "failure",
+            "claim_ids": [
+              "claim:7af68846-ae57-44cd-8e06-49e5596a226b",
+              "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15",
+              "claim:4a289f87-40be-45fa-90f8-f07a20dcafb8",
+              "claim:4e81a050-0232-49a7-bf88-ebfbdc1e9576"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2",
+              "evidence:d19ca748f1302f0092f3bbbc30148d3c2d835f99f407db8e27802045d7c85b69",
+              "evidence:4634461b115dd4a1479717296128dc6517427f5529a42e3937146f069d9ac09a",
+              "evidence:e6e723339481e57866817eae505f437cf7cf9fcc9938197fc569fb0760769e2b"
+            ],
+            "next": []
+          },
+          {
+            "id": "step:78c04a66-b80a-4358-8b55-58a8d1523e29",
+            "title": "Return the selected response",
+            "kind": "action",
+            "claim_ids": [
+              "claim:32832fda-23d3-411c-8392-6782b3634057",
+              "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+              "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": []
+          },
+          {
+            "id": "step:95622008-6e00-4397-9d3b-37cf7633368e",
+            "title": "Propagate a synchronous fallback failure",
+            "kind": "failure",
+            "claim_ids": [
+              "claim:bf2950af-c55d-401a-9691-50acf819a3f2"
+            ],
+            "evidence_ids": [
+              "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+            ],
+            "next": []
+          }
+        ]
+      },
+      {
+        "id": "flow:4c89dd94-0517-4c63-ab11-eb934e238885",
+        "capability_id": "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767",
+        "entry_symbol_ids": [
+          "symbol:fbb7a9c75ec9d7373e3089e10aa1cb7f38e800e860c16f443f5b9c7b43fc2036"
+        ],
+        "entry_step_ids": [
+          "step:0927dcdd-b4e6-47dc-bb6e-67ec8e86ee7d"
+        ],
+        "steps": [
+          {
+            "id": "step:0927dcdd-b4e6-47dc-bb6e-67ec8e86ee7d",
+            "title": "Initialize invocation progression",
+            "kind": "action",
+            "claim_ids": [
+              "claim:a4808f91-eb8a-4a52-aed2-72effb4a139e",
+              "claim:b1c5caa4-d40d-4e99-a478-a0483a83437a"
+            ],
+            "evidence_ids": [
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+            ],
+            "next": [
+              {
+                "step_id": "step:6b664680-e522-4784-922d-8f7b80992b82",
+                "condition": null,
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:6b664680-e522-4784-922d-8f7b80992b82",
+            "title": "Reject repeated or backward progression",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+              "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12"
+            ],
+            "evidence_ids": [
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+            ],
+            "next": [
+              {
+                "step_id": "step:a249dba7-bb8d-475a-a38d-a1a9cf7a9472",
+                "condition": "Index is greater than previous index",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              },
+              {
+                "step_id": "step:2b229a25-c063-4a7c-ab4a-5b90f609670e",
+                "condition": "Index is less than or equal to previous index",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:a249dba7-bb8d-475a-a38d-a1a9cf7a9472",
+            "title": "Select middleware or the terminal next callback",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:b35b5c02-3b31-46cd-b1ac-2845ca7d8424",
+              "claim:36389804-ee71-4da7-bbdc-e77cb1d247b1",
+              "claim:957e5bca-529c-4b7b-85cd-d3ad15c57993",
+              "claim:0df938c1-9773-4d05-84ba-5bcecf66fb6c"
+            ],
+            "evidence_ids": [
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+            ],
+            "next": [
+              {
+                "step_id": "step:6c021307-7902-43bc-9ed0-420de09fc078",
+                "condition": "A handler exists",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              },
+              {
+                "step_id": "step:d21a3bf3-b439-475c-9894-7cd0977c85ed",
+                "condition": "No handler exists",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:6c021307-7902-43bc-9ed0-420de09fc078",
+            "title": "Await handler and its recursive next continuation",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:87cd957c-bb51-49fe-b9a4-291c106e08c5",
+              "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c"
+            ],
+            "evidence_ids": [
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+            ],
+            "next": [
+              {
+                "step_id": "step:6b664680-e522-4784-922d-8f7b80992b82",
+                "condition": "Handler invokes next: enter child frame at i + 1",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              },
+              {
+                "step_id": "step:9394aaf0-1e44-40f5-b32c-3af2d70a285f",
+                "condition": "Handler returns without another next, or resumes after child context returns",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              },
+              {
+                "step_id": "step:6d99d430-1030-4bbe-8278-8707ffcc2e1f",
+                "condition": "Handler or its awaited child throws",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:6d99d430-1030-4bbe-8278-8707ffcc2e1f",
+            "title": "Handle eligible Error values",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d",
+              "claim:6a188938-736d-4970-a698-88df4b787329",
+              "claim:3744e538-0f07-4ea4-a210-02d1a6c03781",
+              "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa",
+              "claim:40001f0b-2785-462a-9244-1997813e69cd"
+            ],
+            "evidence_ids": [
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+            ],
+            "next": [
+              {
+                "step_id": "step:9394aaf0-1e44-40f5-b32c-3af2d70a285f",
+                "condition": "onError succeeds for an Error value",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              },
+              {
+                "step_id": "step:2b229a25-c063-4a7c-ab4a-5b90f609670e",
+                "condition": "No eligible error handler, non-Error throw, or onError fails",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:d21a3bf3-b439-475c-9894-7cd0977c85ed",
+            "title": "Invoke not-found only if unfinalized",
+            "kind": "branch",
+            "claim_ids": [
+              "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798",
+              "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829"
+            ],
+            "evidence_ids": [
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+            ],
+            "next": [
+              {
+                "step_id": "step:9394aaf0-1e44-40f5-b32c-3af2d70a285f",
+                "condition": "Fallback completes or is not eligible",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              },
+              {
+                "step_id": "step:2b229a25-c063-4a7c-ab4a-5b90f609670e",
+                "condition": "Not-found callback throws",
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:9394aaf0-1e44-40f5-b32c-3af2d70a285f",
+            "title": "Conditionally write response state",
+            "kind": "action",
+            "claim_ids": [
+              "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+              "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa",
+              "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab",
+              "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc"
+            ],
+            "evidence_ids": [
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+              "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+            ],
+            "next": [
+              {
+                "step_id": "step:0f2e7303-9908-4bae-9695-1247c8ce948a",
+                "condition": null,
+                "evidence_ids": [
+                  "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+                  "evidence:aa0addd05e633650f6021efd32879b188d53dccc86716ddf8bf71950476311e5"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "step:0f2e7303-9908-4bae-9695-1247c8ce948a",
+            "title": "Return shared context to the caller",
+            "kind": "action",
+            "claim_ids": [
+              "claim:f67de3f4-647c-4c67-86e3-ab561267bf22"
+            ],
+            "evidence_ids": [
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+            ],
+            "next": []
+          },
+          {
+            "id": "step:2b229a25-c063-4a7c-ab4a-5b90f609670e",
+            "title": "Propagate the failure from this frame",
+            "kind": "failure",
+            "claim_ids": [
+              "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+              "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa",
+              "claim:40001f0b-2785-462a-9244-1997813e69cd",
+              "claim:6b252ce9-9a3f-4cdb-9248-b0e515420829",
+              "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12"
+            ],
+            "evidence_ids": [
+              "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+            ],
+            "next": []
+          }
+        ]
+      }
+    ],
+    "unknowns": [
+      {
+        "subject_id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+        "question": "Router matching internals and the runtime behavior of user handlers are outside these excerpts.",
+        "critical": true,
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ]
+      },
+      {
+        "subject_id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+        "question": "Thrown failures from path resolution, router matching, or Context construction occur before the shown handler try/catch blocks; caller-level handling is outside this request.",
+        "critical": true,
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ]
+      },
+      {
+        "subject_id": "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767",
+        "question": "Recursive next returns a Promise; whether a user handler awaits it is determined by that handler, not established by compose alone. The flow describes frame recursion, not a flat scheduler.",
+        "critical": true,
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370"
+        ]
+      },
+      {
+        "subject_id": "concept:dc9510f4-c515-4531-8d5e-fcbf9c70f767",
+        "question": "An error that escapes a child dispatch may be caught by an awaiting parent handler frame or by the application dispatcher. No claim is made that every repeated-next error bypasses all error handlers.",
+        "critical": true,
+        "evidence_ids": [
+          "evidence:f0fbf304d7f634b2604843eb1d434ace3bbc1661e737c3fd782fde7d77f7b370",
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ]
+      },
+      {
+        "subject_id": "concept:3dc48efa-feb5-4f6c-bd6a-4a954b6b8cc8",
+        "question": "The synchronous not-found fallback lies outside the direct-handler try/catch. Caller handling of a throw there, or rejection from the HEAD wrapper, is not represented as a guaranteed local error callback.",
+        "critical": true,
+        "evidence_ids": [
+          "evidence:98377407be0e1d9f3dbe99143801820905c18a26f23561c9fcf9d38afe55dcd2"
+        ]
+      }
+    ]
+  }
+}

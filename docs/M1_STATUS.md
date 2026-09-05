@@ -1,6 +1,6 @@
 # M1 structural extraction handoff
 
-M1 implements immutable source access, compiler-backed structural facts, inspectable evidence, and a source-only CLI. Semantic interpretation and human/LLM rendering remain M2 work.
+M1 implements immutable source access, compiler-backed structural facts, inspectable evidence, and a source-only CLI. The subsequent semantic exchange and two capability pages are documented in [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md); this file records the structural handoff.
 
 ## What changed
 
@@ -65,11 +65,13 @@ Fetch and output destinations must be new. Reuse an already verified bare checko
 - Each scan recomputes the scoped program. In-run source reads are cached; source verification caches each file buffer, line starts, and sparse byte-to-UTF-16 adjustments once per validation; persistent syntax caches and incremental invalidation are deferred. readEvidence currently verifies the whole artifact/source set per call; repeated interactive retrieval needs a validated session cache.
 - Facts describe supported syntax and bounded references. There is no control-flow graph, complete call graph, runtime trace, capability grouping, or semantic model. Parser errors and unknowns remain visible.
 
-## Smallest M2 slice after structural review
+## Historical next slice after structural review
+
+The current next task is [semantic contracts and inspection](NEXT_IMPLEMENTATION_TASK.md). The list below records the earlier structural handoff.
 
 1. Build a bounded evidence request for request dispatch and middleware composition, exposing lookup by evidence/declaration IDs and explicit scope expansion.
 2. Exchange proposal files with the user's existing coding agent; preserve input/output and label replay separately from fresh inference.
 3. Validate proposed concept/claim references against M1 evidence, then review claim support independently of citation integrity.
 4. Add separate human Markdown/diagram rendering and an LLM context exporter over the same accepted records, using explicit context budgets.
 
-Review the M1 structure and its unresolved cases before starting this semantic slice. No M2 interfaces or model integration have been implemented here.
+The file exchange, recorded replay, and initial capability pages are now implemented; see [the semantic exchange guide](SEMANTIC_EXCHANGE.md) for the current handoff. Provider transport and broader context selection remain deferred.

@@ -1,0 +1,63 @@
+{
+  "browser": "149.0.7827.0",
+  "pages": [
+    {
+      "alias": "request-dispatch",
+      "stages": 5,
+      "keyboard_cases": true,
+      "stage_highlights": true,
+      "source_text_exact": true,
+      "nested_fragment_links": true,
+      "desktop_mobile_no_overflow": true,
+      "print_state_restored": true,
+      "no_javascript_details": true
+    },
+    {
+      "alias": "middleware-composition",
+      "stages": 5,
+      "keyboard_cases": true,
+      "stage_highlights": true,
+      "source_text_exact": true,
+      "nested_fragment_links": true,
+      "desktop_mobile_no_overflow": true,
+      "print_state_restored": true,
+      "no_javascript_details": true
+    }
+  ],
+  "external_requests": [],
+  "errors": [],
+  "typecheck": "passed",
+  "automated_tests": {
+    "passed": 39,
+    "failed": 0
+  },
+  "source_replay": {
+    "semantic_artifact_id": "semantic:3b600ce62677cd56b9d3172a4cd2841f739dd41effc439a2d27acbb230142d56",
+    "byte_identical_replays": 2,
+    "target_files_unchanged": true
+  },
+  "report_files": [
+    {
+      "path": "request-dispatch.md",
+      "sha256": "6fb6d3d216463185909294161731b5a9f0883356067b65e5e52920dc903211e5",
+      "bytes": 43558
+    },
+    {
+      "path": "request-dispatch.html",
+      "sha256": "3660c015377cde2ef20f21916c3392d49235184b2839f190703a10a561c92ee7",
+      "bytes": 69711
+    },
+    {
+      "path": "middleware-composition.md",
+      "sha256": "e9774f282c2fd5d6737639f5b9dc76a4d58848cf6e971ce25e2c51c4a08731c2",
+      "bytes": 32854
+    },
+    {
+      "path": "middleware-composition.html",
+      "sha256": "8c32c1bf782d990affb364b3eb9422ae728b9716af4a0f49819f46987714bd12",
+      "bytes": 59401
+    }
+  ],
+  "independent_content_review": "pending",
+  "reader_comprehension_trial": "not-run"
+}

@@ -1,0 +1,80 @@
+{
+  "schema_version": "0.1.0",
+  "transport": "recorded-replay",
+  "model_called": false,
+  "snapshot_id": "sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9",
+  "scan_artifact_id": "scan:fb8827cf671eeb148410a7e6967bb3025665851e64ae359a7bad515b72855f93",
+  "request_id": "request:030d427439a3c248fb1229e513d19e0a5fe4b2cdd33905e3aa842bbbc01351b7",
+  "semantic_artifact_id": "semantic:3b600ce62677cd56b9d3172a4cd2841f739dd41effc439a2d27acbb230142d56",
+  "request_bytes": 45704,
+  "semantic_bytes": 122414,
+  "semantic_sha256": "6b6c0bbe9f02b3c1779ec0e7e47b2f6716cbadc53ed9c6bfadb6a7cde8d1aac5",
+  "excerpts": 11,
+  "omitted_scope_evidence": 1731,
+  "coverage": {
+    "capabilities": 2,
+    "cited_evidence_records": 11,
+    "claim_support": "not-reviewed",
+    "claims": 53,
+    "unknowns": 5
+  },
+  "source_coverage": {
+    "tracked_entries": 486,
+    "selected_source_files": 25,
+    "parsed_source_files": 25,
+    "failed_source_files": 0,
+    "support_source_files": 10,
+    "failed_support_files": 0,
+    "inventory_only_entries": 451,
+    "facts": 14289,
+    "resolved_references": 10304,
+    "unresolved_references": 764,
+    "resolved_calls": 117,
+    "unresolved_calls": 353,
+    "resolved_imports": 153,
+    "unresolved_imports": 0,
+    "semantic_analysis": "not-run"
+  },
+  "byte_identical_replays": 2,
+  "target_files_unchanged": true,
+  "measurements": {
+    "node": "v24.19.0",
+    "scan_ms": 2056.420636,
+    "request_ms": 1122.066813,
+    "import_with_source_validation_ms": 652.8336060000001,
+    "node_peak_rss_kib": 531992
+  },
+  "measurement_note": "One process; request and import timings include source verification. RSS includes two imports/rendering and excludes Git children. Replay is recorded agent output, not a fresh inference or independent semantic-quality assessment. Producer token counts/model ID were not available.",
+  "presentation_plans": [
+    {
+      "path": "../../presentations/hono/request-dispatch.json",
+      "sha256": "2a026bc1972b3752fcc2845560bdf505ff883b0df131e6fbc7fa89610ee8f5d1"
+    },
+    {
+      "path": "../../presentations/hono/middleware-composition.json",
+      "sha256": "05ffe6c4a9c4f7496d25a425fa4e8cd233046f98d6832315fabfe0b459699b86"
+    }
+  ],
+  "pages": [
+    {
+      "path": "request-dispatch.md",
+      "sha256": "6fb6d3d216463185909294161731b5a9f0883356067b65e5e52920dc903211e5",
+      "bytes": 43558
+    },
+    {
+      "path": "request-dispatch.html",
+      "sha256": "ba9de17c4bd8fc0ce2c764b8fe9656e4935dd3d3b24d95d7e7fa9d06dd47282a",
+      "bytes": 69712
+    },
+    {
+      "path": "middleware-composition.md",
+      "sha256": "e9774f282c2fd5d6737639f5b9dc76a4d58848cf6e971ce25e2c51c4a08731c2",
+      "bytes": 32854
+    },
+    {
+      "path": "middleware-composition.html",
+      "sha256": "e86f182b45b1ba2eaabb07d2664c043c06e89a3d4866506bf6b89b48e512fce8",
+      "bytes": 59402
+    }
+  ]
+}
