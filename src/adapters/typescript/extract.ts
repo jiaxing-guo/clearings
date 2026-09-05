@@ -22,6 +22,10 @@ function declarationKind(node: ts.Node): Declaration['kind'] | null {
 
 function typeUse(node: ts.Node): boolean {
   for (let current: ts.Node | undefined = node; current; current = current.parent) {
+    // Type arguments are encountered first, but the base-class expression itself
+    // is evaluated. Interface heritage and implements clauses remain type-only.
+    if (ts.isExpressionWithTypeArguments(current) && ts.isHeritageClause(current.parent)
+      && current.parent.token === ts.SyntaxKind.ExtendsKeyword && ts.isClassLike(current.parent.parent)) return false;
     if (ts.isTypeNode(current) || ts.isInterfaceDeclaration(current) || ts.isTypeAliasDeclaration(current)) return true;
     if (ts.isExpressionStatement(current) || ts.isStatement(current)) return false;
   }
@@ -159,6 +163,7 @@ export function extract(store: SourceStore, diagnostics: ScanDiagnostic[], proje
       const symbol = symbolAt(node); if (symbol) writes.add(symbol);
     };
     const collectWrites = (node: ts.Node) => {
+      if ((ts.isForOfStatement(node) || ts.isForInStatement(node)) && !ts.isVariableDeclarationList(node.initializer)) markWrite(node.initializer);
       if (ts.isBinaryExpression(node) && node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && node.operatorToken.kind <= ts.SyntaxKind.LastAssignment) {
         markWrite(node.left);
       }
@@ -191,7 +196,9 @@ export function extract(store: SourceStore, diagnostics: ScanDiagnostic[], proje
           const symbol = addDeclaration(node as ts.Declaration);
           if (symbol) {
             addFact(node, { ...base('declaration', named(node)?.getText(source) ?? 'default', isTypeDeclaration(node) ? 'type' : 'runtime'), subject_id: symbol });
-            if (['function', 'method', 'class', 'namespace'].includes(kind)) currentOwner = symbol;
+            const constCallable = ts.isVariableDeclaration(node) && !!(node.parent.flags & ts.NodeFlags.Const)
+              && node.initializer && (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer));
+            if (['function', 'method', 'class', 'namespace'].includes(kind) || constCallable) currentOwner = symbol;
             const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined;
             if (modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) addFact(node, { ...base('export', modifiers.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword) ? 'default' : named(node)!.getText(source), isTypeDeclaration(node) ? 'type' : 'runtime'), target_id: symbol, resolution: 'resolved' });
             if (ts.isVariableDeclaration(node) && ts.isVariableDeclarationList(node.parent) && ts.isVariableStatement(node.parent.parent) && node.parent.parent.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) addFact(node, { ...base('export', named(node)!.getText(source)), target_id: symbol, resolution: 'resolved' });
@@ -227,12 +234,21 @@ export function extract(store: SourceStore, diagnostics: ScanDiagnostic[], proje
           return;
         }
         if (ts.isExportAssignment(node)) {
-          const target = targetOf(symbolAt(node.expression)) ?? (ts.isArrowFunction(node.expression) || ts.isFunctionExpression(node.expression) || ts.isClassExpression(node.expression) ? addDeclaration(node.expression) : null);
+          const inline = ts.isArrowFunction(node.expression) || ts.isFunctionExpression(node.expression) || ts.isClassExpression(node.expression);
+          const target = targetOf(symbolAt(node.expression)) ?? (inline ? addDeclaration(node.expression as ts.Declaration) : null);
           addFact(node, { ...base('export', node.isExportEquals ? 'export=' : 'default'), target_id: target, resolution: target ? 'resolved' : 'unresolved', reason: target ? null : 'export-expression-not-a-unique-declaration' });
+          if (inline && target) currentOwner = target;
         }
         if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
           const callee = node.expression;
-          if (callee.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(callee) && callee.text === 'require' && !checker.getSymbolAtLocation(callee))) moduleFact(node, node.arguments?.[0], 'import', 'runtime', callee.getText(source));
+          if (ts.isCallExpression(node) && (callee.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(callee) && callee.text === 'require' && !checker.getSymbolAtLocation(callee)))) {
+            moduleFact(node, node.arguments[0], 'import', 'runtime', callee.getText(source));
+            // Module syntax has its own fact; retain computation in its arguments
+            // without adding a duplicate unresolved call/reference to the loader.
+            node.typeArguments?.forEach((child) => visit(child, currentOwner));
+            node.arguments.forEach((child) => visit(child, currentOwner));
+            return;
+          }
           const symbol = symbolAt(callee); const declarations = symbol?.declarations ?? [];
           const declaration = declarations.length === 1 ? declarations[0] : undefined;
           let reason: string | null = 'dynamic-dispatch';

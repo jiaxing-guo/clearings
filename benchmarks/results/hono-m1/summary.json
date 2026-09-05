@@ -4,7 +4,7 @@
   "target_id": "hono-4.13.7",
   "commit_sha": "eebdf7be39abf0a872671835ccce0c4f03ea497a",
   "tree_sha": "7fd627b257e5b744bf23d4957a93a0d0413c8c19",
-  "recorded_at": "2026-09-05T00:04:26.965Z",
+  "recorded_at": "2026-09-05T00:32:06.295Z",
   "environment": {
     "node": "v24.19.0",
     "platform": "linux",
@@ -18,9 +18,9 @@
   "target_files_unchanged": true,
   "byte_identical_runs": 3,
   "snapshot_id": "sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9",
-  "artifact_id": "scan:51bdd97606710ccb03e6f960dbca28723fb96f730294b0eea4a0ee773d4ddecd",
-  "artifact_sha256": "5b2e2c35a04f7e9527042208e3347e00f1c82de53099388bbaae29b0d83d2455",
-  "artifact_bytes": 22809315,
+  "artifact_id": "scan:fb8827cf671eeb148410a7e6967bb3025665851e64ae359a7bad515b72855f93",
+  "artifact_sha256": "648b7433e3d1dde4a9650c0d4c62babfd225480cf402d2fe049bf74f5c164efe",
+  "artifact_bytes": 22810718,
   "coverage": {
     "tracked_entries": 486,
     "selected_source_files": 25,
@@ -57,24 +57,24 @@
   ],
   "samples": [
     {
-      "scan_ms": 2173.904306,
-      "source_validation_ms": 3424.026301,
-      "measured_ms": 5706.882527,
-      "node_peak_rss_kib": 487320
+      "scan_ms": 2203.348194,
+      "source_validation_ms": 938.566723,
+      "measured_ms": 3303.787767,
+      "node_peak_rss_kib": 466872
     },
     {
-      "scan_ms": 2335.24289,
-      "source_validation_ms": 3647.788291,
-      "measured_ms": 6201.384302,
-      "node_peak_rss_kib": 467568
+      "scan_ms": 2558.938608,
+      "source_validation_ms": 868.901421,
+      "measured_ms": 3550.959969,
+      "node_peak_rss_kib": 446484
     },
     {
-      "scan_ms": 2112.651256,
-      "source_validation_ms": 3517.382969,
-      "measured_ms": 5740.244387,
-      "node_peak_rss_kib": 469156
+      "scan_ms": 2480.644299,
+      "source_validation_ms": 852.80329,
+      "measured_ms": 3449.784545,
+      "node_peak_rss_kib": 449564
     }
   ],
-  "median_scan_ms": 2173.904306,
-  "first_artifact": "../local/hono-m1-final/run-1/scan.json"
+  "median_scan_ms": 2480.644299,
+  "first_artifact": "run-1/scan.json"
 }

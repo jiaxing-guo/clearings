@@ -28,7 +28,10 @@ export function discoverProjects(store: SourceStore, selected: string[], diagnos
   const load = (path: string): CompilerProject | undefined => {
     if (visiting.has(path)) { diagnostic('PROJECT_CYCLE', 'Project reference cycle detected.', path, null, 'error'); return projects.get(path); }
     const existing = projects.get(path); if (existing) return existing;
-    if (projects.size >= store.limits.max_projects) throw new ClearingsError('PROJECT_LIMIT', 'Project discovery budget exceeded.');
+    if (projects.size >= store.limits.max_projects) {
+      diagnostic('PROJECT_LIMIT', 'Project discovery budget exceeded; this configuration was not loaded.', path, null, 'error');
+      return undefined;
+    }
     const id = recordId('project', [store.manifest.snapshot_id, path]);
     const record: Project = { id, config_path: path, config_sha256: null, references: [], source_files: [], selected_files: [], status: 'failed', options: portableOptions(defaults) };
     const project = { record, options: { ...defaults } }; projects.set(path, project); visiting.add(path);
@@ -55,14 +58,14 @@ export function discoverProjects(store: SourceStore, selected: string[], diagnos
         const child = load(referenced);
         if (child) record.references.push(child.record.id);
       }
-      record.references.sort(compare);
+      record.references = [...new Set(record.references)].sort(compare);
     }
     visiting.delete(path);
     return project;
   };
   if (requested) {
     const path = posix.normalize(requested);
-    if (path.startsWith('/') || path.startsWith('../') || !store.allowed(path)) throw new ClearingsError('INVALID_PROJECT', 'Project must be an available repository-relative tsconfig path.');
+    if (path.startsWith('/') || path.startsWith('../') || !path.endsWith('.json') || !store.allowed(path)) throw new ClearingsError('INVALID_PROJECT', 'Project must be an available repository-relative JSON compiler configuration path.');
     load(path);
   } else {
     const configs = new Set<string>();

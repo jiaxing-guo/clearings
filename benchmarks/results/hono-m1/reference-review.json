@@ -1,7 +1,7 @@
 {
   "schema_version": "0.1.0",
   "snapshot": "eebdf7be39abf0a872671835ccce0c4f03ea497a",
-  "artifact_id": "scan:51bdd97606710ccb03e6f960dbca28723fb96f730294b0eea4a0ee773d4ddecd",
+  "artifact_id": "scan:fb8827cf671eeb148410a7e6967bb3025665851e64ae359a7bad515b72855f93",
   "review": {
     "method": "Agent source review of pinned HonoBase dispatch, compose, and SmartRouter source; selected examples, not a random precision sample.",
     "human_reviewed": false,

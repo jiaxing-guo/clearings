@@ -9,7 +9,8 @@ export const VIRTUAL_ROOT = '/__clearings_repository__/';
 export const sha256 = (data: string | Buffer): string => createHash('sha256').update(data).digest('hex');
 export const sourcePath = (path: string): string | null => {
   const normalized = posix.normalize(path);
-  return normalized.startsWith(VIRTUAL_ROOT) ? normalized.slice(VIRTUAL_ROOT.length) : null;
+  if (normalized === VIRTUAL_ROOT.slice(0, -1)) return '.';
+  return normalized.startsWith(VIRTUAL_ROOT) ? normalized.slice(VIRTUAL_ROOT.length) || '.' : null;
 };
 
 export interface SourceLimits { max_file_bytes: number; max_total_bytes: number; max_source_files: number; max_projects: number }

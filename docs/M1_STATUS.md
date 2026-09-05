@@ -16,7 +16,7 @@ Selected source bodies produce declarations, explicit import/export links, refer
 
 ## Verification
 
-A clean npm install from the lockfile, typecheck, build, and all **22 tests** passed. Tests cover M0 behavior and the new project/alias/re-export graph, explicit type-only imports, namespace imports, anonymous/default/star exports, JavaScript, missing dependencies/configs, parse errors, callback/indexed/overloaded/reassigned calls, failed support reads, UTF-8/BOM/CRLF evidence, forged citations, dirty/staged/untracked trees, copied/bare repositories, strict exits, and output protection. Package inspection confirms TypeScript is a runtime dependency and the compiled modules and both JSON schemas are included; evaluator files are excluded.
+Typecheck, build, and all **29 tests** passed after the review fixes. The earlier M1 baseline also passed a clean lockfile install. Tests cover M0 behavior and the new project/alias/re-export graph, explicit type-only imports, namespace imports, anonymous/default/star exports, JavaScript, missing dependencies/configs, parse errors, callback/indexed/overloaded/reassigned calls, loop and destructuring writes, class heritage usage, const/default callable ownership, duplicate project references, partial project-budget output, module-load classification, failed support reads, UTF-8/BOM/CRLF and astral-character columns, forged citations and diagnostic project references, dirty/staged/untracked trees, copied/bare repositories, strict exits, and output protection. Package inspection confirms TypeScript is a runtime dependency and the compiled modules and both JSON schemas are included; evaluator files are excluded.
 
 The pinned Hono deep scan used `--project tsconfig.build.json` so production config membership was explicit rather than mixed with the test project. Commit `eebdf7be39abf0a872671835ccce0c4f03ea497a` and tree `7fd627b257e5b744bf23d4957a93a0d0413c8c19` matched the target manifest. The source-only warning about unavailable node ambient types remains visible.
 
@@ -37,9 +37,9 @@ Three fresh processes produced byte-identical artifacts. All target object-store
 
 The 12-case evaluator checks six direct targets and six callback/dynamic cases against pinned-source review. It is an agent-authored, selected sample, with independent human review pending. It does not estimate overall call precision or recall. The eight M0 capability-question rubrics remain separate evaluator assets; no semantic question-quality score is claimed.
 
-Median structural scan duration was **2.17 seconds**. Per-run source validation took 3.42–3.65 seconds. Node peak RSS was 456.6–475.9 MiB, including validation and serialization but excluding Git child memory. The host exposed eight available CPUs and a 20-GiB process memory limit; filesystem caches were warm. These results do not establish the plan's 4-vCPU/8-GiB performance gate.
+Median structural scan duration was **2.48 seconds**. Per-run source validation took 0.85–0.94 seconds. Node peak RSS was 436.0–455.9 MiB, including validation and serialization but excluding Git child memory. The host exposed eight available CPUs and a 20-GiB process memory limit; filesystem caches were warm. These results do not establish the plan's 4-vCPU/8-GiB performance gate.
 
-The raw pretty-printed artifact is 22,809,315 bytes. It is a detailed structural interchange file, not a compact semantic overview or an LLM prompt. Context selection and presentation must reduce it in M2.
+The raw pretty-printed artifact is 22,810,718 bytes. It is a detailed structural interchange file, not a compact semantic overview or an LLM prompt. Context selection and presentation must reduce it in M2.
 
 ## Reproduce and inspect
 
@@ -61,8 +61,8 @@ Fetch and output destinations must be new. Reuse an already verified bare checko
 - Call resolution is conservative for public methods, callbacks, factories, indexed access, overload/merged declarations, and assignments. Known reassignments are tracked syntactically; this is not whole-program alias or mutation analysis. Declaration references are separate from implementation links.
 - Import usage reports explicit type-only versus value/side-effect syntax. It does not predict emit elision or prove runtime execution order. CommonJS require/import-equals links may remain unresolved; CommonJS assignment-based exports are not modeled.
 - Project-reference graphs inform source ownership and config options; the adapter does not build referenced projects or consume generated declaration outputs. Unsupported or excluded configurations produce diagnostics and source-only fallback where needed.
-- Source byte/file and project budgets are explicit. Git subprocess limits still apply. There is no hard end-to-end compiler wall-time/memory sandbox, no working-tree mode, and no Windows support yet.
-- Each scan recomputes the scoped program. In-run source reads are cached; persistent syntax caches and incremental invalidation are deferred. readEvidence currently verifies the whole artifact/source set per call; repeated interactive retrieval needs a validated session cache.
+- Source byte/file and project budgets are explicit. The project limit counts loaded configuration records; exhaustion produces a partial artifact, with at most one additional fallback program to retain selected files. Git subprocess limits still apply. There is no hard end-to-end compiler wall-time/memory sandbox, no working-tree mode, and no Windows support yet.
+- Each scan recomputes the scoped program. In-run source reads are cached; source verification caches each file buffer, line starts, and sparse byte-to-UTF-16 adjustments once per validation; persistent syntax caches and incremental invalidation are deferred. readEvidence currently verifies the whole artifact/source set per call; repeated interactive retrieval needs a validated session cache.
 - Facts describe supported syntax and bounded references. There is no control-flow graph, complete call graph, runtime trace, capability grouping, or semantic model. Parser errors and unknowns remain visible.
 
 ## Smallest M2 slice after structural review

@@ -24,7 +24,7 @@ node dist/cli/main.js scan /path/to/repository --include src --mode source-only 
 node dist/cli/main.js validate /tmp/clearings-scan.json --repository /path/to/repository
 ```
 
-`scan` discovers ancestor tsconfig files, follows project references and inherited settings, and resolves repository imports through a virtual filesystem backed by Git blobs. An empty root `files` array does not hide referenced projects. `--project path/to/tsconfig.json` restricts project discovery to that config and its references. Selected files with no usable project use explicit source-only defaults. Overlapping config membership is reported and assigned deterministically; explicit scope does not silently disappear because a build config excludes it.
+`scan` discovers ancestor tsconfig files, follows project references and inherited settings, and resolves repository imports through a virtual filesystem backed by Git blobs. An empty root `files` array does not hide referenced projects. `--project path/to/tsconfig.json` restricts project discovery to that config and its references. Explicit configs must be tracked, available `.json` files; custom names such as `compiler-settings.json` are supported and TypeScript parses their contents. Selected files with no usable project use explicit source-only defaults. Overlapping config membership is reported and assigned deterministically; explicit scope does not silently disappear because a build config excludes it.
 
 The JSON contains the inventory manifest, project/config records, selected and supporting source units, declarations, imports/exports, references, calls, property writes, evidence, diagnostics, and coverage. Files imported beyond the selected scope are labeled `support`: their declarations can resolve references, but their entire bodies are not extracted. Explicit exclusions and symlinks are never followed.
 
@@ -95,7 +95,7 @@ const first = result.data.evidence[0]
 if (first) console.log(readEvidence(result, repository, first.id))
 ```
 
-The library is synchronous, runs bounded Git subprocesses, and performs no writes during inventory or scan. `scan` accepts optional source byte/file/project budgets through its `limits` option. `readEvidence` verifies the artifact and sources before returning text; repeated retrieval is not yet cached across calls. `readTarget(path)` and `fetchTarget(target, destination)` support explicit benchmark setup. `fetchTarget` performs writes and network access only when called.
+The library is synchronous, runs bounded Git subprocesses, and performs no writes during inventory or scan. `scan` accepts optional source byte/file/project budgets through its `limits` option. `max_projects` bounds loaded configuration records; exhaustion adds an error diagnostic and preserves unassigned selected files in at most one additional fallback program. `readEvidence` verifies the artifact and sources before returning text; repeated retrieval is not yet cached across calls. `readTarget(path)` and `fetchTarget(target, destination)` support explicit benchmark setup. `fetchTarget` performs writes and network access only when called.
 
 - `src/repository/`: Git revision/object access, inventory, scope, and output handling.
 - `src/model/`: portable JSON types, artifact integrity, and source-span verification.

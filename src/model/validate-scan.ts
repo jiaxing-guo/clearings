@@ -32,6 +32,7 @@ export function validateScan(value: unknown, options: { repository?: string } = 
   for (const records of [data.projects, data.symbols, data.evidence, data.facts]) sortedUnique(records.map((record) => record.id));
   for (const records of [data.files, data.reads]) sortedUnique(records.map((record) => record.path));
   sortedUnique(value.diagnostics.map(canonical));
+  if (value.diagnostics.some((diagnostic) => diagnostic.project_id !== null && !projects.has(diagnostic.project_id))) fail('Dangling diagnostic project reference.');
   for (const read of data.reads) {
     const entry = entries.get(read.path);
     if (!entry || !['100644', '100755'].includes(entry.mode) || entry.reason === 'explicit-exclusion' || entry.object_id !== read.blob_sha || entry.size_bytes !== read.size_bytes) fail('Source read does not match the manifest.');
@@ -85,7 +86,44 @@ export function validateScan(value: unknown, options: { repository?: string } = 
   if (options.repository) verifySources(value, options.repository);
 }
 
-function verifySources(result: ScanResult, repository: string): SourceStore {
+/** A sparse byte/UTF-16 index: ASCII needs no adjustment entries. */
+class SourceText {
+  readonly bytes: Buffer;
+  private readonly lineStarts = [0];
+  private readonly adjustmentEnds: number[] = [];
+  private readonly adjustments: number[] = [];
+
+  constructor(text: string) {
+    this.bytes = Buffer.from(text);
+    let byte = 0;
+    for (let offset = 0; offset < text.length;) {
+      const code = text.codePointAt(offset)!;
+      const units = code > 0xffff ? 2 : 1;
+      const width = code <= 0x7f ? 1 : code <= 0x7ff ? 2 : code <= 0xffff ? 3 : 4;
+      byte += width; offset += units;
+      if (width !== units) { this.adjustmentEnds.push(byte); this.adjustments.push(byte - offset); }
+      if (code === 10 || code === 0x2028 || code === 0x2029 || (code === 13 && text.charCodeAt(offset) !== 10)) this.lineStarts.push(offset);
+    }
+  }
+
+  position(byte: number): [number, number] {
+    if (byte < 0 || byte > this.bytes.length || (byte < this.bytes.length && (this.bytes[byte]! & 0xc0) === 0x80)) fail('Evidence offset splits a UTF-8 codepoint.');
+    const offset = byte - (this.adjustments[upperBound(this.adjustmentEnds, byte) - 1] ?? 0);
+    const line = upperBound(this.lineStarts, offset) - 1;
+    return [line + 1, offset - this.lineStarts[line]! + 1];
+  }
+}
+
+function upperBound(values: number[], value: number): number {
+  let low = 0; let high = values.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (values[middle]! <= value) low = middle + 1; else high = middle;
+  }
+  return low;
+}
+
+function verifySources(result: ScanResult, repository: string): Map<string, SourceText> {
   const original = result.data.manifest;
   const actual = inventory({ repository, ref: original.data.snapshot.commit_sha, include: original.data.scope.include, exclude: original.data.scope.exclude, expectedTree: original.data.snapshot.tree_sha });
   if (actual.snapshot_id !== original.snapshot_id) fail('Repository inventory differs from the declared snapshot.');
@@ -94,23 +132,20 @@ function verifySources(result: ScanResult, repository: string): SourceStore {
     const text = store.read(read.path, read.purpose);
     if (sha256(text) !== read.content_sha256) fail(`Stale source content: ${read.path}`);
   }
-  for (const item of result.data.evidence) evidenceText(result, store, item);
-  return store;
+  const files = new Map(result.data.files.map((file) => [file.id, file]));
+  const sources = new Map<string, SourceText>();
+  for (const item of result.data.evidence) {
+    if (!sources.has(item.file_id)) sources.set(item.file_id, new SourceText(store.read(files.get(item.file_id)!.path, 'source')));
+    evidenceText(sources, item);
+  }
+  return sources;
 }
 
-function evidenceText(result: ScanResult, store: SourceStore, item: Evidence): string {
-  const file = result.data.files.find((file) => file.id === item.file_id)!;
-  const text = store.read(file.path, 'source'); const bytes = Buffer.from(text);
-  const span = bytes.subarray(item.start_byte, item.end_byte);
-  // Re-encoding catches boundaries that split a UTF-8 codepoint.
-  if (sha256(span) !== item.span_sha256 || !Buffer.from(span.toString('utf8')).equals(span)) fail('Evidence span hash or UTF-8 boundary mismatch.');
-  const position = (offset: number) => {
-    const prefix = bytes.subarray(0, offset); const decoded = prefix.toString('utf8');
-    if (!Buffer.from(decoded).equals(prefix)) fail('Evidence offset splits a UTF-8 codepoint.');
-    const lines = decoded.split(/\r\n|\r|\n|\u2028|\u2029/);
-    return [lines.length, lines[lines.length - 1]!.length + 1];
-  };
-  if (canonical(position(item.start_byte)) !== canonical([item.start_line, item.start_column]) || canonical(position(item.end_byte)) !== canonical([item.end_line, item.end_column])) fail('Evidence line/column does not match source bytes.');
+function evidenceText(sources: Map<string, SourceText>, item: Evidence): string {
+  const source = sources.get(item.file_id)!;
+  if (canonical(source.position(item.start_byte)) !== canonical([item.start_line, item.start_column]) || canonical(source.position(item.end_byte)) !== canonical([item.end_line, item.end_column])) fail('Evidence line/column does not match source bytes.');
+  const span = source.bytes.subarray(item.start_byte, item.end_byte);
+  if (sha256(span) !== item.span_sha256) fail('Evidence span hash mismatch.');
   return span.toString('utf8');
 }
 
@@ -119,6 +154,6 @@ export function readEvidence(result: ScanResult, repository: string, evidenceId:
   validateScan(result);
   const item = result.data.evidence.find((item) => item.id === evidenceId);
   if (!item) throw new ClearingsError('UNKNOWN_EVIDENCE', 'Evidence ID is not in this scan.');
-  const store = verifySources(result, repository);
-  return evidenceText(result, store, item);
+  const sources = verifySources(result, repository);
+  return evidenceText(sources, item);
 }
