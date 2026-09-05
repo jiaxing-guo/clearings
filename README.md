@@ -4,9 +4,9 @@
 
 Clearings represents repository behavior with inspectable source evidence. People and coding agents use the same model through different views.
 
-**Implemented:** immutable Git inventory, bounded structural extraction, semantic proposal file exchange, recorded replay, and capability guides in HTML and Markdown. The package and GitHub repository remain private.
+**Implemented:** immutable Git inventory, bounded structural extraction, semantic proposal file exchange, recorded replay, function and behavior contracts, record inspection, bounded context export, and capability guides in HTML and Markdown. The package and GitHub repository remain private.
 
-**First prototype:** a PM/vibe-coder report, an engineer report, and an inspectable semantic representation with a bounded agent context export. A small code-change demo is optional. The reports exist; canonical function/behavior contracts and context export are the next implementation task. See the [realigned roadmap](docs/PROTOTYPE_PLAN.md) and [next task](docs/NEXT_IMPLEMENTATION_TASK.md).
+**First prototype:** a PM/vibe-coder report, an engineer report, and an inspectable semantic representation with a bounded agent context export. A small code-change demo is optional. The reports and contract APIs exist. Connecting all three demos to the same contract model and recording an agent comprehension run are the next task. See the [realigned roadmap](docs/PROTOTYPE_PLAN.md) and [next task](docs/NEXT_IMPLEMENTATION_TASK.md).
 
 ## Install and verify
 
@@ -74,6 +74,21 @@ node scripts/check-claim-review.mjs benchmarks/results/local/hono-semantic-repla
 ```
 
 Skip fetching when the pinned checkout already exists, and choose a new output directory. The 53-claim review is an author self-review with a recorded correction; independent human support review is pending. Replay and review accounting do not constitute a fresh inference or an independent precision result.
+
+## Inspect contracts and export agent context
+
+Use `propose --schema-version 0.2.0` for function and behavior contracts. The default v0.1 exchange remains available for the existing reports. The [contract guide](docs/SEMANTIC_CONTRACTS.md) explains the schema, source boundary, API, and byte accounting.
+
+```bash
+node scripts/replay-contracts.mjs benchmark-checkouts/hono.git benchmarks/results/local/my-contract-review
+node dist/cli/main.js inspect benchmarks/results/local/my-contract-review/semantic.json
+node dist/cli/main.js inspect benchmarks/results/local/my-contract-review/semantic.json --behavior response-selection
+node dist/cli/main.js context benchmarks/results/local/my-contract-review/semantic.json --capability request-dispatch --max-bytes 131072 --no-neighbors
+```
+
+The [contract review bundle](benchmarks/results/hono-contracts/README.md) contains 22 function contracts, four behavior contracts, actual inspection output, and bounded context examples. Eighteen implementations have exact source anchors; four callback roles retain unknown runtime implementations. The model contains 73 assertions and ten critical unknowns. Its source review is an author self-review; independent support remains pending.
+
+Inspection and context export validate JSON integrity. Add both `--scan` and `--repository` to recheck pinned source. Context output uses compact JSON with exact UTF-8 byte accounting. If required conditions, state rules, failures, and relevant critical unknowns cannot fit, export fails explicitly. Use another record selection or a larger budget.
 
 ## Inventory a local repository
 

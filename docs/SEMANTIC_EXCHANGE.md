@@ -1,6 +1,6 @@
 # Semantic proposal exchange
 
-This document describes the implemented v0.1 exchange. The [active roadmap](PROTOTYPE_PLAN.md) and [next task](NEXT_IMPLEMENTATION_TASK.md) define the planned function/behavior contracts and internal-representation demo.
+This document describes the implemented v0.1 exchange. The [active roadmap](PROTOTYPE_PLAN.md) and [next task](NEXT_IMPLEMENTATION_TASK.md) define the remaining demo integration. The implemented v0.2 function/behavior contracts, inspection, and context export are described in [semantic contracts](SEMANTIC_CONTRACTS.md).
 
 Clearings now exports bounded source evidence, imports semantic proposals from an existing coding agent, replays recorded responses, and renders capability pages. The first recorded example explains Hono request dispatch and middleware composition. It is a file-exchange implementation: no model endpoint, subprocess agent, or provider SDK is invoked.
 
@@ -12,7 +12,7 @@ Clearings now exports bounded source evidence, imports semantic proposals from a
 4. `import` checks the exchange contract and revalidates the source. It retains the request and proposal in the semantic artifact, alongside provenance and explicitly unreviewed claim checks.
 5. `explain` renders HTML or Markdown from these records and an optional presentation plan. The plan can supply an overview, an engineer walkthrough, and authored function summaries. Both audience views retain claims, branches, critical unknowns, and source excerpts. See [reading guides](READING_GUIDES.md).
 
-The proposal is the semantic interpretation; the structural scan is the observation layer. The renderer owns presentation only. A future LLM context packer can consume these shared records without creating another ontology. Flow cycles are supported; no DAG assumption is made.
+The proposal is the semantic interpretation; the structural scan is the observation layer. The renderer owns presentation only. The v0.2 context packer consumes the extended records without a second semantic model. Flow cycles are supported; no DAG assumption is made.
 
 ## Files and schemas
 
@@ -91,4 +91,4 @@ The original exchange passed typecheck, build, and 36 tests. The reading guide c
 
 The benchmark recreates the request from a fresh structural scan, requires it to match the recorded request, imports the same response twice, and checks identical output. Every retained citation is verified against pinned source, and a before/after fingerprint checks the target contents. Measurements describe one process and recorded replay; no provider token/currency measurements are available, and the producing model identifier was not recorded.
 
-Still open: independent support adjudication; additional capabilities; semantic acceptance/reconciliation; provider transport; repository overview and general graph rendering; token-budgeted LLM context selection; general evidence expansion; broader rename/behavior mutations; and a second repository holdout. This change implements the exchange loop and two inspected pages without claiming those later gates have passed.
+Still open: independent support adjudication; additional capabilities; semantic acceptance/reconciliation; provider transport; repository overview and general graph rendering; token-budgeted context selection beyond the implemented byte budgets; general evidence expansion; broader rename/behavior mutations; and a second repository holdout. This change implements the exchange loop and two inspected pages without claiming those later gates have passed.

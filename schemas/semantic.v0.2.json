@@ -1,0 +1,934 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "semantic.v0.2.json",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/Request"
+    },
+    {
+      "$ref": "#/definitions/Proposal"
+    },
+    {
+      "$ref": "#/definitions/Model"
+    }
+  ],
+  "definitions": {
+    "Callable": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^callable:[0-9a-f]{64}$"
+        },
+        "role": {
+          "enum": [
+            "function",
+            "method",
+            "getter",
+            "setter",
+            "arrow",
+            "constructor"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000,
+          "pattern": "\\S"
+        },
+        "symbol_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^symbol:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enclosing_symbol_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^symbol:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_id": {
+          "type": "string",
+          "pattern": "^evidence:[0-9a-f]{64}$"
+        },
+        "start_byte": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_byte": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "span_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "name",
+        "symbol_id",
+        "enclosing_symbol_id",
+        "evidence_id",
+        "start_byte",
+        "end_byte",
+        "span_sha256"
+      ]
+    },
+    "Request": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "enum": [
+            "0.2.0"
+          ]
+        },
+        "command": {
+          "enum": [
+            "propose"
+          ]
+        },
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^request:[0-9a-f]{64}$"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source_request": {
+              "$ref": "semantic.v0.1.json#/definitions/Request"
+            },
+            "callables": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Callable"
+              },
+              "minItems": 0,
+              "maxItems": 2000,
+              "uniqueItems": true
+            },
+            "max_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2097152
+            },
+            "instructions": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12000,
+              "pattern": "\\S"
+            }
+          },
+          "required": [
+            "source_request",
+            "callables",
+            "max_bytes",
+            "instructions"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "command",
+        "snapshot_id",
+        "request_id",
+        "data"
+      ]
+    },
+    "Failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "condition": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000,
+          "pattern": "\\S"
+        },
+        "destination_id": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^concept:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^function:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 1,
+          "maxItems": 2000,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "condition",
+        "destination_id",
+        "claim_ids"
+      ]
+    },
+    "Function": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^function:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "alias": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000,
+          "pattern": "\\S"
+        },
+        "component_id": {
+          "type": "string",
+          "pattern": "^concept:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "role": {
+          "enum": [
+            "function",
+            "method",
+            "getter",
+            "setter",
+            "arrow",
+            "constructor",
+            "external-callback"
+          ]
+        },
+        "implementation_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^callable:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "input_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 1,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "output_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 1,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "state_access": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "state_id": {
+                "type": "string",
+                "pattern": "^concept:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+              },
+              "mode": {
+                "enum": [
+                  "read",
+                  "write",
+                  "read-write"
+                ]
+              },
+              "claim_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "minItems": 1,
+                "maxItems": 2000,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "state_id",
+              "mode",
+              "claim_ids"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "effect_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "failures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Failure"
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "target_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^concept:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^function:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                  }
+                ]
+              },
+              "claim_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "minItems": 1,
+                "maxItems": 2000,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "target_id",
+              "claim_ids"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "assumption_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "unknown_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^unknown:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "alias",
+        "title",
+        "component_id",
+        "role",
+        "implementation_id",
+        "input_claim_ids",
+        "output_claim_ids",
+        "state_access",
+        "effect_claim_ids",
+        "failures",
+        "dependencies",
+        "assumption_claim_ids",
+        "unknown_ids"
+      ]
+    },
+    "Behavior": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^behavior:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "alias": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000,
+          "pattern": "\\S"
+        },
+        "capability_id": {
+          "type": "string",
+          "pattern": "^concept:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "trigger_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 1,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "function_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^function:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 1,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "state_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^concept:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "flow_id": {
+          "type": "string",
+          "pattern": "^flow:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "step_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^step:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 1,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "condition": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 12000,
+                "pattern": "\\S"
+              },
+              "claim_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                },
+                "minItems": 1,
+                "maxItems": 2000,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "condition",
+              "claim_ids"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "failures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Failure"
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "constraint_claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        },
+        "unknown_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^unknown:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "alias",
+        "title",
+        "capability_id",
+        "trigger_claim_ids",
+        "function_ids",
+        "state_ids",
+        "flow_id",
+        "step_ids",
+        "outcomes",
+        "failures",
+        "constraint_claim_ids",
+        "unknown_ids"
+      ]
+    },
+    "Unknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^unknown:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "subject_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^concept:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "string",
+              "pattern": "^function:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "string",
+              "pattern": "^behavior:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+            }
+          ]
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000,
+          "pattern": "\\S"
+        },
+        "critical": {
+          "type": "boolean"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^evidence:[0-9a-f]{64}$"
+          },
+          "minItems": 0,
+          "maxItems": 2000,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "subject_id",
+        "question",
+        "critical",
+        "evidence_ids"
+      ]
+    },
+    "Proposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "enum": [
+            "0.2.0"
+          ]
+        },
+        "command": {
+          "enum": [
+            "proposal"
+          ]
+        },
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "request_id": {
+          "type": "string",
+          "pattern": "^request:[0-9a-f]{64}$"
+        },
+        "producer": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "agent",
+                "human"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 12000
+            },
+            "model": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 12000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "input_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "output_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "name",
+            "model",
+            "input_tokens",
+            "output_tokens"
+          ]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "concepts": {
+              "type": "array",
+              "items": {
+                "$ref": "semantic.v0.1.json#/definitions/Concept"
+              },
+              "minItems": 1,
+              "maxItems": 2000,
+              "uniqueItems": true
+            },
+            "claims": {
+              "type": "array",
+              "items": {
+                "$ref": "semantic.v0.1.json#/definitions/Claim"
+              },
+              "minItems": 1,
+              "maxItems": 2000,
+              "uniqueItems": true
+            },
+            "relations": {
+              "type": "array",
+              "items": {
+                "$ref": "semantic.v0.1.json#/definitions/Relation"
+              },
+              "minItems": 0,
+              "maxItems": 2000,
+              "uniqueItems": true
+            },
+            "flows": {
+              "type": "array",
+              "items": {
+                "$ref": "semantic.v0.1.json#/definitions/Flow"
+              },
+              "minItems": 1,
+              "maxItems": 2000,
+              "uniqueItems": true
+            },
+            "functions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Function"
+              },
+              "minItems": 1,
+              "maxItems": 2000,
+              "uniqueItems": true
+            },
+            "behaviors": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Behavior"
+              },
+              "minItems": 1,
+              "maxItems": 2000,
+              "uniqueItems": true
+            },
+            "unknowns": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Unknown"
+              },
+              "minItems": 0,
+              "maxItems": 2000,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "concepts",
+            "claims",
+            "relations",
+            "flows",
+            "functions",
+            "behaviors",
+            "unknowns"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "command",
+        "snapshot_id",
+        "request_id",
+        "producer",
+        "data"
+      ]
+    },
+    "Model": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "enum": [
+            "0.2.0"
+          ]
+        },
+        "command": {
+          "enum": [
+            "import"
+          ]
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "partial"
+          ]
+        },
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^semantic:[0-9a-f]{64}$"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "transport": {
+              "enum": [
+                "file-exchange",
+                "recorded-replay"
+              ]
+            },
+            "request": {
+              "$ref": "#/definitions/Request"
+            },
+            "proposal": {
+              "$ref": "#/definitions/Proposal"
+            },
+            "proposal_id": {
+              "type": "string",
+              "pattern": "^proposal:[0-9a-f]{64}$"
+            },
+            "claim_checks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "claim_id": {
+                    "type": "string",
+                    "pattern": "^claim:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+                  },
+                  "origin": {
+                    "enum": [
+                      "model-inference",
+                      "human-declaration"
+                    ]
+                  },
+                  "citations": {
+                    "enum": [
+                      "valid"
+                    ]
+                  },
+                  "verification": {
+                    "enum": [
+                      "unknown"
+                    ]
+                  },
+                  "acceptance": {
+                    "enum": [
+                      "proposed"
+                    ]
+                  }
+                },
+                "required": [
+                  "claim_id",
+                  "origin",
+                  "citations",
+                  "verification",
+                  "acceptance"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 2000
+            }
+          },
+          "required": [
+            "transport",
+            "request",
+            "proposal",
+            "proposal_id",
+            "claim_checks"
+          ]
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "scan.v0.1.json#/definitions/Diagnostic"
+          },
+          "minItems": 0,
+          "maxItems": 2000
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "capabilities": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "claims": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cited_evidence_records": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unknowns": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "claim_support": {
+              "enum": [
+                "not-reviewed"
+              ]
+            },
+            "functions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "behaviors": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "callable_observations": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "capabilities",
+            "claims",
+            "cited_evidence_records",
+            "unknowns",
+            "claim_support",
+            "functions",
+            "behaviors",
+            "callable_observations"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "command",
+        "status",
+        "snapshot_id",
+        "artifact_id",
+        "data",
+        "diagnostics",
+        "coverage"
+      ]
+    }
+  }
+}

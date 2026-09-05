@@ -14,6 +14,8 @@ clearings inventory <repository> --target manifest.json [--scope inventory|deep]
 clearings scan <repository> [inventory options] [--project tsconfig.json] [--mode source-only] [--strict]
 clearings benchmark-fetch --target manifest.json --out new-bare-directory
 clearings propose <scan.json> --repository repo --instruction text [--include path] [--evidence id] [--max-bytes n] [--out request.json]
+clearings inspect <semantic.json> [--capability alias] [--behavior alias] [--id record-id] [--format json] [--scan scan.json --repository repo]
+clearings context <semantic.json> --capability alias [--behavior alias] --max-bytes n [--no-neighbors] [--out context.json --repository repo]
 clearings evidence <scan.json> --repository repo --id evidence-id [--out excerpt.json]
 clearings import <proposal.json> --request request.json --scan scan.json --repository repo [--out semantic.json]
 clearings replay <proposal.json> --request request.json --scan scan.json --repository repo [--out replay.json]
@@ -25,6 +27,10 @@ Target mode uses the pinned commit; custom include/exclude overrides are not acc
 JSON goes to stdout; explain emits Markdown or HTML. --out saves a new file outside the target.
 Explain defaults to the engineer view. --audience overview requires an overview in the presentation plan.
 Use --companion filename.html (or filename.md) to link a report in the same directory.
+Use propose --schema-version 0.2.0 to request contracts. The default remains 0.1.0.
+Inspect/context use 0.2.0 models. Only --scan with --repository revalidates their source.
+Their --out option requires --repository for output protection; this alone does not recheck source.
+Context emits compact JSON with exact UTF-8 byte accounting, including its final newline.
 For propose, --include selects exact source paths already present in the scan.
 Scan follows repository imports as labeled supporting source; it never installs dependencies.
 Validate checks internal integrity; --repository also verifies scan source blobs and evidence spans.
@@ -38,13 +44,13 @@ let command = process.argv[2] ?? 'help';
 try {
   const { values, positionals } = parseArgs({
     args: process.argv.slice(2), allowPositionals: true, strict: true,
-    options: { help: { type: 'boolean' }, version: { type: 'boolean' }, ref: { type: 'string' }, target: { type: 'string' }, scope: { type: 'string' }, include: { type: 'string', multiple: true }, exclude: { type: 'string', multiple: true }, out: { type: 'string' }, project: { type: 'string' }, mode: { type: 'string' }, strict: { type: 'boolean' }, repository: { type: 'string' }, instruction: { type: 'string' }, evidence: { type: 'string', multiple: true }, 'max-bytes': { type: 'string' }, id: { type: 'string' }, request: { type: 'string' }, scan: { type: 'string' }, capability: { type: 'string' }, format: { type: 'string' }, audience: { type: 'string' }, companion: { type: 'string' }, presentation: { type: 'string' } },
+    options: { help: { type: 'boolean' }, version: { type: 'boolean' }, ref: { type: 'string' }, target: { type: 'string' }, scope: { type: 'string' }, include: { type: 'string', multiple: true }, exclude: { type: 'string', multiple: true }, out: { type: 'string' }, project: { type: 'string' }, mode: { type: 'string' }, strict: { type: 'boolean' }, repository: { type: 'string' }, instruction: { type: 'string' }, evidence: { type: 'string', multiple: true }, 'max-bytes': { type: 'string' }, id: { type: 'string' }, request: { type: 'string' }, scan: { type: 'string' }, capability: { type: 'string' }, format: { type: 'string' }, audience: { type: 'string' }, companion: { type: 'string' }, presentation: { type: 'string' }, 'schema-version': { type: 'string' }, behavior: { type: 'string' }, 'no-neighbors': { type: 'boolean' } },
   });
   command = positionals[0] ?? 'help';
   if (values.version) process.stdout.write(`${TOOL_VERSION}\n`);
   else if (values.help || command === 'help') process.stdout.write(help);
   else {
-    const allowed: Record<string, string[]> = { inventory: ['ref', 'target', 'scope', 'include', 'exclude', 'out'], scan: ['ref', 'target', 'scope', 'include', 'exclude', 'out', 'project', 'mode', 'strict'], 'benchmark-fetch': ['target', 'out'], validate: ['repository', 'scan', 'request'], propose: ['repository', 'instruction', 'include', 'evidence', 'max-bytes', 'out'], evidence: ['repository', 'id', 'out'], import: ['repository', 'request', 'scan', 'out'], replay: ['repository', 'request', 'scan', 'out'], explain: ['repository', 'scan', 'capability', 'out', 'format', 'presentation', 'audience', 'companion'] };
+    const allowed: Record<string, string[]> = { inventory: ['ref', 'target', 'scope', 'include', 'exclude', 'out'], scan: ['ref', 'target', 'scope', 'include', 'exclude', 'out', 'project', 'mode', 'strict'], 'benchmark-fetch': ['target', 'out'], validate: ['repository', 'scan', 'request'], inspect: ['id', 'capability', 'behavior', 'format', 'scan', 'repository', 'out'], context: ['id', 'capability', 'behavior', 'format', 'scan', 'repository', 'out', 'max-bytes', 'no-neighbors'], propose: ['schema-version', 'repository', 'instruction', 'include', 'evidence', 'max-bytes', 'out'], evidence: ['repository', 'id', 'out'], import: ['repository', 'request', 'scan', 'out'], replay: ['repository', 'request', 'scan', 'out'], explain: ['repository', 'scan', 'capability', 'out', 'format', 'presentation', 'audience', 'companion'] };
     if (!allowed[command] || Object.keys(values).some((key) => !allowed[command]?.includes(key))) throw new ClearingsError('INVALID_ARGUMENTS', 'Unknown command or unsupported option; use --help.');
     if (command === 'inventory' || command === 'scan') {
       if (positionals.length !== 2) throw new ClearingsError('INVALID_ARGUMENTS', 'Inventory/scan requires one local repository path.');
@@ -80,6 +86,9 @@ try {
       process.stderr.write(`Fetching pinned benchmark ${target.target_id}\n`);
       const repository = fetchTarget(target, values.out);
       process.stdout.write(`${JSON.stringify({ schema_version: SCHEMA_VERSION, command, status: 'complete', snapshot_id: null, data: { repository, commit_sha: target.commit, tree_sha: target.tree_sha }, diagnostics: [], coverage: null }, null, 2)}\n`);
+    } else if (command === 'inspect' || command === 'context') {
+      const { contractQueryCommand } = await import('./contracts.js');
+      contractQueryCommand(command, positionals, values);
     } else if (['propose', 'evidence', 'import', 'replay', 'explain'].includes(command)) {
       const { semanticCommand } = await import('./semantic.js');
       semanticCommand(command, positionals, values);

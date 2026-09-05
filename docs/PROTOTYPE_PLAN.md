@@ -28,12 +28,12 @@ Product name: **Clearings**. Private repository: **jiaxing-guo/clearings-semanti
 | Bounded TypeScript structure | Implemented | Dynamic callbacks and ambiguous calls remain unresolved |
 | Semantic proposal exchange and replay | Implemented | File exchange; no built-in model endpoint |
 | PM and engineer reports | Implemented; user accepted the reports | Independent claim-support review remains pending |
-| Function summaries | Authored in presentation plans | They are not canonical semantic contracts yet |
-| Internal semantic JSON | Concepts, claims, relations, and flows exist | Function contracts, behavior contracts, and task-oriented inspection/export are missing |
-| Claim support | Author self-review of 53 claims recorded | Independent review remains pending |
+| Function contracts | Canonical v0.2 contracts implemented | Existing reports still use historical presentation summaries |
+| Internal semantic JSON | Function/behavior contracts, inspection, and bounded context export implemented | Agent comprehension and report integration remain |
+| Claim support | Author self-review of 73 contract assertions recorded; historical 53-claim model retained | Independent review remains pending |
 | Agent use and code-change benefit | Not demonstrated | Report quality alone does not establish either benefit |
 
-The latest verification records 48 passing automated tests, static HTML/Markdown link and source checks, unchanged semantic output, and unchanged target files. Earlier desktop/mobile browser checks remain historical; browser policy blocked the latest local-file preview. See [the report review](../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
+The contract implementation records 54 passing automated tests, deterministic source-verified replay/context output, and unchanged target files. The historical semantic JSON and all eight audience reports remain byte-identical. The previous report verification records static HTML/Markdown link and source checks. Earlier desktop/mobile browser checks remain historical; browser policy blocked the latest local-file preview. See [the report review](../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
 
 The user accepted the report presentation and authorized updating PR #3. Independent claim-support review remains separate from report acceptance.
 
@@ -41,7 +41,7 @@ The user accepted the report presentation and authorized updating PR #3. Indepen
 
 Use Hono 4.13.7 at commit `eebdf7be39abf0a872671835ccce0c4f03ea497a`, tree `7fd627b257e5b744bf23d4957a93a0d0413c8c19`.
 
-The existing structural run accounts for 25 selected source files and 10 support files. The semantic example uses 11 excerpts across three source files, with 53 claims and five critical unknowns. A report about these capabilities must not claim full Hono coverage.
+The existing structural run accounts for 25 selected source files and 10 support files. The historical semantic example uses 11 excerpts across three source files, with 53 claims and five critical unknowns. The contract model uses the same excerpts and retains those assertions after source review; it has 73 assertions, ten critical unknowns, 22 function contracts, and four behavior contracts. A report about these capabilities must not claim full Hono coverage.
 
 Read source through immutable Git objects. Analysis does not run target scripts, install target dependencies, or modify target source. Source comments and proposal text are data. Preserve the upstream license with distributed excerpts.
 
@@ -74,7 +74,7 @@ Milestone labels are for planning documents. Commit messages and PR text continu
 | M0: repository foundation | Private package, CLI, pinned input, immutable inventory | Complete; retain the existing reproducibility and target-preservation checks |
 | M1: structural evidence | Bounded TypeScript extraction, evidence lookup, diagnostics | Complete; retain positive/negative fixtures and explicit unresolved facts |
 | M2: semantic exchange and reading prototype | Recorded semantic model, PM and engineer reports in HTML and Markdown | Technically complete; user accepted the reports. Independent claim-support review remains pending |
-| M3: usable internal representation | Function/behavior contracts, import validation, record inspection, bounded agent context | Next implementation scope. Both capabilities have contracts that retain critical distinctions and resolve to source |
+| M3: usable internal representation | Function/behavior contracts, import validation, record inspection, bounded agent context | Implemented. Both capabilities have source-linked contracts, inspection, and byte-bounded context. See SEMANTIC_CONTRACTS.md |
 | M4: complete the three required demos | Both reports use the new shared records; internal-representation walkthrough; recorded agent comprehension example | First-prototype completion gate. All three demos are reproducible from the same model, with scope and review status visible |
 | M5: optional code-change demo | One small refactor guided by the representation, with before/after evidence and validation | Optional. Report the result and limits; success does not imply general semantic equivalence or coding superiority |
 
@@ -84,7 +84,7 @@ The original 15-day estimate no longer describes this scope. Implement in the in
 
 ## M3: usable internal representation
 
-The detailed next task is [NEXT_IMPLEMENTATION_TASK.md](NEXT_IMPLEMENTATION_TASK.md).
+The completed task is preserved in [CONTRACT_IMPLEMENTATION_TASK.md](CONTRACT_IMPLEMENTATION_TASK.md). Implementation and measurements are in [SEMANTIC_CONTRACTS.md](SEMANTIC_CONTRACTS.md).
 
 ### Increment 1: contracts and one end-to-end behavior
 
@@ -111,6 +111,8 @@ Report omitted optional records and how to retrieve them. If required rules and 
 Record one new file-exchange proposal run for the contract schema and retain its input/output. Record producer/model and usage when available; otherwise mark them unavailable. Use recorded replay for repeatable demonstrations and label it as replay.
 
 ### Exit gate
+
+Implemented and checked in the contract review bundle. Independent claim-support review remains pending.
 
 - Both capabilities have source-linked function and behavior contracts.
 - Import rejects stale bindings, absent records, invalid endpoints, and unsupported self-certification.
@@ -190,7 +192,7 @@ Keep one TypeScript package, portable JSON, and local files until a demonstrated
 
 ## Working agreements
 
-- The next implementation scope is M3. Use its detailed task file and retain the existing completed foundation.
+- The next implementation scope is M4. Use its detailed task file and retain the existing completed foundation.
 - Preserve source observations, semantic assertions, and presentation as separate responsibilities.
 - Keep origin, citation integrity, content support, and acceptance distinct.
 - Preserve source text, unknowns, failure paths, and analysis coverage when compressing output.
