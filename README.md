@@ -6,7 +6,7 @@ Clearings connects repository code to behavior. It keeps the conditions, state c
 
 - **Overview reports** explain purpose, main actions, outcomes, and limits.
 - **Engineer guides** explain mechanisms with exact code and canonical function contracts.
-- **Semantic records** support inspection, source lookup, and context export.
+- **Typed operation records** keep conditions, outcomes, state, effects, and open decisions together for inspection and context export.
 
 This is a private, unpublished review prototype. The included Hono example covers request dispatch and middleware composition. Independent claim-support review is pending.
 
@@ -17,18 +17,20 @@ Use Node.js 24, npm 11, and Git 2.51 or later. Run these commands from an author
 ```bash
 npm ci --ignore-scripts
 npm run build
-node dist/cli/main.js inspect benchmarks/results/hono-contracts/semantic.json --behavior response-selection
+node dist/cli/main.js inspect specifications/hono/response-selection.json --operation response-selection
 ```
 
-The result identifies a behavior and its functions, assertions, state, unknowns, and evidence references. No Hono checkout or API key is needed for this recorded inspection. `source_rechecked: false` means the command checked model integrity without reopening source.
+The result contains typed operations with individual function responsibilities and exact attached source. No Hono checkout or API key is needed. This is an authored source interpretation; hash checks establish integrity, not source authenticity or claim support.
 
 Export the rules for an agent:
 
 ```bash
-node dist/cli/main.js context benchmarks/results/hono-contracts/semantic.json --behavior response-selection --max-bytes 131072 --no-neighbors
+node dist/cli/main.js context specifications/hono/response-selection.json --operation response-selection --max-bytes 131072
 ```
 
-The pack retains required conditions and critical unknowns. Its byte count covers the exact compact JSON plus its final newline. Exact source is available separately through evidence lookup.
+The pack retains each required operation, its conditions, decisions, and source. Its byte count covers exact compact JSON plus its final newline. Read [typed specifications](docs/TYPED_SPECIFICATIONS.md) to check a concrete case or use the API.
+
+Clearings also has a proposed specification for its own context assembler. [Review the self-use demo](benchmarks/results/clearings-bootstrap/README.md) or download [its review package](benchmarks/results/clearings-bootstrap/clearings-specification-review.zip). Intended requirements and observed source behavior remain separate artifacts.
 
 ## Explore the three demos
 
@@ -39,7 +41,7 @@ Download [the review package](benchmarks/results/hono-shared/clearings-shared-re
 | Overview | [Purpose and outcomes](benchmarks/results/hono-shared/request-dispatch.overview.md) | [Purpose and outcomes](benchmarks/results/hono-shared/middleware-composition.overview.md) |
 | Engineer | [Conditions and source](benchmarks/results/hono-shared/request-dispatch.engineer.md) | [Conditions and source](benchmarks/results/hono-shared/middleware-composition.engineer.md) |
 
-[Inspect the internal representation](benchmarks/results/hono-shared/internal.md) to follow a behavior through a function, shared state, assertion, and source. The walkthrough uses actual query output from the same model as both reports.
+[Inspect the typed response decisions](benchmarks/results/hono-shared/internal.md) to compare conditions, state changes, function responsibilities, and source. Agents receive `operation.context.json`; HTML is the human view. The typed slice is bound to checked source from the historical model. The accepted reading guides retain that original model; the [legacy walkthrough](benchmarks/results/hono-shared/internal-legacy.md) remains available.
 
 The model has 22 function contracts, four behavior contracts, 73 assertions, and ten critical unknowns. The [recorded agent demonstration](benchmarks/agent-runs/hono-comprehension/README.md) answers six questions from selected IR. It is an author demonstration with prior source exposure, not an independent evaluation or an efficiency benchmark.
 

@@ -25,3 +25,14 @@ export { inspectSemantic, createContextPack, serializeContextPack } from './cont
 export type { SemanticSelection, Inspection, ContextPack, ContractRecords, EvidenceReference } from './contracts/query.js';
 export { createSemanticWalkthrough, renderSemanticWalkthrough } from './renderers/walkthrough.js';
 export type { SemanticWalkthrough } from './renderers/walkthrough.js';
+
+export type * from './specification/model.js';
+export { sealSpecification, validateSpecification, specificationIdentity } from './specification/validate.js';
+export { evaluateExpression, formatExpression } from './specification/expressions.js';
+export { checkOperation, resolveOperation } from './specification/check.js';
+export { assembleContext, serializeOperationContext, validateOperationContext, describeOperation } from './specification/context.js';
+export type { OperationContext } from './specification/context.js';
+export { renderSpecification, renderOperationContext } from './specification/render.js';
+export type { SpecificationReportOptions, CheckedScenario } from './specification/render.js';
+export { createContractBrief, serializeContractBrief } from './contracts/brief.js';
+export type { ContractBrief } from './contracts/brief.js';

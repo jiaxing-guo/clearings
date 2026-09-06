@@ -2,7 +2,35 @@
 
 **Internal representation for AI coding**
 
-Realigned 5 September 2026. This is the active roadmap. It replaces the scope and sequence in the [original plan](PROTOTYPE_PLAN_ORIGINAL.md). Historical implementation results remain in [M1_STATUS.md](M1_STATUS.md) and [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md).
+## Active direction after the IR review
+
+The user accepted the reading guides, README, and contribution guide. The user rejected the prose-heavy internal representation and approved a typed specification core plus a Clearings self-development experiment. This direction supersedes the report milestones below. The previous complete plan is preserved in [PROTOTYPE_PLAN_REPORTS.md](PROTOTYPE_PLAN_REPORTS.md).
+
+Use operation contracts as the primary records for new semantic work. Each operation owns types, conditions, outcomes, state changes, effects, dependencies, implementation responsibilities, and open decisions. Graphs are generated views. Human and agent interfaces consume the same core.
+
+Keep intended requirements separate from observed implementation. An interview can produce proposed intended contracts. Source analysis can produce proposed observed contracts. Linking them does not establish conformance. Scenario agreement, source support, and acceptance remain separate questions.
+
+The first self-development slice specifies **context assembly**. The implementation now has a typed validator, closed expression interpreter, scenario checker, context assembler, package revalidation, CLI, and human view. Clearings assembles its own context specification and checks actual results against it. This is a continuing-session author bootstrap, not a fresh-agent or self-hosting compiler result.
+
+The [architecture](SPECIFICATION_ARCHITECTURE.md), [usage and limits](TYPED_SPECIFICATIONS.md), and [review bundle](../benchmarks/results/clearings-bootstrap/README.md) describe the result.
+
+A separate [fresh Luna trial](../benchmarks/agent-runs/luna-impact-001/REPORT.md) is complete. Its first dependency-impact implementation passed 19 withheld feature tests without repairs. The typed checker still reports unknown because eight rules remain opaque. The candidate is archived outside production source. One successful task does not establish an advantage over ordinary instructions.
+
+| Next gate | Evidence required |
+| --- | --- |
+| Review the typed language | Distinct operation meaning, exact condition domains, explicit state/effect boundaries, preserved unknowns |
+| Review the human interface | A reader can predict one outcome and find its implementation without reading all records |
+| Review the completed fresh-agent task | Frozen inputs, withheld cases, trace, captured patch, passing feature checks, and the recorded evaluator setup correction |
+| Extend self-use after review | A second Clearings operation with state changes and failures; a matched prose-only comparison |
+| Integrate richer source models | Reviewed observed contracts behind the accepted human views |
+
+The accepted audience reports retain their historical model binding during this transition. Their source-backed content is not silently migrated to the narrower typed slice. README and CONTRIBUTING need only accurate workflow changes.
+
+Solvers, concurrency model checking, provider transport, automated requirements interviews, universal source-to-specification conversion, and external code-change demonstrations remain subsequent choices. Fumadocs stays a static export. GitHub Pages serving, CI, and public access remain deferred.
+
+## Historical report milestone scope
+
+The following scope records the previous sequence. Its completion statements do not establish that the internal representation passed the later user review.
 
 ## Product goal and first prototype
 

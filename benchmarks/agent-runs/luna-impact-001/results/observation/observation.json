@@ -1,0 +1,54 @@
+{
+  "input": {
+    "root_ids": [
+      "store-response"
+    ],
+    "available_ids": [
+      "response-selection",
+      "read-response",
+      "store-response",
+      "middleware-result"
+    ],
+    "active_edges": [
+      {
+        "from": "response-selection",
+        "to": "read-response"
+      },
+      {
+        "from": "response-selection",
+        "to": "store-response"
+      },
+      {
+        "from": "response-selection",
+        "to": "middleware-result"
+      },
+      {
+        "from": "middleware-result",
+        "to": "store-response"
+      }
+    ],
+    "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251"
+  },
+  "before": {
+    "model_digest": "9f091040f5bd35be3d721d2fc4f7f1251935c37c6467996f2ba3306c771c60af"
+  },
+  "after": {
+    "model_digest": "9f091040f5bd35be3d721d2fc4f7f1251935c37c6467996f2ba3306c771c60af"
+  },
+  "outcome": "outcome:impact-report",
+  "output": {
+    "included_ids": [
+      "middleware-result",
+      "response-selection",
+      "store-response"
+    ],
+    "omitted_ids": [
+      "read-response"
+    ],
+    "reported_root_ids": [
+      "store-response"
+    ],
+    "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251"
+  },
+  "effects": []
+}

@@ -2,11 +2,24 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { validateSpecification, validateOperationContext, checkOperation } from '../dist/index.js';
 const root=resolve(process.argv[2] ?? 'benchmarks/results/hono-shared');
 const read=name=>readFileSync(join(root,name),'utf8');
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const model=JSON.parse(read('semantic.json')), review=JSON.parse(read('review.json'));
 assert.equal(review.artifact_id,model.artifact_id);
+if (review.typed_artifact_id) {
+ const specification=JSON.parse(read('specification.json'));validateSpecification(specification);
+ assert.equal(specification.artifact_id,review.typed_artifact_id);
+ validateOperationContext(JSON.parse(read('operation.context.json')),specification);
+ const scenarios=JSON.parse(read('operation.scenarios.json'));
+ assert.equal(scenarios.length,review.typed_scenarios);
+ for(const scenario of scenarios) assert.deepEqual(checkOperation(specification,scenario.operation_id,scenario.observation),scenario.result);
+ for(const source of specification.sources) {
+  assert.equal(source.binding.artifact_id,model.artifact_id);assert.equal(source.binding.snapshot_id,model.snapshot_id);
+  assert.equal(source.text,source.id==='source:hono-license'?read('LICENSE-HONO'):model.data.request.data.source_request.data.evidence.find(item=>item.id===source.id)?.text);
+ }
+}
 for(const [name,record] of Object.entries(review.files)) {const bytes=readFileSync(join(root,name));assert.equal(hash(bytes),record.sha256,name);assert.equal(bytes.length,record.bytes,name);}
 for(const line of read('SHA256SUMS').trim().split('\n')) {const [expected,name]=line.split('  ');assert.equal(hash(readFileSync(join(root,name))),expected,name);}
 const htmlFiles=readdirSync(root).filter(n=>n.endsWith('.html'));

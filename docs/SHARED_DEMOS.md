@@ -1,6 +1,8 @@
 # Shared reports, internal walkthrough, and documentation
 
-Planning label: M4. The three required demos now use the same v0.2 semantic artifact. The implementation preserves the accepted overview and engineer reading order and the historical v0.1 artifacts.
+The overview and engineer reports retain the accepted v0.2 semantic artifact. After the IR review, `internal.html` now renders a separately authored typed response slice. Its source records are compared with the checked v0.2 excerpts. `operation.context.json` is the new agent interface; `internal-legacy.html` preserves the old walkthrough. See [typed specifications](TYPED_SPECIFICATIONS.md) for the current architecture and self-development result.
+
+The report integration and historical verification below describe the earlier implementation. They remain valid evidence for that scope; they do not establish that the typed slice has independent support review.
 
 ## What changed
 

@@ -3,6 +3,7 @@
   "pages": [
     "scan",
     "exchange",
+    "specifications",
     "context",
     "reports"
   ]

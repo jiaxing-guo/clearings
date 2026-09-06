@@ -1,0 +1,132 @@
+{
+  "artifact_id": "specification:183e5213104e7ffacc5c497f7ccc8fc00d403aefdbb348dfb5eb14513b30395a",
+  "operation_id": "analyze-impact",
+  "perspective": "intended",
+  "verdict": "unknown",
+  "applicable_outcome_ids": [
+    "outcome:impact-report"
+  ],
+  "uncertain_outcome_ids": [],
+  "checks": [
+    {
+      "id": "outcome-condition",
+      "description": "Return all potentially affected operations, each once, with an explanatory path.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "rule:include-changes",
+      "description": "Every changed operation is itself affected, with distance zero and witness containing only its own ID.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "rule:unique-affected",
+      "description": "Every affected operation appears once.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "rule:known-affected",
+      "description": "Only operations from the supplied specification are included.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "rule:reverse-closure",
+      "description": "If an active dependency target is affected, its source operation is also affected. Never expand merely because a changed operation depends on another operation.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "rule:omission-accounting",
+      "description": "Every operation is either affected or explicitly omitted.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "rule:omissions-disjoint",
+      "description": "Affected operations never appear in omissions.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "rule:artifact-binding",
+      "description": "The report identifies the exact supplied specification.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "rule:root-binding",
+      "description": "The report identifies the normalized selected operation IDs.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "rule:least-closure",
+      "description": "Include exactly the changed operations and their transitive dependents under the chosen mode. Exclude every other operation. Cycles and self-links terminate. A changed operation remains distance zero even if another changed operation can reach it.",
+      "verdict": "unknown",
+      "reason": "Least-fixed-point reachability is not an operator in this expression language."
+    },
+    {
+      "id": "rule:mode",
+      "description": "Required mode is the default and follows only dependencies with requirement required. All mode follows both required and optional dependencies, regardless of dependency kind. Only existing targets form traversable edges.",
+      "verdict": "unknown",
+      "reason": "The public-to-observation adapter chooses active edges; the interpreter does not validate that adapter."
+    },
+    {
+      "id": "rule:witness",
+      "description": "For each affected operation, witness is a shortest path of operation IDs from that operation to any changed operation, following active dependency edges in their original direction. Distance is its number of edges. If several shortest paths exist, select the lexicographically smallest complete ID sequence. Compare strings with JavaScript code-unit ordering (< and >), compare sequence elements from the start, and choose the shorter sequence if one is a prefix. Do not use locale ordering or joined delimiter strings.",
+      "verdict": "unknown",
+      "reason": "Path adjacency, global shortest paths, and sequence ordering need external checks in this version."
+    },
+    {
+      "id": "rule:stable-order",
+      "description": "Sort changed_operation_ids, affected entries by operation_id, and omitted_operation_ids in ascending ID order using code-unit comparison. Except for artifact_id (which binds the supplied specification), results do not depend on input operation/dependency order or selection order. Each entry retains the current operation name.",
+      "verdict": "unknown",
+      "reason": "Ordering of structured lists is not a primitive in this version."
+    },
+    {
+      "id": "rule:decisions",
+      "description": "Each affected entry retains every OpenDecision from that operation, with all fields, including blocking and all evidence IDs. Preserve decision array order. Returned objects must be independent copies; changing report arrays or nested decisions must not change the input model.",
+      "verdict": "unknown",
+      "reason": "The compact observation does not represent object ownership or complete decision fields."
+    },
+    {
+      "id": "rule:unavailable",
+      "description": "Report unavailable optional dependencies belonging to affected operations in unavailable_optional_dependencies, in both modes. Preserve from_id, to_id, kind, and role. Sort by from_id then to_id with code-unit comparison. Do not invent affected entries for missing targets. Omitted operations contribute no such entries.",
+      "verdict": "unknown",
+      "reason": "The compact observation does not include unavailable endpoint metadata."
+    },
+    {
+      "id": "rule:public-boundary",
+      "description": "Follow the full public interface and invalid-input rules in input/API.md. Return schema_version 0.3.0, command impact, the input perspective, the resolved mode, interpretation potential-impact-from-declared-dependencies, and acceptance proposed. Do not claim runtime causality or automatic acceptance.",
+      "verdict": "unknown",
+      "reason": "Public wrapper types and runtime argument errors are outside this compact observation."
+    },
+    {
+      "id": "rule:determinism",
+      "description": "For the same valid input values, repeated calls serialize identically. Do not mutate the specification, changed list, or options. The query is synchronous and performs no I/O or target-code execution.",
+      "verdict": "unknown",
+      "reason": "Deterministic execution and argument ownership require external observations."
+    },
+    {
+      "id": "effects:allowed",
+      "description": "Only effects allowed for this outcome occur.",
+      "verdict": "pass",
+      "reason": null
+    },
+    {
+      "id": "frame:model_digest",
+      "description": "Preserve Input content identity.",
+      "verdict": "pass",
+      "reason": null
+    }
+  ],
+  "limitations": [
+    "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+    "Behavior outside the modeled cases remains unspecified.",
+    "analysis-limit: Which requirements can the current expression kernel check?",
+    "analysis-limit: How are invalid public arguments reported?"
+  ]
+}

@@ -2,6 +2,8 @@
 
 Read docs/PROTOTYPE_PLAN.md, docs/NEXT_IMPLEMENTATION_TASK.md, and docs/SEMANTIC_EXCHANGE.md before implementation. Read docs/SEMANTIC_CONTRACTS.md for the completed contract APIs. Read docs/SHARED_DEMOS.md for the completed shared report integration, author comprehension example, and static documentation. Select subsequent implementation scope from the current user request. Historical plans and handoffs do not override the active task.
 
+Read docs/SPECIFICATION_ARCHITECTURE.md and docs/TYPED_SPECIFICATIONS.md for the current typed core and self-development experiment. New semantic work uses operation contracts with inline meaning. Keep intended specifications separate from observed implementation. Graphs and reports are views. Scenario agreement does not establish source conformance. Preserve the accepted historical reading guides while the typed observed slice is reviewed.
+
 - Product name: Clearings. Slogan: "Internal representation for AI coding".
 - Build one TypeScript library plus CLI. The first prototype needs PM and engineer reports plus an internal-representation demo over the same Hono model. Function and behavior contracts, inspection, and bounded context are implemented. The reports and internal demo now use that model. The documentation uses Fumadocs static export; CI, serving, and public access are deferred. A code-change demo is optional and separate. Broader Hono coverage and other repositories/languages remain subsequent work.
 - Keep repository evidence, semantic interpretation, and presentation as separate responsibilities. Reports and agent context consume the same canonical contracts; presentation data owns audience prose and layout.

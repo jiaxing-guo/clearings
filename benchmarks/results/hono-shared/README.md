@@ -1,6 +1,6 @@
 # Clearings: three views of one model
 
-Open index.html. The overview gives purpose and outcomes. The engineer article adds conditions and source. internal.html follows real query output through a behavior, function, shared state, assertion, and evidence. Markdown copies are included.
+Open index.html. The overview gives purpose and outcomes. The engineer article adds conditions and source. internal.html shows typed response decisions with concrete scenarios, state updates, and individual function responsibilities. specification.json is the new canonical observed slice; operation.context.json is its actual agent interface. internal-legacy.html preserves the historical prose inspection. The accepted audience reports still use semantic.json; they are not silently rebound to the new slice. Markdown copies are included.
 
 Artifact: semantic:879ce0fdb5dee3f6f406bfa87e28f0d2f48b65fb58026479f9172bbd54b8c3f0
 

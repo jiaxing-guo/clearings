@@ -1,0 +1,68 @@
+{
+  "run_id": "luna-impact-001",
+  "recorded_at": "2026-09-06T01:25:25.799846+00:00",
+  "outcome": "pass-feature-checks-and-regressions-after-evaluator-setup-correction",
+  "coding_attempts": 1,
+  "candidate_repaired": false,
+  "candidate_integrated": false,
+  "requested_model": "gpt-5.6-luna",
+  "fork_turns": "none",
+  "verified_backend_model_revision": null,
+  "native_token_usage": null,
+  "feature_tests": {
+    "candidate_facing_passed": 19,
+    "candidate_facing_total": 19,
+    "oracle_only_self_check_passed": 1,
+    "generated_queries": 160,
+    "generated_graphs": 80,
+    "deep_chain_operations": 350
+  },
+  "build": "pass",
+  "typecheck": "pass",
+  "regression_tests": {
+    "initial_passed": 71,
+    "initial_test_file_load_errors": 1,
+    "targeted_rerun_passed": 2,
+    "distinct_tests_passed_across_runs": 73,
+    "single_uninterrupted_full_suite_pass_claimed": false
+  },
+  "setup_correction": "results/evaluation-setup-correction.json",
+  "targeted_rerun": {
+    "log": "results/evaluated/integration-claim-review-rerun.log",
+    "sha256": "7d91a638b645312e35cecda617dc60a139374061f07e006d86f0eb3828489335",
+    "tap_counts": {
+      "tests": 2,
+      "pass": 2,
+      "fail": 0
+    }
+  },
+  "original_evaluation_outcome_preserved": "failed-frozen-checks",
+  "baseline_without_feature": {
+    "candidate_facing_failed": 19,
+    "oracle_only_passed": 1
+  },
+  "frozen_files_verified": 16,
+  "main_snapshot_files_unchanged": 77,
+  "patch_applies_to_main_working_tree": true,
+  "freeze_sha256": "f660be30b489e890a45be3b8ed40e5c29da4145ecf5290fc7f4360219757b1cf",
+  "candidate_patch_sha256": "1e1bb49ea375b81a501aa9d545b645e2e780f9bafb7e72250abfb9f68a633817",
+  "supplementary_typed_check": {
+    "scored_as_frozen_test": false,
+    "verdict": "unknown",
+    "passed_checks": 11,
+    "opaque_rules": 8,
+    "executable_rule_predicates": 8,
+    "total_rule_records": 16,
+    "adapter_verified_by_kernel": false,
+    "instrumented_effect_trace": false
+  },
+  "test_independence": "Orchestrator authored before coding; withheld from coder. Not independent human review.",
+  "limitations": [
+    "One task and one initial submission.",
+    "No prose-only control or model comparison.",
+    "Agent used prose, API mapping, project documentation, and library source as well as typed records.",
+    "Eight opaque rules; executable predicates can cover less than their English descriptions.",
+    "Protocol workspace separation; no OS isolation or complete independent tool-access audit.",
+    "Own npm test ran zero tests and both own graph fixtures failed during setup."
+  ]
+}

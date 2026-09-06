@@ -5,6 +5,12 @@ description: "One set of linked records supports people and agents."
 
 The representation separates observations from interpretation and presentation.
 
+New semantic work uses [typed operations](/docs/guides/specifications). Each record owns its types, outcome guards, postconditions, state frame, effects, dependencies, implementation roles, and open decisions. Graphs and human reports are projections of those records. The agent receives a self-contained package.
+
+Intended requirements and observed implementation use separate artifacts. A scenario checker can test supplied observations against either artifact. It cannot establish their equivalence or prove source conformance.
+
+The following layers describe the historical source model, which remains available for replay and the accepted reading guides.
+
 | Layer | Owns | Example |
 | --- | --- | --- |
 | Source | Git snapshot, declarations, callables, spans, diagnostics | A getter's exact byte range |
@@ -28,5 +34,7 @@ Flows can branch, cycle, and recurse. An absent recorded effect does not prove p
 ## Versions bind content
 
 v0.1 covers source-backed concepts, claims, relations, flows, and unknowns. v0.2 adds callable observations, function/behavior contracts, and stable unknown IDs. Each version has an explicit schema.
+
+v0.3 adds the typed specification core and an explicit intended/observed perspective. There is no automatic semantic migration. The legacy readable adapter resolves English assertion text but does not invent predicates.
 
 Requests bind evidence and instructions to a snapshot. Models bind the request, proposal, transport, checks, and coverage. Presentation plans bind to the resulting artifact. Historical artifacts are preserved; no automatic semantic migration or cross-run identity matching is implemented.

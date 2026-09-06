@@ -1,0 +1,970 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://clearings.dev/schemas/specification.v0.3.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "artifact_id",
+    "name",
+    "perspective",
+    "provenance",
+    "states",
+    "operations",
+    "sources"
+  ],
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "0.3.0"
+      ]
+    },
+    "kind": {
+      "enum": [
+        "specification"
+      ]
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^specification:[a-f0-9]{64}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "perspective": {
+      "enum": [
+        "intended",
+        "observed"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "author",
+        "origin",
+        "review",
+        "notes"
+      ],
+      "properties": {
+        "author": {
+          "type": "string",
+          "minLength": 1
+        },
+        "origin": {
+          "enum": [
+            "user-directed-design",
+            "source-interpretation"
+          ]
+        },
+        "review": {
+          "enum": [
+            "proposed"
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "states": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/State"
+      }
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Operation"
+      },
+      "minItems": 1
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Source"
+      }
+    }
+  },
+  "definitions": {
+    "ValueType": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "boolean",
+                "string",
+                "integer",
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "values"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "enum"
+              ]
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "element"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "list"
+              ]
+            },
+            "element": {
+              "$ref": "#/definitions/ValueType"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "fields"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "record"
+              ]
+            },
+            "fields": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+                "maxLength": 256
+              },
+              "additionalProperties": {
+                "$ref": "#/definitions/ValueType"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Expression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "literal"
+              ]
+            },
+            "value": {
+              "$ref": "#/definitions/JsonValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "root",
+            "path"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "ref"
+              ]
+            },
+            "root": {
+              "enum": [
+                "input",
+                "before",
+                "after",
+                "output",
+                "local"
+              ]
+            },
+            "path": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+                "maxLength": 256
+              },
+              "maxItems": 16
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "not",
+                "length",
+                "unique"
+              ]
+            },
+            "value": {
+              "$ref": "#/definitions/Expression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "terms"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "all",
+                "any"
+              ]
+            },
+            "terms": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Expression"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "op",
+            "left",
+            "right"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "compare"
+              ]
+            },
+            "op": {
+              "enum": [
+                "eq",
+                "ne",
+                "lt",
+                "lte",
+                "gt",
+                "gte"
+              ]
+            },
+            "left": {
+              "$ref": "#/definitions/Expression"
+            },
+            "right": {
+              "$ref": "#/definitions/Expression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "collection",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "contains",
+                "subset"
+              ]
+            },
+            "collection": {
+              "$ref": "#/definitions/Expression"
+            },
+            "value": {
+              "$ref": "#/definitions/Expression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "collection",
+            "variable",
+            "predicate"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "every"
+              ]
+            },
+            "collection": {
+              "$ref": "#/definitions/Expression"
+            },
+            "variable": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+              "maxLength": 256
+            },
+            "predicate": {
+              "$ref": "#/definitions/Expression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "text",
+            "reason"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "opaque"
+              ]
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "boolean",
+            "number",
+            "string"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/JsonValue"
+          }
+        }
+      ]
+    },
+    "Rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "predicate",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+          "maxLength": 256
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "predicate": {
+          "$ref": "#/definitions/Expression"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+            "maxLength": 256
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "origin",
+        "locator",
+        "text",
+        "sha256",
+        "binding"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+          "maxLength": 256
+        },
+        "origin": {
+          "enum": [
+            "source",
+            "requirement",
+            "design"
+          ]
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "binding": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "artifact_id",
+                "snapshot_id"
+              ],
+              "properties": {
+                "artifact_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "snapshot_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "State": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "scope",
+        "type",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+          "maxLength": 256
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "enum": [
+            "invocation",
+            "request",
+            "repository",
+            "process",
+            "external"
+          ]
+        },
+        "type": {
+          "$ref": "#/definitions/ValueType"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+            "maxLength": 256
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "Decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "question",
+        "consequence",
+        "disposition",
+        "blocking",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+          "maxLength": 256
+        },
+        "question": {
+          "type": "string",
+          "minLength": 1
+        },
+        "consequence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "disposition": {
+          "enum": [
+            "unresolved-requirement",
+            "analysis-limit",
+            "implementation-choice"
+          ]
+        },
+        "blocking": {
+          "type": "boolean"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+            "maxLength": 256
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "Dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_id",
+        "kind",
+        "requirement",
+        "role"
+      ],
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+          "maxLength": 256
+        },
+        "kind": {
+          "enum": [
+            "uses-contract",
+            "invokes",
+            "awaits",
+            "continuation"
+          ]
+        },
+        "requirement": {
+          "enum": [
+            "required",
+            "optional"
+          ]
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "Implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "responsibility",
+        "symbol_id",
+        "evidence_ids"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "responsibility": {
+          "type": "string",
+          "minLength": 1
+        },
+        "symbol_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+            "maxLength": 256
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "Outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "description",
+        "when",
+        "ensures",
+        "updates",
+        "effects",
+        "transitions",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+          "maxLength": 256
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "when": {
+          "$ref": "#/definitions/Expression"
+        },
+        "ensures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Rule"
+          }
+        },
+        "updates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state_id",
+              "value"
+            ],
+            "properties": {
+              "state_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+                "maxLength": 256
+              },
+              "value": {
+                "$ref": "#/definitions/Expression"
+              }
+            }
+          }
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "effect_id",
+              "occurrence"
+            ],
+            "properties": {
+              "effect_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+                "maxLength": 256
+              },
+              "occurrence": {
+                "enum": [
+                  "required",
+                  "permitted"
+                ]
+              }
+            }
+          }
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "operation_id",
+              "handoff",
+              "description"
+            ],
+            "properties": {
+              "operation_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+                "maxLength": 256
+              },
+              "handoff": {
+                "enum": [
+                  "invoke",
+                  "await",
+                  "continue",
+                  "propagate"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+            "maxLength": 256
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "Operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "alias",
+        "name",
+        "purpose",
+        "inputs",
+        "output",
+        "reads",
+        "writes",
+        "frame",
+        "effects",
+        "outcome_policy",
+        "coverage",
+        "outcomes",
+        "guarantees",
+        "dependencies",
+        "implementations",
+        "decisions",
+        "evidence_ids"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+          "maxLength": 256
+        },
+        "alias": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+          "maxLength": 256
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+            "maxLength": 256
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/ValueType"
+          }
+        },
+        "output": {
+          "$ref": "#/definitions/ValueType"
+        },
+        "reads": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+            "maxLength": 256
+          },
+          "uniqueItems": true
+        },
+        "writes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+            "maxLength": 256
+          },
+          "uniqueItems": true
+        },
+        "frame": {
+          "enum": [
+            "complete",
+            "partial"
+          ]
+        },
+        "effects": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "completeness",
+            "allowed"
+          ],
+          "properties": {
+            "completeness": {
+              "enum": [
+                "complete",
+                "partial"
+              ]
+            },
+            "allowed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "description"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+                    "maxLength": 256
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "outcome_policy": {
+          "enum": [
+            "exclusive",
+            "allowed"
+          ]
+        },
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial"
+          ]
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Outcome"
+          },
+          "minItems": 1
+        },
+        "guarantees": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Rule"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Dependency"
+          }
+        },
+        "implementations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Implementation"
+          }
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Decision"
+          }
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+            "maxLength": 256
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

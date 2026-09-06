@@ -4,9 +4,10 @@ import sys
 import zipfile
 
 root = Path(sys.argv[1]).resolve()
-if not (root / 'review.json').is_file() or not (root / 'SHA256SUMS').is_file():
-    raise SystemExit('Expected a generated shared demo directory.')
-output = root / 'clearings-shared-review.zip'
+bootstrap = (root / 'verification.json').is_file() and (root / 'clearings.specification.json').is_file()
+if not ((root / 'review.json').is_file() or bootstrap) or not (root / 'SHA256SUMS').is_file():
+    raise SystemExit('Expected a generated review directory.')
+output = root / ('clearings-specification-review.zip' if bootstrap else 'clearings-shared-review.zip')
 if output.exists():
     raise SystemExit('Package already exists; use a new generated directory.')
 with zipfile.ZipFile(output, 'x', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:

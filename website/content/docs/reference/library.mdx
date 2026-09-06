@@ -60,6 +60,23 @@ Useful codes include `INVALID_PRESENTATION`, `INVALID_SELECTION`, `CONTEXT_BUDGE
 
 ## Schemas and ownership
 
-Package schema exports are `schemas/inventory`, `schemas/scan`, `schemas/semantic` (v0.1), `schemas/contracts` (v0.2), `schemas/presentation` (v0.1), and `schemas/contract-presentation` (v0.2).
+Package schema exports are `schemas/inventory`, `schemas/scan`, `schemas/semantic` (v0.1), `schemas/contracts` (v0.2), `schemas/presentation` (v0.1), `schemas/contract-presentation` (v0.2), and `schemas/specification` (v0.3).
+
+## Typed specification API
+
+See [the specification guide](/docs/guides/specifications) for a complete case. These APIs keep intended requirements separate from observed interpretations.
+
+| Function | Result |
+| --- | --- |
+| `sealSpecification(value)` | Assign content identity and validate an authored specification |
+| `validateSpecification(value)` | Check schema, identity, typed expressions, declared state/effects, and references |
+| `assembleContext(spec, operation, { maxBytes })` | Return complete required operation context or a size error |
+| `serializeOperationContext(context)` | Emit compact JSON plus a final newline |
+| `validateOperationContext(context, spec)` | Reconstruct and verify a received package against its exact specification |
+| `checkOperation(spec, operation, observation)` | Return pass, fail, or unknown for the supplied observation |
+| `renderSpecification(spec, operation, options)` | Render the same rules as HTML or Markdown |
+| `createContractBrief(model, selection, options)` | Resolve historical assertion prose in place, without formalizing it |
+
+Types include `SemanticSpecification`, `SemanticOperation`, `OperationContext`, `OperationObservation`, `OperationCheck`, `Expression`, and `ValueType`. Caller code owns I/O. No target code is executed by these functions. A passing check is not a source-conformance proof.
 
 The APIs read source and return objects or text. They do not save files, send prompts, execute target code, or certify assertions. Callers own file I/O, agent transport, review, and source notice distribution.

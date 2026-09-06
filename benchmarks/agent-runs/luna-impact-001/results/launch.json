@@ -1,0 +1,12 @@
+{
+  "run_id": "luna-impact-001",
+  "spawn_returned_at": "2026-09-06T01:15:11.970411+00:00",
+  "task_name": "/root/luna_impact_001",
+  "requested_model": "gpt-5.6-luna",
+  "fork_turns": "none",
+  "freeze_sha256": "f660be30b489e890a45be3b8ed40e5c29da4145ecf5290fc7f4360219757b1cf",
+  "prompt_sha256": "ddfc91c6a3583f3647d567845bbd11d35857ccfcc45ffab349560abd021c89c3",
+  "verified_backend_model_revision": null,
+  "native_token_usage": null,
+  "coaching_messages": []
+}

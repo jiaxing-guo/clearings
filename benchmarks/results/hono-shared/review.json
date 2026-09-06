@@ -1,6 +1,9 @@
 {
   "artifact_id": "semantic:879ce0fdb5dee3f6f406bfa87e28f0d2f48b65fb58026479f9172bbd54b8c3f0",
   "snapshot_id": "sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9",
+  "typed_artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+  "typed_source_bound_to_checked_excerpts": true,
+  "typed_scenarios": 9,
   "transport": "recorded-replay",
   "model_called": false,
   "source_excerpts_verified": 11,
@@ -92,16 +95,36 @@
       "sha256": "21536917c8a5b16e4ad3ddbb3e3339117430ded13740934844df3dd43ff28865"
     },
     "walkthrough.json": {
-      "bytes": 259077,
-      "sha256": "ed693a64639eab67ea41f059ed2924732b67a1089d1d3e8bfeeba124214f5807"
+      "bytes": 262414,
+      "sha256": "371ab681fbc91faec36e437bb7c6f5e5dc477d5a402aba261ebd1b4ca1158724"
+    },
+    "internal-legacy.html": {
+      "bytes": 34406,
+      "sha256": "648e675cbfbc833df0cd1efd0cb1e0f6aa1f43507463d36b74132c977d05c6fe"
+    },
+    "internal-legacy.md": {
+      "bytes": 18301,
+      "sha256": "fe76489f24e2eca36430a793e82baa9c43db30fa7829dc7d3a9b1117bebac130"
+    },
+    "specification.json": {
+      "bytes": 51630,
+      "sha256": "8de112474a2a332b8a09e3403cbfcc114a71980f80b211a60e52e8478a9af54b"
+    },
+    "operation.context.json": {
+      "bytes": 30472,
+      "sha256": "9f0ec388123a2edde17ce12959faad4dca8932868aca65963124b81583fa4dcb"
+    },
+    "operation.scenarios.json": {
+      "bytes": 15796,
+      "sha256": "e62862c104a19e58544be20563024d2637f163809732e63de9fc886c965707ac"
     },
     "internal.html": {
-      "bytes": 33175,
-      "sha256": "c1744e8a52b8253e5e17096adeb62cf2cc8b9b3ab077659e7ae930248e462f41"
+      "bytes": 97475,
+      "sha256": "3b9c0155163fb7adfa6144a85a00f446edffc8e761ba2c5b213f001e1c3d3d72"
     },
     "internal.md": {
-      "bytes": 17460,
-      "sha256": "783367cf0915fce0b5221161320a49ebb6ec1ec80a18b0f65425973c15cd599a"
+      "bytes": 64854,
+      "sha256": "0cff82a4699ff2bd9853ae834caa2236391394d0730f1c13f8c38f57c9476827"
     },
     "agent/answers.json": {
       "bytes": 10353,
@@ -136,12 +159,12 @@
       "sha256": "6f1c2ef48a10d690c9268c8ea07e46b43358ee8f8850e5cc132b2619848066f8"
     },
     "index.html": {
-      "bytes": 1627,
-      "sha256": "288cab79ad86eaedd65a987c22bbf735091f0d153721021ef1845d5c3fe7bc1b"
+      "bytes": 1941,
+      "sha256": "b601c0cd2929e4f3c309adc9a360297beceea2c9691565fbb05151ef01321ce7"
     },
     "README.md": {
-      "bytes": 1932,
-      "sha256": "9fe99917d48b14f88a3ddb4de0e63639f823ea2ead14ead189e74a4bdb7da647"
+      "bytes": 2227,
+      "sha256": "3634d1803f01d728370c77ad2ec8c808dafc34334b1d8a02986c93d5a3e44680"
     }
   }
 }

@@ -1,0 +1,83 @@
+{
+  "format": "clearings-bootstrap-review.v1",
+  "intended_artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+  "observed_artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+  "actual_clearings_cases": 9,
+  "authored_hono_cases": 9,
+  "rejected_output_faults": 7,
+  "required_closure_reference": "independent fixed-point set expansion",
+  "deterministic": true,
+  "input_unchanged": true,
+  "target_code_executed": false,
+  "automatic_source_inference": false,
+  "independent_review": false,
+  "fresh_agent_trial": false,
+  "formal_implementation_proof": false,
+  "browser_interaction": "not-run",
+  "files": {
+    "clearings.specification.json": {
+      "bytes": 50605,
+      "sha256": "f8e981d96bf3c54033c1d9e1e8c9fe4ea2bd8dab7ecf600fec8c7d7585de5cd1"
+    },
+    "clearings.context.json": {
+      "bytes": 27276,
+      "sha256": "7dfee21398beefd62e6ff2fc001e75776c40aac8b0af903128e3320f6b8fd465"
+    },
+    "hono.specification.json": {
+      "bytes": 51630,
+      "sha256": "8de112474a2a332b8a09e3403cbfcc114a71980f80b211a60e52e8478a9af54b"
+    },
+    "hono.context.json": {
+      "bytes": 30472,
+      "sha256": "9f0ec388123a2edde17ce12959faad4dca8932868aca65963124b81583fa4dcb"
+    },
+    "clearings.scenarios.json": {
+      "bytes": 36163,
+      "sha256": "d186707b317f30fe539b5cabd5a1aaa85157e2aabe74997ad3edf71087095b66"
+    },
+    "hono.scenarios.json": {
+      "bytes": 15796,
+      "sha256": "e62862c104a19e58544be20563024d2637f163809732e63de9fc886c965707ac"
+    },
+    "counterexamples.json": {
+      "bytes": 36822,
+      "sha256": "89a0b9e49cb59d1321b36510dd9880a4b30a9cf6741008197cabaeaa5db81127"
+    },
+    "implementation-bindings.json": {
+      "bytes": 21740,
+      "sha256": "c2e9b14fba28c29c30c7526be5ba04be03b28e122139c635d45d6943bbcfa7c3"
+    },
+    "clearings.html": {
+      "bytes": 111126,
+      "sha256": "3dddcabf45500468257cb5b2b8dbc82b8eca0a701f5aaf7164ebe1b444389997"
+    },
+    "clearings.md": {
+      "bytes": 85751,
+      "sha256": "c308a84da7ffd8401a0cfc3f06c67b4c803bd55722831fa8f2e0fa13711f20f5"
+    },
+    "hono.html": {
+      "bytes": 97475,
+      "sha256": "3b9c0155163fb7adfa6144a85a00f446edffc8e761ba2c5b213f001e1c3d3d72"
+    },
+    "hono.md": {
+      "bytes": 64854,
+      "sha256": "0cff82a4699ff2bd9853ae834caa2236391394d0730f1c13f8c38f57c9476827"
+    },
+    "LICENSE-HONO": {
+      "bytes": 1101,
+      "sha256": "a6ab98e5c77b9070c443eaff2ff81034a6f8cc05a7524d5098eb0f24defa0115"
+    },
+    "author-development-record.json": {
+      "bytes": 1684,
+      "sha256": "991f13b7dedbb0ec07ad6b953d2f0376a0e376fe553a492c2a6b0ea017d5cdb6"
+    },
+    "index.html": {
+      "bytes": 1494,
+      "sha256": "455a325a21b9be3cf1fe5cb382a4be7cb5414b47c86d423bb9ed64d1ffd9e22f"
+    },
+    "README.md": {
+      "bytes": 2312,
+      "sha256": "56845741863b2b6b7543623cc72301d4ee0562815fac22beab94bef1eecd7754"
+    }
+  }
+}

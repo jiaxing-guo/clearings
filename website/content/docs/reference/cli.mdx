@@ -25,7 +25,11 @@ Run `node dist/cli/main.js --help` for the current command syntax. The installed
 
 JSON goes to stdout; report output is HTML or Markdown. Progress and errors go to stderr. Source selections use literal paths. Options not supported by a command are rejected.
 
-`propose --schema-version 0.2.0` selects contracts. Its default is `0.1.0`. `inspect` and `context` accept v0.2 models. `explain` accepts both model versions and requires the matching presentation version.
+`propose --schema-version 0.2.0` selects contracts. Its default is `0.1.0`. Historical `inspect` and `context` accept v0.2 models. Historical `explain` accepts both model versions and requires the matching presentation version.
+
+Typed v0.3 specifications use `--operation <id-or-alias>` with `inspect`, `context`, and `explain`. Selected output supports JSON, Markdown, or HTML. `check <specification.json> --operation <alias> --observation <file>` returns JSON: exit 0 for pass, 1 for failed rules, and 3 for unknown. Invalid inputs use exit 2. These commands do not revalidate Git source; `--scan` is rejected. See [typed specifications](/docs/guides/specifications).
+
+Legacy `context --format readable-json` expands assertion prose in place. It remains explicitly unformalized.
 
 `context --no-neighbors` omits optional neighboring behaviors. `--max-bytes` measures compact UTF-8 JSON including the newline. `inspect` and `context` support JSON output only.
 

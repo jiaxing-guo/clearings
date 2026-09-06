@@ -1,0 +1,1939 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Assemble context for a coding agent · Clearings</title><style>
+:root{color-scheme:light;--paper:#f8f7f2;--card:#fffefa;--ink:#202f2c;--muted:#65726b;--line:#dce1d8;--green:#245e4b;--soft:#eaf0e7;--amber:#83561b;--warm:#fbf1db;--radius:14px;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:30px}body{margin:0;background:var(--paper);color:var(--ink);font-size:16px;line-height:1.65}a{color:var(--green);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:#13392d}button,summary,a{-webkit-tap-highlight-color:transparent}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #3a806b;outline-offset:4px}button{font:inherit;cursor:pointer}p{margin:0 0 16px}h1,h2,h3,h4{line-height:1.18;letter-spacing:-.035em}h1{font-size:clamp(34px,4.1vw,56px);font-weight:550;max-width:760px;margin:17px 0 22px}h2{font-size:29px;font-weight:550;margin:0 0 12px}h3{font-size:21px;font-weight:580;margin:0 0 12px}h4{font-size:16px;letter-spacing:0;margin:20px 0 8px}code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}pre{font-size:12px;line-height:1.65;background:#f0f2ec;padding:20px;border-radius:9px;overflow:auto;white-space:pre;max-width:100%}code{overflow-wrap:anywhere}.skip{position:fixed;left:16px;top:-90px;z-index:5;background:white;padding:12px}.skip:focus{top:12px}.rail{position:fixed;inset:0 auto 0 0;width:228px;padding:35px 26px;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--paper)}.brand{font-size:23px;font-weight:650;letter-spacing:-1px;display:flex;align-items:center;gap:10px;text-decoration:none}.mark{display:inline-flex;gap:3px;align-items:end;height:24px}.mark i{display:block;width:5px;border-radius:6px;background:var(--green);transform:rotate(20deg)}.mark i:nth-child(1){height:14px}.mark i:nth-child(2){height:24px}.mark i:nth-child(3){height:19px}.rail-label,.eyebrow{font-size:11px;font-weight:650;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}.rail-label{margin:47px 0 13px}.rail nav{display:grid;gap:5px}.rail nav a{text-decoration:none;color:var(--muted);font-size:14px;padding:9px 11px;border-radius:7px}.rail nav a:hover,.rail nav a.current{background:var(--soft);color:var(--green)}.rail-footer{margin-top:auto;font-size:12px;color:var(--muted);line-height:1.7}.shell{margin-left:228px;padding:37px clamp(24px,5vw,80px) 70px;max-width:1480px}.topbar{display:flex;justify-content:space-between;align-items:center;padding-bottom:34px;font-size:12px;color:var(--muted);gap:15px}.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid var(--line);border-radius:99px;font-size:11px;white-space:nowrap}.dot{height:6px;width:6px;background:#bb8237;border-radius:50%}.hero{padding:10px 0 32px;border-bottom:1px solid var(--line)}.lede{font-size:19px;line-height:1.6;max-width:760px}.scope-line{font-size:12px;color:var(--muted);margin:16px 0 0}.hero-links{display:flex;gap:22px;margin:21px 0 0;font-size:13px}.section{margin-top:44px}.section-heading{display:flex;align-items:start;justify-content:space-between;gap:18px;margin-bottom:22px}.section-heading p,.muted{color:var(--muted);font-size:14px}.step-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:9px;margin:22px 0 30px}.step-map a{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:15px 13px;text-decoration:none;line-height:1.4;font-size:13px;font-weight:550;transition:background .15s}.step-map a:hover,.step-map a.selected{background:var(--soft);border-color:#9ab59d}.step-map span{display:block;font-size:11px;color:var(--muted);margin-bottom:9px}.stage{border:1px solid var(--line);background:var(--card);border-radius:var(--radius);margin:14px 0;padding:24px 26px;scroll-margin-top:25px;transition:border-color .15s}.stage.selected{border-color:var(--green);box-shadow:0 0 0 2px #245e4b18}.stage-title{display:flex;gap:15px;align-items:baseline}.number{font-size:12px;color:var(--green);background:var(--soft);padding:3px 8px;border-radius:6px;letter-spacing:0;font-weight:600}.stage-summary{margin:0 0 12px;max-width:780px;font-size:16px}.support{font-size:11px;white-space:normal;color:var(--muted);margin-left:5px;display:inline}.support a{color:var(--muted);margin-right:7px}.caution{font-size:13px;line-height:1.6;border-left:3px solid #d5b271;padding:8px 12px;margin:15px 0;background:var(--warm);border-radius:0 6px 6px 0}.caution strong{font-weight:600;color:var(--amber)}details{min-width:0}summary{cursor:pointer;list-style:none;font-size:13px;font-weight:550;color:var(--green);padding:9px 0}summary::-webkit-details-marker{display:none}summary:before{content:'+';display:inline-block;width:20px;font-weight:400}details[open]>summary:before{content:'−'}details[open]>.detail-body{animation:appear .15s ease-out}.detail-body{padding-top:16px;border-top:1px solid var(--line);margin-top:7px;font-size:14px}.exact{margin-top:20px;background:#f4f5ef;padding:8px 14px;border-radius:8px}.branch{padding:17px 0;border-bottom:1px solid var(--line)}.branch:last-child{border-bottom:0}.branch h4{margin-top:0}.branch ul{padding-left:20px;margin-bottom:8px}.branch li{margin:9px 0}.inventory-link{font-size:12px;margin:18px 0 0}.case-list{border-top:1px solid var(--line)}.case{border-bottom:1px solid var(--line);padding:5px 0}.case>summary{font-size:16px;padding:18px 0;color:var(--ink)}.case[open]{padding-bottom:20px}.case .detail-body{border:0;margin:0;padding:0 22px}.case-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.case-links a{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:5px 12px;text-decoration:none}.case-links a:hover{background:var(--soft)}.unknown-list{font-size:14px;padding-left:20px}.unknown-list li{margin-bottom:18px}.unknown-label{font-size:11px;color:var(--amber);margin-right:7px;font-weight:650}.audit,.source,.metadata{border:1px solid var(--line);border-radius:10px;padding:9px 18px;background:var(--card);margin:10px 0}.claim{padding:17px 0;border-bottom:1px solid var(--line);scroll-margin-top:25px}.claim:last-child{border-bottom:0}.claim-title{font-size:11px;letter-spacing:.06em;color:var(--muted);margin-bottom:7px;text-transform:uppercase}.claim p{font-size:14px}.source>summary{font-family:ui-monospace,monospace;font-size:12px;overflow-wrap:anywhere}.source-meta{font-size:11px;color:var(--muted);overflow-wrap:anywhere}.metadata dl{display:grid;grid-template-columns:115px minmax(0,1fr);gap:13px;font-size:12px}.metadata dt{color:var(--muted)}.metadata dd{margin:0;overflow-wrap:anywhere}.small-button{border:1px solid var(--line);border-radius:7px;background:transparent;padding:6px 11px;font-size:12px;color:var(--green)}.diagram{border:1px solid var(--line);padding:22px;border-radius:var(--radius);margin:24px 0;background:var(--card)}.diagram h3{font-size:18px}.diagram .assumption{font-size:13px;color:var(--muted)}.sequence{width:100%;height:auto;display:block}.sequence-table{font-size:12px;border-collapse:collapse;width:100%}.sequence-table th,.sequence-table td{text-align:left;padding:8px;border-bottom:1px solid var(--line)}.source-notice{font-size:11px;color:var(--muted);margin-top:18px}.footer{border-top:1px solid var(--line);margin-top:42px;padding-top:19px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:15px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}[hidden]{display:none!important}
+@keyframes appear{from{opacity:.6}to{opacity:1}}@media(max-width:1050px){.rail{width:190px;padding:30px 18px}.shell{margin-left:190px;padding:30px}.step-map{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:720px){.rail{position:static;width:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 20px}.brand{font-size:21px}.rail-label,.rail-footer{display:none}.rail nav{display:flex;gap:3px;flex-wrap:nowrap;overflow-x:auto;margin-top:12px;padding-bottom:5px}.rail nav a{font-size:12px;padding:5px 9px;flex-shrink:0}.shell{margin:0;padding:22px 20px 40px}.topbar{padding-bottom:20px;flex-wrap:wrap}.hero{padding-top:8px}h1{font-size:34px;margin:12px 0 18px}.lede{font-size:16px}.hero-links{gap:17px}.section{margin-top:35px}.step-map{grid-template-columns:repeat(2,minmax(0,1fr))}.stage{padding:20px 17px}.stage-title{gap:10px}h3{font-size:19px}.diagram{padding:15px}.section-heading{display:block}.sequence-table{font-size:10px}.metadata dl{grid-template-columns:1fr;gap:5px}.metadata dd{margin-bottom:12px}.footer{display:block}.pill{white-space:normal}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+@media print{.rail,.topbar,.hero-links,.step-map,.small-button,.skip,.case-links{display:none!important}.shell{margin:0;padding:0;max-width:none}body{background:white;font-size:11pt}.hero{padding-top:0}h1{font-size:30pt}.section{margin-top:25px}.stage,.diagram{break-inside:avoid;box-shadow:none}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:8pt}.support{font-size:8pt}a{color:inherit}details:not([open])>*:not(summary){display:block!important}}
+
+main{max-width:940px;margin:auto;padding:36px 24px}h1{max-width:24ch}section{margin:36px 0}.lead{font-size:1.18rem;max-width:70ch}.status{color:var(--muted);font-size:.9rem}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;margin:16px 0}th,td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}td{min-width:120px}pre{padding:16px;overflow:auto;background:var(--soft);border-radius:8px}code{white-space:pre}details{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:8px}summary{cursor:pointer}p,td,li{overflow-wrap:anywhere}.tag{font-size:.85rem;margin-left:8px;color:var(--muted)}.rule{margin:12px 0}nav{display:flex;flex-wrap:wrap;gap:16px;margin:24px 0}@media(max-width:600px){main{padding:20px 14px}h1{font-size:2rem}th,td{padding:8px}}
+</style></head><body><a class="skip" href="#main">Skip to content</a><main id="main"><p>Clearings · Internal representation for AI coding</p><h1>Assemble context for a coding agent</h1><p class="lead">Give an agent the selected operation and its required rules together. Preserve open decisions and explain deferred lookups. Return an explicit error when the required package cannot be produced.</p><p class="status">Proposed intended behavior. 4 operations. Source hashes checked; source authenticity and claim support are not established.</p><nav aria-label="Reading path"><a href="#cases">Try a case</a><a href="#rules">Rules and outcomes</a><a href="#relationships">Relationships</a><a href="#evidence">Evidence</a></nav>
+<section id="cases"><h2>A concrete case</h2><details class="scenario"><summary>One operation keeps its complete meaning <span class="tag">pass</span></summary><p>Operation: assemble-context. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>{
+  &quot;input&quot;: {
+    &quot;root_id&quot;: &quot;root&quot;,
+    &quot;available_ids&quot;: [
+      &quot;root&quot;
+    ],
+    &quot;required_edges&quot;: [],
+    &quot;applicable_decisions&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;max_bytes&quot;: 65536
+  },
+  &quot;before&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;after&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;effects&quot;: [],
+  &quot;outcome&quot;: &quot;outcome:ready&quot;,
+  &quot;output&quot;: {
+    &quot;kind&quot;: &quot;ready&quot;,
+    &quot;included_ids&quot;: [
+      &quot;root&quot;
+    ],
+    &quot;omitted_ids&quot;: [],
+    &quot;decision_ids&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;used_bytes&quot;: 1687,
+    &quot;required_bytes&quot;: 1687
+  }
+}</code></pre><ul><li><strong>pass</strong> — Return the complete required context package.</li><li><strong>pass</strong> — The result identifies a ready package.</li><li><strong>pass</strong> — The selected operation is present.</li><li><strong>pass</strong> — Each operation appears once, including in cycles.</li><li><strong>pass</strong> — Every included operation comes from this specification.</li><li><strong>pass</strong> — Every required dependency of an included operation is included.</li><li><strong>pass</strong> — Every open decision on an included operation remains available.</li><li><strong>pass</strong> — Every available operation is included or explicitly omitted.</li><li><strong>pass</strong> — An included operation is never listed as omitted.</li><li><strong>pass</strong> — The package identifies the input specification.</li><li><strong>pass</strong> — The exact serialized output fits its byte budget.</li><li><strong>pass</strong> — This required-only package reports its full size as required.</li><li><strong>pass</strong> — Only effects allowed for this outcome occur.</li><li><strong>pass</strong> — Preserve Input model content digest.</li></ul><p>Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved. analysis-limit: Does this context improve a fresh agent coding task? analysis-limit: Does the implementation select the least required closure? analysis-limit: Does used_bytes equal actual UTF-8 serialization?</p></details><details class="scenario"><summary>A shared dependency appears once <span class="tag">pass</span></summary><p>Operation: assemble-context. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>{
+  &quot;input&quot;: {
+    &quot;root_id&quot;: &quot;root&quot;,
+    &quot;available_ids&quot;: [
+      &quot;root&quot;,
+      &quot;left&quot;,
+      &quot;right&quot;,
+      &quot;shared&quot;
+    ],
+    &quot;required_edges&quot;: [
+      {
+        &quot;from&quot;: &quot;root&quot;,
+        &quot;to&quot;: &quot;left&quot;
+      },
+      {
+        &quot;from&quot;: &quot;root&quot;,
+        &quot;to&quot;: &quot;right&quot;
+      },
+      {
+        &quot;from&quot;: &quot;left&quot;,
+        &quot;to&quot;: &quot;shared&quot;
+      },
+      {
+        &quot;from&quot;: &quot;right&quot;,
+        &quot;to&quot;: &quot;shared&quot;
+      }
+    ],
+    &quot;applicable_decisions&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:dbe3374d01fe2de245be2986596b0b5dc4cbdc34efd5d07d5f718d7b7a8bb69e&quot;,
+    &quot;max_bytes&quot;: 65536
+  },
+  &quot;before&quot;: {
+    &quot;model-digest&quot;: &quot;9df85daf7db22f593e1526cc63967a92727d60a24bd35e44d7f5bba7b62a9301&quot;
+  },
+  &quot;after&quot;: {
+    &quot;model-digest&quot;: &quot;9df85daf7db22f593e1526cc63967a92727d60a24bd35e44d7f5bba7b62a9301&quot;
+  },
+  &quot;effects&quot;: [],
+  &quot;outcome&quot;: &quot;outcome:ready&quot;,
+  &quot;output&quot;: {
+    &quot;kind&quot;: &quot;ready&quot;,
+    &quot;included_ids&quot;: [
+      &quot;root&quot;,
+      &quot;left&quot;,
+      &quot;right&quot;,
+      &quot;shared&quot;
+    ],
+    &quot;omitted_ids&quot;: [],
+    &quot;decision_ids&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:dbe3374d01fe2de245be2986596b0b5dc4cbdc34efd5d07d5f718d7b7a8bb69e&quot;,
+    &quot;used_bytes&quot;: 4764,
+    &quot;required_bytes&quot;: 4764
+  }
+}</code></pre><ul><li><strong>pass</strong> — Return the complete required context package.</li><li><strong>pass</strong> — The result identifies a ready package.</li><li><strong>pass</strong> — The selected operation is present.</li><li><strong>pass</strong> — Each operation appears once, including in cycles.</li><li><strong>pass</strong> — Every included operation comes from this specification.</li><li><strong>pass</strong> — Every required dependency of an included operation is included.</li><li><strong>pass</strong> — Every open decision on an included operation remains available.</li><li><strong>pass</strong> — Every available operation is included or explicitly omitted.</li><li><strong>pass</strong> — An included operation is never listed as omitted.</li><li><strong>pass</strong> — The package identifies the input specification.</li><li><strong>pass</strong> — The exact serialized output fits its byte budget.</li><li><strong>pass</strong> — This required-only package reports its full size as required.</li><li><strong>pass</strong> — Only effects allowed for this outcome occur.</li><li><strong>pass</strong> — Preserve Input model content digest.</li></ul><p>Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved. analysis-limit: Does this context improve a fresh agent coding task? analysis-limit: Does the implementation select the least required closure? analysis-limit: Does used_bytes equal actual UTF-8 serialization?</p></details><details class="scenario"><summary>A cycle terminates and retains its blocking decision <span class="tag">pass</span></summary><p>Operation: assemble-context. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>{
+  &quot;input&quot;: {
+    &quot;root_id&quot;: &quot;root&quot;,
+    &quot;available_ids&quot;: [
+      &quot;root&quot;,
+      &quot;left&quot;,
+      &quot;right&quot;,
+      &quot;shared&quot;,
+      &quot;optional&quot;
+    ],
+    &quot;required_edges&quot;: [
+      {
+        &quot;from&quot;: &quot;root&quot;,
+        &quot;to&quot;: &quot;left&quot;
+      },
+      {
+        &quot;from&quot;: &quot;root&quot;,
+        &quot;to&quot;: &quot;right&quot;
+      },
+      {
+        &quot;from&quot;: &quot;left&quot;,
+        &quot;to&quot;: &quot;shared&quot;
+      },
+      {
+        &quot;from&quot;: &quot;right&quot;,
+        &quot;to&quot;: &quot;shared&quot;
+      },
+      {
+        &quot;from&quot;: &quot;shared&quot;,
+        &quot;to&quot;: &quot;root&quot;
+      }
+    ],
+    &quot;applicable_decisions&quot;: [
+      {
+        &quot;operation_id&quot;: &quot;shared&quot;,
+        &quot;decision_id&quot;: &quot;decision:callback&quot;
+      }
+    ],
+    &quot;artifact_id&quot;: &quot;specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0&quot;,
+    &quot;max_bytes&quot;: 65536
+  },
+  &quot;before&quot;: {
+    &quot;model-digest&quot;: &quot;50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c&quot;
+  },
+  &quot;after&quot;: {
+    &quot;model-digest&quot;: &quot;50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c&quot;
+  },
+  &quot;effects&quot;: [],
+  &quot;outcome&quot;: &quot;outcome:ready&quot;,
+  &quot;output&quot;: {
+    &quot;kind&quot;: &quot;ready&quot;,
+    &quot;included_ids&quot;: [
+      &quot;root&quot;,
+      &quot;left&quot;,
+      &quot;right&quot;,
+      &quot;shared&quot;
+    ],
+    &quot;omitted_ids&quot;: [
+      &quot;optional&quot;
+    ],
+    &quot;decision_ids&quot;: [
+      &quot;decision:callback&quot;
+    ],
+    &quot;artifact_id&quot;: &quot;specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0&quot;,
+    &quot;used_bytes&quot;: 5972,
+    &quot;required_bytes&quot;: 5972
+  }
+}</code></pre><ul><li><strong>pass</strong> — Return the complete required context package.</li><li><strong>pass</strong> — The result identifies a ready package.</li><li><strong>pass</strong> — The selected operation is present.</li><li><strong>pass</strong> — Each operation appears once, including in cycles.</li><li><strong>pass</strong> — Every included operation comes from this specification.</li><li><strong>pass</strong> — Every required dependency of an included operation is included.</li><li><strong>pass</strong> — Every open decision on an included operation remains available.</li><li><strong>pass</strong> — Every available operation is included or explicitly omitted.</li><li><strong>pass</strong> — An included operation is never listed as omitted.</li><li><strong>pass</strong> — The package identifies the input specification.</li><li><strong>pass</strong> — The exact serialized output fits its byte budget.</li><li><strong>pass</strong> — This required-only package reports its full size as required.</li><li><strong>pass</strong> — Only effects allowed for this outcome occur.</li><li><strong>pass</strong> — Preserve Input model content digest.</li></ul><p>Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved. analysis-limit: Does this context improve a fresh agent coding task? analysis-limit: Does the implementation select the least required closure? analysis-limit: Does used_bytes equal actual UTF-8 serialization?</p></details><details class="scenario"><summary>An exact byte budget succeeds, including Unicode and counters <span class="tag">pass</span></summary><p>Operation: assemble-context. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>{
+  &quot;input&quot;: {
+    &quot;root_id&quot;: &quot;root&quot;,
+    &quot;available_ids&quot;: [
+      &quot;root&quot;
+    ],
+    &quot;required_edges&quot;: [],
+    &quot;applicable_decisions&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;max_bytes&quot;: 1686
+  },
+  &quot;before&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;after&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;effects&quot;: [],
+  &quot;outcome&quot;: &quot;outcome:ready&quot;,
+  &quot;output&quot;: {
+    &quot;kind&quot;: &quot;ready&quot;,
+    &quot;included_ids&quot;: [
+      &quot;root&quot;
+    ],
+    &quot;omitted_ids&quot;: [],
+    &quot;decision_ids&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;used_bytes&quot;: 1686,
+    &quot;required_bytes&quot;: 1686
+  }
+}</code></pre><ul><li><strong>pass</strong> — Return the complete required context package.</li><li><strong>pass</strong> — The result identifies a ready package.</li><li><strong>pass</strong> — The selected operation is present.</li><li><strong>pass</strong> — Each operation appears once, including in cycles.</li><li><strong>pass</strong> — Every included operation comes from this specification.</li><li><strong>pass</strong> — Every required dependency of an included operation is included.</li><li><strong>pass</strong> — Every open decision on an included operation remains available.</li><li><strong>pass</strong> — Every available operation is included or explicitly omitted.</li><li><strong>pass</strong> — An included operation is never listed as omitted.</li><li><strong>pass</strong> — The package identifies the input specification.</li><li><strong>pass</strong> — The exact serialized output fits its byte budget.</li><li><strong>pass</strong> — This required-only package reports its full size as required.</li><li><strong>pass</strong> — Only effects allowed for this outcome occur.</li><li><strong>pass</strong> — Preserve Input model content digest.</li></ul><p>Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved. analysis-limit: Does this context improve a fresh agent coding task? analysis-limit: Does the implementation select the least required closure? analysis-limit: Does used_bytes equal actual UTF-8 serialization?</p></details><details class="scenario"><summary>One byte too little returns an explicit size error <span class="tag">pass</span></summary><p>Operation: assemble-context. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>{
+  &quot;input&quot;: {
+    &quot;root_id&quot;: &quot;root&quot;,
+    &quot;available_ids&quot;: [
+      &quot;root&quot;
+    ],
+    &quot;required_edges&quot;: [],
+    &quot;applicable_decisions&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;max_bytes&quot;: 1685
+  },
+  &quot;before&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;after&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;effects&quot;: [],
+  &quot;outcome&quot;: &quot;outcome:budget&quot;,
+  &quot;output&quot;: {
+    &quot;kind&quot;: &quot;budget-exceeded&quot;,
+    &quot;included_ids&quot;: [],
+    &quot;omitted_ids&quot;: [],
+    &quot;decision_ids&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;used_bytes&quot;: 0,
+    &quot;required_bytes&quot;: 1686
+  }
+}</code></pre><ul><li><strong>pass</strong> — Report the required size without returning truncated context.</li><li><strong>pass</strong> — The result identifies insufficient budget.</li><li><strong>pass</strong> — The measured required size exceeds the requested budget.</li><li><strong>pass</strong> — No truncated operation list is returned.</li><li><strong>pass</strong> — Only effects allowed for this outcome occur.</li><li><strong>pass</strong> — Preserve Input model content digest.</li></ul><p>Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved. analysis-limit: Does this context improve a fresh agent coding task? analysis-limit: Does the implementation select the least required closure? analysis-limit: Does used_bytes equal actual UTF-8 serialization?</p></details><details class="scenario"><summary>An absent root returns an explicit selection error <span class="tag">pass</span></summary><p>Operation: assemble-context. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>{
+  &quot;input&quot;: {
+    &quot;root_id&quot;: &quot;absent&quot;,
+    &quot;available_ids&quot;: [
+      &quot;root&quot;
+    ],
+    &quot;required_edges&quot;: [],
+    &quot;applicable_decisions&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;max_bytes&quot;: 65536
+  },
+  &quot;before&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;after&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;effects&quot;: [],
+  &quot;outcome&quot;: &quot;outcome:selection&quot;,
+  &quot;output&quot;: {
+    &quot;kind&quot;: &quot;invalid-selection&quot;,
+    &quot;included_ids&quot;: [],
+    &quot;omitted_ids&quot;: [],
+    &quot;decision_ids&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;used_bytes&quot;: 0,
+    &quot;required_bytes&quot;: 0
+  }
+}</code></pre><ul><li><strong>pass</strong> — Reject an unknown operation selection.</li><li><strong>pass</strong> — The error identifies an unknown selection.</li><li><strong>pass</strong> — Only effects allowed for this outcome occur.</li><li><strong>pass</strong> — Preserve Input model content digest.</li></ul><p>Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved. analysis-limit: Does this context improve a fresh agent coding task? analysis-limit: Does the implementation select the least required closure? analysis-limit: Does used_bytes equal actual UTF-8 serialization?</p></details><details class="scenario"><summary>An invalid budget returns an explicit budget error <span class="tag">pass</span></summary><p>Operation: assemble-context. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>{
+  &quot;input&quot;: {
+    &quot;root_id&quot;: &quot;root&quot;,
+    &quot;available_ids&quot;: [
+      &quot;root&quot;
+    ],
+    &quot;required_edges&quot;: [],
+    &quot;applicable_decisions&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;max_bytes&quot;: 0
+  },
+  &quot;before&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;after&quot;: {
+    &quot;model-digest&quot;: &quot;402fd29a87ea0fa62e6e5ecd5373aa6d6cc9fc83a0eb9d68099c50c55c2341c9&quot;
+  },
+  &quot;effects&quot;: [],
+  &quot;outcome&quot;: &quot;outcome:invalid-budget&quot;,
+  &quot;output&quot;: {
+    &quot;kind&quot;: &quot;invalid-budget&quot;,
+    &quot;included_ids&quot;: [],
+    &quot;omitted_ids&quot;: [],
+    &quot;decision_ids&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:6a2320449b0782c87903d959db3f29803103c52d80fccc5c830a400ec5d2bc0a&quot;,
+    &quot;used_bytes&quot;: 0,
+    &quot;required_bytes&quot;: 0
+  }
+}</code></pre><ul><li><strong>pass</strong> — Reject a budget outside the supported integer range.</li><li><strong>pass</strong> — The error identifies an invalid budget.</li><li><strong>pass</strong> — Only effects allowed for this outcome occur.</li><li><strong>pass</strong> — Preserve Input model content digest.</li></ul><p>Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved. analysis-limit: Does this context improve a fresh agent coding task? analysis-limit: Does the implementation select the least required closure? analysis-limit: Does used_bytes equal actual UTF-8 serialization?</p></details><details class="scenario"><summary>An absent required dependency prevents a partial result <span class="tag">pass</span></summary><p>Operation: assemble-context. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>{
+  &quot;input&quot;: {
+    &quot;root_id&quot;: &quot;root&quot;,
+    &quot;available_ids&quot;: [
+      &quot;root&quot;
+    ],
+    &quot;required_edges&quot;: [
+      {
+        &quot;from&quot;: &quot;root&quot;,
+        &quot;to&quot;: &quot;absent&quot;
+      }
+    ],
+    &quot;applicable_decisions&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:4e9f6c71bb81667ebc7849793632805c6b9d72644f89870d1662326855e8a96e&quot;,
+    &quot;max_bytes&quot;: 65536
+  },
+  &quot;before&quot;: {
+    &quot;model-digest&quot;: &quot;c4f23dd978048b5508a30d96b8dd4840f1c3bc604d41292e76912bdc68f5042a&quot;
+  },
+  &quot;after&quot;: {
+    &quot;model-digest&quot;: &quot;c4f23dd978048b5508a30d96b8dd4840f1c3bc604d41292e76912bdc68f5042a&quot;
+  },
+  &quot;effects&quot;: [],
+  &quot;outcome&quot;: &quot;outcome:dependency&quot;,
+  &quot;output&quot;: {
+    &quot;kind&quot;: &quot;missing-dependency&quot;,
+    &quot;included_ids&quot;: [],
+    &quot;omitted_ids&quot;: [],
+    &quot;decision_ids&quot;: [],
+    &quot;artifact_id&quot;: &quot;specification:4e9f6c71bb81667ebc7849793632805c6b9d72644f89870d1662326855e8a96e&quot;,
+    &quot;used_bytes&quot;: 0,
+    &quot;required_bytes&quot;: 0
+  }
+}</code></pre><ul><li><strong>pass</strong> — Reject a missing required dependency.</li><li><strong>pass</strong> — The error identifies a missing dependency.</li><li><strong>pass</strong> — Only effects allowed for this outcome occur.</li><li><strong>pass</strong> — Preserve Input model content digest.</li></ul><p>Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved. analysis-limit: Does this context improve a fresh agent coding task? analysis-limit: Does the implementation select the least required closure? analysis-limit: Does used_bytes equal actual UTF-8 serialization?</p></details><details class="scenario"><summary>Clearings assembles its own context-assembly specification <span class="tag">pass</span></summary><p>Operation: assemble-context. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>{
+  &quot;input&quot;: {
+    &quot;root_id&quot;: &quot;assemble-context&quot;,
+    &quot;available_ids&quot;: [
+      &quot;assemble-context&quot;,
+      &quot;select-required&quot;,
+      &quot;project-operation&quot;,
+      &quot;measure-package&quot;
+    ],
+    &quot;required_edges&quot;: [
+      {
+        &quot;from&quot;: &quot;assemble-context&quot;,
+        &quot;to&quot;: &quot;select-required&quot;
+      },
+      {
+        &quot;from&quot;: &quot;assemble-context&quot;,
+        &quot;to&quot;: &quot;project-operation&quot;
+      },
+      {
+        &quot;from&quot;: &quot;assemble-context&quot;,
+        &quot;to&quot;: &quot;measure-package&quot;
+      }
+    ],
+    &quot;applicable_decisions&quot;: [
+      {
+        &quot;operation_id&quot;: &quot;assemble-context&quot;,
+        &quot;decision_id&quot;: &quot;decision:bootstrap-coverage&quot;
+      },
+      {
+        &quot;operation_id&quot;: &quot;assemble-context&quot;,
+        &quot;decision_id&quot;: &quot;decision:minimum-closure&quot;
+      },
+      {
+        &quot;operation_id&quot;: &quot;assemble-context&quot;,
+        &quot;decision_id&quot;: &quot;decision:encoding&quot;
+      },
+      {
+        &quot;operation_id&quot;: &quot;select-required&quot;,
+        &quot;decision_id&quot;: &quot;decision:closure-errors&quot;
+      }
+    ],
+    &quot;artifact_id&quot;: &quot;specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853&quot;,
+    &quot;max_bytes&quot;: 131072
+  },
+  &quot;before&quot;: {
+    &quot;model-digest&quot;: &quot;4a9ddb17a90b3df3a4c1825b3563cf616f206506180a2ce2fea6ec178d7efaf3&quot;
+  },
+  &quot;after&quot;: {
+    &quot;model-digest&quot;: &quot;4a9ddb17a90b3df3a4c1825b3563cf616f206506180a2ce2fea6ec178d7efaf3&quot;
+  },
+  &quot;effects&quot;: [],
+  &quot;outcome&quot;: &quot;outcome:ready&quot;,
+  &quot;output&quot;: {
+    &quot;kind&quot;: &quot;ready&quot;,
+    &quot;included_ids&quot;: [
+      &quot;assemble-context&quot;,
+      &quot;measure-package&quot;,
+      &quot;project-operation&quot;,
+      &quot;select-required&quot;
+    ],
+    &quot;omitted_ids&quot;: [],
+    &quot;decision_ids&quot;: [
+      &quot;decision:bootstrap-coverage&quot;,
+      &quot;decision:minimum-closure&quot;,
+      &quot;decision:encoding&quot;,
+      &quot;decision:closure-errors&quot;
+    ],
+    &quot;artifact_id&quot;: &quot;specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853&quot;,
+    &quot;used_bytes&quot;: 27276,
+    &quot;required_bytes&quot;: 27276
+  }
+}</code></pre><ul><li><strong>pass</strong> — Return the complete required context package.</li><li><strong>pass</strong> — The result identifies a ready package.</li><li><strong>pass</strong> — The selected operation is present.</li><li><strong>pass</strong> — Each operation appears once, including in cycles.</li><li><strong>pass</strong> — Every included operation comes from this specification.</li><li><strong>pass</strong> — Every required dependency of an included operation is included.</li><li><strong>pass</strong> — Every open decision on an included operation remains available.</li><li><strong>pass</strong> — Every available operation is included or explicitly omitted.</li><li><strong>pass</strong> — An included operation is never listed as omitted.</li><li><strong>pass</strong> — The package identifies the input specification.</li><li><strong>pass</strong> — The exact serialized output fits its byte budget.</li><li><strong>pass</strong> — This required-only package reports its full size as required.</li><li><strong>pass</strong> — Only effects allowed for this outcome occur.</li><li><strong>pass</strong> — Preserve Input model content digest.</li></ul><p>Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved. analysis-limit: Does this context improve a fresh agent coding task? analysis-limit: Does the implementation select the least required closure? analysis-limit: Does used_bytes equal actual UTF-8 serialization?</p></details></section>
+<section id="state"><h2>State used by these rules</h2><div class="table-wrap" tabindex="0" aria-label="State definitions"><table><thead><tr><th>State</th><th>Type</th><th>Meaning</th></tr></thead><tbody><tr><td>Input model content digest</td><td>string</td><td>The digest of the input JSON before and after assembly. The conformance adapter measures it independently. <a href="#record-64657369676e3a636f6e74657874">Source</a></td></tr></tbody></table></div></section>
+<section id="rules"><h2>Rules and outcomes</h2><article id="record-617373656d626c652d636f6e74657874"><h3>Assemble context for a coding agent</h3><p>Give an agent the selected operation and its required rules together. Preserve open decisions and explain deferred lookups. Return an explicit error when the required package cannot be produced.</p><div class="table-wrap" tabindex="0" aria-label="Conditional outcomes"><table><thead><tr><th>Condition</th><th>Outcome</th></tr></thead><tbody><tr><td><code>(input.available_ids contains input.root_id) and (every edge in input.required_edges: input.available_ids contains local.edge.to) and ((input.max_bytes ≥ 1) and (input.max_bytes ≤ 2097152))</code></td><td>Return the complete required context package. <details><summary>Required result and effects</summary><ul><li>The result identifies a ready package.<br><code>output.kind = &quot;ready&quot;</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>The selected operation is present.<br><code>output.included_ids contains input.root_id</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>Each operation appears once, including in cycles.<br><code>unique(output.included_ids)</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>Every included operation comes from this specification.<br><code>output.included_ids is a subset of input.available_ids</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>Every required dependency of an included operation is included.<br><code>every edge in input.required_edges: (not (output.included_ids contains local.edge.from)) or (output.included_ids contains local.edge.to)</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>Every open decision on an included operation remains available.<br><code>every decision in input.applicable_decisions: (not (output.included_ids contains local.decision.operation_id)) or (output.decision_ids contains local.decision.decision_id)</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>Every available operation is included or explicitly omitted.<br><code>every id in input.available_ids: (output.included_ids contains local.id) or (output.omitted_ids contains local.id)</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>An included operation is never listed as omitted.<br><code>every id in output.included_ids: not (output.omitted_ids contains local.id)</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>The package identifies the input specification.<br><code>output.artifact_id = input.artifact_id</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>The exact serialized output fits its byte budget.<br><code>output.used_bytes ≤ input.max_bytes</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>This required-only package reports its full size as required.<br><code>output.used_bytes = output.required_bytes</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li></ul></details></td></tr><tr><td><code>(input.available_ids contains input.root_id) and (every edge in input.required_edges: input.available_ids contains local.edge.to) and ((input.max_bytes ≥ 1) and (input.max_bytes ≤ 2097152))</code></td><td>Report the required size without returning truncated context. <details><summary>Required result and effects</summary><ul><li>The result identifies insufficient budget.<br><code>output.kind = &quot;budget-exceeded&quot;</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>The measured required size exceeds the requested budget.<br><code>output.required_bytes &gt; input.max_bytes</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>No truncated operation list is returned.<br><code>length(output.included_ids) = 0</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li></ul></details></td></tr><tr><td><code>not (input.available_ids contains input.root_id)</code></td><td>Reject an unknown operation selection. <details><summary>Required result and effects</summary><ul><li>The error identifies an unknown selection.<br><code>output.kind = &quot;invalid-selection&quot;</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li></ul></details></td></tr><tr><td><code>not (every edge in input.required_edges: input.available_ids contains local.edge.to)</code></td><td>Reject a missing required dependency. <details><summary>Required result and effects</summary><ul><li>The error identifies a missing dependency.<br><code>output.kind = &quot;missing-dependency&quot;</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li></ul></details></td></tr><tr><td><code>not ((input.max_bytes ≥ 1) and (input.max_bytes ≤ 2097152))</code></td><td>Reject a budget outside the supported integer range. <details><summary>Required result and effects</summary><ul><li>The error identifies an invalid budget.<br><code>output.kind = &quot;invalid-budget&quot;</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li></ul></details></td></tr></tbody></table></div>
+
+<h4>Which implementation contributes?</h4><div class="table-wrap" tabindex="0" aria-label="Implementation responsibilities"><table><thead><tr><th>Implementation</th><th>Responsibility</th></tr></thead><tbody><tr><td>assembleContext</td><td>Validate the specification, select required operations, attach state and evidence, and reject an insufficient budget. </td></tr></tbody></table></div>
+<h4>Open boundaries</h4><ul><li><strong>Does this context improve a fresh agent coding task?</strong> This continuing-session bootstrap checks behavior and counterexamples. It does not establish independent agent benefit. <span class="tag">analysis-limit</span></li><li><strong>Does the implementation select the least required closure?</strong> The typed closure rules prevent missing dependencies. An independently written reference algorithm also checks that extra operations are not added. <span class="tag">analysis-limit</span></li><li><strong>Does used_bytes equal actual UTF-8 serialization?</strong> The expression kernel compares supplied values. The conformance adapter measures actual bytes independently. <span class="tag">analysis-limit</span></li></ul>
+<details><summary>Types, state, and canonical operation</summary><p>Inputs: applicable_decisions: list of { decision_id: string, operation_id: string }; artifact_id: string; available_ids: list of string; max_bytes: integer; required_edges: list of { from: string, to: string }; root_id: string.</p><p>Output: { artifact_id: string, decision_ids: list of string, included_ids: list of string, kind: ready | invalid-selection | missing-dependency | invalid-budget | budget-exceeded, omitted_ids: list of string, required_bytes: integer, used_bytes: integer }. State frame: complete. Effect boundary: complete.</p><pre tabindex="0" aria-label="Canonical operation JSON"><code>{
+  &quot;alias&quot;: &quot;assemble-context&quot;,
+  &quot;coverage&quot;: &quot;complete&quot;,
+  &quot;decisions&quot;: [
+    {
+      &quot;blocking&quot;: false,
+      &quot;consequence&quot;: &quot;This continuing-session bootstrap checks behavior and counterexamples. It does not establish independent agent benefit.&quot;,
+      &quot;disposition&quot;: &quot;analysis-limit&quot;,
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;decision:bootstrap-coverage&quot;,
+      &quot;question&quot;: &quot;Does this context improve a fresh agent coding task?&quot;
+    },
+    {
+      &quot;blocking&quot;: false,
+      &quot;consequence&quot;: &quot;The typed closure rules prevent missing dependencies. An independently written reference algorithm also checks that extra operations are not added.&quot;,
+      &quot;disposition&quot;: &quot;analysis-limit&quot;,
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;decision:minimum-closure&quot;,
+      &quot;question&quot;: &quot;Does the implementation select the least required closure?&quot;
+    },
+    {
+      &quot;blocking&quot;: false,
+      &quot;consequence&quot;: &quot;The expression kernel compares supplied values. The conformance adapter measures actual bytes independently.&quot;,
+      &quot;disposition&quot;: &quot;analysis-limit&quot;,
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;decision:encoding&quot;,
+      &quot;question&quot;: &quot;Does used_bytes equal actual UTF-8 serialization?&quot;
+    }
+  ],
+  &quot;dependencies&quot;: [
+    {
+      &quot;kind&quot;: &quot;uses-contract&quot;,
+      &quot;operation_id&quot;: &quot;select-required&quot;,
+      &quot;requirement&quot;: &quot;required&quot;,
+      &quot;role&quot;: &quot;Find the selected operation and all required dependencies; terminate on cycles.&quot;
+    },
+    {
+      &quot;kind&quot;: &quot;uses-contract&quot;,
+      &quot;operation_id&quot;: &quot;project-operation&quot;,
+      &quot;requirement&quot;: &quot;required&quot;,
+      &quot;role&quot;: &quot;Keep each operation purpose, conditions, outcomes, implementation roles, and unknowns together.&quot;
+    },
+    {
+      &quot;kind&quot;: &quot;uses-contract&quot;,
+      &quot;operation_id&quot;: &quot;measure-package&quot;,
+      &quot;requirement&quot;: &quot;required&quot;,
+      &quot;role&quot;: &quot;Measure serialized bytes including budget accounting before accepting the package.&quot;
+    },
+    {
+      &quot;kind&quot;: &quot;uses-contract&quot;,
+      &quot;operation_id&quot;: &quot;render-context&quot;,
+      &quot;requirement&quot;: &quot;optional&quot;,
+      &quot;role&quot;: &quot;Show the same package to a person in reading order.&quot;
+    }
+  ],
+  &quot;effects&quot;: {
+    &quot;allowed&quot;: [],
+    &quot;completeness&quot;: &quot;complete&quot;
+  },
+  &quot;evidence_ids&quot;: [
+    &quot;design:context&quot;
+  ],
+  &quot;frame&quot;: &quot;complete&quot;,
+  &quot;guarantees&quot;: [],
+  &quot;id&quot;: &quot;assemble-context&quot;,
+  &quot;implementations&quot;: [
+    {
+      &quot;evidence_ids&quot;: [],
+      &quot;name&quot;: &quot;assembleContext&quot;,
+      &quot;responsibility&quot;: &quot;Validate the specification, select required operations, attach state and evidence, and reject an insufficient budget.&quot;,
+      &quot;symbol_id&quot;: null
+    }
+  ],
+  &quot;inputs&quot;: {
+    &quot;applicable_decisions&quot;: {
+      &quot;element&quot;: {
+        &quot;fields&quot;: {
+          &quot;decision_id&quot;: {
+            &quot;kind&quot;: &quot;string&quot;
+          },
+          &quot;operation_id&quot;: {
+            &quot;kind&quot;: &quot;string&quot;
+          }
+        },
+        &quot;kind&quot;: &quot;record&quot;
+      },
+      &quot;kind&quot;: &quot;list&quot;
+    },
+    &quot;artifact_id&quot;: {
+      &quot;kind&quot;: &quot;string&quot;
+    },
+    &quot;available_ids&quot;: {
+      &quot;element&quot;: {
+        &quot;kind&quot;: &quot;string&quot;
+      },
+      &quot;kind&quot;: &quot;list&quot;
+    },
+    &quot;max_bytes&quot;: {
+      &quot;kind&quot;: &quot;integer&quot;
+    },
+    &quot;required_edges&quot;: {
+      &quot;element&quot;: {
+        &quot;fields&quot;: {
+          &quot;from&quot;: {
+            &quot;kind&quot;: &quot;string&quot;
+          },
+          &quot;to&quot;: {
+            &quot;kind&quot;: &quot;string&quot;
+          }
+        },
+        &quot;kind&quot;: &quot;record&quot;
+      },
+      &quot;kind&quot;: &quot;list&quot;
+    },
+    &quot;root_id&quot;: {
+      &quot;kind&quot;: &quot;string&quot;
+    }
+  },
+  &quot;name&quot;: &quot;Assemble context for a coding agent&quot;,
+  &quot;outcome_policy&quot;: &quot;allowed&quot;,
+  &quot;outcomes&quot;: [
+    {
+      &quot;description&quot;: &quot;Return the complete required context package.&quot;,
+      &quot;effects&quot;: [],
+      &quot;ensures&quot;: [
+        {
+          &quot;description&quot;: &quot;The result identifies a ready package.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:ready-tag&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;kind&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;literal&quot;,
+              &quot;value&quot;: &quot;ready&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;The selected operation is present.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:root-present&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;included_ids&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;kind&quot;: &quot;contains&quot;,
+            &quot;value&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;root_id&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;Each operation appears once, including in cycles.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:no-duplicates&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;unique&quot;,
+            &quot;value&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;included_ids&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;Every included operation comes from this specification.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:known-records&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;available_ids&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;subset&quot;,
+            &quot;value&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;included_ids&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;Every required dependency of an included operation is included.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:dependency-closure&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;required_edges&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;every&quot;,
+            &quot;predicate&quot;: {
+              &quot;kind&quot;: &quot;any&quot;,
+              &quot;terms&quot;: [
+                {
+                  &quot;kind&quot;: &quot;not&quot;,
+                  &quot;value&quot;: {
+                    &quot;collection&quot;: {
+                      &quot;kind&quot;: &quot;ref&quot;,
+                      &quot;path&quot;: [
+                        &quot;included_ids&quot;
+                      ],
+                      &quot;root&quot;: &quot;output&quot;
+                    },
+                    &quot;kind&quot;: &quot;contains&quot;,
+                    &quot;value&quot;: {
+                      &quot;kind&quot;: &quot;ref&quot;,
+                      &quot;path&quot;: [
+                        &quot;edge&quot;,
+                        &quot;from&quot;
+                      ],
+                      &quot;root&quot;: &quot;local&quot;
+                    }
+                  }
+                },
+                {
+                  &quot;collection&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [
+                      &quot;included_ids&quot;
+                    ],
+                    &quot;root&quot;: &quot;output&quot;
+                  },
+                  &quot;kind&quot;: &quot;contains&quot;,
+                  &quot;value&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [
+                      &quot;edge&quot;,
+                      &quot;to&quot;
+                    ],
+                    &quot;root&quot;: &quot;local&quot;
+                  }
+                }
+              ]
+            },
+            &quot;variable&quot;: &quot;edge&quot;
+          }
+        },
+        {
+          &quot;description&quot;: &quot;Every open decision on an included operation remains available.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:retain-decisions&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;applicable_decisions&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;every&quot;,
+            &quot;predicate&quot;: {
+              &quot;kind&quot;: &quot;any&quot;,
+              &quot;terms&quot;: [
+                {
+                  &quot;kind&quot;: &quot;not&quot;,
+                  &quot;value&quot;: {
+                    &quot;collection&quot;: {
+                      &quot;kind&quot;: &quot;ref&quot;,
+                      &quot;path&quot;: [
+                        &quot;included_ids&quot;
+                      ],
+                      &quot;root&quot;: &quot;output&quot;
+                    },
+                    &quot;kind&quot;: &quot;contains&quot;,
+                    &quot;value&quot;: {
+                      &quot;kind&quot;: &quot;ref&quot;,
+                      &quot;path&quot;: [
+                        &quot;decision&quot;,
+                        &quot;operation_id&quot;
+                      ],
+                      &quot;root&quot;: &quot;local&quot;
+                    }
+                  }
+                },
+                {
+                  &quot;collection&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [
+                      &quot;decision_ids&quot;
+                    ],
+                    &quot;root&quot;: &quot;output&quot;
+                  },
+                  &quot;kind&quot;: &quot;contains&quot;,
+                  &quot;value&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [
+                      &quot;decision&quot;,
+                      &quot;decision_id&quot;
+                    ],
+                    &quot;root&quot;: &quot;local&quot;
+                  }
+                }
+              ]
+            },
+            &quot;variable&quot;: &quot;decision&quot;
+          }
+        },
+        {
+          &quot;description&quot;: &quot;Every available operation is included or explicitly omitted.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:omissions&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;available_ids&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;every&quot;,
+            &quot;predicate&quot;: {
+              &quot;kind&quot;: &quot;any&quot;,
+              &quot;terms&quot;: [
+                {
+                  &quot;collection&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [
+                      &quot;included_ids&quot;
+                    ],
+                    &quot;root&quot;: &quot;output&quot;
+                  },
+                  &quot;kind&quot;: &quot;contains&quot;,
+                  &quot;value&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [
+                      &quot;id&quot;
+                    ],
+                    &quot;root&quot;: &quot;local&quot;
+                  }
+                },
+                {
+                  &quot;collection&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [
+                      &quot;omitted_ids&quot;
+                    ],
+                    &quot;root&quot;: &quot;output&quot;
+                  },
+                  &quot;kind&quot;: &quot;contains&quot;,
+                  &quot;value&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [
+                      &quot;id&quot;
+                    ],
+                    &quot;root&quot;: &quot;local&quot;
+                  }
+                }
+              ]
+            },
+            &quot;variable&quot;: &quot;id&quot;
+          }
+        },
+        {
+          &quot;description&quot;: &quot;An included operation is never listed as omitted.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:disjoint-omissions&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;included_ids&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;kind&quot;: &quot;every&quot;,
+            &quot;predicate&quot;: {
+              &quot;kind&quot;: &quot;not&quot;,
+              &quot;value&quot;: {
+                &quot;collection&quot;: {
+                  &quot;kind&quot;: &quot;ref&quot;,
+                  &quot;path&quot;: [
+                    &quot;omitted_ids&quot;
+                  ],
+                  &quot;root&quot;: &quot;output&quot;
+                },
+                &quot;kind&quot;: &quot;contains&quot;,
+                &quot;value&quot;: {
+                  &quot;kind&quot;: &quot;ref&quot;,
+                  &quot;path&quot;: [
+                    &quot;id&quot;
+                  ],
+                  &quot;root&quot;: &quot;local&quot;
+                }
+              }
+            },
+            &quot;variable&quot;: &quot;id&quot;
+          }
+        },
+        {
+          &quot;description&quot;: &quot;The package identifies the input specification.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:identity&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;artifact_id&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;artifact_id&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;The exact serialized output fits its byte budget.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:within-budget&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;used_bytes&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;lte&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;max_bytes&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;This required-only package reports its full size as required.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:required-size&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;used_bytes&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;required_bytes&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            }
+          }
+        }
+      ],
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;outcome:ready&quot;,
+      &quot;transitions&quot;: [],
+      &quot;updates&quot;: [],
+      &quot;when&quot;: {
+        &quot;kind&quot;: &quot;all&quot;,
+        &quot;terms&quot;: [
+          {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;available_ids&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;contains&quot;,
+            &quot;value&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;root_id&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            }
+          },
+          {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;required_edges&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;every&quot;,
+            &quot;predicate&quot;: {
+              &quot;collection&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;available_ids&quot;
+                ],
+                &quot;root&quot;: &quot;input&quot;
+              },
+              &quot;kind&quot;: &quot;contains&quot;,
+              &quot;value&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;edge&quot;,
+                  &quot;to&quot;
+                ],
+                &quot;root&quot;: &quot;local&quot;
+              }
+            },
+            &quot;variable&quot;: &quot;edge&quot;
+          },
+          {
+            &quot;kind&quot;: &quot;all&quot;,
+            &quot;terms&quot;: [
+              {
+                &quot;kind&quot;: &quot;compare&quot;,
+                &quot;left&quot;: {
+                  &quot;kind&quot;: &quot;ref&quot;,
+                  &quot;path&quot;: [
+                    &quot;max_bytes&quot;
+                  ],
+                  &quot;root&quot;: &quot;input&quot;
+                },
+                &quot;op&quot;: &quot;gte&quot;,
+                &quot;right&quot;: {
+                  &quot;kind&quot;: &quot;literal&quot;,
+                  &quot;value&quot;: 1
+                }
+              },
+              {
+                &quot;kind&quot;: &quot;compare&quot;,
+                &quot;left&quot;: {
+                  &quot;kind&quot;: &quot;ref&quot;,
+                  &quot;path&quot;: [
+                    &quot;max_bytes&quot;
+                  ],
+                  &quot;root&quot;: &quot;input&quot;
+                },
+                &quot;op&quot;: &quot;lte&quot;,
+                &quot;right&quot;: {
+                  &quot;kind&quot;: &quot;literal&quot;,
+                  &quot;value&quot;: 2097152
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      &quot;description&quot;: &quot;Report the required size without returning truncated context.&quot;,
+      &quot;effects&quot;: [],
+      &quot;ensures&quot;: [
+        {
+          &quot;description&quot;: &quot;The result identifies insufficient budget.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:budget-tag&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;kind&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;literal&quot;,
+              &quot;value&quot;: &quot;budget-exceeded&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;The measured required size exceeds the requested budget.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:budget-reason&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;required_bytes&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;gt&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;max_bytes&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;No truncated operation list is returned.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:no-partial-return&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;length&quot;,
+              &quot;value&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;included_ids&quot;
+                ],
+                &quot;root&quot;: &quot;output&quot;
+              }
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;literal&quot;,
+              &quot;value&quot;: 0
+            }
+          }
+        }
+      ],
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;outcome:budget&quot;,
+      &quot;transitions&quot;: [],
+      &quot;updates&quot;: [],
+      &quot;when&quot;: {
+        &quot;kind&quot;: &quot;all&quot;,
+        &quot;terms&quot;: [
+          {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;available_ids&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;contains&quot;,
+            &quot;value&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;root_id&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            }
+          },
+          {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;required_edges&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;every&quot;,
+            &quot;predicate&quot;: {
+              &quot;collection&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;available_ids&quot;
+                ],
+                &quot;root&quot;: &quot;input&quot;
+              },
+              &quot;kind&quot;: &quot;contains&quot;,
+              &quot;value&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;edge&quot;,
+                  &quot;to&quot;
+                ],
+                &quot;root&quot;: &quot;local&quot;
+              }
+            },
+            &quot;variable&quot;: &quot;edge&quot;
+          },
+          {
+            &quot;kind&quot;: &quot;all&quot;,
+            &quot;terms&quot;: [
+              {
+                &quot;kind&quot;: &quot;compare&quot;,
+                &quot;left&quot;: {
+                  &quot;kind&quot;: &quot;ref&quot;,
+                  &quot;path&quot;: [
+                    &quot;max_bytes&quot;
+                  ],
+                  &quot;root&quot;: &quot;input&quot;
+                },
+                &quot;op&quot;: &quot;gte&quot;,
+                &quot;right&quot;: {
+                  &quot;kind&quot;: &quot;literal&quot;,
+                  &quot;value&quot;: 1
+                }
+              },
+              {
+                &quot;kind&quot;: &quot;compare&quot;,
+                &quot;left&quot;: {
+                  &quot;kind&quot;: &quot;ref&quot;,
+                  &quot;path&quot;: [
+                    &quot;max_bytes&quot;
+                  ],
+                  &quot;root&quot;: &quot;input&quot;
+                },
+                &quot;op&quot;: &quot;lte&quot;,
+                &quot;right&quot;: {
+                  &quot;kind&quot;: &quot;literal&quot;,
+                  &quot;value&quot;: 2097152
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      &quot;description&quot;: &quot;Reject an unknown operation selection.&quot;,
+      &quot;effects&quot;: [],
+      &quot;ensures&quot;: [
+        {
+          &quot;description&quot;: &quot;The error identifies an unknown selection.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:selection-tag&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;kind&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;literal&quot;,
+              &quot;value&quot;: &quot;invalid-selection&quot;
+            }
+          }
+        }
+      ],
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;outcome:selection&quot;,
+      &quot;transitions&quot;: [],
+      &quot;updates&quot;: [],
+      &quot;when&quot;: {
+        &quot;kind&quot;: &quot;not&quot;,
+        &quot;value&quot;: {
+          &quot;collection&quot;: {
+            &quot;kind&quot;: &quot;ref&quot;,
+            &quot;path&quot;: [
+              &quot;available_ids&quot;
+            ],
+            &quot;root&quot;: &quot;input&quot;
+          },
+          &quot;kind&quot;: &quot;contains&quot;,
+          &quot;value&quot;: {
+            &quot;kind&quot;: &quot;ref&quot;,
+            &quot;path&quot;: [
+              &quot;root_id&quot;
+            ],
+            &quot;root&quot;: &quot;input&quot;
+          }
+        }
+      }
+    },
+    {
+      &quot;description&quot;: &quot;Reject a missing required dependency.&quot;,
+      &quot;effects&quot;: [],
+      &quot;ensures&quot;: [
+        {
+          &quot;description&quot;: &quot;The error identifies a missing dependency.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:dependency-tag&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;kind&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;literal&quot;,
+              &quot;value&quot;: &quot;missing-dependency&quot;
+            }
+          }
+        }
+      ],
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;outcome:dependency&quot;,
+      &quot;transitions&quot;: [],
+      &quot;updates&quot;: [],
+      &quot;when&quot;: {
+        &quot;kind&quot;: &quot;not&quot;,
+        &quot;value&quot;: {
+          &quot;collection&quot;: {
+            &quot;kind&quot;: &quot;ref&quot;,
+            &quot;path&quot;: [
+              &quot;required_edges&quot;
+            ],
+            &quot;root&quot;: &quot;input&quot;
+          },
+          &quot;kind&quot;: &quot;every&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;available_ids&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;contains&quot;,
+            &quot;value&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;edge&quot;,
+                &quot;to&quot;
+              ],
+              &quot;root&quot;: &quot;local&quot;
+            }
+          },
+          &quot;variable&quot;: &quot;edge&quot;
+        }
+      }
+    },
+    {
+      &quot;description&quot;: &quot;Reject a budget outside the supported integer range.&quot;,
+      &quot;effects&quot;: [],
+      &quot;ensures&quot;: [
+        {
+          &quot;description&quot;: &quot;The error identifies an invalid budget.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:invalid-budget-tag&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;kind&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;literal&quot;,
+              &quot;value&quot;: &quot;invalid-budget&quot;
+            }
+          }
+        }
+      ],
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;outcome:invalid-budget&quot;,
+      &quot;transitions&quot;: [],
+      &quot;updates&quot;: [],
+      &quot;when&quot;: {
+        &quot;kind&quot;: &quot;not&quot;,
+        &quot;value&quot;: {
+          &quot;kind&quot;: &quot;all&quot;,
+          &quot;terms&quot;: [
+            {
+              &quot;kind&quot;: &quot;compare&quot;,
+              &quot;left&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;max_bytes&quot;
+                ],
+                &quot;root&quot;: &quot;input&quot;
+              },
+              &quot;op&quot;: &quot;gte&quot;,
+              &quot;right&quot;: {
+                &quot;kind&quot;: &quot;literal&quot;,
+                &quot;value&quot;: 1
+              }
+            },
+            {
+              &quot;kind&quot;: &quot;compare&quot;,
+              &quot;left&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;max_bytes&quot;
+                ],
+                &quot;root&quot;: &quot;input&quot;
+              },
+              &quot;op&quot;: &quot;lte&quot;,
+              &quot;right&quot;: {
+                &quot;kind&quot;: &quot;literal&quot;,
+                &quot;value&quot;: 2097152
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  &quot;output&quot;: {
+    &quot;fields&quot;: {
+      &quot;artifact_id&quot;: {
+        &quot;kind&quot;: &quot;string&quot;
+      },
+      &quot;decision_ids&quot;: {
+        &quot;element&quot;: {
+          &quot;kind&quot;: &quot;string&quot;
+        },
+        &quot;kind&quot;: &quot;list&quot;
+      },
+      &quot;included_ids&quot;: {
+        &quot;element&quot;: {
+          &quot;kind&quot;: &quot;string&quot;
+        },
+        &quot;kind&quot;: &quot;list&quot;
+      },
+      &quot;kind&quot;: {
+        &quot;kind&quot;: &quot;enum&quot;,
+        &quot;values&quot;: [
+          &quot;ready&quot;,
+          &quot;invalid-selection&quot;,
+          &quot;missing-dependency&quot;,
+          &quot;invalid-budget&quot;,
+          &quot;budget-exceeded&quot;
+        ]
+      },
+      &quot;omitted_ids&quot;: {
+        &quot;element&quot;: {
+          &quot;kind&quot;: &quot;string&quot;
+        },
+        &quot;kind&quot;: &quot;list&quot;
+      },
+      &quot;required_bytes&quot;: {
+        &quot;kind&quot;: &quot;integer&quot;
+      },
+      &quot;used_bytes&quot;: {
+        &quot;kind&quot;: &quot;integer&quot;
+      }
+    },
+    &quot;kind&quot;: &quot;record&quot;
+  },
+  &quot;purpose&quot;: &quot;Give an agent the selected operation and its required rules together. Preserve open decisions and explain deferred lookups. Return an explicit error when the required package cannot be produced.&quot;,
+  &quot;reads&quot;: [
+    &quot;model-digest&quot;
+  ],
+  &quot;writes&quot;: []
+}</code></pre></details></article><article id="record-6d6561737572652d7061636b616765"><h3>Measure the serialized package</h3><p>Count UTF-8 bytes of compact JSON plus its final newline. Include the counters themselves in the calculation.</p><div class="table-wrap" tabindex="0" aria-label="Conditional outcomes"><table><thead><tr><th>Condition</th><th>Outcome</th></tr></thead><tbody><tr><td><code>true</code></td><td>Return the measured size and whether the package fits. <details><summary>Required result and effects</summary><ul><li>The reported size equals independently measured bytes.<br><code>output.used_bytes = input.measured_bytes</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>The fit decision includes the exact boundary.<br><code>output.fits = input.measured_bytes ≤ input.maximum_bytes</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li></ul></details></td></tr></tbody></table></div>
+
+<h4>Which implementation contributes?</h4><div class="table-wrap" tabindex="0" aria-label="Implementation responsibilities"><table><thead><tr><th>Implementation</th><th>Responsibility</th></tr></thead><tbody><tr><td>accountBytes</td><td>Recalculate byte counters until their encoded digits no longer change the package size. </td></tr></tbody></table></div>
+
+<details><summary>Types, state, and canonical operation</summary><p>Inputs: maximum_bytes: integer; measured_bytes: integer.</p><p>Output: { fits: boolean, used_bytes: integer }. State frame: complete. Effect boundary: complete.</p><pre tabindex="0" aria-label="Canonical operation JSON"><code>{
+  &quot;alias&quot;: &quot;measure-package&quot;,
+  &quot;coverage&quot;: &quot;complete&quot;,
+  &quot;decisions&quot;: [],
+  &quot;dependencies&quot;: [],
+  &quot;effects&quot;: {
+    &quot;allowed&quot;: [],
+    &quot;completeness&quot;: &quot;complete&quot;
+  },
+  &quot;evidence_ids&quot;: [
+    &quot;design:context&quot;
+  ],
+  &quot;frame&quot;: &quot;complete&quot;,
+  &quot;guarantees&quot;: [],
+  &quot;id&quot;: &quot;measure-package&quot;,
+  &quot;implementations&quot;: [
+    {
+      &quot;evidence_ids&quot;: [],
+      &quot;name&quot;: &quot;accountBytes&quot;,
+      &quot;responsibility&quot;: &quot;Recalculate byte counters until their encoded digits no longer change the package size.&quot;,
+      &quot;symbol_id&quot;: null
+    }
+  ],
+  &quot;inputs&quot;: {
+    &quot;maximum_bytes&quot;: {
+      &quot;kind&quot;: &quot;integer&quot;
+    },
+    &quot;measured_bytes&quot;: {
+      &quot;kind&quot;: &quot;integer&quot;
+    }
+  },
+  &quot;name&quot;: &quot;Measure the serialized package&quot;,
+  &quot;outcome_policy&quot;: &quot;exclusive&quot;,
+  &quot;outcomes&quot;: [
+    {
+      &quot;description&quot;: &quot;Return the measured size and whether the package fits.&quot;,
+      &quot;effects&quot;: [],
+      &quot;ensures&quot;: [
+        {
+          &quot;description&quot;: &quot;The reported size equals independently measured bytes.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:measured-bytes&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;used_bytes&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;measured_bytes&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;The fit decision includes the exact boundary.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:measured-fit&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;fits&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;compare&quot;,
+              &quot;left&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;measured_bytes&quot;
+                ],
+                &quot;root&quot;: &quot;input&quot;
+              },
+              &quot;op&quot;: &quot;lte&quot;,
+              &quot;right&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;maximum_bytes&quot;
+                ],
+                &quot;root&quot;: &quot;input&quot;
+              }
+            }
+          }
+        }
+      ],
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;outcome:measurement&quot;,
+      &quot;transitions&quot;: [],
+      &quot;updates&quot;: [],
+      &quot;when&quot;: {
+        &quot;kind&quot;: &quot;literal&quot;,
+        &quot;value&quot;: true
+      }
+    }
+  ],
+  &quot;output&quot;: {
+    &quot;fields&quot;: {
+      &quot;fits&quot;: {
+        &quot;kind&quot;: &quot;boolean&quot;
+      },
+      &quot;used_bytes&quot;: {
+        &quot;kind&quot;: &quot;integer&quot;
+      }
+    },
+    &quot;kind&quot;: &quot;record&quot;
+  },
+  &quot;purpose&quot;: &quot;Count UTF-8 bytes of compact JSON plus its final newline. Include the counters themselves in the calculation.&quot;,
+  &quot;reads&quot;: [],
+  &quot;writes&quot;: []
+}</code></pre></details></article><article id="record-70726f6a6563742d6f7065726174696f6e"><h3>Project an operation for an agent</h3><p>Keep the operation purpose and every conditional outcome in one record. Each implementation entry explains that function’s own responsibility.</p><div class="table-wrap" tabindex="0" aria-label="Conditional outcomes"><table><thead><tr><th>Condition</th><th>Outcome</th></tr></thead><tbody><tr><td><code>true</code></td><td>Return all outcomes and explicit implementation responsibilities. <details><summary>Required result and effects</summary><ul><li>No outcome is lost in projection.<br><code>output.outcome_ids = input.expected_outcome_ids</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>The purpose is present.<br><code>length(output.purpose) &gt; 0</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>Each listed implementation role is nonempty.<br><code>every role in output.implementation_roles: length(local.role) &gt; 0</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li></ul></details></td></tr></tbody></table></div>
+
+<h4>Which implementation contributes?</h4><div class="table-wrap" tabindex="0" aria-label="Implementation responsibilities"><table><thead><tr><th>Implementation</th><th>Responsibility</th></tr></thead><tbody><tr><td>assembleContext</td><td>Copy canonical operations and resolve dependency names while retaining their individual roles. </td></tr><tr><td>renderOperationContext</td><td>Render the same rules as an article and decision table, with source details available in place. </td></tr></tbody></table></div>
+
+<details><summary>Types, state, and canonical operation</summary><p>Inputs: expected_outcome_ids: list of string.</p><p>Output: { implementation_roles: list of string, outcome_ids: list of string, purpose: string }. State frame: complete. Effect boundary: complete.</p><pre tabindex="0" aria-label="Canonical operation JSON"><code>{
+  &quot;alias&quot;: &quot;project-operation&quot;,
+  &quot;coverage&quot;: &quot;complete&quot;,
+  &quot;decisions&quot;: [],
+  &quot;dependencies&quot;: [],
+  &quot;effects&quot;: {
+    &quot;allowed&quot;: [],
+    &quot;completeness&quot;: &quot;complete&quot;
+  },
+  &quot;evidence_ids&quot;: [
+    &quot;design:context&quot;
+  ],
+  &quot;frame&quot;: &quot;complete&quot;,
+  &quot;guarantees&quot;: [],
+  &quot;id&quot;: &quot;project-operation&quot;,
+  &quot;implementations&quot;: [
+    {
+      &quot;evidence_ids&quot;: [],
+      &quot;name&quot;: &quot;assembleContext&quot;,
+      &quot;responsibility&quot;: &quot;Copy canonical operations and resolve dependency names while retaining their individual roles.&quot;,
+      &quot;symbol_id&quot;: null
+    },
+    {
+      &quot;evidence_ids&quot;: [],
+      &quot;name&quot;: &quot;renderOperationContext&quot;,
+      &quot;responsibility&quot;: &quot;Render the same rules as an article and decision table, with source details available in place.&quot;,
+      &quot;symbol_id&quot;: null
+    }
+  ],
+  &quot;inputs&quot;: {
+    &quot;expected_outcome_ids&quot;: {
+      &quot;element&quot;: {
+        &quot;kind&quot;: &quot;string&quot;
+      },
+      &quot;kind&quot;: &quot;list&quot;
+    }
+  },
+  &quot;name&quot;: &quot;Project an operation for an agent&quot;,
+  &quot;outcome_policy&quot;: &quot;exclusive&quot;,
+  &quot;outcomes&quot;: [
+    {
+      &quot;description&quot;: &quot;Return all outcomes and explicit implementation responsibilities.&quot;,
+      &quot;effects&quot;: [],
+      &quot;ensures&quot;: [
+        {
+          &quot;description&quot;: &quot;No outcome is lost in projection.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:all-outcomes&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;outcome_ids&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;op&quot;: &quot;eq&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;expected_outcome_ids&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;The purpose is present.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:purpose-present&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;compare&quot;,
+            &quot;left&quot;: {
+              &quot;kind&quot;: &quot;length&quot;,
+              &quot;value&quot;: {
+                &quot;kind&quot;: &quot;ref&quot;,
+                &quot;path&quot;: [
+                  &quot;purpose&quot;
+                ],
+                &quot;root&quot;: &quot;output&quot;
+              }
+            },
+            &quot;op&quot;: &quot;gt&quot;,
+            &quot;right&quot;: {
+              &quot;kind&quot;: &quot;literal&quot;,
+              &quot;value&quot;: 0
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;Each listed implementation role is nonempty.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:roles-present&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;implementation_roles&quot;
+              ],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;kind&quot;: &quot;every&quot;,
+            &quot;predicate&quot;: {
+              &quot;kind&quot;: &quot;compare&quot;,
+              &quot;left&quot;: {
+                &quot;kind&quot;: &quot;length&quot;,
+                &quot;value&quot;: {
+                  &quot;kind&quot;: &quot;ref&quot;,
+                  &quot;path&quot;: [
+                    &quot;role&quot;
+                  ],
+                  &quot;root&quot;: &quot;local&quot;
+                }
+              },
+              &quot;op&quot;: &quot;gt&quot;,
+              &quot;right&quot;: {
+                &quot;kind&quot;: &quot;literal&quot;,
+                &quot;value&quot;: 0
+              }
+            },
+            &quot;variable&quot;: &quot;role&quot;
+          }
+        }
+      ],
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;outcome:projection&quot;,
+      &quot;transitions&quot;: [],
+      &quot;updates&quot;: [],
+      &quot;when&quot;: {
+        &quot;kind&quot;: &quot;literal&quot;,
+        &quot;value&quot;: true
+      }
+    }
+  ],
+  &quot;output&quot;: {
+    &quot;fields&quot;: {
+      &quot;implementation_roles&quot;: {
+        &quot;element&quot;: {
+          &quot;kind&quot;: &quot;string&quot;
+        },
+        &quot;kind&quot;: &quot;list&quot;
+      },
+      &quot;outcome_ids&quot;: {
+        &quot;element&quot;: {
+          &quot;kind&quot;: &quot;string&quot;
+        },
+        &quot;kind&quot;: &quot;list&quot;
+      },
+      &quot;purpose&quot;: {
+        &quot;kind&quot;: &quot;string&quot;
+      }
+    },
+    &quot;kind&quot;: &quot;record&quot;
+  },
+  &quot;purpose&quot;: &quot;Keep the operation purpose and every conditional outcome in one record. Each implementation entry explains that function’s own responsibility.&quot;,
+  &quot;reads&quot;: [],
+  &quot;writes&quot;: []
+}</code></pre></details></article><article id="record-73656c6563742d7265717569726564"><h3>Select required dependencies</h3><p>Traverse required dependency references once per operation. Keep cycles finite and leave optional relationships deferred.</p><div class="table-wrap" tabindex="0" aria-label="Conditional outcomes"><table><thead><tr><th>Condition</th><th>Outcome</th></tr></thead><tbody><tr><td><code>input.available_ids contains input.root_id</code></td><td>Return required operation IDs beginning with the selected root. <details><summary>Required result and effects</summary><ul><li>The root belongs to the selected closure.<br><code>output contains input.root_id</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>The closure has no duplicate IDs.<br><code>unique(output)</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li><li>Every selected required edge stays inside the closure.<br><code>every edge in input.required_edges: (not (output contains local.edge.from)) or (output contains local.edge.to)</code> <a href="#record-64657369676e3a636f6e74657874">Source</a></li></ul></details></td></tr></tbody></table></div>
+
+<h4>Which implementation contributes?</h4><div class="table-wrap" tabindex="0" aria-label="Implementation responsibilities"><table><thead><tr><th>Implementation</th><th>Responsibility</th></tr></thead><tbody><tr><td>requiredClosure</td><td>Use a queue and visited IDs to expand required references without recursion. </td></tr></tbody></table></div>
+<h4>Open boundaries</h4><ul><li><strong>How are absent roots or targets reported?</strong> The public assembly operation specifies these errors. This local contract covers a valid graph. <span class="tag">analysis-limit</span></li></ul>
+<details><summary>Types, state, and canonical operation</summary><p>Inputs: available_ids: list of string; required_edges: list of { from: string, to: string }; root_id: string.</p><p>Output: list of string. State frame: complete. Effect boundary: complete.</p><pre tabindex="0" aria-label="Canonical operation JSON"><code>{
+  &quot;alias&quot;: &quot;select-required&quot;,
+  &quot;coverage&quot;: &quot;partial&quot;,
+  &quot;decisions&quot;: [
+    {
+      &quot;blocking&quot;: false,
+      &quot;consequence&quot;: &quot;The public assembly operation specifies these errors. This local contract covers a valid graph.&quot;,
+      &quot;disposition&quot;: &quot;analysis-limit&quot;,
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;decision:closure-errors&quot;,
+      &quot;question&quot;: &quot;How are absent roots or targets reported?&quot;
+    }
+  ],
+  &quot;dependencies&quot;: [],
+  &quot;effects&quot;: {
+    &quot;allowed&quot;: [],
+    &quot;completeness&quot;: &quot;complete&quot;
+  },
+  &quot;evidence_ids&quot;: [
+    &quot;design:context&quot;
+  ],
+  &quot;frame&quot;: &quot;complete&quot;,
+  &quot;guarantees&quot;: [],
+  &quot;id&quot;: &quot;select-required&quot;,
+  &quot;implementations&quot;: [
+    {
+      &quot;evidence_ids&quot;: [],
+      &quot;name&quot;: &quot;requiredClosure&quot;,
+      &quot;responsibility&quot;: &quot;Use a queue and visited IDs to expand required references without recursion.&quot;,
+      &quot;symbol_id&quot;: null
+    }
+  ],
+  &quot;inputs&quot;: {
+    &quot;available_ids&quot;: {
+      &quot;element&quot;: {
+        &quot;kind&quot;: &quot;string&quot;
+      },
+      &quot;kind&quot;: &quot;list&quot;
+    },
+    &quot;required_edges&quot;: {
+      &quot;element&quot;: {
+        &quot;fields&quot;: {
+          &quot;from&quot;: {
+            &quot;kind&quot;: &quot;string&quot;
+          },
+          &quot;to&quot;: {
+            &quot;kind&quot;: &quot;string&quot;
+          }
+        },
+        &quot;kind&quot;: &quot;record&quot;
+      },
+      &quot;kind&quot;: &quot;list&quot;
+    },
+    &quot;root_id&quot;: {
+      &quot;kind&quot;: &quot;string&quot;
+    }
+  },
+  &quot;name&quot;: &quot;Select required dependencies&quot;,
+  &quot;outcome_policy&quot;: &quot;exclusive&quot;,
+  &quot;outcomes&quot;: [
+    {
+      &quot;description&quot;: &quot;Return required operation IDs beginning with the selected root.&quot;,
+      &quot;effects&quot;: [],
+      &quot;ensures&quot;: [
+        {
+          &quot;description&quot;: &quot;The root belongs to the selected closure.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:closure-root&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [],
+              &quot;root&quot;: &quot;output&quot;
+            },
+            &quot;kind&quot;: &quot;contains&quot;,
+            &quot;value&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;root_id&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;The closure has no duplicate IDs.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:closure-unique&quot;,
+          &quot;predicate&quot;: {
+            &quot;kind&quot;: &quot;unique&quot;,
+            &quot;value&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [],
+              &quot;root&quot;: &quot;output&quot;
+            }
+          }
+        },
+        {
+          &quot;description&quot;: &quot;Every selected required edge stays inside the closure.&quot;,
+          &quot;evidence_ids&quot;: [
+            &quot;design:context&quot;
+          ],
+          &quot;id&quot;: &quot;rule:closure-edges&quot;,
+          &quot;predicate&quot;: {
+            &quot;collection&quot;: {
+              &quot;kind&quot;: &quot;ref&quot;,
+              &quot;path&quot;: [
+                &quot;required_edges&quot;
+              ],
+              &quot;root&quot;: &quot;input&quot;
+            },
+            &quot;kind&quot;: &quot;every&quot;,
+            &quot;predicate&quot;: {
+              &quot;kind&quot;: &quot;any&quot;,
+              &quot;terms&quot;: [
+                {
+                  &quot;kind&quot;: &quot;not&quot;,
+                  &quot;value&quot;: {
+                    &quot;collection&quot;: {
+                      &quot;kind&quot;: &quot;ref&quot;,
+                      &quot;path&quot;: [],
+                      &quot;root&quot;: &quot;output&quot;
+                    },
+                    &quot;kind&quot;: &quot;contains&quot;,
+                    &quot;value&quot;: {
+                      &quot;kind&quot;: &quot;ref&quot;,
+                      &quot;path&quot;: [
+                        &quot;edge&quot;,
+                        &quot;from&quot;
+                      ],
+                      &quot;root&quot;: &quot;local&quot;
+                    }
+                  }
+                },
+                {
+                  &quot;collection&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [],
+                    &quot;root&quot;: &quot;output&quot;
+                  },
+                  &quot;kind&quot;: &quot;contains&quot;,
+                  &quot;value&quot;: {
+                    &quot;kind&quot;: &quot;ref&quot;,
+                    &quot;path&quot;: [
+                      &quot;edge&quot;,
+                      &quot;to&quot;
+                    ],
+                    &quot;root&quot;: &quot;local&quot;
+                  }
+                }
+              ]
+            },
+            &quot;variable&quot;: &quot;edge&quot;
+          }
+        }
+      ],
+      &quot;evidence_ids&quot;: [],
+      &quot;id&quot;: &quot;outcome:closure&quot;,
+      &quot;transitions&quot;: [],
+      &quot;updates&quot;: [],
+      &quot;when&quot;: {
+        &quot;collection&quot;: {
+          &quot;kind&quot;: &quot;ref&quot;,
+          &quot;path&quot;: [
+            &quot;available_ids&quot;
+          ],
+          &quot;root&quot;: &quot;input&quot;
+        },
+        &quot;kind&quot;: &quot;contains&quot;,
+        &quot;value&quot;: {
+          &quot;kind&quot;: &quot;ref&quot;,
+          &quot;path&quot;: [
+            &quot;root_id&quot;
+          ],
+          &quot;root&quot;: &quot;input&quot;
+        }
+      }
+    }
+  ],
+  &quot;output&quot;: {
+    &quot;element&quot;: {
+      &quot;kind&quot;: &quot;string&quot;
+    },
+    &quot;kind&quot;: &quot;list&quot;
+  },
+  &quot;purpose&quot;: &quot;Traverse required dependency references once per operation. Keep cycles finite and leave optional relationships deferred.&quot;,
+  &quot;reads&quot;: [],
+  &quot;writes&quot;: []
+}</code></pre></details></article></section>
+<section id="relationships"><h2>Relationships</h2><p>These are declared dependencies. Their roles do not establish an observed execution order.</p><div class="table-wrap" tabindex="0" aria-label="Operation relationships"><table><thead><tr><th>From</th><th>Target</th><th>Role</th></tr></thead><tbody><tr><td>Assemble context for a coding agent</td><td><a href="#record-73656c6563742d7265717569726564">Select required dependencies</a><br><span class="tag">uses-contract</span></td><td>Find the selected operation and all required dependencies; terminate on cycles.</td></tr><tr><td>Assemble context for a coding agent</td><td><a href="#record-70726f6a6563742d6f7065726174696f6e">Project an operation for an agent</a><br><span class="tag">uses-contract</span></td><td>Keep each operation purpose, conditions, outcomes, implementation roles, and unknowns together.</td></tr><tr><td>Assemble context for a coding agent</td><td><a href="#record-6d6561737572652d7061636b616765">Measure the serialized package</a><br><span class="tag">uses-contract</span></td><td>Measure serialized bytes including budget accounting before accepting the package.</td></tr><tr><td>Assemble context for a coding agent</td><td>render-context<br><span class="tag">uses-contract; deferred</span></td><td>Show the same package to a person in reading order.</td></tr></tbody></table></div></section>
+<section id="evidence"><h2>Source and design evidence</h2><p>Attached text is exact. A valid hash establishes content integrity. Source authenticity, claim support, and requirement acceptance need separate checks.</p><details id="record-64657369676e3a636f6e74657874"><summary>docs/SPECIFICATION_ARCHITECTURE.md</summary><p>design · e7931d9eebc3a4a0d7b5bbd1da5c07eb25aa720e0c26ca58c91e9c45da97ac3d</p><pre tabindex="0" aria-label="Exact attached source"><code># Typed specifications and Clearings self-development
+
+This design replaces prose-linked records as the primary interface for new semantic work. Historical source models remain readable. They are evidence-bearing observations; they do not become intended requirements through conversion.
+
+## Bootstrap decision
+
+The first operation is **assemble agent context**. Its consumer needs a selected operation&#39;s purpose, conditional outcomes, effects, dependencies, implementation roles, and unknowns together. The operation takes a specification, a selection, and a byte budget. It returns a self-contained package or an explicit error. Required information is never silently truncated.
+
+The specification is authored before the new implementation. The active coding session then implements it. This is a continuing-session self-development experiment, not a fresh or independent agent trial. The compiler, test runner, typed expression interpreter, and structural validator form the initial implementation foundation.
+
+## Canonical model
+
+The v0.3 specification has an explicit `perspective`: `intended` or `observed`. Its content identity binds all records and provenance. A source-derived record never receives requirement acceptance automatically.
+
+An operation owns typed inputs and outputs, its own purpose, state reads/writes, conditional outcomes, guarantees, permitted effects, dependency roles, implementation responsibilities, and open decisions. Dependencies are typed references, not an execution trace. Cycles are valid. A transition links an outcome to a declared dependent operation, with a specific handoff role. A complete call graph is not claimed.
+
+Conditions use an expression tree with literals, scoped references, boolean composition, comparisons, collection membership, and bounded universal quantification. No source, JavaScript, or expression string is executed. `opaque` conditions retain unsupported meaning explicitly and evaluate to unknown. The interpreter reports pass, fail, or unknown. A model accepting a scenario is not a proof that source implements the model.
+
+State fields have separate identities and types. A complete frame preserves every modeled field outside the write set; a partial frame makes no such guarantee. Effect declarations distinguish required from permitted effects. An empty complete effect list forbids effects; an empty partial list does not establish purity.
+
+Open decisions distinguish unresolved requirements, analysis limits, and intentional implementation choices. Source anchors retain exact text and hashes. Source integrity and assertion support remain separate.
+
+## Context assembly requirements
+
+1. Resolve a root by exact ID or unique alias. Reject an absent or ambiguous root.
+2. Follow required dependency edges to a fixed point. Keep each operation once, including in cycles. Required dependency order is stable and starts with the selected operation.
+3. Reject missing required dependencies. Optional dependencies may be absent, and remain listed as deferred references.
+4. Return each operation&#39;s meaning with its fields inline. Dependency references include the target&#39;s name and the reason for the link. Implementation entries explain each function&#39;s individual responsibility.
+5. Include all state fields and source records referenced by the selected operations. Keep every applicable open decision, including blocking decisions. A partial package is inspectable; it is not an accepted specification.
+6. Report omitted operations and deferred optional links. An omitted branch inside a selected operation is never treated as optional.
+7. Measure compact UTF-8 JSON plus one final newline. Include the accounting fields themselves. A budget equal to the required size succeeds; one byte less fails with the measured required size.
+8. Selection, rendering, and checking do not mutate input records or execute analyzed source. Repeated input produces identical serialized output.
+9. Bind context to the exact specification identity and perspective. Describe how to retrieve deferred information.
+
+## Review before implementation
+
+The author-reviewed cases are: a single operation; a diamond dependency; a dependency cycle; a missing root; a missing required edge; an absent optional target; a blocking unknown; exact and insufficient byte budgets; Unicode; a state write with an unchanged field; an undeclared effect; and an opaque condition. Independent held-out evaluation remains future work.
+
+The conformance checks must also reject deliberately incorrect implementations: dropping a required dependency, losing an unknown, claiming the wrong specification identity, silently truncating to fit, and changing input data. These cases live outside the specification consumed by the implementation.
+
+## Human and agent interfaces
+
+One report starts with purpose and a concrete scenario, then shows rules/outcomes, then implementation and evidence. The graph is a generated relationship view. It does not replace the conditions and guarantees. The agent gets the same rules as self-contained JSON or deterministic readable text; the HTML is a human view.
+
+The legacy v0.2 adapter resolves assertion text without inventing formal predicates. Its prose remains explicitly unformalized. The Hono observed specification provides a separately authored typed response-selection slice with source links. Existing engineer and overview reports remain historical source-backed views.
+
+## Scope
+
+Implement the typed kernel, scenario checker, required-context closure, readable projections, CLI, Clearings specification/demo, and Hono response-selection example. Do not add a solver, hosted service, provider SDK, universal source-to-specification conversion, or automatic requirement acceptance. Formal proof, concurrency model checking, source equivalence, and fresh-agent performance evaluation are not established by this bootstrap.
+</code></pre></details></section>
+<details><summary>Package identity and omissions</summary><p>specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853</p><p>27276 UTF-8 bytes in the canonical JSON package. HTML has a different size.</p><pre tabindex="0" aria-label="Context omissions"><code>{
+  &quot;deferred_dependencies&quot;: [
+    {
+      &quot;available&quot;: false,
+      &quot;from_id&quot;: &quot;assemble-context&quot;,
+      &quot;role&quot;: &quot;Show the same package to a person in reading order.&quot;,
+      &quot;to_id&quot;: &quot;render-context&quot;
+    }
+  ],
+  &quot;operation_ids&quot;: []
+}</code></pre><p>Use inspect on this exact specification with --operation &lt;id&gt;. Source text is attached and hashed; hashes establish content integrity, not source authenticity. Dependencies describe declared relationships, not an observed execution trace.</p></details><p class="status">Scenario checks evaluate supplied observations. They do not prove the implementation or authenticate requirements.</p></main></body></html>

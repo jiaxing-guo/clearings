@@ -21,7 +21,8 @@
     "./schemas/semantic": "./schemas/semantic.v0.1.json",
     "./schemas/presentation": "./schemas/presentation.v0.1.json",
     "./schemas/contracts": "./schemas/semantic.v0.2.json",
-    "./schemas/contract-presentation": "./schemas/presentation.v0.2.json"
+    "./schemas/contract-presentation": "./schemas/presentation.v0.2.json",
+    "./schemas/specification": "./schemas/specification.v0.3.json"
   },
   "files": [
     "dist",
@@ -36,7 +37,8 @@
     "demo:build": "npm run build && node scripts/build-shared-demo.mjs",
     "docs:dev": "npm --prefix website run dev",
     "docs:build": "node scripts/prepare-docs.mjs && npm --prefix website run build",
-    "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs"
+    "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs",
+    "bootstrap:demo": "npm run build && node scripts/build-bootstrap-demo.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",
