@@ -34,7 +34,7 @@ export function specificationCommand(command: string, positionals: string[], val
       text = JSON.stringify(result, null, 2) + '\n';
       if (result.verdict !== 'pass') process.exitCode = result.verdict === 'fail' ? 1 : 3;
     } else {
-      const pack = assembleContext(spec, operation, { maxBytes: values['max-bytes'] === undefined ? 131072 : Number(values['max-bytes']) });
+      const pack = assembleContext(spec, operation, { maxBytes: values['max-bytes'] === undefined ? (command === 'inspect' ? 2097152 : 131072) : Number(values['max-bytes']) });
       text = format === 'json' ? serializeOperationContext(pack) : renderOperationContext(pack, { format: format === 'html' ? 'html' : 'markdown' });
     }
   }

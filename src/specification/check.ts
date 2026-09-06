@@ -30,6 +30,11 @@ export function checkOperation(spec: SemanticSpecification, selection: string, o
   if (observation.output !== undefined && !matchesType(observation.output, operation.output)) throw new ClearingsError('INVALID_OBSERVATION', 'Output does not match the operation output type.');
   if (observation.effects !== undefined && (!Array.isArray(observation.effects) || observation.effects.some(item => typeof item !== 'string'))) throw new ClearingsError('INVALID_OBSERVATION', 'Effects must be an explicit list of effect IDs.');
   const environment = { input: observation.input, before: observation.before, ...(observation.after === undefined ? {} : { after: observation.after }), ...(observation.output === undefined ? {} : { output: observation.output }) };
+  // Operation guarantees apply even when the observed outcome is unknown.
+  for (const rule of operation.guarantees) {
+    const value = evaluateExpression(rule.predicate, environment);
+    add(rule.id, rule.description, !value.known ? 'unknown' : value.value === true ? 'pass' : 'fail', value.known ? null : value.reason);
+  }
   const applicable: string[] = [], uncertain: string[] = [];
   const guards = new Map(operation.outcomes.map(outcome => {
     const value = evaluateExpression(outcome.when, environment);
@@ -45,7 +50,7 @@ export function checkOperation(spec: SemanticSpecification, selection: string, o
     const guard = guards.get(outcome.id)!;
     add('outcome-condition', outcome.description, !guard.known ? 'unknown' : guard.value === true ? 'pass' : 'fail', guard.known ? null : guard.reason);
     if (operation.outcome_policy === 'exclusive' && uncertain.some(id => id !== outcome.id)) add('outcome-exclusivity', 'Other exclusive guards are false.', 'unknown', 'Another outcome condition is unformalized or lacks observations.');
-    for (const rule of [...operation.guarantees, ...outcome.ensures]) {
+    for (const rule of outcome.ensures) {
       const value = evaluateExpression(rule.predicate, environment);
       add(rule.id, rule.description, !value.known ? 'unknown' : value.value === true ? 'pass' : 'fail', value.known ? null : value.reason);
     }

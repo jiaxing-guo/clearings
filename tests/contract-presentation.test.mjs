@@ -8,6 +8,32 @@ const plan=alias=>read(`../benchmarks/presentations/hono-contracts/${alias}.json
 const anchor=id=>id.replace(':','-');
 const decode=text=>text.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');
 
+test('walkthrough source follows the selected assertion, including evidence outside the callable',()=>{
+ const fn=model.data.proposal.data.functions.find(f=>f.alias==='promise-catch');
+ const behavior=model.data.proposal.data.behaviors.find(b=>b.function_ids.includes(fn.id));
+ const options={behavior:behavior.id,functionId:fn.id};
+ const view=createSemanticWalkthrough(model,options);
+ assert.deepEqual(view.sources.map(e=>e.id),view.claim.evidence_ids);
+ assert.equal(view.source.start_line,401);
+ const callable=model.data.request.data.callables.find(c=>c.id===fn.implementation_id);
+ assert.notEqual(view.source.id,callable.evidence_id);
+ for(const source of view.sources) {
+  assert(renderSemanticWalkthrough(model,options).includes(source.text));
+  assert(decode(renderSemanticWalkthrough(model,{...options,format:'html'})).includes(source.text));
+ }
+});
+
+test('walkthrough state inspections come only from the chosen function',()=>{
+ const view=createSemanticWalkthrough(model,{behavior:'middleware-progression'});
+ assert.equal(view.function.alias,'compose-factory');
+ assert.deepEqual(view.function.state_access,[]);
+ assert(view.behavior.state_ids.length>0);
+ assert(!view.queries.slice(2).some(q=>q.root_ids.some(id=>view.behavior.state_ids.includes(id))));
+ const getter=model.data.proposal.data.functions.find(f=>f.alias==='context-res-getter');
+ const getterView=createSemanticWalkthrough(model,{behavior:'response-selection',functionId:getter.id});
+ assert(getterView.queries.some(q=>q.root_ids.includes(getter.state_access[0].state_id)));
+});
+
 test('contract reports retain model identity, canonical fields, source fidelity, and every link in both audience formats',()=>{
  const before=JSON.stringify(model);const union=new Set();
  for(const alias of ['request-dispatch','middleware-composition']) {

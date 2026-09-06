@@ -131,6 +131,35 @@ test('scenario checking catches state/frame violations and effects; absent obser
   assert.throws(() => checkOperation(spec, 'store', { ...observation, input: { value: '8', fail: false } }), { code: 'INVALID_OBSERVATION' });
 });
 
+test('operation guarantees run without an outcome and retain failures alongside unknowns', () => {
+  const observation={input:{},before:{'response-present':false,finalized:false},after:{'response-present':true,finalized:true}};
+  const failed=checkOperation(hono,'read-response',observation);
+  assert.equal(failed.verdict,'fail');
+  assert(failed.checks.some(item=>item.id==='observed-outcome'&&item.verdict==='unknown'));
+  const guarantees=hono.operations.find(op=>op.id==='read-response').guarantees;
+  assert(guarantees.some(rule=>failed.checks.some(item=>item.id===rule.id&&item.verdict==='fail')));
+  observation.after.finalized=false;
+  const incomplete=checkOperation(hono,'read-response',observation);
+  assert.equal(incomplete.verdict,'unknown');
+  for(const rule of guarantees) assert.equal(incomplete.checks.find(item=>item.id===rule.id).verdict,'pass');
+  delete observation.after;
+  assert.equal(checkOperation(hono,'read-response',observation).verdict,'unknown');
+});
+
+test('CLI selected inspection accepts a valid operation above 128 KiB and enforces the supported maximum', t => {
+  const directory=mkdtempSync(join(tmpdir(),'clearings-inspect-'));t.after(()=>rmSync(directory,{recursive:true,force:true}));
+  const spec=graph([operation('large')]);spec.operations[0].purpose='x'.repeat(150000);
+  const path=join(directory,'spec.json');writeFileSync(path,JSON.stringify(sealSpecification(spec)));
+  const cli=new URL('../dist/cli/main.js',import.meta.url).pathname;
+  const run=(...args)=>spawnSync(process.execPath,[cli,...args],{encoding:'utf8',maxBuffer:8388608});
+  const inspection=run('inspect',path,'--operation','large');
+  assert.equal(inspection.status,0,inspection.stderr);
+  assert.equal(JSON.parse(inspection.stdout).operations[0].purpose.length,150000);
+  assert.equal(run('context',path,'--operation','large').status,2);
+  spec.operations[0].purpose='x'.repeat(2097152);writeFileSync(path,JSON.stringify(sealSpecification(spec)));
+  assert.equal(run('inspect',path,'--operation','large').status,2);
+});
+
 test('exclusive overlap and unformalized alternatives cannot produce a clean check', () => {
   const spec = graph([operation('choose')]);
   spec.operations[0].outcomes.push({ ...structuredClone(spec.operations[0].outcomes[0]), id: 'other' });

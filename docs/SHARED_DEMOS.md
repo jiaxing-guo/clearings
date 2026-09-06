@@ -62,3 +62,9 @@ The README now starts with purpose and a runnable inspection. CONTRIBUTING.md co
 - Package inspection excludes the website and benchmark assets and includes the new presentation schema.
 
 Browser policy blocked local preview earlier in this session. No alternate browser route was used. Desktop/mobile interaction, focus behavior, and reader comprehension still need review. Static checks do not establish those results. Independent claim-support review remains pending. The prototype is technically integrated and reviewable; stronger reliability and coding-benefit claims remain outside this result.
+
+## Review fixes
+
+The documentation development command now prepares demo assets before starting the server. Download archives are checked for exact membership and content before they enter the site, and the exported copy is checked again. The walkthrough selects evidence from the chosen assertion and state from the chosen function. Source replay retains all 11 excerpts, leaves the target unchanged, and preserves the eight accepted reports. Typecheck and all 61 library tests pass.
+
+The static documentation build passes. The exported site check covers 22 HTML pages, 2,113 links, and three local search queries. It also verifies the downloadable archive and finds no external assets.

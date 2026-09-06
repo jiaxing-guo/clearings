@@ -87,7 +87,7 @@ The budget is compact UTF-8 JSON plus one newline, including the byte counters. 
 
 `validateOperationContext` reconstructs a received package from its exact specification. It rejects stale identity, altered meaning, missing rules, changed source, forged review status, and incorrect accounting. Checking an artifact ID alone is insufficient.
 
-`inspect` lists operations or returns a selected package. `context` exports a package. Both support JSON, Markdown, and HTML for selected operations. `explain` defaults to Markdown. `check` requires JSON observations. CLI `--out` requires `--repository` to protect source paths. This path does not authenticate specification source; legacy `--scan` options are rejected for v0.3.
+`inspect` lists operations or returns a selected package. `context` exports a package. Both support JSON, Markdown, and HTML for selected operations. Selected `inspect` uses the 2 MiB maximum; `context` and `explain` default to 128 KiB and accept `--max-bytes`. `explain` defaults to Markdown. `check` requires JSON observations. CLI `--out` requires `--repository` to protect source paths. This path does not authenticate specification source; legacy `--scan` options are rejected for v0.3.
 
 ## Self-development experiment
 
@@ -116,3 +116,9 @@ The separate [Luna experiment](../benchmarks/agent-runs/luna-impact-001/REPORT.m
 The result supports feasibility for this bounded task. It does not establish an advantage over ordinary instructions: the agent read prose and source, eight rule records remained opaque, and the typed checker returned unknown. The captured candidate stays outside production source. See the report for the weak agent-authored checks, observation-adapter limits, and exact frozen inputs.
 
 The next gate is review of the current design and evidence. Further self-use should test state changes and failure handling with a matched prose-only comparison. Automatic requirement interviews, arbitrary code generation, source-to-specification inference, general behavior equivalence, and formal proof remain future work.
+
+## Review corrections
+
+Operation guarantees are checked even when the observation omits its outcome. Missing values still return unknown; a known guarantee violation returns fail. Selected inspection uses the supported 2 MiB limit. Both demo archives are verified before the site copies them and after static export. Legacy walkthrough evidence follows the selected assertion, and state inspection follows the selected function. The accepted audience reports and semantic model remain unchanged.
+
+Verification after these corrections: typecheck and all 78 library tests pass. Both rebuilt archives pass exact-content checks. The documentation build and static checks pass for 27 HTML pages, 2,292 links, and three local search queries. Browser interaction was not run.

@@ -389,12 +389,6 @@ Operation: `read-response`. Scenario check: **pass**.
     "uncertain_outcome_ids": [],
     "checks": [
       {
-        "id": "outcome-condition",
-        "description": "Initialize response storage and return it.",
-        "verdict": "pass",
-        "reason": null
-      },
-      {
         "id": "rule:get-finalized",
         "description": "The getter leaves finalized unchanged.",
         "verdict": "pass",
@@ -403,6 +397,12 @@ Operation: `read-response`. Scenario check: **pass**.
       {
         "id": "rule:get-storage",
         "description": "Successful reading leaves response storage present.",
+        "verdict": "pass",
+        "reason": null
+      },
+      {
+        "id": "outcome-condition",
+        "description": "Initialize response storage and return it.",
         "verdict": "pass",
         "reason": null
       },

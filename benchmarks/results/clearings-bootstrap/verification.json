@@ -37,7 +37,7 @@
     },
     "hono.scenarios.json": {
       "bytes": 15796,
-      "sha256": "e62862c104a19e58544be20563024d2637f163809732e63de9fc886c965707ac"
+      "sha256": "50ac3ea59b3c08d70748cb2e3ab2b4458c13025ce5f7f2f93216d361d9889416"
     },
     "counterexamples.json": {
       "bytes": 36822,
@@ -57,11 +57,11 @@
     },
     "hono.html": {
       "bytes": 97475,
-      "sha256": "3b9c0155163fb7adfa6144a85a00f446edffc8e761ba2c5b213f001e1c3d3d72"
+      "sha256": "0850747c2f94736b90c6ada92c3e11d50dc434f83436376c0b9fa6d3427981cd"
     },
     "hono.md": {
       "bytes": 64854,
-      "sha256": "0cff82a4699ff2bd9853ae834caa2236391394d0730f1c13f8c38f57c9476827"
+      "sha256": "dab707a924ecf11b59eb8c97f624a153d0f80a25412670c8852704825d97db9e"
     },
     "LICENSE-HONO": {
       "bytes": 1101,

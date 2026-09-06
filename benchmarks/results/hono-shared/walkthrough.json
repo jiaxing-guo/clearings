@@ -3131,6 +3131,26 @@
     "start_line": 403,
     "text": "get res(): Response {\n    return (this.#res ||= createResponseInstance(null, {\n      headers: (this.#preparedHeaders ??= new Headers()),\n    }))\n  }"
   },
+  "sources": [
+    {
+      "blob_sha": "d611cc504c7eaa59cc273daccafd1e3d56066a7a",
+      "content_sha256": "4616c1c5e41e7b4ba8a8f87251a23274016696dd49a9a8426df26b85141fa3ff",
+      "end_byte": 12262,
+      "end_column": 4,
+      "end_line": 407,
+      "file_id": "file:0a16cc861a9ee87f2f36b51db5ff15717100e38ab9fcbfcec0251d985ae2065f",
+      "id": "evidence:efdc8a49582842d74bb72cf074179c4f18d4dc3a0f2d25c8ab366eb8630282b1",
+      "method": "typescript-syntax",
+      "path": "src/context.ts",
+      "project_id": "project:4cbbce55e903dac2d8ebe5e63fb0f6253894b887c155a411a28ed1e1f8d6096a",
+      "snapshot_id": "sha256:830729e39b7bcef4322bb641057509cc302f2ab598f998f37c370bc883f14eb9",
+      "span_sha256": "99da45abc749d1f6dcf325ab9bcd4882ed5f6ef8831e0c1cd21f3188ab9517e6",
+      "start_byte": 12114,
+      "start_column": 3,
+      "start_line": 403,
+      "text": "get res(): Response {\n    return (this.#res ||= createResponseInstance(null, {\n      headers: (this.#preparedHeaders ??= new Headers()),\n    }))\n  }"
+    }
+  ],
   "checks": {
     "acceptance": "proposed",
     "claim_support": "not-reviewed",
