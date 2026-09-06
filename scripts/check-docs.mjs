@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
 import { parse } from '../website/node_modules/parse5/dist/index.js';
+import { execFileSync } from 'node:child_process';
 import { staticClient } from '../website/node_modules/fumadocs-core/dist/search/client/orama-static.js';
 const root=resolve('website/out');
+execFileSync('python',['scripts/check-review-archive.py',join(root,'demo')],{stdio:'inherit'});
 const files=[];
 function walk(dir) {for(const entry of readdirSync(dir,{withFileTypes:true})) {const p=join(dir,entry.name);if(entry.isDirectory())walk(p);else files.push(p);}}
 walk(root);

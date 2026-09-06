@@ -384,7 +384,7 @@ node dist/cli/main.js context semantic.json --behavior 'behavior:252223db-4880-4
 
 ## Exact source
 
-src/context\.ts:403–407. Attached excerpt; it can include surrounding code.
+src/context\.ts:403–407. Evidence cited by the selected assertion; the excerpt can include surrounding code.
 
 ```typescript
 get res(): Response {

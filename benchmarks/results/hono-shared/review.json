@@ -92,16 +92,16 @@
       "sha256": "21536917c8a5b16e4ad3ddbb3e3339117430ded13740934844df3dd43ff28865"
     },
     "walkthrough.json": {
-      "bytes": 259077,
-      "sha256": "ed693a64639eab67ea41f059ed2924732b67a1089d1d3e8bfeeba124214f5807"
+      "bytes": 260109,
+      "sha256": "d066b0dd7eab7ad37af2092c74975dd577e11ba1fb5b2cdc636fbb7c34e5f564"
     },
     "internal.html": {
-      "bytes": 33175,
-      "sha256": "c1744e8a52b8253e5e17096adeb62cf2cc8b9b3ab077659e7ae930248e462f41"
+      "bytes": 33177,
+      "sha256": "457d61c506c7de27dbb34c66b44a7532946351d03df353e44d8b37341ecc2042"
     },
     "internal.md": {
-      "bytes": 17460,
-      "sha256": "783367cf0915fce0b5221161320a49ebb6ec1ec80a18b0f65425973c15cd599a"
+      "bytes": 17493,
+      "sha256": "9cc4e5a11204085917d143005c16fe574921660316934d723fe6655ec4343be2"
     },
     "agent/answers.json": {
       "bytes": 10353,

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 const root=fileURLToPath(new URL('../',import.meta.url));
 execFileSync(process.execPath,['scripts/check-shared-demo.mjs','benchmarks/results/hono-shared'],{cwd:root,stdio:'inherit'});
+execFileSync('python',['scripts/check-review-archive.py','benchmarks/results/hono-shared'],{cwd:root,stdio:'inherit'});
 const source=new URL('../benchmarks/results/hono-shared/',import.meta.url);
 const destination=new URL('../website/public/demo/',import.meta.url);
 rmSync(destination,{recursive:true,force:true});
