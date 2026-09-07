@@ -17,6 +17,8 @@ Use Conventional Commits, such as `fix: preserve a response failure boundary`. P
 
 ## Work on documentation
 
+Archive verification needs Python 3.9 or newer, available as `python3`. The build checks this prerequisite and reports a clear error if it is missing. The library tests for report archives use the same command.
+
 ```bash
 npm ci --prefix website --ignore-scripts
 npm run docs:build

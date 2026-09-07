@@ -66,7 +66,7 @@ npm run docs:build
 npm run docs:check
 ```
 
-The static output is in `website/out`. The default base path is `/clearings-semantic` for a future GitHub Pages project site. Set `DOCS_BASE_PATH=''` for a root-path build. Search uses a local static index. CI, serving, and public access are deferred; no hosted documentation URL is claimed.
+Documentation commands require Python 3.9 or newer, available as `python3`, to verify the demo archives. The static output is in `website/out`. The default base path is `/clearings-semantic` for a future GitHub Pages project site. Set `DOCS_BASE_PATH=''` for a root-path build. Search uses a local static index. CI, serving, and public access are deferred; no hosted documentation URL is claimed.
 
 ## Contribute
 
@@ -76,5 +76,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, focused changes, documentatio
 npm run typecheck
 npm test
 ```
+
+The archive tests require Python 3.9 or newer under the `python3` command.
 
 The [active plan](docs/PROTOTYPE_PLAN.md) records scope and remaining work. Historical artifacts and their replay stay available. Distributed Hono excerpts include the upstream [MIT notice](benchmarks/results/hono-shared/LICENSE-HONO).

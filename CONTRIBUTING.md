@@ -14,7 +14,7 @@ For a sensitive finding, use an access-controlled discussion with the repository
 
 ## Set up the library
 
-Use Node.js 24, npm 11, and Git 2.51 or later on Linux or macOS. Linux is the current verification environment. Windows support is pending.
+Use Node.js 24, npm 11, and Git 2.51 or later on Linux or macOS. Linux is the current verification environment. Windows support is pending. Archive tests and documentation commands also require Python 3.9 or newer, available as `python3`.
 
 ```bash
 npm ci --ignore-scripts
@@ -61,7 +61,7 @@ Also check missing behavior. Individually correct claims can still omit a conseq
 npm run benchmark:fetch
 node scripts/replay-contracts.mjs benchmark-checkouts/hono.git benchmarks/results/local/my-contracts
 node scripts/build-shared-demo.mjs benchmark-checkouts/hono.git benchmarks/results/local/my-contracts benchmarks/results/local/my-demo
-python scripts/package-shared-demo.py benchmarks/results/local/my-demo
+python3 scripts/package-shared-demo.py benchmarks/results/local/my-demo
 node scripts/check-shared-demo.mjs benchmarks/results/local/my-demo
 ```
 
