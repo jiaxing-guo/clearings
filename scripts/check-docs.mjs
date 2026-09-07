@@ -62,4 +62,4 @@ try {
 const model=JSON.parse(readFileSync(join(root,'demo/semantic.json')));
 assert.equal(model.artifact_id,JSON.parse(readFileSync('benchmarks/results/hono-contracts/semantic.json')).artifact_id);
 assert(!files.some(f=>f.endsWith('.php')||f.endsWith('.node')));
-console.log(JSON.stringify({static_html_pages:files.filter(f=>f.endsWith('.html')).length,links_checked:links,base_path:base,static_search_queries:3,demo_artifact:model.artifact_id,external_assets:0,browser_check:'not run; static checks only'}));
+console.log(JSON.stringify({static_html_pages:files.filter(f=>f.endsWith('.html')).length,links_checked:links,base_path:base,static_search_queries:3,demo_artifact:model.artifact_id,external_html_asset_references:0,asset_check_scope:'HTML src and stylesheet/preload/modulepreload href; CSS and JavaScript references are not inspected',browser_check:'not run; static checks only'}));
