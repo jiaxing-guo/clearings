@@ -24,7 +24,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser. The command
 
 Both `npm run docs:dev` from the repository root and `npm run dev` from `website/` use the same preparation and watch workflow. The default local base path is empty. If port 3000 is occupied, use `npm run docs:dev -- --port 3001` and open [http://localhost:3001](http://localhost:3001). The terminal reports the actual address. Stop the server with Ctrl+C.
 
-Restart after changing the library, specification fixtures, or asset-generation scripts. Those inputs are prepared at startup; the watcher covers the canonical Markdown reference. If you set `DOCS_BASE_PATH` explicitly, include that prefix in the browser URL. The startup output prints the effective documentation path. If `/` and `/docs/` return 404, check this prefix; for `DOCS_BASE_PATH=/clearings-semantic`, the documentation is at `/clearings-semantic/docs/`. To force root-path development, stop the server and run `DOCS_BASE_PATH='' npm run docs:dev` from the repository root.
+Restart after changing the library, specification fixtures, or asset-generation scripts. Those inputs are prepared at startup; the watcher covers the canonical Markdown reference. If you set `DOCS_BASE_PATH` explicitly, include that prefix in the browser URL. The startup output prints the effective documentation path. If `/` and `/docs/` return 404, check this prefix; for `DOCS_BASE_PATH=/clearings`, the documentation is at `/clearings/docs/`. To force root-path development, stop the server and run `DOCS_BASE_PATH='' npm run docs:dev` from the repository root.
 
 ## Page conventions
 
@@ -74,7 +74,7 @@ The build runs [the technical documentation generator](../../scripts/prepare-tec
 
 The generated `technical-reference.json` records source paths, content digests, and routes. The static checker verifies those digests, rendered page titles, local links and fragments, assets, and search results. This detects stale generated documentation as well as broken navigation.
 
-The default production base path is `/clearings-semantic`; local development defaults to the root path. Set `DOCS_BASE_PATH=''` for a root deployment, and use the same value for `docs:build` and `docs:check`.
+The default production base path is `/clearings`; local development defaults to the root path. Set `DOCS_BASE_PATH=''` for a root deployment, and use the same value for `docs:build` and `docs:check`.
 
 For a runtime semantics change, also run relevant library tests and typecheck.
 

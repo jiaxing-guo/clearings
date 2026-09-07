@@ -47,7 +47,7 @@ The result is `pass` with explicit partial-model limitations. Replacing `output`
 
 ## 4. Reproduce all three cases
 
-The documentation checker runs the following trusted JavaScript block from the repository root after building the library. It verifies the distinct outcomes and the exact context serialization size. Package consumers can replace `./dist/index.js` with `clearings-semantic`.
+The documentation checker runs the following trusted JavaScript block from the repository root after building the library. It verifies the distinct outcomes and the exact context serialization size. Package consumers can replace `./dist/index.js` with `clearings`.
 
 ```js runnable
 import assert from 'node:assert/strict';

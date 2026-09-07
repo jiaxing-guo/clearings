@@ -80,7 +80,7 @@ npm run docs:build
 npm run docs:check
 ```
 
-Output is written to `website/out`. Production builds default to `/clearings-semantic`; local development defaults to `/`. Set `DOCS_BASE_PATH=''` for a root production export and use the same value for `docs:check`. [Documentation maintenance](docs/05-development/02-documentation.md) describes the authoring conventions, watcher scope, and verification checks. Public hosting, CI, and package publication remain separate scope decisions.
+Output is written to `website/out`. Production builds default to `/clearings`; local development defaults to `/`. Set `DOCS_BASE_PATH=''` for a root production export and use the same value for `docs:check`. [Documentation maintenance](docs/05-development/02-documentation.md) describes the authoring conventions, watcher scope, and verification checks. Public hosting, CI, and package publication remain separate scope decisions.
 
 ## Contribute
 

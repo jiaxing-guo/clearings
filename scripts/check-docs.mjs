@@ -14,7 +14,7 @@ function walk(dir) {for(const entry of readdirSync(dir,{withFileTypes:true})) {c
 walk(root);
 const home=readFileSync(join(root,'index.html'),'utf8');
 const base=(home.match(/(?:src|href)="([^"?]*)\/_next\//)?.[1]) ?? '';
-const expected=process.env.DOCS_BASE_PATH ?? '/clearings-semantic';
+const expected=process.env.DOCS_BASE_PATH ?? '/clearings';
 assert.equal(base,expected,'Built base path differs. Set DOCS_BASE_PATH for a custom export check.');
 const parsed=new Map();
 function tree(file) {

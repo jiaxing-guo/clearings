@@ -1,6 +1,6 @@
 # API and CLI reference
 
-The library returns objects or text and leaves ordinary file I/O to the caller. Build the repository with `npm run build`; its local ESM entry is `dist/index.js`. Package consumers use `clearings-semantic`. [src/index.ts](../../src/index.ts) is the authoritative export list.
+The library returns objects or text and leaves ordinary file I/O to the caller. Build the repository with `npm run build`; its local ESM entry is `dist/index.js`. Package consumers use `clearings`. [src/index.ts](../../src/index.ts) is the authoritative export list.
 
 ## Check one observation
 
@@ -90,4 +90,4 @@ Use `node dist/cli/main.js --help` for the complete flag inventory. The archived
 
 ## Schema exports
 
-The package subpaths are `/schemas/inventory`, `/schemas/scan`, `/schemas/semantic` (v0.1), `/schemas/presentation` (v0.1), `/schemas/contracts` (v0.2), `/schemas/contract-presentation` (v0.2), and `/schemas/specification` (v0.3). Each is prefixed by `clearings-semantic`. See [package.json](../../package.json) for exact files.
+The package subpaths are `/schemas/inventory`, `/schemas/scan`, `/schemas/semantic` (v0.1), `/schemas/presentation` (v0.1), `/schemas/contracts` (v0.2), `/schemas/contract-presentation` (v0.2), and `/schemas/specification` (v0.3). Each is prefixed by `clearings`. See [package.json](../../package.json) for exact files.
