@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Documentation writing approach
 
 The documentation separates the first successful task, task guides, concepts, and exact references. The README introduces the purpose and one short example, then links to detail. The contribution guide explains actionable project practices without inventing public services or review deadlines.

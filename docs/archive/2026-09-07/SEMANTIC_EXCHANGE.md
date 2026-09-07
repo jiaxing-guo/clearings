@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Semantic proposal exchange
 
 This document describes the implemented v0.1 exchange. The [active roadmap](PROTOTYPE_PLAN.md) and [next task](NEXT_IMPLEMENTATION_TASK.md) define the remaining demo integration. The implemented v0.2 function/behavior contracts, inspection, and context export are described in [semantic contracts](SEMANTIC_CONTRACTS.md).
@@ -83,7 +85,7 @@ A source review of 53 claims is recorded separately. During review, a claim that
 
 The review was performed by the same agent that authored the response. It is not independent and has not received human adjudication. The provisional independent support gate is therefore **not established**. The evaluator script checks review coverage, binding to the exact proposal, citations, allowed assessments, and boolean review flags. It derives the support gate from all assessments and both independence and human-review declarations; a supplied gate must agree. Allowed assessments are `supported-within-cited-source`, `contradicted`, and `unknown`. The gate remains unestablished unless every claim is supported and both flags are true. These checks do not authenticate the reviewer or automatically judge claim meaning. Model claim checks remain unknown after running it. The original question rubrics were not supplied to proposal creation or replay.
 
-See [recorded measurements](../benchmarks/results/hono-semantics/summary.json), [claim review](../benchmarks/results/hono-semantics/claim-review.json), and the generated [dispatch](../benchmarks/results/hono-semantics/request-dispatch.md) and [composition](../benchmarks/results/hono-semantics/middleware-composition.md) pages. Upstream source excerpts retain the Hono MIT notice.
+See [recorded measurements](../../../benchmarks/results/hono-semantics/summary.json), [claim review](../../../benchmarks/results/hono-semantics/claim-review.json), and the generated [dispatch](../../../benchmarks/results/hono-semantics/request-dispatch.md) and [composition](../../../benchmarks/results/hono-semantics/middleware-composition.md) pages. Upstream source excerpts retain the Hono MIT notice.
 
 ## Verification and remaining work
 

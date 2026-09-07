@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # M1 structural extraction handoff
 
 M1 implements immutable source access, compiler-backed structural facts, inspectable evidence, and a source-only CLI. The subsequent semantic exchange and two capability pages are documented in [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md); this file records the structural handoff.
@@ -53,7 +55,7 @@ node scripts/evaluate-m1.mjs benchmarks/results/local/hono-scan.json benchmark-c
 node scripts/measure-m1.mjs benchmark-checkouts/hono.git benchmarks/results/local/hono-m1-run
 ```
 
-Fetch and output destinations must be new. Reuse an already verified bare checkout by skipping fetch. The [recorded summary](../benchmarks/results/hono-m1/summary.json) contains exact run timings and artifact hashes; the [source-review result](../benchmarks/results/hono-m1/reference-review.json) records each example. Raw benchmark runs are ignored and regenerated locally. The [computed fixture scan](../benchmarks/results/fixtures/m1-direct.scan.json) contains sample manifest, projects, facts, evidence, and coverage in one validated envelope. The README gives fixture setup and library usage.
+Fetch and output destinations must be new. Reuse an already verified bare checkout by skipping fetch. The [recorded summary](../../../benchmarks/results/hono-m1/summary.json) contains exact run timings and artifact hashes; the [source-review result](../../../benchmarks/results/hono-m1/reference-review.json) records each example. Raw benchmark runs are ignored and regenerated locally. The [computed fixture scan](../../../benchmarks/results/fixtures/m1-direct.scan.json) contains sample manifest, projects, facts, evidence, and coverage in one validated envelope. The README gives fixture setup and library usage.
 
 ## Limits and follow-up issues
 

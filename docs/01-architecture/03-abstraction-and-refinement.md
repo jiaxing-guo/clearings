@@ -1,0 +1,56 @@
+# Abstraction and refinement
+
+This page defines the terminology used to relate contracts to implementations. The abstraction mapping and refinement relation below are design concepts. They are not new v0.3 schema fields or implemented proof procedures.
+
+## Abstract domains
+
+A contract may represent only the distinctions relevant to a particular behavior. The Hono response-selection model classifies results as `truthy`, `non-nullish-falsy`, or `nullish`. It records whether a response is present and whether the context is finalized, without representing every HTTP header or response byte.
+
+This abstraction permits useful local reasoning. It also limits which implementation properties can be inferred. Equality of the modeled state does not imply equality of all concrete program state.
+
+| Concrete behavior | Existing abstract representation | Boundary |
+| --- | --- | --- |
+| A direct result is `null` or `undefined` | `path: direct`, `value: nullish` | Both values belong to one category |
+| A Promise resolves to `0` | `path: promise`, `value: non-nullish-falsy` | Classification occurs outside the checker |
+| Response storage is initialized by the getter | `response-present` changes to `true` | The concrete response object is omitted |
+| A setter successfully assigns `undefined` | Output label `stored`; storage absent; finalized true | `stored` is a model label, not a TypeScript return value |
+| A header merge throws | Output label `propagated-error` | Unmodeled intermediate header mutations remain unconstrained |
+
+These mappings summarize the [authored Hono slice](../../specifications/hono/response-selection.json). They do not establish source conformance. The `path` field represents a branch already classified by the observer; the specification does not classify arbitrary thenables.
+
+## Observation adapters
+
+An observation adapter translates a concrete execution or test fixture into `OperationObservation`. For a reproducible evaluation, its documentation should identify:
+
+1. The concrete API, source revision, and modeled operation.
+2. The classification of concrete inputs, returns, and exceptions.
+3. The concrete storage instance represented by each state ID.
+4. The measurement points for `before` and `after`.
+5. How effect IDs are captured, and which effects are unobserved.
+6. Which values are independently measured, manually supplied, or derived from the candidate under test.
+
+This is an adapter review convention, not a serialized binding format. `ImplementationRole` records a responsibility and optional symbol/evidence links; it does not encode an executable adapter. `SpecificationSource.binding` records provenance identity, not an abstraction function.
+
+## Refinement
+
+Let `B(P)` denote the concrete behaviors of an implementation `P` within the stated environment and preconditions. Let `A(S)` denote the behaviors permitted by a specification `S`. Given an abstraction mapping `alpha`, the intended refinement obligation is:
+
+```text
+alpha(B(P)) is a subset of A(S)
+```
+
+The environment, observable state/effects, exceptional behavior, and termination assumptions must be stated before this relation is useful. Partial boundaries constrain only the modeled projection. This notation describes a design obligation; Clearings does not compute either behavior set or prove the inclusion.
+
+`checkOperation(S, operation, observation)` evaluates one supplied observation. A passing result is evidence about that observation and those predicates. It does not establish universal refinement. An observation copied from candidate verdicts can test result aggregation while leaving the truth of those verdicts unchecked.
+
+## Proposed abstraction levels
+
+| Proposed level | Responsibility | Existing basis |
+| --- | --- | --- |
+| Behavior specification | External capabilities, outcomes, invariants, failure policies | Legacy capability and behavior records |
+| Operation contract IR | Typed interfaces, guards, postconditions, state, effects | Current v0.3 model |
+| Implementation IR | Concrete representations, algorithms, calls, control flow, target bindings | Not defined |
+
+Contract-to-implementation conversion is synthesis and refinement: multiple algorithms may satisfy the same contract. Once implementation choices are explicit, a later source-emission step can be deterministic. A report, larger context package, or additional schema version alone does not create a new abstraction level.
+
+Introduce an implementation IR only with a concrete consumer, defined operations and invariants, a transformation contract, and independent validation of the transformation. Do not treat prose-linked historical models as automatically formalized lower or higher levels.

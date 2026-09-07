@@ -34,8 +34,8 @@ starter_files=(
   README.md
   AGENTS.md
   .gitignore
-  docs/PROTOTYPE_PLAN.md
-  docs/FIRST_IMPLEMENTATION_TASK.md
+  docs/archive/2026-09-07/PROTOTYPE_PLAN.md
+  docs/archive/2026-09-07/FIRST_IMPLEMENTATION_TASK.md
   benchmarks/targets/hono.json
   benchmarks/questions/hono.json
   scripts/create-private-repo.sh

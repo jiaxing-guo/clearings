@@ -28,7 +28,7 @@ Export the rules for an agent:
 node dist/cli/main.js context specifications/hono/response-selection.json --operation response-selection --max-bytes 131072
 ```
 
-The pack retains each required operation, its conditions, decisions, and source. Its byte count covers exact compact JSON plus its final newline. Read [typed specifications](docs/TYPED_SPECIFICATIONS.md) to check a concrete case or use the API.
+The pack retains each required operation, its conditions, decisions, and source. Its byte count covers exact compact JSON plus its final newline. Read [the typed specification guide](docs/04-guides/01-check-a-case.md) to check a concrete case or use the API.
 
 Clearings also has a proposed specification for its own context assembler. [Review the self-use demo](benchmarks/results/clearings-bootstrap/README.md) or download [its review package](benchmarks/results/clearings-bootstrap/clearings-specification-review.zip). Intended requirements and observed source behavior remain separate artifacts.
 
@@ -60,7 +60,9 @@ The library has no built-in model endpoint. Scans read immutable Git objects; th
 
 ## Documentation
 
-The documentation uses Fumadocs and Next.js static export. It includes guides, concepts, API and CLI references, and the three demos.
+Start with the [Markdown technical reference](docs/README.md) for architecture, representation definitions, operational semantics, abstraction mappings, and validation limits. The numbered directories define the reading order. Run `npm run docs:check:markdown` to verify local links and executable examples. Fumadocs integration of this reference is deferred.
+
+The existing website uses Fumadocs and Next.js static export. It retains the earlier guides, references, and three demos. Its separate build commands are:
 
 ```bash
 npm ci --prefix website --ignore-scripts
@@ -81,4 +83,4 @@ npm test
 
 The archive tests require Python 3.9 or newer under the `python3` command.
 
-The [active plan](docs/PROTOTYPE_PLAN.md) records scope and remaining work. Historical artifacts and their replay stay available. Distributed Hono excerpts include the upstream [MIT notice](benchmarks/results/hono-shared/LICENSE-HONO).
+The [status and roadmap](docs/05-development/01-status-and-roadmap.md) records scope and remaining work. Historical artifacts and their replay stay available. Distributed Hono excerpts include the upstream [MIT notice](benchmarks/results/hono-shared/LICENSE-HONO).

@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # M0 implementation handoff
 
 Historical M0 results. M1 is now implemented; see [M1_STATUS.md](M1_STATUS.md) for current structural extraction results.
@@ -29,7 +31,7 @@ The pinned Hono fetch matched commit `eebdf7be39abf0a872671835ccce0c4f03ea497a` 
 
 Node peak RSS ranged from 53.83 to 54.62 MiB. These measurements exclude Git subprocess memory. Wall time covers inventory, validation, and serialization, excluding Node startup/imports and artifact writes. Filesystem caches were not flushed. These small inventory measurements establish no M1 extraction or semantic performance claim.
 
-The [recorded summary](../benchmarks/results/hono-m0/summary.json) contains environment, sample timings, coverage, and exact artifact digests. Full locally generated manifests are deliberately ignored and regenerated with the commands in the README. The [five-file fixture sample](../benchmarks/results/fixtures/direct-calls.json) is a computed artifact that the validator can inspect without a source checkout.
+The [recorded summary](../../../benchmarks/results/hono-m0/summary.json) contains environment, sample timings, coverage, and exact artifact digests. Full locally generated manifests are deliberately ignored and regenerated with the commands in the README. The [five-file fixture sample](../../../benchmarks/results/fixtures/direct-calls.json) is a computed artifact that the validator can inspect without a source checkout.
 
 `node scripts/verify-rubrics.mjs benchmark-checkouts/hono.git` verified all 12 cited blob identities, line bounds, span hashes, and required-claim references for eight questions. It does not evaluate whether claims follow from those citations. No answer-quality score has been reported.
 

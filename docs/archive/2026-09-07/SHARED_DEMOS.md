@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Shared reports, internal walkthrough, and documentation
 
 The overview and engineer reports retain the accepted v0.2 semantic artifact. After the IR review, `internal.html` now renders a separately authored typed response slice. Its source records are compared with the checked v0.2 excerpts. `operation.context.json` is the new agent interface; `internal-legacy.html` preserves the old walkthrough. See [typed specifications](TYPED_SPECIFICATIONS.md) for the current architecture and self-development result.
@@ -18,7 +20,7 @@ All 73 assertions and 22 function contracts remain reachable across the two capa
 
 The active Codex session answered six questions from two context packs totaling 166,178 bytes. The answer phase read assertions, state-access function fields, state concepts, and unknowns. It requested no extra source. The author then reviewed the 11 supplied excerpts and made one condition exact: the composition assignment tests `finalized === false`.
 
-The [run record](../benchmarks/agent-runs/hono-comprehension/README.md) preserves inputs, initial answers, final answers, review, and hashes. Expected distinctions remain outside the input. They were written after the initial answers, so this is a post-hoc author assessment.
+The [run record](../../../benchmarks/agent-runs/hono-comprehension/README.md) preserves inputs, initial answers, final answers, review, and hashes. Expected distinctions remain outside the input. They were written after the initial answers, so this is a post-hoc author assessment.
 
 Five behavior questions are assessed as supported within scope. One expected-unknown question preserves the callback boundary. The agent already had project and source exposure and also authored the implementation. No blind, independent, efficiency, or coding-performance result is established. Exact model and token usage are unavailable.
 

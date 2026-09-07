@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Clearings prototype plan
 
 **Internal representation for AI coding**
@@ -12,9 +14,9 @@ Keep intended requirements separate from observed implementation. An interview c
 
 The first self-development slice specifies **context assembly**. The implementation now has a typed validator, closed expression interpreter, scenario checker, context assembler, package revalidation, CLI, and human view. Clearings assembles its own context specification and checks actual results against it. This is a continuing-session author bootstrap, not a fresh-agent or self-hosting compiler result.
 
-The [architecture](SPECIFICATION_ARCHITECTURE.md), [usage and limits](TYPED_SPECIFICATIONS.md), and [review bundle](../benchmarks/results/clearings-bootstrap/README.md) describe the result.
+The [architecture](../../SPECIFICATION_ARCHITECTURE.md), [usage and limits](TYPED_SPECIFICATIONS.md), and [review bundle](../../../benchmarks/results/clearings-bootstrap/README.md) describe the result.
 
-A separate [fresh Luna trial](../benchmarks/agent-runs/luna-impact-001/REPORT.md) is complete. Its first dependency-impact implementation passed 19 withheld feature tests without repairs. The typed checker still reports unknown because eight rules remain opaque. The candidate is archived outside production source. One successful task does not establish an advantage over ordinary instructions.
+A separate [fresh Luna trial](../../../benchmarks/agent-runs/luna-impact-001/REPORT.md) is complete. Its first dependency-impact implementation passed 19 withheld feature tests without repairs. The typed checker still reports unknown because eight rules remain opaque. The candidate is archived outside production source. One successful task does not establish an advantage over ordinary instructions.
 
 | Next gate | Evidence required |
 | --- | --- |
@@ -34,7 +36,7 @@ The following scope records the previous sequence. Its completion statements do 
 
 ## Latest self-development result
 
-A fresh Luna agent has added sequence checks from frozen intended requirements and current Clearings context. The first submission passed 17 withheld test groups and 81 regression/own tests. After source review, its source was integrated unchanged into the library on PR #6. The previous impact-analysis candidate remains archived outside production. See [the report](../benchmarks/agent-runs/luna-sequence-001/REPORT.md).
+A fresh Luna agent has added sequence checks from frozen intended requirements and current Clearings context. The first submission passed 17 withheld test groups and 81 regression/own tests. After source review, its source was integrated unchanged into the library on PR #6. The previous impact-analysis candidate remains archived outside production. See [the report](../../../benchmarks/agent-runs/luna-sequence-001/REPORT.md).
 
 This completes one bounded cycle through integration. PR merge, independent human review, a further coding cycle, and a matched prose-only comparison remain separate. Five requirements still need tests or review because the expression language cannot encode them. This is not a self-hosting compiler or a proof of an IR advantage.
 
@@ -67,7 +69,7 @@ Product name: **Clearings**. Private repository: **jiaxing-guo/clearings-semanti
 | Claim support | Author self-review of 73 contract assertions recorded; historical 53-claim model retained | Independent review remains pending |
 | Agent use and code-change benefit | Recorded continuing-session author comprehension example | Independent agent trials and code-change benefit remain unestablished |
 
-The shared demo implementation records 58 passing automated tests, deterministic source-verified replay/context output, and unchanged target files. The historical semantic JSON and all eight audience reports remain byte-identical. The new reports use the contract model; see [shared demos](SHARED_DEMOS.md). The previous report verification records static HTML/Markdown link and source checks. Earlier desktop/mobile browser checks remain historical; browser policy blocked the latest local-file preview. See [the report review](../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
+The shared demo implementation records 58 passing automated tests, deterministic source-verified replay/context output, and unchanged target files. The historical semantic JSON and all eight audience reports remain byte-identical. The new reports use the contract model; see [shared demos](SHARED_DEMOS.md). The previous report verification records static HTML/Markdown link and source checks. Earlier desktop/mobile browser checks remain historical; browser policy blocked the latest local-file preview. See [the report review](../../../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
 
 The user accepted the report presentation and authorized updating PR #3. Independent claim-support review remains separate from report acceptance.
 

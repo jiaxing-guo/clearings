@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 > Historical plan. The [current prototype plan](PROTOTYPE_PLAN.md) supersedes its scope, sequence, estimates, and completion gates.
 
 # Clearings: repository comprehension prototype

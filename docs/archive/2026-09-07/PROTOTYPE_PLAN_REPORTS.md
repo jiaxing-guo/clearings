@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Clearings prototype plan
 
 **Internal representation for AI coding**
@@ -33,7 +35,7 @@ Product name: **Clearings**. Private repository: **jiaxing-guo/clearings-semanti
 | Claim support | Author self-review of 73 contract assertions recorded; historical 53-claim model retained | Independent review remains pending |
 | Agent use and code-change benefit | Recorded continuing-session author comprehension example | Independent agent trials and code-change benefit remain unestablished |
 
-The shared demo implementation records 58 passing automated tests, deterministic source-verified replay/context output, and unchanged target files. The historical semantic JSON and all eight audience reports remain byte-identical. The new reports use the contract model; see [shared demos](SHARED_DEMOS.md). The previous report verification records static HTML/Markdown link and source checks. Earlier desktop/mobile browser checks remain historical; browser policy blocked the latest local-file preview. See [the report review](../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
+The shared demo implementation records 58 passing automated tests, deterministic source-verified replay/context output, and unchanged target files. The historical semantic JSON and all eight audience reports remain byte-identical. The new reports use the contract model; see [shared demos](SHARED_DEMOS.md). The previous report verification records static HTML/Markdown link and source checks. Earlier desktop/mobile browser checks remain historical; browser policy blocked the latest local-file preview. See [the report review](../../../benchmarks/results/hono-audiences/review.json). These are implementation checks. They do not establish independent claim support or improved coding performance.
 
 The user accepted the report presentation and authorized updating PR #3. Independent claim-support review remains separate from report acceptance.
 

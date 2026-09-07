@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # First implementation task: M0-M1
 
 Historical task: this structural work is complete. The instructions below record that earlier scope. The active implementation task is [NEXT_IMPLEMENTATION_TASK.md](NEXT_IMPLEMENTATION_TASK.md), under the [realigned roadmap](PROTOTYPE_PLAN.md). Current exchange behavior is documented in [SEMANTIC_EXCHANGE.md](SEMANTIC_EXCHANGE.md).

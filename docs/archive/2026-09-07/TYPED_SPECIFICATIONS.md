@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Typed specifications for coding agents
 
 The v0.3 specification is the primary interface for new semantic work. An operation contains its meaning in place: types, conditional outcomes, postconditions, state, effects, dependencies, implementation responsibilities, and decisions. JSON is the agent interface. HTML and Markdown render the same records for people.
@@ -111,11 +113,11 @@ The shared Hono bundle opens the typed slice at `internal.html` and retains the 
 
 ## Fresh-agent coding result
 
-The separate [Luna experiment](../benchmarks/agent-runs/luna-impact-001/REPORT.md) implemented potential dependency-impact analysis from a frozen specification, generated context, API mapping, and source snapshot. Tests were authored before coding and withheld from the agent. The initial candidate passed all 19 feature tests without repairs. The oracle self-check and build/typecheck also passed. All 73 existing tests passed across an initial run and a targeted rerun after a recorded evaluator setup correction.
+The separate [Luna experiment](../../../benchmarks/agent-runs/luna-impact-001/REPORT.md) implemented potential dependency-impact analysis from a frozen specification, generated context, API mapping, and source snapshot. Tests were authored before coding and withheld from the agent. The initial candidate passed all 19 feature tests without repairs. The oracle self-check and build/typecheck also passed. All 73 existing tests passed across an initial run and a targeted rerun after a recorded evaluator setup correction.
 
 The result supports feasibility for this bounded task. It does not establish an advantage over ordinary instructions: the agent read prose and source, eight rule records remained opaque, and the typed checker returned unknown. The captured candidate stays outside production source. See the report for the weak agent-authored checks, observation-adapter limits, and exact frozen inputs.
 
-A second fresh-agent task now adds sequence checks to the production API on the PR branch. See [sequence checks](SEQUENCE_CHECKS.md) and the [experiment report](../benchmarks/agent-runs/luna-sequence-001/REPORT.md). It passed frozen tests and source review before integration. A matched prose-only comparison remains pending. Automatic requirement interviews, arbitrary code generation, source-to-specification inference, general behavior equivalence, and formal proof remain future work.
+A second fresh-agent task now adds sequence checks to the production API on the PR branch. See [sequence checks](SEQUENCE_CHECKS.md) and the [experiment report](../../../benchmarks/agent-runs/luna-sequence-001/REPORT.md). It passed frozen tests and source review before integration. A matched prose-only comparison remains pending. Automatic requirement interviews, arbitrary code generation, source-to-specification inference, general behavior equivalence, and formal proof remain future work.
 
 ## Review corrections
 

@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Semantic contracts and bounded context
 
 Clearings can now describe functions and behavior through source-linked contracts. Engineers and coding agents can inspect these records and export a bounded selection. The contracts are agent or human proposals. Import checks their structure and source anchors; it does not prove their English assertions.

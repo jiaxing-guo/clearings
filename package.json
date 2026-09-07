@@ -38,7 +38,8 @@
     "docs:dev": "node scripts/prepare-docs.mjs && npm --prefix website run dev",
     "docs:build": "node scripts/prepare-docs.mjs && npm --prefix website run build",
     "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs",
-    "bootstrap:demo": "npm run build && node scripts/build-bootstrap-demo.mjs"
+    "bootstrap:demo": "npm run build && node scripts/build-bootstrap-demo.mjs",
+    "docs:check:markdown": "npm run build && node scripts/check-markdown-docs.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

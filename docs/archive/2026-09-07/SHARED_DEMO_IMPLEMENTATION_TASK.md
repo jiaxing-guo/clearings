@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Next implementation task: integrate the three demos
 
 Planning label: M4. The contract implementation is complete. Its detailed task is preserved in [CONTRACT_IMPLEMENTATION_TASK.md](CONTRACT_IMPLEMENTATION_TASK.md), and its APIs and reproduction commands are in [SEMANTIC_CONTRACTS.md](SEMANTIC_CONTRACTS.md).

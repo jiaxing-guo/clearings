@@ -1,10 +1,12 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Typed core implementation review
 
 Initial implementation verified on 5 September 2026. Fresh-agent evidence was added on 6 September 2026. The current architecture and reproduction commands are in [TYPED_SPECIFICATIONS.md](TYPED_SPECIFICATIONS.md).
 
 ## Latest verification: 7 September 2026
 
-Review findings received fixes across both PR branches, including the later documentation and scenario-validation findings. The sequence checker is integrated from a fresh Luna submission without changes. That submission passed 17 frozen test groups and 81 regression/own tests before integration. The final combined code passes typecheck and all 112 library tests. See [the experiment report](../benchmarks/agent-runs/luna-sequence-001/REPORT.md).
+Review findings received fixes across both PR branches, including the later documentation and scenario-validation findings. The sequence checker is integrated from a fresh Luna submission without changes. That submission passed 17 frozen test groups and 81 regression/own tests before integration. The final combined code passes typecheck and all 112 library tests. See [the experiment report](../../../benchmarks/agent-runs/luna-sequence-001/REPORT.md).
 
 The context specification now rejects unrelated operations through bounded reachability. Enum equality rejects out-of-domain literals and disjoint domains. Operation guarantees run without a supplied outcome, and selected inspection supports the full 2 MiB limit. Report destinations retain their canonical IDs.
 
@@ -29,9 +31,9 @@ The earlier verification below describes the initial implementation. The frozen 
 
 ## Review artifacts
 
-Open [the bootstrap review](../benchmarks/results/clearings-bootstrap/index.html). The adjacent `clearings.context.json` and `hono.context.json` are the actual agent packages. HTML is a human projection of those records.
+Open [the bootstrap review](../../../benchmarks/results/clearings-bootstrap/index.html). The adjacent `clearings.context.json` and `hono.context.json` are the actual agent packages. HTML is a human projection of those records.
 
-The [shared Hono package](../benchmarks/results/hono-shared/index.html) opens the typed slice at `internal.html` and retains the historical inspection at `internal-legacy.html`. It also includes the accepted engineer and overview guides.
+The [shared Hono package](../../../benchmarks/results/hono-shared/index.html) opens the typed slice at `internal.html` and retains the historical inspection at `internal-legacy.html`. It also includes the accepted engineer and overview guides.
 
 The bootstrap package includes exact working-source spans and hashes in `implementation-bindings.json`. These are explicit author mappings. The author development record describes how the requirements guided the current implementation and identifies the experiment's limits.
 
@@ -66,7 +68,7 @@ Hono scenarios model a bounded abstract input domain. They do not execute Hono o
 
 ## Fresh-agent coding experiment
 
-The [Luna experiment](../benchmarks/agent-runs/luna-impact-001/REPORT.md) used a frozen intended specification, generated context, API mapping, and source snapshot. The requested model was `gpt-5.6-luna`, with no inherited conversation. The orchestrator authored and froze the tests before coding and withheld them from the coding agent. This separation does not constitute independent human review.
+The [Luna experiment](../../../benchmarks/agent-runs/luna-impact-001/REPORT.md) used a frozen intended specification, generated context, API mapping, and source snapshot. The requested model was `gpt-5.6-luna`, with no inherited conversation. The orchestrator authored and froze the tests before coding and withheld them from the coding agent. This separation does not constitute independent human review.
 
 The first candidate passed all 19 feature tests and the separate oracle self-check, including 160 generated graph queries and a 350-operation chain. Build and typecheck passed. Of the existing tests, 71 passed initially; two passed after restoring an unchanged helper omitted from the evaluation snapshot. The initial failed setup result and correction are both retained. The candidate received no test feedback or repairs before scoring.
 

@@ -1,8 +1,10 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Next task: review the integrated sequence checker
 
 The review fixes and one fresh-agent self-development cycle are complete on the PR branches. The sequence checker was implemented by a fresh Luna agent from frozen requirements and current Clearings context. Its first submission passed all 17 frozen test groups and 81 regression/own tests without repairs. Source review approved integration without code changes.
 
-Read [sequence checks](SEQUENCE_CHECKS.md) and the [experiment report](../benchmarks/agent-runs/luna-sequence-001/REPORT.md).
+Read [sequence checks](SEQUENCE_CHECKS.md) and the [experiment report](../../../benchmarks/agent-runs/luna-sequence-001/REPORT.md).
 
 1. Review the exact API and its explicit shared-storage assumption. The caller must identify which fields represent the same storage across records.
 2. Inspect the captured code and frozen tests. Check rejected writes, missing observations, and invalid inputs.

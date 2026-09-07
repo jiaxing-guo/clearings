@@ -1,3 +1,5 @@
+> Historical document. See the [current documentation](../../README.md). Navigation links were rebased when this file was archived; dated results and implementation instructions describe their original context.
+
 # Next implementation task: semantic contracts and inspection
 
 This completed task is retained as implementation history. The active task is NEXT_IMPLEMENTATION_TASK.md. This was the implementation task under the [prototype roadmap](PROTOTYPE_PLAN.md). It replaces the completed structural task in [FIRST_IMPLEMENTATION_TASK.md](FIRST_IMPLEMENTATION_TASK.md). Planning label: M3.
