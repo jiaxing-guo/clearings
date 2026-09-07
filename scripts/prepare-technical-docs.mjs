@@ -47,9 +47,8 @@ function rewriteLinks(text, file) {
   }).join('\n');
 }
 
-rmSync(destination, { recursive: true, force: true });
-mkdirSync(destination, { recursive: true });
-const write = (path, data) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, data); };
+const generated = new Map();
+const write = (path, data) => generated.set(path, data);
 const meta = (path, data) => write(resolve(destination, path, 'meta.json'), JSON.stringify(data, null, 2) + '\n');
 meta('', { title: 'Technical reference', pages: ['index', ...sections.map(slug)] });
 for (const section of sections) {
@@ -64,4 +63,17 @@ for (const page of pages) {
 }
 const manifest = { source_ref: sourceRef, pages: pages.map(page => ({ source: `docs/${page.file}`, url: page.url, title: page.title, sha256: createHash('sha256').update(page.text).digest('hex') })) };
 write(resolve(root, 'website/public/technical-reference.json'), JSON.stringify(manifest, null, 2) + '\n');
+// Preserve unchanged files for the development watcher; remove only obsolete generated entries.
+for (const [path, content] of generated) {
+  mkdirSync(dirname(path), { recursive: true });
+  if (!existsSync(path) || readFileSync(path, 'utf8') !== content) writeFileSync(path, content);
+}
+function prune(directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = resolve(directory, entry.name);
+    if (entry.isDirectory()) { prune(path); if (!readdirSync(path).length) rmSync(path, { recursive: true }); }
+    else if (!generated.has(path)) rmSync(path);
+  }
+}
+prune(destination);
 console.log(`Prepared ${pages.length} technical reference pages from canonical Markdown.`);

@@ -2,6 +2,18 @@
 
 An intermediate representation records information for a defined consumer or transformation. Clearings has multiple representations, but does not yet define a sequence of semantics-preserving compiler lowering passes between them.
 
+## Locate the representation you need
+
+| Question | Relevant representation |
+| --- | --- |
+| Which source files and declarations were analyzed? | Repository manifest and structural evidence model |
+| Which behavior did an author infer from that source? | Capability/claim model or function/behavior contracts |
+| Which outcomes and constraints does a typed operation declare? | Operation specification and predicate expressions |
+| Which records should an agent receive for this task? | Derived operation context |
+| Does a supplied case satisfy the modeled rules? | Observation and check result |
+
+The operation specification is the primary contract representation for new semantic work. The inventory below records each family's producer, consumer, and meaning. Schema versions identify serialization contracts; they do not rank abstraction levels.
+
 ## Existing models
 
 | Representation | Type and schema | Semantics | Producer and consumers |

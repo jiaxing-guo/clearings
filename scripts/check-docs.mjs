@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { checkOperation } from '../dist/index.js';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
 import { parse } from '../website/node_modules/parse5/dist/index.js';
@@ -65,6 +66,22 @@ for (const page of reference.pages) {
  visit(document);
  assert.deepEqual(headings, [page.title], `Missing or duplicate page title: ${page.url}`);
 }
+const explorer = JSON.parse(readFileSync(join(root, 'operation-explorer.json'), 'utf8'));
+const specificationBytes = readFileSync(explorer.source, 'utf8');
+const specification = JSON.parse(specificationBytes);
+assert.equal(explorer.source_sha256, createHash('sha256').update(specificationBytes).digest('hex'));
+assert.equal(explorer.artifact_id, specification.artifact_id);
+assert.deepEqual(explorer.operation, specification.operations.find(operation => operation.id === 'response-selection'));
+assert.deepEqual(explorer.cases.map(example => example.expected), ['pass', 'fail', 'unknown']);
+for (const example of explorer.cases) {
+ const result = checkOperation(specification, explorer.operation.id, example.observation);
+ assert.deepEqual(example.result, result, `Stale operation explorer result: ${example.id}`);
+ assert.equal(result.verdict, example.expected);
+}
+const operationPage = join(root, 'docs/technical/semantics/operations/index.html');
+assert(tree(operationPage).ids.has('explorer-title'), 'Operation explorer was not rendered.');
+const navigation = tree(join(root, 'docs/index.html')).links.map(link => link.replace(/\/$/, ''));
+for (const page of reference.pages) assert(navigation.includes(base + page.url), `Reference page is missing from navigation: ${page.url}`);
 const queries = ['finalized', 'context', 'source', 'refinement', 'opaque', 'frame'];
 const searchFile=join(root,'search-index.json');assert(existsSync(searchFile),'Static search index missing.');
 const originalFetch=globalThis.fetch;
@@ -80,4 +97,4 @@ try {
 const model=JSON.parse(readFileSync(join(root,'demo/semantic.json')));
 assert.equal(model.artifact_id,JSON.parse(readFileSync('benchmarks/results/hono-contracts/semantic.json')).artifact_id);
 assert(!files.some(f=>f.endsWith('.php')||f.endsWith('.node')));
-console.log(JSON.stringify({static_html_pages:files.filter(f=>f.endsWith('.html')).length,links_checked:links,base_path:base,technical_reference_pages:reference.pages.length,static_search_queries:queries.length,demo_artifact:model.artifact_id,external_html_asset_references:0,asset_check_scope:'HTML src and stylesheet/preload/modulepreload href; CSS and JavaScript references are not inspected',browser_check:'not run; static checks only'}));
+console.log(JSON.stringify({static_html_pages:files.filter(f=>f.endsWith('.html')).length,links_checked:links,base_path:base,technical_reference_pages:reference.pages.length,operation_explorer_cases:explorer.cases.length,static_search_queries:queries.length,demo_artifact:model.artifact_id,external_html_asset_references:0,asset_check_scope:'HTML src and stylesheet/preload/modulepreload href; CSS and JavaScript references are not inspected',browser_check:'not run; static checks only'}));

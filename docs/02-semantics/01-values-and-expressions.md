@@ -2,6 +2,27 @@
 
 The v0.3 expression language is a closed, typed AST. [Expression definitions](../../src/specification/model.ts) specify its syntax; [the interpreter and type checker](../../src/specification/expressions.ts) implement evaluation and typing. No expression string, JavaScript function, or target source is executed.
 
+## Read a predicate
+
+The following expression checks whether an observed output equals the string `not-found`:
+
+```json
+{
+  "kind": "compare",
+  "op": "eq",
+  "left": { "kind": "ref", "root": "output", "path": [] },
+  "right": { "kind": "literal", "value": "not-found" }
+}
+```
+
+| Environment | Evaluation result | Interpretation |
+| --- | --- | --- |
+| `output: "not-found"` | `{ known: true, value: true }` | The values agree |
+| `output: "context-response"` | `{ known: true, value: false }` | The values differ |
+| No `output` | `{ known: false, reason: ... }` | The observation is insufficient |
+
+The expression returns a value or an unknown result. The [operation checker](03-observations-and-sequences.md) converts Boolean predicate results into check verdicts.
+
 ## Value domains
 
 | Type | Accepted values |

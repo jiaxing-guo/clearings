@@ -2,7 +2,20 @@
 
 Clearings represents repository structure and proposed behavior, constructs bounded agent context, and checks supplied observations against typed contracts. This directory is the canonical Markdown reference for its semantics and abstraction boundaries.
 
-## Reading order
+## Choose a reading path
+
+| Path | Start here | Use it to |
+| --- | --- | --- |
+| Learn Clearings | [Your first operation contract](00-learn/01-first-contract.md) | Follow one behavior question through a guard, postcondition, and observation check |
+| Guides | [Check a Hono case](04-guides/01-check-a-case.md), [author a specification](04-guides/02-author-and-review.md) | Complete a task with prerequisites, commands, expected results, and troubleshooting |
+| Reference | [Operation contracts](02-semantics/02-operations.md), [API and CLI](03-reference/03-api-and-cli.md) | Look up exact definitions, constraints, and interface behavior |
+| Architecture | [System architecture](01-architecture/01-system.md), [abstraction and refinement](01-architecture/03-abstraction-and-refinement.md) | Understand responsibilities, representation choices, and enforcement boundaries |
+
+To read in a local browser, follow [Run the documentation locally](05-development/02-documentation.md#run-the-documentation-locally). The operation-contract page includes a selectable comparison of passing, failing, and incomplete observations.
+
+## Complete technical reference
+
+The original reference order remains available for a systematic review. For a language or architecture change, read documents 1–8 before changing semantics.
 
 | Order | Document | Question answered |
 | --- | --- | --- |
@@ -21,8 +34,6 @@ Clearings represents repository structure and proposed behavior, constructs boun
 | 13 | [Status and development roadmap](05-development/01-status-and-roadmap.md) | Which capabilities and bootstrap milestones are established? |
 | 14 | [Documentation maintenance](05-development/02-documentation.md) | How do I change this reference and verify it? |
 
-For a first practical example, start with **Check a Hono case**. For a language or architecture change, read documents 1–8 first.
-
 ## Status and authority
 
 This reference describes the implemented v0.3.0 contract language and its relationship to the v0.1/v0.2 models. It does not introduce a schema revision or a new runtime abstraction. References to future implementation IRs and refinement checks are explicitly identified as proposals.
@@ -33,6 +44,6 @@ The terms **must**, **must not**, and **may** express requirements or permitted 
 
 ## Organization and publishing
 
-Numbered directories and filenames define a stable reading order. Documents use ordinary Markdown, relative repository links, tables, and fenced examples. Fumadocs renders this reference at `/docs/technical`. The build derives navigation and page metadata from these files, converts links between current reference pages to site routes, and links other repository targets to the source revision. The authored reference remains ordinary Markdown and can be read independently of the site. Existing website guides and demonstration routes remain available.
+Numbered directories and filenames define a stable reading order. Documents use ordinary Markdown, relative repository links, tables, and fenced examples. Fumadocs renders this reference at `/docs/technical`. The build derives page metadata from these files and groups navigation by reading path, converts links between current reference pages to site routes, and links other repository targets to the source revision. The authored reference remains ordinary Markdown and can be read independently of the site. Existing website guides and demonstration routes remain available.
 
 [Historical plans and implementation reports](archive/README.md) are retained for provenance. Two root files remain for compatibility: [the original bootstrap design](SPECIFICATION_ARCHITECTURE.md), whose exact text is embedded in the context-assembly specification, and [the sequence guide entry](SEQUENCE_CHECKS.md), which preserves a link from that design. Use the numbered reference for current semantics.

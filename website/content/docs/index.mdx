@@ -1,26 +1,33 @@
 ---
 title: "Clearings documentation"
-description: "Architecture, semantics, interfaces, and worked examples."
+description: "Learn the contract model, complete a task, or consult the technical reference."
 ---
 
-Clearings represents repository structure and proposed behavior, constructs bounded agent context, and checks supplied observations against typed contracts.
+Clearings represents repository structure and proposed behavior, assembles bounded agent context, and checks supplied observations against typed contracts.
 
-## Technical reference
+## Learn Clearings
 
-The [technical reference](/docs/technical) is generated from the canonical Markdown documents in the repository. Its reading order follows the numbered source directories.
+[Your first operation contract](/docs/technical/learn/first-contract) follows one Hono behavior question through abstract values, a guard, a postcondition, and three check results. It introduces the distinctions needed to interpret a verdict.
 
-| Section | Scope |
+Then [compare the observations](/docs/technical/semantics/operations) in the operation explorer. Inspect the exact contract alongside the observation and its individual rule checks.
+
+## Complete a task
+
+- [Check a Hono case](/docs/technical/guides/check-a-case): prerequisites, CLI commands, expected results, and troubleshooting.
+- [Author and review a specification](/docs/technical/guides/author-and-review): define accepted and rejected writes, constrain state and effects, and check adjacent observations.
+- [Run the documentation locally](/docs/technical/development/documentation#run-the-documentation-locally): install dependencies and start a browser preview with automatic Markdown regeneration.
+
+## Consult the reference
+
+| Topic | Reference |
 | --- | --- |
-| [Architecture](/docs/technical/architecture/system) | System responsibilities, representation inventory, abstraction, and refinement |
-| [Semantics](/docs/technical/semantics/values-and-expressions) | Values, expressions, operation contracts, observations, and sequences |
-| [Interface reference](/docs/technical/reference/identity-and-validation) | Identity, validation, context, API, CLI, and compatibility |
-| [Guides](/docs/technical/guides/check-a-case) | Check an existing case and author a specification |
-| [Development](/docs/technical/development/status-and-roadmap) | Implementation status, bootstrap evidence, and documentation maintenance |
+| Values, predicates, and unknown results | [Values and expressions](/docs/technical/semantics/values-and-expressions) |
+| Outcomes, state frames, and effects | [Operation contracts](/docs/technical/semantics/operations) |
+| Verdicts and adjacent-state continuity | [Observations and sequences](/docs/technical/semantics/observations-and-sequences) |
+| Identity, validation, context, API, and compatibility | [Complete reference index](/docs/technical) |
 
-The sidebar follows the reference order. Search includes the technical reference and the existing guides. Each technical page links to its Markdown source.
+## Understand the architecture
 
-## Existing guides and demonstrations
+[System architecture](/docs/technical/architecture/system) explains the processing paths and trust boundaries. [Representation inventory](/docs/technical/architecture/representations) distinguishes canonical models from projections. [Abstraction and refinement](/docs/technical/architecture/abstraction-and-refinement) explains the relation to concrete execution and identifies proposed work.
 
-The [quickstart](/docs/quickstart) introduces the recorded Hono analysis. The [demonstrations](/docs/demos) include audience reports, the internal representation, and typed specification examples. These views retain their original routes and recorded artifacts.
-
-The numbered technical reference defines current semantics. Historical reports remain evidence for their recorded baselines.
+The [development status](/docs/technical/development/status-and-roadmap) records the implemented capabilities and bootstrap evidence. Earlier [demonstrations](/docs/demos) and [legacy quickstart](/docs/quickstart) remain available for their recorded artifacts.

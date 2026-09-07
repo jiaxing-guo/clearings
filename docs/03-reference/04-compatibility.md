@@ -1,6 +1,6 @@
 # Compatibility and evolution
 
-This documentation reorganization does not change schemas, public runtime behavior, specification identities, or historical experiment inputs. The current package contains several versioned artifact families; the version numbers do not define a compiler lowering hierarchy.
+Clearings retains several versioned artifact families. Choose APIs according to the artifact's schema and purpose. A version number does not identify an abstraction level, and a later schema does not imply automatic conversion of earlier content.
 
 ## Supported coexistence
 
@@ -30,4 +30,4 @@ The former top-level documentation is organized under [the archive](../archive/R
 
 ## Known limitations
 
-The shared CLI JSON type probe applies a 64 MiB limit to legacy validation, although the legacy inventory/scan schema does not impose that size limit. This regression remains separate runtime work. No schema migration or Fumadocs integration is implemented by the documentation change.
+The shared CLI JSON type probe applies a 64 MiB limit to legacy validation, although the legacy inventory/scan schema does not impose that size limit. This regression remains separate runtime work. The documentation presentation changes do not migrate schemas or alter runtime semantics.

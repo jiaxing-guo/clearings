@@ -20,3 +20,4 @@ website/*.tsbuildinfo
 website/public/demo/
 website/content/docs/technical/
 website/public/technical-reference.json
+website/public/operation-explorer.json

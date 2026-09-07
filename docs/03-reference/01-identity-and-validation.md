@@ -2,6 +2,20 @@
 
 Identity, integrity, source authentication, claim support, and acceptance are distinct properties. A valid content digest establishes a relationship between bytes and an identifier; it does not authenticate an author or prove a semantic assertion.
 
+## Distinguish the questions
+
+Consider a specification containing an English requirement, its predicate, and a cited source excerpt. Each check establishes a different property:
+
+| Question | Property |
+| --- | --- |
+| Does the artifact match its recorded digest? | Integrity |
+| Does the excerpt match the claimed repository revision? | Source authentication |
+| Does the cited source support the assertion? | Claim support |
+| Does this observation satisfy the predicates? | Observation agreement |
+| Has the requirement been approved? | Acceptance |
+
+These properties are not interchangeable. In particular, a digest can be valid for an inaccurate interpretation. The stages below identify which properties the current validators check.
+
 ## Identity domains
 
 | Identity | Bound information | Limit |

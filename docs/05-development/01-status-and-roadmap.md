@@ -2,6 +2,12 @@
 
 This status describes the implementation inspected at `bb4c90a` and the subsequent documentation-only reorganization. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
 
+## Read the evidence at the correct scope
+
+The strongest demonstrated development result is one fresh-agent feature integrated after frozen tests and source review. The system also checks supplied observations and assembles its own intended specification into agent context.
+
+These results support specification-guided development. They do not establish a self-hosting compiler, an automatic specification-to-source pipeline, or a measured advantage over equivalent prose. Use the capability and experiment tables below to distinguish production behavior from recorded research evidence.
+
 ## Implemented capabilities
 
 | Area | Current capability | Remaining boundary |

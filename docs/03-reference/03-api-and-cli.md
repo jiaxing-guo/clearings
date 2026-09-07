@@ -2,6 +2,24 @@
 
 The library returns objects or text and leaves ordinary file I/O to the caller. Build the repository with `npm run build`; its local ESM entry is `dist/index.js`. Package consumers use `clearings-semantic`. [src/index.ts](../../src/index.ts) is the authoritative export list.
 
+## Check one observation
+
+The library entrypoint for a single case is:
+
+```ts
+checkOperation(specification, selection, observation): OperationCheck
+```
+
+`selection` is an operation ID or alias. The function validates the specification and observation, then returns individual checks, an aggregate verdict, and limitations. Invalid input throws; it does not return a failing semantic verdict.
+
+The equivalent CLI invocation reads an observation file:
+
+```bash
+node dist/cli/main.js check specifications/hono/response-selection.json --operation response-selection --observation /path/to/case.json
+```
+
+The output is JSON. Exit status is 0 for `pass`, 1 for `fail`, 3 for `unknown`, and 2 for a command or input error. The [Hono case guide](../04-guides/01-check-a-case.md) provides the observation and reproducible steps. The tables below describe the remaining entrypoints and their contracts.
+
 ## Typed specification API
 
 | Function | Result and contract |

@@ -60,17 +60,27 @@ The library has no built-in model endpoint. Scans read immutable Git objects; th
 
 ## Documentation
 
-Start with the [Markdown technical reference](docs/README.md) for architecture, representation definitions, operational semantics, abstraction mappings, and validation limits. The numbered directories define the reading order. Run `npm run docs:check:markdown` to verify local links and executable examples. Fumadocs renders the same reference at `/docs/technical`, with ordered navigation, page outlines, and static search.
+Start with [Your first operation contract](docs/00-learn/01-first-contract.md), use the [practical guides](docs/04-guides/01-check-a-case.md), or consult the [technical reference](docs/README.md). Fumadocs presents the canonical Markdown in four reading paths: learning, guides, reference, and architecture. The operation-contract page compares passing, failing, and incomplete observations.
 
-The website uses Fumadocs and Next.js static export. The build generates technical pages from `docs/`; do not edit generated copies. Existing guides and demonstrations retain their routes. Build and verify the site with:
+To read and edit the documentation locally, use Node.js 24, npm 11, and Python 3.9 or newer under `python3`. From the repository root:
 
 ```bash
-npm ci --prefix website --ignore-scripts
+npm ci --ignore-scripts
+npm --prefix website ci --ignore-scripts
+npm run docs:dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The command builds the library, prepares the documentation assets, and starts Next.js. Changes under the canonical numbered `docs/` directories regenerate automatically. Use `npm run docs:dev -- --port 3001` if you need another port, and stop with Ctrl+C.
+
+For a production export and validation:
+
+```bash
+npm run docs:check:markdown
 npm run docs:build
 npm run docs:check
 ```
 
-Documentation commands require Python 3.9 or newer, available as `python3`, to verify the demo archives. The static output is in `website/out`. The default base path is `/clearings-semantic` for a future GitHub Pages project site. Set `DOCS_BASE_PATH=''` for a root-path build. Search uses a local static index. CI, serving, and public access are deferred; no hosted documentation URL is claimed.
+Output is written to `website/out`. Production builds default to `/clearings-semantic`; local development defaults to `/`. Set `DOCS_BASE_PATH=''` for a root production export and use the same value for `docs:check`. [Documentation maintenance](docs/05-development/02-documentation.md) describes the authoring conventions, watcher scope, and verification checks. Public hosting, CI, and package publication remain separate scope decisions.
 
 ## Contribute
 

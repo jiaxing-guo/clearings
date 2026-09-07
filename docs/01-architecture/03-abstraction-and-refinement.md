@@ -1,6 +1,8 @@
 # Abstraction and refinement
 
-This page defines the terminology used to relate contracts to implementations. The abstraction mapping and refinement relation below are design concepts. They are not new v0.3 schema fields or implemented proof procedures.
+An abstraction mapping relates concrete program behavior to the values represented by a contract. Refinement asks whether the implementation's abstracted behaviors are permitted by that contract.
+
+**Implementation status:** the mapping and refinement relation on this page are design concepts. Clearings evaluates supplied abstract observations; it does not implement a general abstraction adapter or a refinement proof procedure.
 
 ## Abstract domains
 
@@ -17,6 +19,12 @@ This abstraction permits useful local reasoning. It also limits which implementa
 | A header merge throws | Output label `propagated-error` | Unmodeled intermediate header mutations remain unconstrained |
 
 These mappings summarize the [authored Hono slice](../../specifications/hono/response-selection.json). They do not establish source conformance. The `path` field represents a branch already classified by the observer; the specification does not classify arbitrary thenables.
+
+## What abstraction discards
+
+If two concrete executions both map to `output: not-found`, the checker sees the same output category. They can still differ in response headers, allocation, timing, or other concrete behavior. A contract constrains those differences only when its state, effects, or values represent them.
+
+Choose an abstract domain by identifying the distinctions needed for the requirement. Then document how the observer obtains those values. A detailed JSON record does not establish that this mapping is faithful.
 
 ## Observation adapters
 

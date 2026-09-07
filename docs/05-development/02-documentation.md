@@ -4,11 +4,40 @@ Author the technical reference under `docs/` as ordinary Markdown. Use standard 
 
 ## Structure
 
-The numbered directories separate architecture, language semantics, interface reference, practical guides, and development status. Numeric prefixes determine reading order, not schema versions or maturity levels. Add each current page to [the documentation index](../README.md).
+The numbered directories separate learning material, architecture, language semantics, interface reference, practical guides, and development status. The website groups these pages into reading paths while preserving their source order and existing URLs. Numeric prefixes determine reading order, not schema versions or maturity levels. Add each current page to [the documentation index](../README.md).
 
 Keep semantic definitions in one reference location. Guides should link to those definitions and demonstrate them with concrete cases. Status documents should cite frozen results rather than duplicating mutable test counts throughout the reference. Historical plans belong in [the archive](../archive/README.md).
 
 Use relative repository links, Markdown tables for exact mappings, and fenced code blocks. Avoid MDX imports, framework components, required frontmatter, and site-specific routing. The Fumadocs integration derives navigation from this organization and preserves one source for the technical content.
+
+## Run the documentation locally
+
+Use Node.js 24, npm 11, and Python 3.9 or newer available as `python3`. From the repository root:
+
+```bash
+npm ci --ignore-scripts
+npm --prefix website ci --ignore-scripts
+npm run docs:dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser. The command builds the library, prepares validated documentation assets, and starts Next.js. Canonical Markdown changes regenerate the technical pages automatically; refresh the browser if navigation changes are not reflected immediately. Existing website pages and components use Next.js hot reload.
+
+The default local base path is empty. If port 3000 is occupied, use `npm run docs:dev -- --port 3001` and open [http://localhost:3001](http://localhost:3001). The terminal reports the actual address. Stop the server with Ctrl+C.
+
+Restart after changing the library, specification fixtures, or asset-generation scripts. Those inputs are prepared at startup; the watcher covers the canonical Markdown reference. If you set `DOCS_BASE_PATH` explicitly, include that prefix in the browser URL.
+
+## Page conventions
+
+| Page type | Presentation order | Required distinction |
+| --- | --- | --- |
+| Learning material | Concrete question, small example, progressive explanation, next action | What the learner observes versus what the system establishes |
+| Practical guide | Goal, prerequisites, steps, expected result, troubleshooting | Application outcomes versus check verdicts |
+| Semantics or API reference | Definition, minimal example, exact rules, boundary cases, enforcement limits | Valid input, failed constraints, and unknown results |
+| Architecture explanation | Responsibility, worked path, design rationale, limits, related reference | Implemented behavior versus proposed abstractions |
+
+Use the same example through related pages when it clarifies the concept. Keep tables for exact comparisons, code blocks for inputs and outputs, and prominent prose for semantic requirements and limitations. Supplementary raw records may be expandable; required rules must remain visible.
+
+The operation explorer reads generated JSON computed from the existing Hono specification by the public checker. Its selectable cases are authored observations, not recorded executions of Hono. [The generator](../../scripts/prepare-operation-explorer.mjs) retains exact operation records and individual results. The static check recomputes them against the original specification; the UI does not maintain another evaluator.
 
 ## Change procedure
 
@@ -45,7 +74,7 @@ The build runs [the technical documentation generator](../../scripts/prepare-tec
 
 The generated `technical-reference.json` records source paths, content digests, and routes. The static checker verifies those digests, rendered page titles, local links and fragments, assets, and search results. This detects stale generated documentation as well as broken navigation.
 
-Use `npm run docs:dev` for local preview. Restart this command after changing the canonical Markdown; it regenerates the technical pages before starting Next.js. The default deployment base path is `/clearings-semantic`. Set `DOCS_BASE_PATH=''` for a root deployment, and use the same value for `docs:build` and `docs:check`.
+The default production base path is `/clearings-semantic`; local development defaults to the root path. Set `DOCS_BASE_PATH=''` for a root deployment, and use the same value for `docs:build` and `docs:check`.
 
 For a runtime semantics change, also run relevant library tests and typecheck.
 

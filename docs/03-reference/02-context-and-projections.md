@@ -2,6 +2,19 @@
 
 Context assembly selects canonical records for a consumer. It does not infer new behavior, formalize prose, execute dependency edges, or accept requirements.
 
+## Follow a required dependency
+
+Suppose operation `A` requires `B`, and `B` requires `A`. Operation `A` also has an optional dependency on `C`. Selecting `A` includes `A` and `B` once each; the cycle terminates, and the optional edge alone does not include `C`.
+
+| Record | Included? | Reason |
+| --- | --- | --- |
+| `A` | Yes | Selected root |
+| `B` | Yes | Required dependency |
+| `C` | No | Only optionally reachable in this example |
+| Decisions and outcomes of `A` and `B` | Yes, in full | Part of the selected contracts |
+
+State and evidence records follow the inclusion rules below. If the complete required package exceeds the byte budget, assembly raises an error. It does not remove postconditions to produce a smaller package.
+
 ## v0.3 selection
 
 `assembleContext(specification, selection, { maxBytes })` validates the whole specification and resolves an operation by exact ID or unambiguous alias. Missing required references are rejected even outside the selected root.

@@ -2,22 +2,21 @@
 
 `SemanticOperation` is a declarative contract for a modeled operation. An operation defines permitted results and observable state/effect constraints. It does not contain a complete implementation body.
 
-## Record fields
+## A concrete outcome
 
-| Fields | Meaning |
-| --- | --- |
-| `id`, `alias`, `name`, `purpose` | Canonical record identity, selection alias, display name, and local explanation |
-| `inputs`, `output` | Exact input record and output value type |
-| `reads`, `writes`, `frame` | Declared state access and preservation boundary |
-| `effects` | Declared effect IDs and completeness of the effect boundary |
-| `outcome_policy`, `coverage`, `outcomes` | Applicability, permitted alternatives, and modeled behavioral coverage |
-| `guarantees` | Operation-wide predicates, independent of the supplied outcome |
-| `dependencies` | Required or optional related contracts and their roles |
-| `implementations` | Individual implementation responsibilities and optional source links |
-| `decisions` | Unresolved requirements, analysis limits, and implementation choices |
-| `evidence_ids` | References to source, requirement, or design records |
+In the authored Hono model, `outcome:direct-missing` applies when the handler returns a nullish value directly. Its postcondition requires the selected response source to be `not-found`.
 
-The full schema is [specification.v0.3.json](../../schemas/specification.v0.3.json). JSON Schema defines record structure; the [semantic validator](../../src/specification/validate.ts) adds cross-reference and type constraints.
+| Part of the contract | Example | Responsibility |
+| --- | --- | --- |
+| Input domain | `path: direct`, `value: nullish` | Classify the supplied execution branch and result |
+| Guard | Direct path and nullish value | Determine modeled applicability |
+| Postcondition | Output equals `not-found` | Constrain the supplied result |
+| Initial state | `finalized: true` | Record context state; it does not alter this guard |
+| State and effect boundaries | Both partial | Retain unmodeled behavior explicitly |
+
+Keeping the input and outcome fixed, `not-found` passes the output rule, `context-response` fails it, and an omitted output makes it unknown. The [first-contract tutorial](../00-learn/01-first-contract.md) develops this example; the [case guide](../04-guides/01-check-a-case.md) reproduces it locally.
+
+The interactive version of this page compares those three authored observations and displays the exact contract and checker results. The definitions below apply independently of that presentation.
 
 ## Outcomes and guarantees
 
@@ -69,3 +68,26 @@ Outcome transitions declare a handoff (`invoke`, `await`, `continue`, or `propag
 Decision dispositions are `unresolved-requirement`, `analysis-limit`, and `implementation-choice`. The `blocking` flag is retained for consumers; it does not automatically prevent context assembly or convert an operation verdict to unknown. Decisions appear as limitations. No acceptance workflow is implemented.
 
 A rule description can express more than its predicate checks. Reviewers must identify that difference. Use `opaque` for a Boolean obligation that lacks a supported encoding, or split a compound obligation into separately identified rules. Neither a resolved evidence pointer nor a passing predicate validates every sentence of associated prose.
+
+## Enforcement limits
+
+Operation checking evaluates guards and constraints against supplied values. It does not execute a program body, instrument effects, establish adapter fidelity, or prove universal source refinement. Keep these limits visible when presenting a passing result.
+
+Use the [observation protocol](03-observations-and-sequences.md) for missing-data and error behavior, and [abstraction and refinement](../01-architecture/03-abstraction-and-refinement.md) for the relation to concrete executions.
+
+## Record fields
+
+| Fields | Meaning |
+| --- | --- |
+| `id`, `alias`, `name`, `purpose` | Canonical record identity, selection alias, display name, and local explanation |
+| `inputs`, `output` | Exact input record and output value type |
+| `reads`, `writes`, `frame` | Declared state access and preservation boundary |
+| `effects` | Declared effect IDs and completeness of the effect boundary |
+| `outcome_policy`, `coverage`, `outcomes` | Applicability, permitted alternatives, and modeled behavioral coverage |
+| `guarantees` | Operation-wide predicates, independent of the supplied outcome |
+| `dependencies` | Required or optional related contracts and their roles |
+| `implementations` | Individual implementation responsibilities and optional source links |
+| `decisions` | Unresolved requirements, analysis limits, and implementation choices |
+| `evidence_ids` | References to source, requirement, or design records |
+
+The full schema is [specification.v0.3.json](../../schemas/specification.v0.3.json). JSON Schema defines record structure; the [semantic validator](../../src/specification/validate.ts) adds cross-reference and type constraints.

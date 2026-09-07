@@ -2,6 +2,19 @@
 
 The checker evaluates supplied observations against modeled rules. It does not execute target code, discover the actual outcome, or prove source conformance.
 
+## Interpret a check result
+
+For a branch whose postcondition requires `output = "not-found"`, an observed `context-response` is a failure. If the output is omitted, that predicate is unknown. If the output has an invalid type, observation validation raises an error before returning a verdict.
+
+| Situation | Result | What to do next |
+| --- | --- | --- |
+| Every evaluated constraint agrees | `pass` | Review the result's modeled scope and limitations |
+| At least one constraint is false | `fail` | Inspect the failed rule and its supplied values |
+| No failures, but at least one check lacks a result | `unknown` | Supply the missing observation or review the opaque obligation |
+| Observation shape, domain, or selection is invalid | Exception | Correct the input before interpreting semantics |
+
+A rejected write or propagated error can satisfy a contract that permits it. The verdict describes contract agreement, not whether the application operation succeeded.
+
 ## Observation protocol
 
 | Field | Required? | Meaning |

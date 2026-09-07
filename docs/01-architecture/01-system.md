@@ -2,6 +2,21 @@
 
 Clearings is a TypeScript library and CLI for source-backed repository comprehension and specification-guided development. Its semantic artifacts are portable JSON. Compiler objects, provider SDK types, and executable source are excluded from the interchange language.
 
+## Follow one specification through the system
+
+For the Hono response-selection example, an author has already produced a typed specification. Clearings validates that artifact, selects the operation and its required dependencies, and can evaluate a supplied observation. A report presents the same records to a reader.
+
+| Input | Processing step | Output |
+| --- | --- | --- |
+| Authored specification | Validate types, references, and identity | Validated artifact or an error |
+| Validated specification and operation selection | Assemble required context | Bounded operation context |
+| Specification and supplied observation | Evaluate guards and rules | Check result with verdicts and limitations |
+| Specification or validated context | Render a human projection | Markdown or HTML |
+
+The specification owns the operation semantics. Context selection preserves the selected records; rendering changes their presentation. Observation checking evaluates supplied data. These responsibilities remain separate even when one command combines several steps.
+
+For a concrete walkthrough, read [Your first operation contract](../00-learn/01-first-contract.md).
+
 ## Processing paths
 
 The implemented source-analysis path is:
