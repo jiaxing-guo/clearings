@@ -88,3 +88,16 @@ test('walkthrough is generated from actual queries and keeps source-check and me
  assert.throws(()=>createSemanticWalkthrough(model,{...options,functionId:model.data.proposal.data.functions.find(f=>f.alias==='hono-fetch').id}),{code:'INVALID_SELECTION'});
  assert.throws(()=>createSemanticWalkthrough(model,{...options,maxBytes:1}),{code:'CONTEXT_BUDGET'});
 });
+
+
+test('canonical failure and dependency destinations keep their target IDs as links',()=>{
+ const ids=new Set(model.data.proposal.data.functions.map(f=>f.id));
+ const targets=[...new Set(model.data.proposal.data.functions.flatMap(f=>[...f.failures.map(x=>x.destination_id),...f.dependencies.map(x=>x.target_id)]).filter(id=>ids.has(id)))];
+ assert(targets.length>0);
+ const html=['request-dispatch','middleware-composition'].map(alias=>renderCapability(model,alias,{presentation:plan(alias),audience:'engineer',format:'html'})).join('');
+ const markdown=['request-dispatch','middleware-composition'].map(alias=>renderCapability(model,alias,{presentation:plan(alias),audience:'engineer',format:'markdown'})).join('');
+ for(const id of targets){
+  assert(html.includes(`<code>${id}</code></a>`),id);
+  assert(markdown.includes(`(${id})](#${anchor(id)})`),id);
+ }
+});

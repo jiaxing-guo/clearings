@@ -66,3 +66,5 @@ Browser policy blocked local preview earlier in this session. No alternate brows
 The documentation development command now prepares demo assets before starting the server. Download archives are checked for exact membership and content before they enter the site, and the exported copy is checked again. The walkthrough selects evidence from the chosen assertion and state from the chosen function. Source replay retains all 11 excerpts, leaves the target unchanged, and preserves the eight accepted reports. Typecheck and all 61 library tests pass.
 
 The static documentation build passes. The exported site check covers 22 HTML pages, 2,113 links, and three local search queries. It also verifies the downloadable archive and finds no external assets.
+
+A follow-up source review found missing destination IDs in canonical contract fields. Failure and dependency destinations now retain their canonical IDs and link to the relevant function in HTML and Markdown. The main reading text and semantic model remain unchanged. All six focused presentation tests pass, and the rebuilt bundle passes source, link, and archive checks.

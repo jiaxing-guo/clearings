@@ -237,7 +237,7 @@ ID: `behavior:252223db-4880-4aca-b951-6070c8f7e4c6`.
 - [C9: The res setter stores its argument and sets finalized to true, including when the argument is undefined\.](#claim-1d2eae5b-efd0-4237-8671-50d5055dafe0)
 - [C59: The res setter accepts Response or undefined by annotation and has no explicit return value\. It does not validate the argument type at runtime\.](#claim-d543fd57-c7cb-4a8b-9078-fc6050980cf1)
 
-**Failure**: The direct handler throws or its Promise chain rejects\. → \#handleError
+**Failure**: The direct handler throws or its Promise chain rejects\. → [\#handleError (function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e)](#function-0ae4f7fa-8fab-4114-b656-e0c4a210b97e)
 
 - [C18: A synchronous throw from the direct handler is sent to the private error handler\.](#claim-3a465dfd-a823-4297-a867-dc7b31edd393)
 - [C34: Rejection in the direct Promise chain is sent to the private error handler\.](#claim-6b5a8b30-ea42-46e9-880d-53099dbe6c56)
@@ -246,7 +246,7 @@ ID: `behavior:252223db-4880-4aca-b951-6070c8f7e4c6`.
 
 - [C55: The synchronous direct\-result fallback invokes not\-found outside the direct handler try/catch, so a throw there can propagate to the caller\.](#claim-bf2950af-c55d-401a-9691-50acf819a3f2)
 
-**Failure**: Composition fails or returns unfinalized context\. → \#handleError
+**Failure**: Composition fails or returns unfinalized context\. → [\#handleError (function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e)](#function-0ae4f7fa-8fab-4114-b656-e0c4a210b97e)
 
 - [C53: An unfinalized context returned by composition causes an Error about returning a Response or awaiting next\.](#claim-b962178a-0e5d-4e27-a698-38b48e7fdd3a)
 - [C38: A throw during the awaited composed path or its finalization check is passed to the private error handler\.](#claim-7af68846-ae57-44cd-8e06-49e5596a226b)
@@ -292,7 +292,7 @@ None recorded; this does not prove absence.
 
 - [C2: The HEAD wrapper awaits recursive GET dispatch and constructs a Response outside the other local handler catches\. A failure in that wrapper rejects its returned Promise\.](#claim-07e14fa8-6312-422f-920f-8de6ebf3639f)
 
-**Dependency**: \#dispatch
+**Dependency**: [\#dispatch (function:066fbdc1-2b42-4637-b456-7e8f96224eb4)](#function-066fbdc1-2b42-4637-b456-7e8f96224eb4)
 
 - [C3: HEAD dispatch recursively uses GET as the dispatch method argument while retaining the original Request object\.](#claim-085248c3-81b0-4cad-986d-05fee44fe506)
 
@@ -332,12 +332,12 @@ Role: arrow. [src/context\.ts](#evidence-3964d7755fbe93590183216380561fc4f6cf9ee
 
 - [C30: Context\.notFound installs a fallback callback only when its private handler is nullish, then invokes the handler with this context\.](#claim-5e705c38-4dd9-4e55-be1b-2f016881b2bd)
 
-**Dependency**: Context not\-found fallback arrow
+**Dependency**: [Context not\-found fallback arrow (function:49d6bd1e-9aaf-4234-8f34-2aa0011e86b4)](#function-49d6bd1e-9aaf-4234-8f34-2aa0011e86b4)
 
 - [C30: Context\.notFound installs a fallback callback only when its private handler is nullish, then invokes the handler with this context\.](#claim-5e705c38-4dd9-4e55-be1b-2f016881b2bd)
 - [C60: The fallback arrow installed by Context\.notFound calls createResponseInstance with no arguments and returns its result\.](#claim-d5dd3300-e498-4ec8-b548-9d8308c15576)
 
-**Dependency**: Configured not\-found callback
+**Dependency**: [Configured not\-found callback (function:2ed115cb-3d2d-4d04-9657-d8829ba4ee56)](#function-2ed115cb-3d2d-4d04-9657-d8829ba4ee56)
 
 - [C30: Context\.notFound installs a fallback callback only when its private handler is nullish, then invokes the handler with this context\.](#claim-5e705c38-4dd9-4e55-be1b-2f016881b2bd)
 
@@ -394,7 +394,7 @@ Role: function. [src/compose\.ts](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc
 - [C28: The repeated\-next guard throws before the current frame&\#39;s handler try/catch, so that frame does not process its own guard error through onError\.](#claim-5a6d5b53-546a-4ad0-bb93-b028876d1d12)
 - [C62: If a parent handler awaits a child continuation and its rejection reaches the parent handler call, the parent frame catch can handle an Error through onError\. An unawaited continuation is not guaranteed to reach that catch\.](#claim-d8b4fcf8-5869-40ef-a225-ff4e3d13bb99)
 
-**Failure**: A handler throws an Error and onError exists\. → Configured error callback
+**Failure**: A handler throws an Error and onError exists\. → [Configured error callback (function:98d308f3-506e-458a-9b99-bfe76154df29)](#function-98d308f3-506e-458a-9b99-bfe76154df29)
 
 - [C26: The handler catch uses onError only when the thrown value is an Error and an onError callback exists\.](#claim-544dbd7e-acd1-4040-8b00-00b91c0e8f8d)
 - [C31: Before invoking onError, the handler catch writes the caught Error into context\.error\.](#claim-6a188938-736d-4970-a698-88df4b787329)
@@ -420,30 +420,30 @@ Role: function. [src/compose\.ts](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc
 - [C63: The composed frame assigns context\.res after the handler catch\. A failure from that assignment escapes the current handler catch and can reach an awaiting parent or application dispatcher\.](#claim-e1b56a2f-0a30-4965-865a-3ab75c96f399)
 - [C62: If a parent handler awaits a child continuation and its rejection reaches the parent handler call, the parent frame catch can handle an Error through onError\. An unawaited continuation is not guaranteed to reach that catch\.](#claim-d8b4fcf8-5869-40ef-a225-ff4e3d13bb99)
 
-**Dependency**: Recursive middleware continuation
+**Dependency**: [Recursive middleware continuation (function:a30d9cc8-bde8-4f72-8469-44f9b1e91a23)](#function-a30d9cc8-bde8-4f72-8469-44f9b1e91a23)
 
 - [C43: A handler receives a continuation that recursively dispatches i \+ 1 using the same context\.](#claim-87cd957c-bb51-49fe-b9a4-291c106e08c5)
 
-**Dependency**: Selected application handler
+**Dependency**: [Selected application handler (function:d888d262-67d4-4c35-a3d3-b88a00f3deb6)](#function-d888d262-67d4-4c35-a3d3-b88a00f3deb6)
 
 - [C14: A present middleware entry supplies its handler from middleware\[i\]\[0\]\[0\]\.](#claim-36389804-ee71-4da7-bbdc-e77cb1d247b1)
 - [C1: The dispatcher awaits each handler result, allowing synchronous return values and promises to feed the same response handling\.](#claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c)
 
-**Dependency**: Supplied outer continuation
+**Dependency**: [Supplied outer continuation (function:e677a038-abee-4d92-8888-4b401adf7370)](#function-e677a038-abee-4d92-8888-4b401adf7370)
 
 - [C5: The supplied outer next callback is eligible only at exactly middleware\.length when no middleware entry exists\.](#claim-0df938c1-9773-4d05-84ba-5bcecf66fb6c)
 
-**Dependency**: Configured error callback
+**Dependency**: [Configured error callback (function:98d308f3-506e-458a-9b99-bfe76154df29)](#function-98d308f3-506e-458a-9b99-bfe76154df29)
 
 - [C26: The handler catch uses onError only when the thrown value is an Error and an onError callback exists\.](#claim-544dbd7e-acd1-4040-8b00-00b91c0e8f8d)
 - [C31: Before invoking onError, the handler catch writes the caught Error into context\.error\.](#claim-6a188938-736d-4970-a698-88df4b787329)
 - [C15: After awaiting onError, the dispatcher marks the result as an error response\.](#claim-3744e538-0f07-4ea4-a210-02d1a6c03781)
 
-**Dependency**: Configured not\-found callback
+**Dependency**: [Configured not\-found callback (function:2ed115cb-3d2d-4d04-9657-d8829ba4ee56)](#function-2ed115cb-3d2d-4d04-9657-d8829ba4ee56)
 
 - [C64: Without a selected handler, onNotFound runs only when context\.finalized is exactly false and the callback exists\.](#claim-e8b03c7a-182a-46d4-aeb8-bf4295b82798)
 
-**Dependency**: Context\.res setter
+**Dependency**: [Context\.res setter (function:9cb45f6c-5651-4587-89b1-acc02a5e7fb3)](#function-9cb45f6c-5651-4587-89b1-acc02a5e7fb3)
 
 - [C73: A truthy response result is assigned to context\.res only when context is not finalized or the result came through onError\.](#claim-fca39081-cbda-4fe7-8212-cf21fdc9a885)
 
@@ -483,11 +483,11 @@ None recorded; this does not prove absence.
 
 - [C32: The direct\-path async next callback awaits not\-found, assigns the result to c\.res, and has no explicit return value\. It can reject if the awaited callback or assignment fails\.](#claim-6a9ded64-407c-492b-904d-328bc04d3373)
 
-**Dependency**: Configured not\-found callback
+**Dependency**: [Configured not\-found callback (function:2ed115cb-3d2d-4d04-9657-d8829ba4ee56)](#function-2ed115cb-3d2d-4d04-9657-d8829ba4ee56)
 
 - [C58: The direct handler receives an async next callback that assigns the configured not\-found result to c\.res\.](#claim-d4c7dc38-cdfc-4a47-b9f5-c3628df16210)
 
-**Dependency**: Context\.res setter
+**Dependency**: [Context\.res setter (function:9cb45f6c-5651-4587-89b1-acc02a5e7fb3)](#function-9cb45f6c-5651-4587-89b1-acc02a5e7fb3)
 
 - [C58: The direct handler receives an async next callback that assigns the configured not\-found result to c\.res\.](#claim-d4c7dc38-cdfc-4a47-b9f5-c3628df16210)
 - [C9: The res setter stores its argument and sets finalized to true, including when the argument is undefined\.](#claim-1d2eae5b-efd0-4237-8671-50d5055dafe0)
@@ -537,7 +537,7 @@ Role: method. [src/hono\-base\.ts](#evidence-98377407be0e1d9f3dbe99143801820905c
 
 - [C57: Path resolution, route matching, and Context construction occur before the direct\-handler and composed\-runner try blocks\. A failure there does not enter those local catches\.](#claim-d3f7ed18-fd8d-44d4-b50d-11e2dc21e501)
 
-**Failure**: The direct handler throws synchronously\. → \#handleError
+**Failure**: The direct handler throws synchronously\. → [\#handleError (function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e)](#function-0ae4f7fa-8fab-4114-b656-e0c4a210b97e)
 
 - [C18: A synchronous throw from the direct handler is sent to the private error handler\.](#claim-3a465dfd-a823-4297-a867-dc7b31edd393)
 
@@ -545,44 +545,44 @@ Role: method. [src/hono\-base\.ts](#evidence-98377407be0e1d9f3dbe99143801820905c
 
 - [C55: The synchronous direct\-result fallback invokes not\-found outside the direct handler try/catch, so a throw there can propagate to the caller\.](#claim-bf2950af-c55d-401a-9691-50acf819a3f2)
 
-**Dependency**: HEAD wrapper
+**Dependency**: [HEAD wrapper (function:013cff1d-eca2-4834-a4b0-51726491bcf1)](#function-013cff1d-eca2-4834-a4b0-51726491bcf1)
 
 - [C3: HEAD dispatch recursively uses GET as the dispatch method argument while retaining the original Request object\.](#claim-085248c3-81b0-4cad-986d-05fee44fe506)
 - [C66: HEAD constructs a new Response with a null body and the awaited GET\-dispatch response as its initialization argument\.](#claim-f30ea83a-a386-4f3c-93af-21067f7f47cb)
 
-**Dependency**: Selected application handler
+**Dependency**: [Selected application handler (function:d888d262-67d4-4c35-a3d3-b88a00f3deb6)](#function-d888d262-67d4-4c35-a3d3-b88a00f3deb6)
 
 - [C19: Exactly one matched handler takes a direct path that bypasses compose\.](#claim-3c7751cc-3137-4636-a809-aa2a0ee43c9e)
 - [C58: The direct handler receives an async next callback that assigns the configured not\-found result to c\.res\.](#claim-d4c7dc38-cdfc-4a47-b9f5-c3628df16210)
 
-**Dependency**: Direct handler next callback
+**Dependency**: [Direct handler next callback (function:05c0f3fe-c675-4fc7-a1ef-4028fad0ac09)](#function-05c0f3fe-c675-4fc7-a1ef-4028fad0ac09)
 
 - [C58: The direct handler receives an async next callback that assigns the configured not\-found result to c\.res\.](#claim-d4c7dc38-cdfc-4a47-b9f5-c3628df16210)
 
-**Dependency**: Direct Promise result selection
+**Dependency**: [Direct Promise result selection (function:94ab9b66-e4ca-4f2d-83ce-ab7711ff65da)](#function-94ab9b66-e4ca-4f2d-83ce-ab7711ff65da)
 
 - [C20: The direct path distinguishes a returned Promise using instanceof Promise\.](#claim-3ebf7dad-d613-4994-9e9e-f59bb1d79317)
 - [C13: A truthy resolved response from that Promise is returned before consulting finalized context state\.](#claim-32832fda-23d3-411c-8392-6782b3634057)
 - [C42: A falsy resolved Promise value falls back to c\.res when finalized, otherwise to the configured not\-found handler\.](#claim-876a95e6-ca91-46c2-b831-60091068b69d)
 
-**Dependency**: Direct Promise rejection callback
+**Dependency**: [Direct Promise rejection callback (function:c14693d1-3c79-4916-a155-6c5fd1f91121)](#function-c14693d1-3c79-4916-a155-6c5fd1f91121)
 
 - [C34: Rejection in the direct Promise chain is sent to the private error handler\.](#claim-6b5a8b30-ea42-46e9-880d-53099dbe6c56)
 
-**Dependency**: Composed result finalization
+**Dependency**: [Composed result finalization (function:379c4b0e-13f0-4689-aa90-c2c2d12abb62)](#function-379c4b0e-13f0-4689-aa90-c2c2d12abb62)
 
 - [C68: The composition path awaits the composed runner with the newly constructed context\.](#claim-f551142e-2ef8-4131-9da8-304f6a92329e)
 
-**Dependency**: compose
+**Dependency**: [compose (function:92019dfa-b10c-4b1a-8ba3-914084ae947c)](#function-92019dfa-b10c-4b1a-8ba3-914084ae947c)
 
 - [C56: The dispatcher constructs compose with the matched middleware, configured error handler, and configured not\-found handler\.](#claim-c3467e33-ffa9-47f6-8a0f-934dcdd6024c)
 
-**Dependency**: \#handleError
+**Dependency**: [\#handleError (function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e)](#function-0ae4f7fa-8fab-4114-b656-e0c4a210b97e)
 
 - [C18: A synchronous throw from the direct handler is sent to the private error handler\.](#claim-3a465dfd-a823-4297-a867-dc7b31edd393)
 - [C38: A throw during the awaited composed path or its finalization check is passed to the private error handler\.](#claim-7af68846-ae57-44cd-8e06-49e5596a226b)
 
-**Dependency**: Configured not\-found callback
+**Dependency**: [Configured not\-found callback (function:2ed115cb-3d2d-4d04-9657-d8829ba4ee56)](#function-2ed115cb-3d2d-4d04-9657-d8829ba4ee56)
 
 - [C42: A falsy resolved Promise value falls back to c\.res when finalized, otherwise to the configured not\-found handler\.](#claim-876a95e6-ca91-46c2-b831-60091068b69d)
 - [C49: A non\-Promise nullish direct result invokes the not\-found handler; this expression does not consult c\.finalized\.](#claim-abe1d0e6-876f-40a3-b8e1-aac696dd56f5)
@@ -629,7 +629,7 @@ None recorded; this does not prove absence.
 
 - [C72: The private error handler calls the configured error callback without a local try block\. Its synchronous throw or returned rejection can pass to the caller\.](#claim-fc07b7ac-e50a-4c46-8293-6c36dcbfbbdb)
 
-**Dependency**: Configured error callback
+**Dependency**: [Configured error callback (function:98d308f3-506e-458a-9b99-bfe76154df29)](#function-98d308f3-506e-458a-9b99-bfe76154df29)
 
 - [C69: The private error handler delegates Error instances to the configured error callback and rethrows other values\.](#claim-f5f65ad6-ca98-41d8-95dd-293ac83d5f15)
 
@@ -694,20 +694,20 @@ Role: arrow. [src/hono\-base\.ts](#evidence-98377407be0e1d9f3dbe99143801820905c1
 
 None recorded; this does not prove absence.
 
-**Failure**: Composition fails or returns an unfinalized context\. → \#handleError
+**Failure**: Composition fails or returns an unfinalized context\. → [\#handleError (function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e)](#function-0ae4f7fa-8fab-4114-b656-e0c4a210b97e)
 
 - [C53: An unfinalized context returned by composition causes an Error about returning a Response or awaiting next\.](#claim-b962178a-0e5d-4e27-a698-38b48e7fdd3a)
 - [C38: A throw during the awaited composed path or its finalization check is passed to the private error handler\.](#claim-7af68846-ae57-44cd-8e06-49e5596a226b)
 
-**Dependency**: Returned composition runner
+**Dependency**: [Returned composition runner (function:bc6399ac-1a94-4541-b51b-4cc6cc66aea8)](#function-bc6399ac-1a94-4541-b51b-4cc6cc66aea8)
 
 - [C68: The composition path awaits the composed runner with the newly constructed context\.](#claim-f551142e-2ef8-4131-9da8-304f6a92329e)
 
-**Dependency**: Context\.res getter
+**Dependency**: [Context\.res getter (function:e4635ca2-ec40-4091-ad54-7be94f4c32ba)](#function-e4635ca2-ec40-4091-ad54-7be94f4c32ba)
 
 - [C39: The composition path returns context\.res after checking finalized\.](#claim-7ce9d699-11e2-481a-866e-c1e4356ea24d)
 
-**Dependency**: \#handleError
+**Dependency**: [\#handleError (function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e)](#function-0ae4f7fa-8fab-4114-b656-e0c4a210b97e)
 
 - [C38: A throw during the awaited composed path or its finalization check is passed to the private error handler\.](#claim-7af68846-ae57-44cd-8e06-49e5596a226b)
 
@@ -771,7 +771,7 @@ Role: arrow. [src/compose\.ts](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc166
 
 None recorded; this does not prove absence.
 
-**Dependency**: Returned composition runner
+**Dependency**: [Returned composition runner (function:bc6399ac-1a94-4541-b51b-4cc6cc66aea8)](#function-bc6399ac-1a94-4541-b51b-4cc6cc66aea8)
 
 - [C17: compose accepts middleware entries and optional error and not\-found callbacks\. It returns a runner that accepts a Context and optional outer next callback\.](#claim-39cc9873-5187-41f4-8403-332e355f7db9)
 
@@ -808,15 +808,15 @@ Role: arrow. [src/hono\-base\.ts](#evidence-98377407be0e1d9f3dbe99143801820905c1
 
 None recorded; this does not prove absence.
 
-**Failure**: Promise fallback or response access fails\. → Direct Promise rejection callback
+**Failure**: Promise fallback or response access fails\. → [Direct Promise rejection callback (function:c14693d1-3c79-4916-a155-6c5fd1f91121)](#function-c14693d1-3c79-4916-a155-6c5fd1f91121)
 
 - [C34: Rejection in the direct Promise chain is sent to the private error handler\.](#claim-6b5a8b30-ea42-46e9-880d-53099dbe6c56)
 
-**Dependency**: Context\.res getter
+**Dependency**: [Context\.res getter (function:e4635ca2-ec40-4091-ad54-7be94f4c32ba)](#function-e4635ca2-ec40-4091-ad54-7be94f4c32ba)
 
 - [C42: A falsy resolved Promise value falls back to c\.res when finalized, otherwise to the configured not\-found handler\.](#claim-876a95e6-ca91-46c2-b831-60091068b69d)
 
-**Dependency**: Configured not\-found callback
+**Dependency**: [Configured not\-found callback (function:2ed115cb-3d2d-4d04-9657-d8829ba4ee56)](#function-2ed115cb-3d2d-4d04-9657-d8829ba4ee56)
 
 - [C42: A falsy resolved Promise value falls back to c\.res when finalized, otherwise to the configured not\-found handler\.](#claim-876a95e6-ca91-46c2-b831-60091068b69d)
 
@@ -923,7 +923,7 @@ Role: arrow. [src/compose\.ts](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc166
 
 None recorded; this does not prove absence.
 
-**Dependency**: Nested middleware dispatch
+**Dependency**: [Nested middleware dispatch (function:03f326d3-1de0-4410-808f-b673a2c4cfb3)](#function-03f326d3-1de0-4410-808f-b673a2c4cfb3)
 
 - [C43: A handler receives a continuation that recursively dispatches i \+ 1 using the same context\.](#claim-87cd957c-bb51-49fe-b9a4-291c106e08c5)
 
@@ -963,7 +963,7 @@ None recorded; this does not prove absence.
 
 - [C12: The runner returns dispatch\(0\)\. This nested async function resolves to the shared context after successful completion and can reject on a propagated failure\.](#claim-2c55a0d3-2faf-413e-8173-4aa184a3094e)
 
-**Dependency**: Nested middleware dispatch
+**Dependency**: [Nested middleware dispatch (function:03f326d3-1de0-4410-808f-b673a2c4cfb3)](#function-03f326d3-1de0-4410-808f-b673a2c4cfb3)
 
 - [C50: The runner begins asynchronous dispatch at middleware index zero\.](#claim-b1c5caa4-d40d-4e99-a478-a0483a83437a)
 
@@ -999,7 +999,7 @@ None recorded; this does not prove absence.
 
 - [C72: The private error handler calls the configured error callback without a local try block\. Its synchronous throw or returned rejection can pass to the caller\.](#claim-fc07b7ac-e50a-4c46-8293-6c36dcbfbbdb)
 
-**Dependency**: \#handleError
+**Dependency**: [\#handleError (function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e)](#function-0ae4f7fa-8fab-4114-b656-e0c4a210b97e)
 
 - [C34: Rejection in the direct Promise chain is sent to the private error handler\.](#claim-6b5a8b30-ea42-46e9-880d-53099dbe6c56)
 
@@ -1190,7 +1190,7 @@ Role: arrow. [src/hono\-base\.ts](#evidence-d973f31095c0885ec6968e6dfe05b9be07c8
 
 None recorded; this does not prove absence.
 
-**Dependency**: \#dispatch
+**Dependency**: [\#dispatch (function:066fbdc1-2b42-4637-b456-7e8f96224eb4)](#function-066fbdc1-2b42-4637-b456-7e8f96224eb4)
 
 - [C54: fetch forwards the original request, its method, the environment, and the execution context into the private dispatcher\.](#claim-be525e2a-9f68-4196-b67c-7bf670fbee39)
 
