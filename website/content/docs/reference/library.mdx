@@ -83,3 +83,5 @@ See [the specification guide](/docs/guides/specifications) for a complete case. 
 Types include `SequenceStep`, `SequenceOptions`, `ContinuityCheck`, `OperationSequenceCheck`, `SemanticSpecification`, `SemanticOperation`, `OperationContext`, `OperationObservation`, `OperationCheck`, `Expression`, and `ValueType`. Caller code owns I/O. No target code is executed by these functions. A passing check is not a source-conformance proof.
 
 The APIs read source and return objects or text. They do not save files, send prompts, execute target code, or certify assertions. Callers own file I/O, agent transport, review, and source notice distribution.
+
+When `renderOperationContext(context, options)` receives scenarios, supply their original specification as `options.specification`. The renderer validates the context binding and checks each observation again. `renderSpecification` supplies its specification automatically. Changed observations cannot retain a cached verdict.

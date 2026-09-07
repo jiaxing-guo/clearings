@@ -13,7 +13,7 @@ From the Clearings repository, after npm ci --ignore-scripts:
 ```bash
 npm run bootstrap:demo -- benchmarks/results/local/new-bootstrap
 node scripts/check-bootstrap-demo.mjs benchmarks/results/local/new-bootstrap
-python scripts/package-shared-demo.py benchmarks/results/local/new-bootstrap
+python3 scripts/package-shared-demo.py benchmarks/results/local/new-bootstrap
 ```
 
 Use a new output directory. The author-development-record.json describes the continuing-session process and its limits. implementation-bindings.json contains exact working-source spans and file hashes. It is an explicit author mapping, not proof that code implements the specification.

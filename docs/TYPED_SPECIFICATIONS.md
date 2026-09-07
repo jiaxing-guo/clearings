@@ -94,7 +94,7 @@ The budget is compact UTF-8 JSON plus one newline, including the byte counters. 
 ```bash
 npm run bootstrap:demo -- benchmarks/results/local/my-bootstrap
 node scripts/check-bootstrap-demo.mjs benchmarks/results/local/my-bootstrap
-python scripts/package-shared-demo.py benchmarks/results/local/my-bootstrap
+python3 scripts/package-shared-demo.py benchmarks/results/local/my-bootstrap
 ```
 
 Use a new directory. Open `index.html`. The bundle contains both specifications, actual agent contexts, two human views and Markdown copies, nine actual Clearings cases, nine authored Hono cases, eight rejected output faults, exact implementation source bindings, and an author development record.
@@ -128,3 +128,7 @@ Verification after these corrections: typecheck and all 78 library tests pass. B
 `checkOperationSequence(spec, steps, { stateIds })` checks each supplied operation and compares selected shared state between adjacent records. It accepts 1–256 steps and preserves missing observations as unknown. A valid rejected write can pass its contract. See [the API guide](SEQUENCE_CHECKS.md) for state selection, result fields, and errors. The model in `specifications/clearings/sequence-check.json` is the frozen intended requirement used by the fresh coding agent.
 
 Equality validation rejects impossible enum comparisons, including misspelled string literals. `reachable` takes a string root and an explicit list of `{ from, to }` edges. It returns the unique reachable IDs, including the root, in default string order. Missing input or an exhausted work budget returns unknown. The context model now checks both required closure and minimal membership. It rejects an unrelated available operation even when omission accounting remains consistent.
+
+Collection predicates also reject literals outside their declared enum element domains. For reports with scenarios, `renderOperationContext` requires `options.specification`, validates the context against it, and recomputes each result from its observation. `renderSpecification` supplies this binding automatically. A cached result never determines the displayed verdict.
+
+The final combined verification after the follow-up reviews passes typecheck and all 105 library tests. The static documentation rebuild passes for 27 pages and 2,398 links; both archive checks pass. The first-submission experiment scores and frozen inputs are unchanged.

@@ -13,7 +13,7 @@ Reproduce from the Clearings repository root after npm ci --ignore-scripts and n
 ```bash
 node scripts/replay-contracts.mjs benchmark-checkouts/hono.git benchmarks/results/local/my-contracts
 node scripts/build-shared-demo.mjs benchmark-checkouts/hono.git benchmarks/results/local/my-contracts benchmarks/results/local/my-demo
-python scripts/package-shared-demo.py benchmarks/results/local/my-demo
+python3 scripts/package-shared-demo.py benchmarks/results/local/my-demo
 ```
 
 Use new output directories. Fetch the pinned bare checkout first with npm run benchmark:fetch if absent. The scan is produced by replay and kept outside this smaller bundle.

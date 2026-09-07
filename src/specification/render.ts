@@ -1,13 +1,13 @@
 import { html as h, markdown as md, codeFence } from '../renderers/report.js';
 import { REPORT_CSS } from '../renderers/assets.js';
-import { assembleContext, type OperationContext } from './context.js';
+import { assembleContext, validateOperationContext, type OperationContext } from './context.js';
 import { checkOperation } from './check.js';
 import { ClearingsError } from '../model/types.js';
 import { formatExpression } from './expressions.js';
 import type { OperationCheck, OperationObservation, SemanticSpecification, ValueType } from './model.js';
 
 export interface CheckedScenario { name: string; operation_id: string; observation: OperationObservation; result: OperationCheck }
-export interface SpecificationReportOptions { format?: 'html' | 'markdown'; maxBytes?: number; scenarios?: CheckedScenario[] }
+export interface SpecificationReportOptions { format?: 'html' | 'markdown'; maxBytes?: number; scenarios?: CheckedScenario[]; specification?: SemanticSpecification }
 const fence = (value: unknown) => codeFence(JSON.stringify(value, null, 2)).replace('typescript\n', 'json\n');
 const typeName = (type: ValueType): string => type.kind === 'enum' ? type.values.join(' | ') : type.kind === 'list' ? `list of ${typeName(type.element)}` : type.kind === 'record' ? `{ ${Object.entries(type.fields).map(([name, field]) => `${name}: ${typeName(field)}`).join(', ')} }` : type.kind;
 const anchor = (id: string) => 'record-' + Buffer.from(id).toString('hex');
@@ -15,8 +15,11 @@ const anchor = (id: string) => 'record-' + Buffer.from(id).toString('hex');
 export function renderOperationContext(context: OperationContext, options: SpecificationReportOptions = {}): string {
   if (options.format !== undefined && !['html', 'markdown'].includes(options.format)) throw new ClearingsError('INVALID_ARGUMENTS', 'Specification reports support html and markdown.');
   const root = context.operations[0]!;
-  const scenarios = options.scenarios ?? [];
+  let scenarios = options.scenarios ?? [];
+  if (scenarios.length && !options.specification) throw new ClearingsError('INVALID_ARGUMENTS', 'Context scenario reports require the original specification.');
+  if (options.specification) validateOperationContext(context, options.specification);
   for (const scenario of scenarios) if (scenario.result.artifact_id !== context.artifact_id || scenario.result.operation_id !== scenario.operation_id || !context.operations.some(operation => operation.id === scenario.operation_id)) throw new ClearingsError('INVALID_SELECTION', 'Report scenarios must belong to included operations in this specification.');
+  if (scenarios.length) scenarios = scenarios.map(scenario => ({ ...scenario, result: checkOperation(options.specification!, scenario.operation_id, scenario.observation) }));
   const status = `${context.perspective === 'intended' ? 'Proposed intended behavior' : 'Proposed source interpretation'}. ${context.operations.length} operations. Source hashes checked; source authenticity and claim support are not established.`;
   if (options.format !== 'html') {
     return [`# ${md(root.name)}`, '', md(root.purpose), '', status, '', `Specification: \`${context.artifact_id}\`.`, '',
@@ -51,6 +54,5 @@ ${operation.decisions.length ? `<h4>Open boundaries</h4><ul>${operation.decision
 }
 export function renderSpecification(spec: SemanticSpecification, selection: string, options: SpecificationReportOptions = {}): string {
   const context = assembleContext(spec, selection, { maxBytes: options.maxBytes ?? 2097152 });
-  const scenarios = options.scenarios?.map(scenario => ({ ...scenario, result: checkOperation(spec, scenario.operation_id, scenario.observation) }));
-  return renderOperationContext(context, { ...options, ...(scenarios ? { scenarios } : {}) });
+  return renderOperationContext(context, { ...options, specification: spec });
 }

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { sealSpecification, validateSpecification, specificationIdentity, assembleContext, serializeOperationContext, validateOperationContext, checkOperation, evaluateExpression, renderSpecification, createContractBrief } from '../dist/index.js';
+import { sealSpecification, validateSpecification, specificationIdentity, assembleContext, serializeOperationContext, validateOperationContext, checkOperation, evaluateExpression, renderSpecification, renderOperationContext, createContractBrief } from '../dist/index.js';
 
 const literal = value => ({ kind: 'literal', value });
 const ref = (root, ...path) => ({ kind: 'ref', root, path });
@@ -322,4 +322,27 @@ test('typed context rules reject unrelated records even when closure and omissio
  const result=checkOperation(bootstrap,'assemble-context',observed);
  assert.equal(result.verdict,'fail');assert.equal(result.checks.find(x=>x.id==='rule:minimal-closure').verdict,'fail');
  assert.equal(result.checks.find(x=>x.id==='rule:dependency-closure').verdict,'pass');assert.equal(result.checks.find(x=>x.id==='rule:disjoint-omissions').verdict,'pass');
+});
+
+
+test('collection predicates reject literals outside declared enum element domains',()=>{
+ const make=predicate=>{const op=operation('enum-collection');op.inputs={values:{kind:'list',element:{kind:'enum',values:['ready']}}};op.outcomes[0].when=predicate;return graph([op]);};
+ const collection=ref('input','values');
+ for(const expr of [{kind:'contains',collection,value:literal('raedy')},{kind:'subset',collection,value:literal(['ready','raedy'])}])assert.throws(()=>make(expr),{code:'SPEC_TYPE'});
+ for(const expr of [{kind:'contains',collection,value:literal('ready')},{kind:'subset',collection,value:literal(['ready'])},{kind:'subset',collection,value:literal([])}])assert.doesNotThrow(()=>make(expr));
+});
+
+test('context scenario reports recheck changed observations and reject an unbound specification',()=>{
+ const spec=graph([operation('scenario')]);const op=spec.operations[0];op.output={kind:'string'};op.outcomes[0].ensures=[{id:'scenario-result',description:'Return ready.',predicate:eq(ref('output'),literal('ready')),evidence_ids:[]}];const sealed=sealSpecification(spec);
+ const pack=assembleContext(sealed,'scenario',{maxBytes:65536});const observation={input:{},before:{},outcome:'outcome:scenario',output:'ready',effects:[]};const scenario={name:'changed',operation_id:'scenario',observation,result:checkOperation(sealed,'scenario',observation)};
+ assert.equal(scenario.result.verdict,'pass');scenario.observation.output='wrong';
+ assert.throws(()=>renderOperationContext(pack,{scenarios:[scenario]}),{code:'INVALID_ARGUMENTS'});
+ for(const format of ['html','markdown']) {
+  const output=renderOperationContext(pack,{format,scenarios:[scenario],specification:sealed});
+  assert(output.includes(format==='html'?'>fail</span>':'**fail**'));
+  assert.equal(scenario.result.verdict,'pass');
+ }
+ const changed=structuredClone(pack);changed.operations[0].purpose+=' forged';assert.throws(()=>renderOperationContext(changed,{scenarios:[scenario],specification:sealed}),{code:'INVALID_CONTEXT'});
+ const bad=structuredClone(scenario);bad.observation.output=3;assert.throws(()=>renderOperationContext(pack,{scenarios:[bad],specification:sealed}),{code:'INVALID_OBSERVATION'});
+ assert(renderSpecification(sealed,'scenario',{scenarios:[scenario]}).includes('**fail**'));
 });

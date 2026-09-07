@@ -22,11 +22,11 @@ with zipfile.ZipFile(root/'clearings-shared-review.zip','w') as z:
 `;
  const checker=new URL('../scripts/check-review-archive.py',import.meta.url).pathname;
  for(const mode of ['valid','changed','missing','extra','duplicate','symlink']) {
-  execFileSync('python',['-c',writer,directory,mode],{stdio:'pipe'});
-  const result=spawnSync('python',[checker,directory],{encoding:'utf8'});
+  execFileSync('python3',['-c',writer,directory,mode],{stdio:'pipe'});
+  const result=spawnSync('python3',[checker,directory],{encoding:'utf8'});
   assert.equal(result.status===0,mode==='valid',mode+': '+result.stderr);
  }
- execFileSync('python',['-c',writer,directory,'valid']);
+ execFileSync('python3',['-c',writer,directory,'valid']);
  writeFileSync(join(directory,'source.txt'),'unrecorded change');
- assert.notEqual(spawnSync('python',[checker,directory]).status,0);
+ assert.notEqual(spawnSync('python3',[checker,directory]).status,0);
 });

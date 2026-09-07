@@ -177,6 +177,7 @@ export function expressionType(expr: Expression, environment: TypeEnvironment): 
       if (expr.kind === 'subset' && value.kind !== 'list') invalid('Subset expression must be a list.');
       const element = expr.kind === 'subset' ? (value as Extract<ValueType, { kind: 'list' }>).element : value;
       if (!compatible(collection.element, element)) invalid('Collection operands have incompatible element types.');
+      if (expr.value.kind === 'literal' && !literalWithinEnumDomains(expr.value.value, expr.kind === 'subset' ? collection : collection.element)) invalid('Collection literal is outside the declared enum domain.');
       return { kind: 'boolean' };
     }
     case 'reachable': {

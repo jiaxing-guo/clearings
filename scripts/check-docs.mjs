@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
 import { parse } from '../website/node_modules/parse5/dist/index.js';
-import { execFileSync } from 'node:child_process';
+import { checkReviewArchive } from './review-archive.mjs';
 import { staticClient } from '../website/node_modules/fumadocs-core/dist/search/client/orama-static.js';
 const root=resolve('website/out');
-execFileSync('python',['scripts/check-review-archive.py',join(root,'demo')],{stdio:'inherit'});
-execFileSync('python',['scripts/check-review-archive.py',join(root,'demo/bootstrap'),'clearings-specification-review.zip'],{stdio:'inherit'});
+checkReviewArchive(join(root,'demo'));
+checkReviewArchive(join(root,'demo/bootstrap'),'clearings-specification-review.zip');
 const files=[];
 function walk(dir) {for(const entry of readdirSync(dir,{withFileTypes:true})) {const p=join(dir,entry.name);if(entry.isDirectory())walk(p);else files.push(p);}}
 walk(root);
@@ -43,7 +43,11 @@ function target(url,file,requirePrefix=true) {
 let links=0;
 for(const file of files.filter(f=>f.endsWith('.html'))) {
  const data=tree(file);
- for(const asset of data.assets) {assert(!/^https?:\/\//.test(asset),`External asset: ${asset}`);if(!asset.startsWith('data:'))target(asset,file);}
+ for(const asset of data.assets) {
+  if(asset.startsWith('data:'))continue;
+  assert(!/^(?:[a-z][a-z0-9+.-]*:|[/\\]{2})/i.test(asset.trimStart()),`External asset: ${asset}`);
+  assert(target(asset,file)!==null,`External asset: ${asset}`);
+ }
  for(const link of data.links) {if(/^(mailto:|tel:|data:)/.test(link))continue;target(link,file);links++;}
 }
 const searchFile=join(root,'search-index.json');assert(existsSync(searchFile),'Static search index missing.');

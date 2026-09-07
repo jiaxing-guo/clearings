@@ -30,7 +30,7 @@ npm run build
 npm run benchmark:fetch
 node scripts/replay-contracts.mjs benchmark-checkouts/hono.git benchmarks/results/local/my-contracts
 node scripts/build-shared-demo.mjs benchmark-checkouts/hono.git benchmarks/results/local/my-contracts benchmarks/results/local/my-demo
-python scripts/package-shared-demo.py benchmarks/results/local/my-demo
+python3 scripts/package-shared-demo.py benchmarks/results/local/my-demo
 node scripts/check-shared-demo.mjs benchmarks/results/local/my-demo
 ```
 
@@ -70,3 +70,7 @@ The documentation development command now prepares demo assets before starting t
 The static documentation build passes. The exported site check covers 22 HTML pages, 2,113 links, and three local search queries. It also verifies the downloadable archive and finds no external assets.
 
 A follow-up source review found missing destination IDs in canonical contract fields. Failure and dependency destinations now retain their canonical IDs and link to the relevant function in HTML and Markdown. The main reading text and semantic model remain unchanged. All six focused presentation tests pass, and the rebuilt bundle passes source, link, and archive checks.
+
+The static asset check now rejects protocol-relative URLs and any asset reference that resolves to an external origin. Archive checks use an explicit `python3` command and require Python 3.9 or newer, with a prerequisite check and a clear error. This runtime is documented for archive tests and documentation work.
+
+Verification of the final documentation fixes: the archive regression test passes; a process with only `python3` verifies the archive; missing Python reports the prerequisite. Four altered asset references are rejected, and the restored static export passes. The documentation build and check pass for 22 pages and 2,215 links.
