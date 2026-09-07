@@ -43,7 +43,11 @@ export function checkOperation(spec: SemanticSpecification, selection: string, o
   }));
   if (operation.outcome_policy === 'exclusive' && applicable.length > 1) add('outcome-exclusivity', 'Exactly one modeled outcome applies.', 'fail', 'Several exclusive guards are true.');
   if (!applicable.length && !uncertain.length) add('outcome-coverage', 'An outcome covers this input.', operation.coverage === 'complete' ? 'fail' : 'unknown', 'No outcome guard is true.');
-  if (observation.outcome === undefined) add('observed-outcome', 'An actual outcome is supplied.', 'unknown', 'Only outcome applicability can be inspected without an outcome.');
+  if (observation.outcome === undefined && operation.effects.completeness === 'complete' && observation.effects !== undefined) {
+    const allowed = new Set(operation.effects.allowed.map(effect => effect.id));
+    add('effects:allowed', 'Only effects declared for this operation occur.', observation.effects.every(id => allowed.has(id)) ? 'pass' : 'fail');
+  }
+  if (observation.outcome === undefined) add('observed-outcome', 'An actual outcome is supplied.', 'unknown', 'The actual outcome was not supplied; outcome-specific rules remain unchecked.');
   else {
     const outcome = operation.outcomes.find(item => item.id === observation.outcome);
     if (!outcome) throw new ClearingsError('INVALID_OBSERVATION', 'Unknown outcome ID.');

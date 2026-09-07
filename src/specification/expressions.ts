@@ -124,11 +124,12 @@ const compatible = (a: InferredType, b: InferredType): boolean => {
   if (a.kind === 'record' && b.kind === 'record') return Object.keys(a.fields).length === Object.keys(b.fields).length && Object.entries(a.fields).every(([key, type]) => b.fields[key] && compatible(type, b.fields[key]!));
   return a.kind === b.kind;
 };
-function literalWithinEnumDomains(value: JsonValue, type: InferredType): boolean {
+function literalWithinDomains(value: JsonValue, type: InferredType): boolean {
+  if (type.kind === 'integer') return typeof value === 'number' && Number.isSafeInteger(value);
   if (type.kind === 'enum') return typeof value === 'string' && type.values.includes(value);
-  if (type.kind === 'list' && Array.isArray(value)) return value.every(item => literalWithinEnumDomains(item, type.element));
+  if (type.kind === 'list' && Array.isArray(value)) return value.every(item => literalWithinDomains(item, type.element));
   if (type.kind === 'record' && value && typeof value === 'object' && !Array.isArray(value)) {
-    return Object.entries(type.fields).every(([key, field]) => own(value, key) && literalWithinEnumDomains(value[key]!, field));
+    return Object.entries(type.fields).every(([key, field]) => own(value, key) && literalWithinDomains(value[key]!, field));
   }
   return true;
 }
@@ -167,8 +168,8 @@ export function expressionType(expr: Expression, environment: TypeEnvironment): 
     case 'compare': {
       const left = infer(expr.left), right = infer(expr.right);
       if (expr.op === 'eq' || expr.op === 'ne') { if (!compatible(left, right)) invalid('Equality operands have incompatible types.');
-        if ((expr.left.kind === 'literal' && !literalWithinEnumDomains(expr.left.value, right))
-          || (expr.right.kind === 'literal' && !literalWithinEnumDomains(expr.right.value, left))) invalid('Equality literal is outside the declared enum domain.'); }
+        if ((expr.left.kind === 'literal' && !literalWithinDomains(expr.left.value, right))
+          || (expr.right.kind === 'literal' && !literalWithinDomains(expr.right.value, left))) invalid('Equality literal is outside the declared value domain.'); }
       else { requireKind(left, ['integer', 'number']); requireKind(right, ['integer', 'number']); }
       return { kind: 'boolean' };
     }
@@ -178,9 +179,9 @@ export function expressionType(expr: Expression, environment: TypeEnvironment): 
       if (expr.kind === 'subset' && value.kind !== 'list') invalid('Subset expression must be a list.');
       const element = expr.kind === 'subset' ? (value as Extract<ValueType, { kind: 'list' }>).element : value;
       if (!compatible(collection.element, element)) invalid('Collection operands have incompatible element types.');
-      if (expr.value.kind === 'literal' && !literalWithinEnumDomains(expr.value.value, expr.kind === 'subset' ? collection : collection.element)) invalid('Collection literal is outside the declared enum domain.');
+      if (expr.value.kind === 'literal' && !literalWithinDomains(expr.value.value, expr.kind === 'subset' ? collection : collection.element)) invalid('Collection literal is outside the declared value domain.');
       if (expr.collection.kind === 'literal' && Array.isArray(expr.collection.value)
-        && !expr.collection.value.every(item => literalWithinEnumDomains(item, element))) invalid('Collection literal is outside the declared enum domain.');
+        && !expr.collection.value.every(item => literalWithinDomains(item, element))) invalid('Collection literal is outside the declared value domain.');
       return { kind: 'boolean' };
     }
     case 'reachable': {

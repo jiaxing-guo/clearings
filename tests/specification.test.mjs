@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync, execFileSync } from 'node:child_process';
@@ -381,4 +381,51 @@ test('literal collections respect enum domains in scalar and nested value operan
     assert.doesNotThrow(() => make(type, kind, good));
     assert.doesNotThrow(() => make(type, kind, []));
   }
+});
+
+test('integer domains reject impossible literals but preserve numeric ordering and number values', () => {
+  const make = (type, predicate) => { const op = operation('numeric'); op.inputs = { value: type }; op.outcomes[0].when = predicate; return graph([op]); };
+  const value = ref('input', 'value'), integer = { kind: 'integer' };
+  for (const bad of [1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    for (const predicate of [eq(value, literal(bad)), eq(literal(bad), value), { kind: 'contains', collection: literal([bad]), value }]) {
+      assert.throws(() => make(integer, predicate), { code: 'SPEC_TYPE' });
+    }
+    for (const [type, predicate] of [
+      [{ kind: 'record', fields: { n: integer } }, eq(value, literal({ n: bad }))],
+      [{ kind: 'list', element: integer }, eq(literal([bad]), value)],
+      [{ kind: 'list', element: integer }, { kind: 'contains', collection: value, value: literal(bad) }],
+      [{ kind: 'list', element: integer }, { kind: 'subset', collection: literal([bad]), value }],
+    ]) assert.throws(() => make(type, predicate), { code: 'SPEC_TYPE' });
+  }
+  assert.doesNotThrow(() => make(integer, { kind: 'compare', op: 'lt', left: value, right: literal(1.5) }));
+  assert.doesNotThrow(() => make({ kind: 'number' }, eq(value, literal(1.5))));
+  assert.doesNotThrow(() => make(integer, eq(value, literal(Number.MAX_SAFE_INTEGER))));
+});
+
+test('complete effect boundaries reject undeclared traces even without an outcome', () => {
+  const op = operation('effects'); op.effects.allowed = [{ id: 'disk', description: 'Write a record.' }];
+  op.outcomes[0].effects = [{ effect_id: 'disk', occurrence: 'permitted' }];
+  const spec = graph([op]), observation = { input: {}, before: {}, effects: ['network'] };
+  const result = checkOperation(spec, 'effects', observation);
+  assert.equal(result.verdict, 'fail');
+  assert.equal(result.checks.find(c => c.id === 'effects:allowed').verdict, 'fail');
+  assert.equal(result.checks.find(c => c.id === 'observed-outcome').verdict, 'unknown');
+  for (const effects of [undefined, [], ['disk']]) assert.equal(checkOperation(spec, 'effects', { input: {}, before: {}, ...(effects === undefined ? {} : { effects }) }).verdict, 'unknown');
+  const partial = structuredClone(spec); partial.operations[0].effects.completeness = 'partial';
+  assert.equal(checkOperation(sealSpecification(partial), 'effects', observation).verdict, 'unknown');
+  const quiet = graph([operation('quiet')]);
+  assert.equal(checkOperation(quiet, 'quiet', observation).verdict, 'fail');
+  // A known outcome still applies its more specific effect boundary.
+  const restricted = structuredClone(spec); restricted.operations[0].outcomes[0].effects = [];
+  assert.equal(checkOperation(sealSpecification(restricted), 'effects', { ...observation, effects: ['disk'], outcome: 'outcome:effects', output: null }).verdict, 'fail');
+});
+
+test('schema regeneration reproduces the committed schema including reachability', t => {
+  const directory = mkdtempSync(join(tmpdir(), 'clearings-schema-')); t.after(() => rmSync(directory, { recursive: true, force: true }));
+  mkdirSync(join(directory, 'scripts')); mkdirSync(join(directory, 'schemas'));
+  const script = join(directory, 'scripts/generate-specification-schema.py');
+  writeFileSync(script, readFileSync(new URL('../scripts/generate-specification-schema.py', import.meta.url)));
+  execFileSync('python3', [script], { stdio: 'pipe' });
+  assert.deepEqual(readFileSync(join(directory, 'schemas/specification.v0.3.json')), readFileSync(new URL('../schemas/specification.v0.3.json', import.meta.url)));
+  validateSpecification(bootstrap);
 });

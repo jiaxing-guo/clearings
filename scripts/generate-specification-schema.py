@@ -43,6 +43,7 @@ definitions = {
         obj({"kind": enum("contains", "subset"), "collection": expression, "value": expression}),
         obj({"kind": enum("every"), "collection": expression, "variable": identifier, "predicate": expression}),
         obj({"kind": enum("opaque"), "text": text, "reason": text}),
+        obj({"kind": enum("reachable"), "root": expression, "edges": expression}),
     ]},
     "JsonValue": {"anyOf": [
         {"type": ["null", "boolean", "number", "string"]}, arr(ref("JsonValue")),
