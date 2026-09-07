@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { Ajv } from 'ajv';
 import type { ContractModel } from '../model/contracts.js';
 import { validateContractModel } from '../contracts/validate.js';
-import { createContextPack } from '../contracts/query.js';
+import { collectReportContracts } from '../contracts/query.js';
 import type { SemanticModel } from '../model/semantic.js';
 import { ClearingsError } from '../model/types.js';
 import { validateSemanticModel } from '../semantics/validate.js';
@@ -74,21 +74,7 @@ function invalid(text: string): never { throw new ClearingsError('INVALID_PRESEN
  * Component membership does not establish a runtime callee or execution path.
  */
 export function reportContracts(model: ContractModel, capability: string) {
-  const records = createContextPack(model, { capability }, { maxBytes: 2097152, includeNeighbors: false }).records;
-  const components = new Set(records.functions.map(fn => fn.component_id));
-  const related = model.data.proposal.data.functions.filter(fn => components.has(fn.component_id) && !records.functions.some(item => item.id === fn.id));
-  for (const fn of related) {
-    const extra = createContextPack(model, { id: fn.id }, { maxBytes: 2097152, includeNeighbors: false }).records;
-    for (const key of ['claims', 'functions', 'unknowns'] as const) {
-      const ids = new Set(records[key].map(item => item.id));
-      // Each key retains its existing record type.
-      const add = extra[key].filter(item => !ids.has(item.id));
-      (records[key] as typeof add).push(...add);
-    }
-  }
-  records.claims.sort((a,b) => a.id < b.id ? -1 : 1);
-  records.functions.sort((a,b) => a.id < b.id ? -1 : 1);
-  return records;
+  return collectReportContracts(model, capability);
 }
 export function capabilityRecords(model: ReadingModel, capability: string) {
   const concept = model.data.proposal.data.concepts.find((item) => item.kind === 'capability' && (item.id === capability || item.alias === capability));

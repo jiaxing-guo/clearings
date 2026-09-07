@@ -32,6 +32,22 @@ export interface ContextPack {
   budget: { max_bytes: number; required_bytes: number; used_bytes: number; serialization: 'compact-json-utf8-with-newline' };
 }
 
+/** Reports retain complete references without the agent transport byte limit.
+ * Component membership adds reference material, not a runtime call edge.
+ */
+export function collectReportContracts(model: ContractModel, capability: string): ContractRecords {
+  validateContractModel(model);
+  const q = createContractGraph(model, { capability });
+  const roots = new Set(q.roots);
+  for (;;) {
+    const selected = q.collect([...roots], true);
+    const components = new Set(q.all.functions.filter(fn => selected.has(fn.id)).map(fn => fn.component_id));
+    const size = roots.size;
+    for (const fn of q.all.functions) if (components.has(fn.component_id)) roots.add(fn.id);
+    if (roots.size === size) return q.materialize(selected).records;
+  }
+}
+
 export function inspectSemantic(model: ContractModel, selection: SemanticSelection = {}, options: SourceValidation = {}): Inspection {
   validateContractModel(model, options);
   const q = createContractGraph(model, selection);

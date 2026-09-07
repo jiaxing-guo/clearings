@@ -74,3 +74,7 @@ A follow-up source review found missing destination IDs in canonical contract fi
 The static asset check now rejects protocol-relative URLs and any asset reference that resolves to an external origin. Archive checks use an explicit `python3` command and require Python 3.9 or newer, with a prerequisite check and a clear error. This runtime is documented for archive tests and documentation work.
 
 Verification of the final documentation fixes: the archive regression test passes; a process with only `python3` verifies the archive; missing Python reports the prerequisite. Four altered asset references are rejected, and the restored static export passes. The documentation build and check pass for 22 pages and 2,215 links.
+
+### Complete report selection
+
+Reports select canonical records directly, without the byte limit used for agent context. Related component functions and their required references are added until the selection stops changing. Component membership still does not establish runtime call order. Regression checks cover a valid report larger than 2 MiB and dependencies that cross components and form a cycle.
