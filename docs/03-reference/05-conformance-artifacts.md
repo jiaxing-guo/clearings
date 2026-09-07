@@ -8,6 +8,8 @@ The [return example](../../specifications/clearings/conformance/examples/return.
 
 The [throw](../../specifications/clearings/conformance/examples/throw.json), [timeout](../../specifications/clearings/conformance/examples/timeout.json), and [harness-failure](../../specifications/clearings/conformance/examples/harness-failure.json) examples demonstrate the other completion classes with the same limitations.
 
+These files retain the initial definition-stage provenance and unavailable components. Introducing a recorder does not convert them into execution evidence. Use [Record a context-assembly invocation](../04-guides/03-record-context-assembly.md) for a fresh execution.
+
 Validate the examples after `npm run build`:
 
 ```js runnable
@@ -92,10 +94,27 @@ Measurement origin and capture prerequisites are separate properties. `serialize
 | `executionRecordIdentity(record)` | Compute the execution-record identity; no execution |
 | `sealExecutionRecord(record, profile, specification)` | Normalize, compute identity, and validate the record and its bindings |
 | `validateExecutionRecord(value, profile, specification)` | Assert record structure, identity, complete measurement accounting, and basic completion consistency |
+| `getContextAssemblyContract()` | Read and validate an owned copy of the bundled context-assembly profile and intended specification |
+| `recordContextAssembly(options)` | Execute the synchronous context-assembly API in a bounded worker and return a sealed `ExecutionRecord` |
+| `mapContextAssemblyObservation(record)` | Validate the built-in contract binding and supported measurement projections; return a typed observation or an explicit mapping failure |
 
 These functions and types are exported from `clearings/conformance`. This entrypoint keeps evaluation metadata separate from the core library exports. JSON Schema subpaths are `clearings/schemas/conformance-profile` and `clearings/schemas/execution-record`. Profile/record errors use `INVALID_CONFORMANCE`; reused portability and specification validation retain their existing errors. Portability limits remain 200,000 visited values and depth 64. Identity functions assume portable caller input; use sealing or validation at an input boundary.
 
 No conformance CLI command or generic executable-module loader is introduced here. Existing `clearings validate` dispatch is unchanged and does not accept these new artifact families. Use the library validators and the executable example above.
+
+## Recording interface and identity scope
+
+`RecordContextAssemblyOptions` requires a canonical `case_id` and `invocation: { specification, selection, options: { maxBytes } }`. Optional fields are `fixture_name`, `implementation_root`, `repository`, and `timeout_ms`. The default target is the current built Git checkout. A custom target must be a Git working-tree root with regular `src/specification/context.ts`, `dist/specification/context.js`, `package.json`, and `package-lock.json` files. The loaded export is always `assembleContext`. Repository locators are metadata and are never fetched; a custom checkout defaults to its local file URL.
+
+The recorder validates the profile input domain, allowing missing required dependency targets while checking other specification constraints. It copies invocation values before worker transfer. Nonportable inputs and values exceeding 25,000 visited values or depth 48 are rejected before execution. Returned values and resulting snapshots have the same capture limits; unsupported values remain unavailable. Promise returns are not awaited because the declared API is synchronous. Native errors are projected to own string-keyed data fields plus inherited data properties for `name` and `message`; stack traces and prototypes are excluded. Accessor fields are not invoked.
+
+`timeout_ms` defaults to 10,000 and accepts integers from 1 through 60,000. It covers worker startup, candidate import, invocation, and capture. The worker is terminated after recording or timeout. If the completion class is already known, a capture failure or deadline preserves that class with an unavailable value and any resulting snapshot already received. A deadline without a known completion produces `timeout`; unexpected worker failure produces `harness-failure` with the known phase. Worker termination and V8 heap limits are resource controls, not a security sandbox or complete effect instrumentation. Candidate code must be trusted local code.
+
+Implementation manifests include regular `.ts`, `.js`, and `.json` files under the target's `src`, `dist`, and `schemas` directories, excluding declaration files, plus package metadata and bundled conformance contracts when present. The adapter digest binds the same file-set scope in the recorder checkout. Git commit/tree identify the baseline; file digests identify working bytes read before execution, including dirty files and emitted JavaScript. The manifest therefore records actual runtime files without claiming that the Git commit contains every working change or that the source compiled to those bytes. Installed dependency bytes, external dynamic imports, and native modules are not authenticated; the runtime binding includes the target lockfile digest. Concurrent file modifications are outside this protocol. Both the recorder and candidate require built source checkouts; execution from a source-free installed package is not supported.
+
+Failure to bind the checkout produces `CONFORMANCE_PREPARATION` before execution because a complete execution record cannot be formed. Invalid recorder options produce `INVALID_CONFORMANCE`; input portability and specification checks retain their existing errors. After preparation, application and worker completions are represented in the returned record.
+
+`ContextAssemblyMapping` binds the source `record_id`, `profile_id`, and `specification_id`. A `mapped` result contains `operation_id` and `observation`; an `unmapped` result contains `reason` and `missing_measurement_ids`. Neither result has an acceptance verdict. Missing typed fields, unknown exception codes, and conflicting measurement claims remain explicit failures. Mapping requires both boundary digests; it never substitutes an empty effect trace or reference result.
 
 ## Reproduce the definitions
 

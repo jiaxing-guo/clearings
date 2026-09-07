@@ -1,6 +1,6 @@
 # Status and development roadmap
 
-This status describes the v0.3 implementation, documentation integration, correctness fixes in PR #6, and initial conformance artifact definitions. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
+This status describes the v0.3 implementation, documentation integration, correctness fixes in PR #6, conformance artifact definitions, and bounded context-assembly recording. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
 
 ## Read the evidence at the correct scope
 
@@ -17,7 +17,7 @@ These results support specification-guided development. They do not establish a 
 | Typed contracts | v0.3 types, predicates, state/effects, outcomes, decisions | Partial and opaque obligations remain explicit |
 | Context | Deterministic required closure, byte accounting, revalidation | No token-efficiency result or unrestricted retrieval planner |
 | Observation checks | Single-operation predicates and adjacent selected-state continuity | No source execution, transition legality, concurrency model, or universal proof |
-| Conformance definitions | Scoped return/exception contracts, 13-obligation ledger, profile and execution-record validators, four authored protocol examples | No recorder, adapter, independent evaluator, acceptance report, or new execution evidence |
+| Executable conformance | Scoped contracts and ledger, artifact validators, bounded context-assembly recorder, observation adapter, and structured capacity errors | Independent reference evaluator, acceptance report, and command integration remain unimplemented; initial examples remain authored |
 | Human views | Markdown/HTML projections and historical audience reports | Independent semantic-content review remains open |
 | Technical reference | Ordered Markdown semantics, architecture, interfaces, and examples | Fumadocs renders the same Markdown with ordered navigation and static search |
 
@@ -43,7 +43,7 @@ The Fumadocs build now renders the numbered reference from ordinary Markdown. Ge
 
 ## Subsequent development candidates
 
-The first conformance change implements the definitions in [the four-PR implementation plan](03-conformance-plan.md). Its two artifact formats are evaluation metadata, and its examples are explicitly authored. The remaining three PRs implement recording and mapping, independent evaluation, and the reproducible command and reports. Historical bootstrap evidence retains its original scope.
+The first two changes in [the four-PR implementation plan](03-conformance-plan.md) define the contracts and implement recording and mapping for context assembly. Recorder regression tests execute actual returns and exceptions and exercise controlled capture, measurement, and worker failures. They do not constitute the independent evaluator or predefined implementation-fault suite. The remaining two changes implement independent evaluation and the reproducible command and reports. Historical bootstrap evidence retains its original scope.
 
 | Priority | Candidate | Evidence needed before broader claims |
 | --- | --- | --- |

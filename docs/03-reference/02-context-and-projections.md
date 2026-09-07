@@ -31,7 +31,7 @@ The package retains specification identity, perspective, provenance, relationshi
 
 The supported budget is an integer from 1 through 2,097,152 bytes. Serialization is compact `JSON.stringify` output followed by one newline, measured as UTF-8. Accounting includes metadata and the counters themselves.
 
-`accountBytes` iterates until the encoded counters stabilize, with a maximum of 16 attempts. For v0.3, `required_bytes` and `used_bytes` are equal because optional expansion is not performed. A package fits when its measured size is at most `max_bytes`; otherwise assembly throws `CONTEXT_BUDGET` with the required size.
+`accountBytes` iterates until the encoded counters stabilize, with a maximum of 16 attempts. For v0.3, `required_bytes` and `used_bytes` are equal because optional expansion is not performed. A package fits when its measured size is at most `max_bytes`; otherwise assembly throws `CONTEXT_BUDGET` with `details.required_bytes` and `details.max_bytes`. Its existing message, error code, and exit code are preserved. These details describe the package computed for that exact requested budget.
 
 The budget applies to the serialized JSON package. It is not a token count, a bound on rendered HTML/Markdown, or a guarantee of efficient model context use. No selected outcome or decision is truncated to satisfy the budget. Changing the requested budget can change the size because `max_bytes` itself is serialized; exact-boundary reasoning must use the size of that candidate package.
 

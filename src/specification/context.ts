@@ -61,7 +61,8 @@ export function assembleContext(spec: SemanticSpecification, selection: string, 
     retrieval: 'Use inspect on this exact specification with --operation <id>. Source text is attached and hashed; hashes establish content integrity, not source authenticity. Dependencies describe declared relationships, not an observed execution trace.',
     budget: { max_bytes: options.maxBytes, required_bytes: 0, used_bytes: 0, serialization: 'compact-json-utf8-with-newline' } });
   accountBytes(pack);
-  if (pack.budget.used_bytes > options.maxBytes) throw new ClearingsError('CONTEXT_BUDGET', `Required context needs ${pack.budget.required_bytes} bytes; budget is ${options.maxBytes}. Select a narrower operation or increase the budget. No required rule was removed.`);
+  if (pack.budget.used_bytes > options.maxBytes) throw new ClearingsError('CONTEXT_BUDGET', `Required context needs ${pack.budget.required_bytes} bytes; budget is ${options.maxBytes}. Select a narrower operation or increase the budget. No required rule was removed.`, 2,
+    { required_bytes: pack.budget.required_bytes, max_bytes: options.maxBytes });
   return pack;
 }
 export const serializeOperationContext = compactJson;

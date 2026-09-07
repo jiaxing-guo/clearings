@@ -33,6 +33,8 @@
   "files": [
     "dist",
     "schemas",
+    "specifications/clearings/conformance/profile.json",
+    "specifications/clearings/conformance/specification.json",
     "README.md"
   ],
   "scripts": {

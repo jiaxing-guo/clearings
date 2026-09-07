@@ -2,7 +2,7 @@
 
 Executable conformance relates a concrete invocation to an operation specification through an explicit observation mapping and independently defined checks. The scope is a stated set of inputs, completion classes, and observable properties.
 
-**Implementation status:** Clearings defines and validates conformance profiles and execution-record formats. The context-assembly contracts, obligation ledger, and four protocol examples are authored artifacts. The execution recorder, observation adapter, independent evaluator, acceptance report, and replay command are subsequent work. No implementation is executed when these artifacts are generated or validated.
+**Implementation status:** Clearings validates conformance artifacts, records actual context-assembly executions, and maps captured evidence to operation observations. The contracts, obligation ledger, and four initial protocol examples remain authored artifacts. Independent reference evaluation, acceptance reports, and the replay command are subsequent work. Artifact generation and validation do not execute an implementation; execution requires an explicit recorder call.
 
 ## One byte-accounting obligation
 
@@ -22,8 +22,8 @@ This is an illustrative case, not an execution result. The [conformance profile]
 | --- | --- | --- |
 | Operation specification | Define allowed behavior and residual obligations | Two authored v0.3 completion contracts |
 | Conformance profile | Declare input scope, measurements, obligation coverage, and verification methods | Schema, TypeScript types, and cross-reference validation |
-| Recorder | Capture actual arguments, completion, and resulting state | Planned |
-| Observation adapter | Map raw evidence to typed observations without replacing missing information | Protocol defined; implementation planned |
+| Recorder | Capture actual arguments, completion, and resulting state | Bounded worker for the synchronous `assembleContext` API |
+| Observation adapter | Map raw evidence to typed observations without replacing missing information | Context-assembly projections and explicit mapping failures |
 | Independent evaluator | Establish reference results and check obligations beyond the predicates | Named checks defined; implementation planned |
 | Report | Present scoped results, unknowns, coverage, and reproduction details | Planned |
 
@@ -35,7 +35,7 @@ An execution record distinguishes `return`, `throw`, `timeout`, and `harness-fai
 
 The context-assembly profile maps successful completion to `assembly-return` and exceptional completion to `assembly-throw`. These are two observation contracts for the same `assembleContext` API. They are not separate implementation functions. Separate output types avoid inventing an empty return package when an invocation throws.
 
-The exception projection contains the actual string `code` and a `required_bytes` list. This list encodes an optional structured error detail: zero elements means the exception did not provide that detail; one element is its observed value. The budget-failure contract requires exactly one value. Absence is never replaced with a numeric zero. Structured error details will be added with the recorder; current production error messages are not parsed by this protocol.
+The exception projection contains the actual string `code` and a `required_bytes` list. This list encodes an optional structured error detail: zero elements means the exception did not provide that detail; one element is its observed value. The budget-failure contract requires exactly one value. Absence is never replaced with a numeric zero. Context-assembly capacity errors now expose `details.required_bytes` and `details.max_bytes`. The adapter reads those fields without parsing error messages.
 
 Timeout and harness failure are evaluation failures. They do not select an application outcome or manufacture a passing observation. If a return value cannot be captured, its return-derived measurements remain unobserved. If an exception cannot be captured, the same restriction applies to exception-derived measurements.
 
@@ -59,7 +59,9 @@ The recorder retains original JSON invocation arguments before execution, an ava
 
 Before constructing an observation, the adapter must validate the required measurement types and availability. Partial v0.3 output records are not allowed. If required fields cannot be constructed, preserve the unmapped record and the mapping failure; do not insert plausible defaults. Unknown exception codes remain visible as unsupported or failing behavior. Outcome IDs must be selected from the observed completion and code, never copied from fixture expectations.
 
-The current artifact validator checks declared measurement types, explicit capture prerequisites, and completion consistency. Measurement origin does not determine every prerequisite: independently encoding a returned package still requires a captured return, while independently constructing a reference package requires only the original arguments. The validator does not perform the observation mapping, verify its fidelity, or recompute measurements from raw captures. Those are adapter and evaluator responsibilities.
+The artifact validator checks declared measurement types, explicit capture prerequisites, and completion consistency. Measurement origin does not determine every prerequisite: independently encoding a returned package still requires a captured return, while independently constructing a reference package requires only the original arguments. The separate context-assembly adapter recomputes its implemented measurements from captures and rejects conflicting observed values before mapping. It preserves unobserved measurements and never fills them from recomputation. Independent reference measurements and effect claims are not verified or consumed by this mapping.
+
+The adapter derives eight measurements. `reference-required-bytes`, `expected-projection`, and `effects` remain unobserved in newly recorded cases. Thus measured serialization size is available, while an independent construction of the required package and complete effect instrumentation remain separate obligations.
 
 ## Scope and error precedence
 
