@@ -52,6 +52,7 @@ function expressions(expr: Expression, visit: (expr: Expression) => void): void 
   if ('left' in expr) { expressions(expr.left, visit); expressions(expr.right, visit); }
   if ('collection' in expr) expressions(expr.collection, visit);
   if ('predicate' in expr) expressions(expr.predicate, visit);
+  if (expr.kind === 'reachable') { expressions(expr.root, visit); expressions(expr.edges, visit); }
 }
 export function validateSpecification(value: unknown): asserts value is SemanticSpecification {
   assertPortable(value);

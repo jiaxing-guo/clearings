@@ -14,7 +14,7 @@ The v0.3 specification has an explicit `perspective`: `intended` or `observed`. 
 
 An operation owns typed inputs and outputs, its own purpose, state reads/writes, conditional outcomes, guarantees, permitted effects, dependency roles, implementation responsibilities, and open decisions. Dependencies are typed references, not an execution trace. Cycles are valid. A transition links an outcome to a declared dependent operation, with a specific handoff role. A complete call graph is not claimed.
 
-Conditions use an expression tree with literals, scoped references, boolean composition, comparisons, collection membership, and bounded universal quantification. No source, JavaScript, or expression string is executed. `opaque` conditions retain unsupported meaning explicitly and evaluate to unknown. The interpreter reports pass, fail, or unknown. A model accepting a scenario is not a proof that source implements the model.
+Conditions use an expression tree with literals, scoped references, boolean composition, comparisons, collection membership, bounded universal quantification, and bounded reachability over explicit string-ID edges. No source, JavaScript, or expression string is executed. `opaque` conditions retain unsupported meaning explicitly and evaluate to unknown. The interpreter reports pass, fail, or unknown. A model accepting a scenario is not a proof that source implements the model.
 
 State fields have separate identities and types. A complete frame preserves every modeled field outside the write set; a partial frame makes no such guarantee. Effect declarations distinguish required from permitted effects. An empty complete effect list forbids effects; an empty partial list does not establish purity.
 
@@ -23,7 +23,7 @@ Open decisions distinguish unresolved requirements, analysis limits, and intenti
 ## Context assembly requirements
 
 1. Resolve a root by exact ID or unique alias. Reject an absent or ambiguous root.
-2. Follow required dependency edges to a fixed point. Keep each operation once, including in cycles. Required dependency order is stable and starts with the selected operation.
+2. Follow required dependency edges to a fixed point. Select the smallest reachable set. Keep each operation once, including in cycles. Required dependency order is stable and starts with the selected operation.
 3. Reject missing required dependencies. Optional dependencies may be absent, and remain listed as deferred references.
 4. Return each operation's meaning with its fields inline. Dependency references include the target's name and the reason for the link. Implementation entries explain each function's individual responsibility.
 5. Include all state fields and source records referenced by the selected operations. Keep every applicable open decision, including blocking decisions. A partial package is inspectable; it is not an accepted specification.
@@ -49,3 +49,9 @@ The legacy v0.2 adapter resolves assertion text without inventing formal predica
 ## Scope
 
 Implement the typed kernel, scenario checker, required-context closure, readable projections, CLI, Clearings specification/demo, and Hono response-selection example. Do not add a solver, hosted service, provider SDK, universal source-to-specification conversion, or automatic requirement acceptance. Formal proof, concurrency model checking, source equivalence, and fresh-agent performance evaluation are not established by this bootstrap.
+
+## Review corrections and sequence integration
+
+Equality validation rejects literals outside an enum domain and comparisons between disjoint enum domains. The `reachable` expression returns unique IDs reachable from its string root through supplied `{ from, to }` edges, including the root. It uses a bounded fixed-point calculation and returns unknown if observations or work are insufficient. The context contract uses this expression to exclude unrelated operations as well as require dependencies. This is a graph constraint over supplied data, not source execution.
+
+The sequence-check addition has a separate frozen intended model and fresh-agent evaluation. It was integrated after independent test authorship and source review; those frozen inputs remain unchanged by these later core corrections. See [sequence checks](SEQUENCE_CHECKS.md).

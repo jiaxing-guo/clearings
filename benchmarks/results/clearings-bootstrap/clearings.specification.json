@@ -1,5 +1,5 @@
 {
-  "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+  "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
   "kind": "specification",
   "name": "Clearings context assembly",
   "operations": [
@@ -17,7 +17,7 @@
         },
         {
           "blocking": false,
-          "consequence": "The typed closure rules prevent missing dependencies. An independently written reference algorithm also checks that extra operations are not added.",
+          "consequence": "Typed rules check required closure and root reachability. A separate reference algorithm also checks exact membership against actual assembler output.",
           "disposition": "analysis-limit",
           "evidence_ids": [],
           "id": "decision:minimum-closure",
@@ -275,6 +275,40 @@
                   ]
                 },
                 "variable": "edge"
+              }
+            },
+            {
+              "description": "Every included operation is reachable from the selected root through required edges.",
+              "evidence_ids": [
+                "design:context"
+              ],
+              "id": "rule:minimal-closure",
+              "predicate": {
+                "collection": {
+                  "edges": {
+                    "kind": "ref",
+                    "path": [
+                      "required_edges"
+                    ],
+                    "root": "input"
+                  },
+                  "kind": "reachable",
+                  "root": {
+                    "kind": "ref",
+                    "path": [
+                      "root_id"
+                    ],
+                    "root": "input"
+                  }
+                },
+                "kind": "subset",
+                "value": {
+                  "kind": "ref",
+                  "path": [
+                    "included_ids"
+                  ],
+                  "root": "output"
+                }
               }
             },
             {
@@ -1091,6 +1125,38 @@
               }
             },
             {
+              "description": "Every selected ID is reachable from the root through required edges.",
+              "evidence_ids": [
+                "design:context"
+              ],
+              "id": "rule:closure-minimal",
+              "predicate": {
+                "collection": {
+                  "edges": {
+                    "kind": "ref",
+                    "path": [
+                      "required_edges"
+                    ],
+                    "root": "input"
+                  },
+                  "kind": "reachable",
+                  "root": {
+                    "kind": "ref",
+                    "path": [
+                      "root_id"
+                    ],
+                    "root": "input"
+                  }
+                },
+                "kind": "subset",
+                "value": {
+                  "kind": "ref",
+                  "path": [],
+                  "root": "output"
+                }
+              }
+            },
+            {
               "description": "The closure has no duplicate IDs.",
               "evidence_ids": [
                 "design:context"
@@ -1505,8 +1571,8 @@
       "id": "design:context",
       "locator": "docs/SPECIFICATION_ARCHITECTURE.md",
       "origin": "design",
-      "sha256": "e7931d9eebc3a4a0d7b5bbd1da5c07eb25aa720e0c26ca58c91e9c45da97ac3d",
-      "text": "# Typed specifications and Clearings self-development\n\nThis design replaces prose-linked records as the primary interface for new semantic work. Historical source models remain readable. They are evidence-bearing observations; they do not become intended requirements through conversion.\n\n## Bootstrap decision\n\nThe first operation is **assemble agent context**. Its consumer needs a selected operation's purpose, conditional outcomes, effects, dependencies, implementation roles, and unknowns together. The operation takes a specification, a selection, and a byte budget. It returns a self-contained package or an explicit error. Required information is never silently truncated.\n\nThe specification is authored before the new implementation. The active coding session then implements it. This is a continuing-session self-development experiment, not a fresh or independent agent trial. The compiler, test runner, typed expression interpreter, and structural validator form the initial implementation foundation.\n\n## Canonical model\n\nThe v0.3 specification has an explicit `perspective`: `intended` or `observed`. Its content identity binds all records and provenance. A source-derived record never receives requirement acceptance automatically.\n\nAn operation owns typed inputs and outputs, its own purpose, state reads/writes, conditional outcomes, guarantees, permitted effects, dependency roles, implementation responsibilities, and open decisions. Dependencies are typed references, not an execution trace. Cycles are valid. A transition links an outcome to a declared dependent operation, with a specific handoff role. A complete call graph is not claimed.\n\nConditions use an expression tree with literals, scoped references, boolean composition, comparisons, collection membership, and bounded universal quantification. No source, JavaScript, or expression string is executed. `opaque` conditions retain unsupported meaning explicitly and evaluate to unknown. The interpreter reports pass, fail, or unknown. A model accepting a scenario is not a proof that source implements the model.\n\nState fields have separate identities and types. A complete frame preserves every modeled field outside the write set; a partial frame makes no such guarantee. Effect declarations distinguish required from permitted effects. An empty complete effect list forbids effects; an empty partial list does not establish purity.\n\nOpen decisions distinguish unresolved requirements, analysis limits, and intentional implementation choices. Source anchors retain exact text and hashes. Source integrity and assertion support remain separate.\n\n## Context assembly requirements\n\n1. Resolve a root by exact ID or unique alias. Reject an absent or ambiguous root.\n2. Follow required dependency edges to a fixed point. Keep each operation once, including in cycles. Required dependency order is stable and starts with the selected operation.\n3. Reject missing required dependencies. Optional dependencies may be absent, and remain listed as deferred references.\n4. Return each operation's meaning with its fields inline. Dependency references include the target's name and the reason for the link. Implementation entries explain each function's individual responsibility.\n5. Include all state fields and source records referenced by the selected operations. Keep every applicable open decision, including blocking decisions. A partial package is inspectable; it is not an accepted specification.\n6. Report omitted operations and deferred optional links. An omitted branch inside a selected operation is never treated as optional.\n7. Measure compact UTF-8 JSON plus one final newline. Include the accounting fields themselves. A budget equal to the required size succeeds; one byte less fails with the measured required size.\n8. Selection, rendering, and checking do not mutate input records or execute analyzed source. Repeated input produces identical serialized output.\n9. Bind context to the exact specification identity and perspective. Describe how to retrieve deferred information.\n\n## Review before implementation\n\nThe author-reviewed cases are: a single operation; a diamond dependency; a dependency cycle; a missing root; a missing required edge; an absent optional target; a blocking unknown; exact and insufficient byte budgets; Unicode; a state write with an unchanged field; an undeclared effect; and an opaque condition. Independent held-out evaluation remains future work.\n\nThe conformance checks must also reject deliberately incorrect implementations: dropping a required dependency, losing an unknown, claiming the wrong specification identity, silently truncating to fit, and changing input data. These cases live outside the specification consumed by the implementation.\n\n## Human and agent interfaces\n\nOne report starts with purpose and a concrete scenario, then shows rules/outcomes, then implementation and evidence. The graph is a generated relationship view. It does not replace the conditions and guarantees. The agent gets the same rules as self-contained JSON or deterministic readable text; the HTML is a human view.\n\nThe legacy v0.2 adapter resolves assertion text without inventing formal predicates. Its prose remains explicitly unformalized. The Hono observed specification provides a separately authored typed response-selection slice with source links. Existing engineer and overview reports remain historical source-backed views.\n\n## Scope\n\nImplement the typed kernel, scenario checker, required-context closure, readable projections, CLI, Clearings specification/demo, and Hono response-selection example. Do not add a solver, hosted service, provider SDK, universal source-to-specification conversion, or automatic requirement acceptance. Formal proof, concurrency model checking, source equivalence, and fresh-agent performance evaluation are not established by this bootstrap.\n"
+      "sha256": "114b3da3e52397851a85fad60b55fa58a05cbabfe13d839141f319b58128263b",
+      "text": "# Typed specifications and Clearings self-development\n\nThis design replaces prose-linked records as the primary interface for new semantic work. Historical source models remain readable. They are evidence-bearing observations; they do not become intended requirements through conversion.\n\n## Bootstrap decision\n\nThe first operation is **assemble agent context**. Its consumer needs a selected operation's purpose, conditional outcomes, effects, dependencies, implementation roles, and unknowns together. The operation takes a specification, a selection, and a byte budget. It returns a self-contained package or an explicit error. Required information is never silently truncated.\n\nThe specification is authored before the new implementation. The active coding session then implements it. This is a continuing-session self-development experiment, not a fresh or independent agent trial. The compiler, test runner, typed expression interpreter, and structural validator form the initial implementation foundation.\n\n## Canonical model\n\nThe v0.3 specification has an explicit `perspective`: `intended` or `observed`. Its content identity binds all records and provenance. A source-derived record never receives requirement acceptance automatically.\n\nAn operation owns typed inputs and outputs, its own purpose, state reads/writes, conditional outcomes, guarantees, permitted effects, dependency roles, implementation responsibilities, and open decisions. Dependencies are typed references, not an execution trace. Cycles are valid. A transition links an outcome to a declared dependent operation, with a specific handoff role. A complete call graph is not claimed.\n\nConditions use an expression tree with literals, scoped references, boolean composition, comparisons, collection membership, bounded universal quantification, and bounded reachability over explicit string-ID edges. No source, JavaScript, or expression string is executed. `opaque` conditions retain unsupported meaning explicitly and evaluate to unknown. The interpreter reports pass, fail, or unknown. A model accepting a scenario is not a proof that source implements the model.\n\nState fields have separate identities and types. A complete frame preserves every modeled field outside the write set; a partial frame makes no such guarantee. Effect declarations distinguish required from permitted effects. An empty complete effect list forbids effects; an empty partial list does not establish purity.\n\nOpen decisions distinguish unresolved requirements, analysis limits, and intentional implementation choices. Source anchors retain exact text and hashes. Source integrity and assertion support remain separate.\n\n## Context assembly requirements\n\n1. Resolve a root by exact ID or unique alias. Reject an absent or ambiguous root.\n2. Follow required dependency edges to a fixed point. Select the smallest reachable set. Keep each operation once, including in cycles. Required dependency order is stable and starts with the selected operation.\n3. Reject missing required dependencies. Optional dependencies may be absent, and remain listed as deferred references.\n4. Return each operation's meaning with its fields inline. Dependency references include the target's name and the reason for the link. Implementation entries explain each function's individual responsibility.\n5. Include all state fields and source records referenced by the selected operations. Keep every applicable open decision, including blocking decisions. A partial package is inspectable; it is not an accepted specification.\n6. Report omitted operations and deferred optional links. An omitted branch inside a selected operation is never treated as optional.\n7. Measure compact UTF-8 JSON plus one final newline. Include the accounting fields themselves. A budget equal to the required size succeeds; one byte less fails with the measured required size.\n8. Selection, rendering, and checking do not mutate input records or execute analyzed source. Repeated input produces identical serialized output.\n9. Bind context to the exact specification identity and perspective. Describe how to retrieve deferred information.\n\n## Review before implementation\n\nThe author-reviewed cases are: a single operation; a diamond dependency; a dependency cycle; a missing root; a missing required edge; an absent optional target; a blocking unknown; exact and insufficient byte budgets; Unicode; a state write with an unchanged field; an undeclared effect; and an opaque condition. Independent held-out evaluation remains future work.\n\nA later [fresh-agent experiment](../benchmarks/agent-runs/luna-impact-001/REPORT.md) used a separately frozen dependency-impact task. Its candidate passed the withheld feature checks. This does not change the authorship or evidence boundary of the original context-assembly bootstrap. The new task also exposed a gap: some executable predicates cover less than their English descriptions. The review must distinguish predicate results from unverified prose obligations.\n\nThe conformance checks must also reject deliberately incorrect implementations: dropping a required dependency, losing an unknown, claiming the wrong specification identity, silently truncating to fit, and changing input data. These cases live outside the specification consumed by the implementation.\n\n## Human and agent interfaces\n\nOne report starts with purpose and a concrete scenario, then shows rules/outcomes, then implementation and evidence. The graph is a generated relationship view. It does not replace the conditions and guarantees. The agent gets the same rules as self-contained JSON or deterministic readable text; the HTML is a human view.\n\nThe legacy v0.2 adapter resolves assertion text without inventing formal predicates. Its prose remains explicitly unformalized. The Hono observed specification provides a separately authored typed response-selection slice with source links. Existing engineer and overview reports remain historical source-backed views.\n\n## Scope\n\nImplement the typed kernel, scenario checker, required-context closure, readable projections, CLI, Clearings specification/demo, and Hono response-selection example. Do not add a solver, hosted service, provider SDK, universal source-to-specification conversion, or automatic requirement acceptance. Formal proof, concurrency model checking, source equivalence, and fresh-agent performance evaluation are not established by this bootstrap.\n\n## Review corrections and sequence integration\n\nEquality validation rejects literals outside an enum domain and comparisons between disjoint enum domains. The `reachable` expression returns unique IDs reachable from its string root through supplied `{ from, to }` edges, including the root. It uses a bounded fixed-point calculation and returns unknown if observations or work are insufficient. The context contract uses this expression to exclude unrelated operations as well as require dependencies. This is a graph constraint over supplied data, not source execution.\n\nThe sequence-check addition has a separate frozen intended model and fresh-agent evaluation. It was integrated after independent test authorship and source review; those frozen inputs remain unchanged by these later core corrections. See [sequence checks](SEQUENCE_CHECKS.md).\n"
     }
   ],
   "states": [

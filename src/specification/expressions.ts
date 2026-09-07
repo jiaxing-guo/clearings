@@ -58,6 +58,28 @@ export function evaluateExpression(expression: Expression, environment: Expressi
         if (expr.kind === 'contains') return known(items.has(canonical(value.value)));
         return Array.isArray(value.value) ? known(value.value.every(item => items.has(canonical(item)))) : unknown('Subset operand must be a list.');
       }
+      case 'reachable': {
+        const root = evaluate(expr.root, env), edges = evaluate(expr.edges, env);
+        if (!root.known) return root; if (!edges.known) return edges;
+        if (typeof root.value !== 'string' || !Array.isArray(edges.value)) return unknown('Reachability needs a string root and an edge list.');
+        const graph: { from: string; to: string }[] = [];
+        for (const edge of edges.value) {
+          if (--remaining < 0) return unknown('Expression work limit reached.');
+          if (!edge || typeof edge !== 'object' || Array.isArray(edge) || Object.keys(edge).length !== 2
+            || !own(edge, 'from') || !own(edge, 'to') || typeof edge.from !== 'string' || typeof edge.to !== 'string') return unknown('Each edge needs exactly string from/to fields.');
+          graph.push({ from: edge.from, to: edge.to });
+        }
+        // Least fixed point over supplied edges, separate from the assembler's queue.
+        const reached = new Set([root.value]); let changed: boolean;
+        do {
+          changed = false;
+          for (const edge of graph) {
+            if (--remaining < 0) return unknown('Expression work limit reached.');
+            if (reached.has(edge.from) && !reached.has(edge.to)) { reached.add(edge.to); changed = true; }
+          }
+        } while (changed);
+        return known([...reached].sort());
+      }
       case 'every': {
         const collection = evaluate(expr.collection, env); if (!collection.known) return collection;
         if (!Array.isArray(collection.value)) return unknown('List operand expected.');
@@ -96,11 +118,20 @@ const invalid = (message: string): never => { throw new ClearingsError('SPEC_TYP
 const compatible = (a: InferredType, b: InferredType): boolean => {
   if (a.kind === 'empty' || b.kind === 'empty') return true;
   if (['integer', 'number'].includes(a.kind) && ['integer', 'number'].includes(b.kind)) return true;
+  if (a.kind === 'enum' && b.kind === 'enum') return a.values.some(value => b.values.includes(value));
   if (['string', 'enum'].includes(a.kind) && ['string', 'enum'].includes(b.kind)) return true;
   if (a.kind === 'list' && b.kind === 'list') return compatible(a.element, b.element);
   if (a.kind === 'record' && b.kind === 'record') return Object.keys(a.fields).length === Object.keys(b.fields).length && Object.entries(a.fields).every(([key, type]) => b.fields[key] && compatible(type, b.fields[key]!));
   return a.kind === b.kind;
 };
+function literalWithinEnumDomains(value: JsonValue, type: InferredType): boolean {
+  if (type.kind === 'enum') return typeof value === 'string' && type.values.includes(value);
+  if (type.kind === 'list' && Array.isArray(value)) return value.every(item => literalWithinEnumDomains(item, type.element));
+  if (type.kind === 'record' && value && typeof value === 'object' && !Array.isArray(value)) {
+    return Object.entries(type.fields).every(([key, field]) => own(value, key) && literalWithinEnumDomains(value[key]!, field));
+  }
+  return true;
+}
 function literalType(value: JsonValue): InferredType {
   if (value === null) return { kind: 'null' };
   if (Array.isArray(value)) {
@@ -134,7 +165,9 @@ export function expressionType(expr: Expression, environment: TypeEnvironment): 
     case 'all': case 'any': for (const term of expr.terms) requireKind(infer(term), ['boolean']); return { kind: 'boolean' };
     case 'compare': {
       const left = infer(expr.left), right = infer(expr.right);
-      if (expr.op === 'eq' || expr.op === 'ne') { if (!compatible(left, right)) invalid('Equality operands have incompatible types.'); }
+      if (expr.op === 'eq' || expr.op === 'ne') { if (!compatible(left, right)) invalid('Equality operands have incompatible types.');
+        if ((expr.left.kind === 'literal' && !literalWithinEnumDomains(expr.left.value, right))
+          || (expr.right.kind === 'literal' && !literalWithinEnumDomains(expr.right.value, left))) invalid('Equality literal is outside the declared enum domain.'); }
       else { requireKind(left, ['integer', 'number']); requireKind(right, ['integer', 'number']); }
       return { kind: 'boolean' };
     }
@@ -145,6 +178,17 @@ export function expressionType(expr: Expression, environment: TypeEnvironment): 
       const element = expr.kind === 'subset' ? (value as Extract<ValueType, { kind: 'list' }>).element : value;
       if (!compatible(collection.element, element)) invalid('Collection operands have incompatible element types.');
       return { kind: 'boolean' };
+    }
+    case 'reachable': {
+      requireKind(infer(expr.root), ['string', 'enum']);
+      const edges = infer(expr.edges);
+      if (edges.kind !== 'list') return invalid('Reachability edges must be a list.');
+      const edge = edges.element as InferredType;
+      if (edge.kind !== 'empty') {
+        if (edge.kind !== 'record' || Object.keys(edge.fields).length !== 2 || !own(edge.fields, 'from') || !own(edge.fields, 'to')) return invalid('Reachability edges need exactly from/to fields.');
+        requireKind(edge.fields.from!, ['string', 'enum']); requireKind(edge.fields.to!, ['string', 'enum']);
+      }
+      return { kind: 'list', element: { kind: 'string' } };
     }
     case 'every': {
       const collection = infer(expr.collection);
@@ -181,6 +225,7 @@ export function formatExpression(expr: Expression): string {
     case 'compare': return `${formatExpression(expr.left)} ${{ eq: '=', ne: '≠', lt: '<', lte: '≤', gt: '>', gte: '≥' }[expr.op]} ${formatExpression(expr.right)}`;
     case 'contains': return `${formatExpression(expr.collection)} contains ${formatExpression(expr.value)}`;
     case 'subset': return `${formatExpression(expr.value)} is a subset of ${formatExpression(expr.collection)}`;
+    case 'reachable': return `IDs reachable from ${formatExpression(expr.root)} through ${formatExpression(expr.edges)} (including the root)`;
     case 'every': return `every ${expr.variable} in ${formatExpression(expr.collection)}: ${formatExpression(expr.predicate)}`;
   }
 }

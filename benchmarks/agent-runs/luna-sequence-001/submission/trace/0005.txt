@@ -1,0 +1,748 @@
+File: src/index.ts
+export { inventory } from './repository/inventory.js';
+export type { InventoryOptions } from './repository/inventory.js';
+export { readTarget, fetchTarget } from './repository/target.js';
+export type { Target } from './repository/target.js';
+export { validateInventory } from './model/validate.js';
+export * from './model/types.js';
+export { scan } from './analysis/scan.js';
+export type { ScanOptions } from './analysis/scan.js';
+export { validateScan, readEvidence, createEvidenceReader } from './model/validate-scan.js';
+export type * from './model/structural.js';
+export type * from './model/semantic.js';
+export { createProposalRequest, importProposal } from './semantics/exchange.js';
+export type { RequestOptions } from './semantics/exchange.js';
+export { newSemanticId } from './semantics/identity.js';
+export { validateRequest, validateProposal, validateSemanticModel } from './semantics/validate.js';
+export { renderCapability } from './renderers/capability.js';
+export type { RenderCapabilityOptions } from './renderers/capability.js';
+export { createPresentationPlan, validatePresentationPlan, PRESENTATION_INSTRUCTIONS, CONTRACT_PRESENTATION_INSTRUCTIONS } from './presentation/plan.js';
+export type * from './presentation/plan.js';
+
+export type * from './model/contracts.js';
+export { createContractRequest, importContractProposal, CONTRACT_INSTRUCTIONS } from './contracts/exchange.js';
+export { validateContractRequest, validateContractProposal, validateContractModel } from './contracts/validate.js';
+export { inspectSemantic, createContextPack, serializeContextPack } from './contracts/query.js';
+export type { SemanticSelection, Inspection, ContextPack, ContractRecords, EvidenceReference } from './contracts/query.js';
+export { createSemanticWalkthrough, renderSemanticWalkthrough } from './renderers/walkthrough.js';
+export type { SemanticWalkthrough } from './renderers/walkthrough.js';
+
+export type * from './specification/model.js';
+export { sealSpecification, validateSpecification, specificationIdentity } from './specification/validate.js';
+export { evaluateExpression, formatExpression } from './specification/expressions.js';
+export { checkOperation, resolveOperation } from './specification/check.js';
+export { assembleContext, serializeOperationContext, validateOperationContext, describeOperation } from './specification/context.js';
+export type { OperationContext } from './specification/context.js';
+export { renderSpecification, renderOperationContext } from './specification/render.js';
+export type { SpecificationReportOptions, CheckedScenario } from './specification/render.js';
+export { createContractBrief, serializeContractBrief } from './contracts/brief.js';
+export type { ContractBrief } from './contracts/brief.js';
+
+File: src/specification/check.ts
+import { canonical } from '../repository/inventory.js';
+import { ClearingsError } from '../model/types.js';
+import { assertPortable, validateSpecification } from './validate.js';
+import { evaluateExpression, matchesType } from './expressions.js';
+import type { JsonValue, OperationCheck, OperationObservation, RuleCheck, SemanticOperation, SemanticSpecification, Verdict } from './model.js';
+
+export function resolveOperation(spec: SemanticSpecification, selection: string): SemanticOperation {
+  const operation = spec.operations.find(item => item.id === selection || item.alias === selection);
+  if (!operation) throw new ClearingsError('INVALID_SELECTION', `Unknown operation: ${selection}`);
+  return operation;
+}
+const combine = (checks: RuleCheck[]): Verdict => checks.some(item => item.verdict === 'fail') ? 'fail' : checks.some(item => item.verdict === 'unknown') ? 'unknown' : 'pass';
+
+/** Check supplied observations against a model. Does not execute or verify source. */
+export function checkOperation(spec: SemanticSpecification, selection: string, observation: OperationObservation): OperationCheck {
+  validateSpecification(spec); assertPortable(observation);
+  if (!observation || typeof observation !== 'object' || Array.isArray(observation)
+    || Object.keys(observation).some(key => !['input', 'before', 'outcome', 'output', 'after', 'effects'].includes(key))
+    || (observation.outcome !== undefined && typeof observation.outcome !== 'string')) throw new ClearingsError('INVALID_OBSERVATION', 'Unknown observation fields or invalid outcome.');
+  const operation = resolveOperation(spec, selection);
+  const checks: RuleCheck[] = [];
+  const add = (id: string, description: string, verdict: Verdict, reason: string | null = null) => checks.push({ id, description, verdict, reason });
+  if (!matchesType(observation.input, { kind: 'record', fields: operation.inputs })) throw new ClearingsError('INVALID_OBSERVATION', 'Input does not match the operation input type.');
+  const knownStates = new Map(spec.states.map(item => [item.id, item.type]));
+  for (const [phase, values] of [['before', observation.before], ['after', observation.after]] as const) {
+    if (values === undefined && phase === 'after') continue;
+    if (!values || typeof values !== 'object' || Array.isArray(values)) throw new ClearingsError('INVALID_OBSERVATION', `${phase} must be a state field map.`);
+    for (const [id, value] of Object.entries(values)) if (!knownStates.has(id) || !matchesType(value, knownStates.get(id)!)) throw new ClearingsError('INVALID_OBSERVATION', `Invalid ${phase} state field: ${id}`);
+  }
+  if (observation.output !== undefined && !matchesType(observation.output, operation.output)) throw new ClearingsError('INVALID_OBSERVATION', 'Output does not match the operation output type.');
+  if (observation.effects !== undefined && (!Array.isArray(observation.effects) || observation.effects.some(item => typeof item !== 'string'))) throw new ClearingsError('INVALID_OBSERVATION', 'Effects must be an explicit list of effect IDs.');
+  const environment = { input: observation.input, before: observation.before, ...(observation.after === undefined ? {} : { after: observation.after }), ...(observation.output === undefined ? {} : { output: observation.output }) };
+  // Operation guarantees apply even when the observed outcome is unknown.
+  for (const rule of operation.guarantees) {
+    const value = evaluateExpression(rule.predicate, environment);
+    add(rule.id, rule.description, !value.known ? 'unknown' : value.value === true ? 'pass' : 'fail', value.known ? null : value.reason);
+  }
+  const applicable: string[] = [], uncertain: string[] = [];
+  const guards = new Map(operation.outcomes.map(outcome => {
+    const value = evaluateExpression(outcome.when, environment);
+    if (!value.known) uncertain.push(outcome.id); else if (value.value === true) applicable.push(outcome.id);
+    return [outcome.id, value];
+  }));
+  if (operation.outcome_policy === 'exclusive' && applicable.length > 1) add('outcome-exclusivity', 'Exactly one modeled outcome applies.', 'fail', 'Several exclusive guards are true.');
+  if (!applicable.length && !uncertain.length) add('outcome-coverage', 'An outcome covers this input.', operation.coverage === 'complete' ? 'fail' : 'unknown', 'No outcome guard is true.');
+  if (observation.outcome === undefined) add('observed-outcome', 'An actual outcome is supplied.', 'unknown', 'Only outcome applicability can be inspected without an outcome.');
+  else {
+    const outcome = operation.outcomes.find(item => item.id === observation.outcome);
+    if (!outcome) throw new ClearingsError('INVALID_OBSERVATION', 'Unknown outcome ID.');
+    const guard = guards.get(outcome.id)!;
+    add('outcome-condition', outcome.description, !guard.known ? 'unknown' : guard.value === true ? 'pass' : 'fail', guard.known ? null : guard.reason);
+    if (operation.outcome_policy === 'exclusive' && uncertain.some(id => id !== outcome.id)) add('outcome-exclusivity', 'Other exclusive guards are false.', 'unknown', 'Another outcome condition is unformalized or lacks observations.');
+    for (const rule of outcome.ensures) {
+      const value = evaluateExpression(rule.predicate, environment);
+      add(rule.id, rule.description, !value.known ? 'unknown' : value.value === true ? 'pass' : 'fail', value.known ? null : value.reason);
+    }
+    for (const update of outcome.updates) {
+      const value = evaluateExpression(update.value, environment);
+      const actual = observation.after?.[update.state_id];
+      add(`update:${update.state_id}`, `Update ${update.state_id} as specified.`, !value.known || actual === undefined ? 'unknown' : canonical(value.value) === canonical(actual) ? 'pass' : 'fail', !value.known ? value.reason : actual === undefined ? 'Missing resulting state.' : null);
+    }
+    if (operation.effects.completeness === 'complete' || outcome.effects.some(item => item.occurrence === 'required')) {
+      if (observation.effects === undefined) add('effects', 'Observed effects satisfy the declared boundary.', 'unknown', 'No effect trace was supplied.');
+      else {
+        const allowed = new Set(outcome.effects.map(item => item.effect_id));
+        if (operation.effects.completeness === 'complete') add('effects:allowed', 'Only effects allowed for this outcome occur.', observation.effects.every(id => allowed.has(id)) ? 'pass' : 'fail');
+        for (const effect of outcome.effects.filter(item => item.occurrence === 'required')) add(`effect:${effect.effect_id}`, `Required effect ${effect.effect_id} occurs.`, observation.effects.includes(effect.effect_id) ? 'pass' : 'fail');
+      }
+    }
+  }
+  if (operation.frame === 'complete') for (const state of spec.states.filter(item => !operation.writes.includes(item.id))) {
+    const before = observation.before[state.id], after = observation.after?.[state.id];
+    add(`frame:${state.id}`, `Preserve ${state.name}.`, before === undefined || after === undefined ? 'unknown' : canonical(before) === canonical(after) ? 'pass' : 'fail', before === undefined || after === undefined ? 'Both state observations are required to check preservation.' : null);
+  }
+  return { artifact_id: spec.artifact_id, operation_id: operation.id, perspective: spec.perspective, verdict: combine(checks), applicable_outcome_ids: applicable, uncertain_outcome_ids: uncertain, checks,
+    limitations: ['Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.',
+      ...(operation.coverage === 'partial' ? ['Behavior outside the modeled cases remains unspecified.'] : []),
+      ...(operation.frame === 'partial' ? ['Unrecorded state changes are not excluded by this partial frame.'] : []),
+      ...(operation.effects.completeness === 'partial' ? ['Unrecorded external effects are not excluded.'] : []),
+      ...operation.decisions.map(item => `${item.disposition}: ${item.question}`)] };
+}
+
+File: src/specification/model.ts
+/** Portable specification language. No compiler objects or executable source. */
+export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+export type ValueType =
+  | { kind: 'boolean' | 'string' | 'integer' | 'number' | 'null' }
+  | { kind: 'enum'; values: string[] }
+  | { kind: 'list'; element: ValueType }
+  | { kind: 'record'; fields: Record<string, ValueType> };
+
+export type Expression =
+  | { kind: 'literal'; value: JsonValue }
+  | { kind: 'ref'; root: 'input' | 'before' | 'after' | 'output' | 'local'; path: string[] }
+  | { kind: 'not' | 'length' | 'unique'; value: Expression }
+  | { kind: 'all' | 'any'; terms: Expression[] }
+  | { kind: 'compare'; op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte'; left: Expression; right: Expression }
+  | { kind: 'contains' | 'subset'; collection: Expression; value: Expression }
+  | { kind: 'every'; collection: Expression; variable: string; predicate: Expression }
+  | { kind: 'opaque'; text: string; reason: string };
+
+export interface Rule {
+  id: string;
+  description: string;
+  predicate: Expression;
+  evidence_ids: string[];
+}
+export interface StateField {
+  id: string;
+  name: string;
+  description: string;
+  scope: 'invocation' | 'request' | 'repository' | 'process' | 'external';
+  type: ValueType;
+  evidence_ids: string[];
+}
+export interface OpenDecision {
+  id: string;
+  question: string;
+  consequence: string;
+  disposition: 'unresolved-requirement' | 'analysis-limit' | 'implementation-choice';
+  blocking: boolean;
+  evidence_ids: string[];
+}
+export interface Dependency {
+  operation_id: string;
+  kind: 'uses-contract' | 'invokes' | 'awaits' | 'continuation';
+  requirement: 'required' | 'optional';
+  role: string;
+}
+export interface ImplementationRole {
+  name: string;
+  responsibility: string;
+  symbol_id: string | null;
+  evidence_ids: string[];
+}
+export interface OperationOutcome {
+  id: string;
+  description: string;
+  when: Expression;
+  ensures: Rule[];
+  updates: { state_id: string; value: Expression }[];
+  effects: { effect_id: string; occurrence: 'required' | 'permitted' }[];
+  transitions: { operation_id: string; handoff: 'invoke' | 'await' | 'continue' | 'propagate'; description: string }[];
+  evidence_ids: string[];
+}
+export interface SemanticOperation {
+  id: string;
+  alias: string;
+  name: string;
+  purpose: string;
+  inputs: Record<string, ValueType>;
+  output: ValueType;
+  reads: string[];
+  writes: string[];
+  frame: 'complete' | 'partial';
+  effects: { completeness: 'complete' | 'partial'; allowed: { id: string; description: string }[] };
+  outcome_policy: 'exclusive' | 'allowed';
+  coverage: 'complete' | 'partial';
+  outcomes: OperationOutcome[];
+  guarantees: Rule[];
+  dependencies: Dependency[];
+  implementations: ImplementationRole[];
+  decisions: OpenDecision[];
+  evidence_ids: string[];
+}
+export interface SpecificationSource {
+  id: string;
+  origin: 'source' | 'requirement' | 'design';
+  locator: string;
+  text: string;
+  sha256: string;
+  binding: { artifact_id: string; snapshot_id: string | null } | null;
+}
+export interface SemanticSpecification {
+  schema_version: '0.3.0';
+  kind: 'specification';
+  artifact_id: string;
+  name: string;
+  perspective: 'intended' | 'observed';
+  provenance: { author: string; origin: 'user-directed-design' | 'source-interpretation'; review: 'proposed'; notes: string[] };
+  states: StateField[];
+  operations: SemanticOperation[];
+  sources: SpecificationSource[];
+}
+export interface OperationObservation {
+  input: Record<string, JsonValue>;
+  before: Record<string, JsonValue>;
+  outcome?: string;
+  output?: JsonValue;
+  after?: Record<string, JsonValue>;
+  effects?: string[];
+}
+export type Verdict = 'pass' | 'fail' | 'unknown';
+export interface RuleCheck { id: string; description: string; verdict: Verdict; reason: string | null }
+export interface OperationCheck {
+  artifact_id: string;
+  operation_id: string;
+  perspective: SemanticSpecification['perspective'];
+  verdict: Verdict;
+  applicable_outcome_ids: string[];
+  uncertain_outcome_ids: string[];
+  checks: RuleCheck[];
+  limitations: string[];
+}
+
+File: src/specification/validate.ts
+import { readFileSync } from 'node:fs';
+import { Ajv } from 'ajv';
+import { ClearingsError } from '../model/types.js';
+import { sha256 } from '../repository/source.js';
+import { digest, normalized } from '../semantics/identity.js';
+import { requireExpressionType, type TypeEnvironment } from './expressions.js';
+import type { Expression, SemanticSpecification, ValueType } from './model.js';
+
+const schema = JSON.parse(readFileSync(new URL('../../schemas/specification.v0.3.json', import.meta.url), 'utf8'));
+const checkSchema = new Ajv({ strict: true, allErrors: false, allowUnionTypes: true }).compile(schema);
+const invalid = (message: string): never => { throw new ClearingsError('INVALID_SPECIFICATION', message); };
+export function specificationIdentity(specification: Omit<SemanticSpecification, 'artifact_id'> | SemanticSpecification): string {
+  const { artifact_id: _, ...body } = specification as SemanticSpecification;
+  return digest('specification', body);
+}
+/** Bound depth/work before schema recursion, hashing, and expression evaluation. */
+export function assertPortable(value: unknown, maxNodes = 200000): void {
+  let count = 0;
+  const ancestors = new Set<object>();
+  const visit = (item: unknown, depth: number): void => {
+    if (++count > maxNodes || depth > 64) invalid('Specification exceeds the structural work limit.');
+    if (item === null || typeof item === 'string' || typeof item === 'boolean') return;
+    if (typeof item === 'number' && Number.isFinite(item)) return;
+    if (!item || typeof item !== 'object' || (!Array.isArray(item) && ![Object.prototype, null].includes(Object.getPrototypeOf(item)))) invalid('Expected portable JSON values.');
+    if (ancestors.has(item as object)) invalid('Object cycles are not portable; use operation references.');
+    if (Object.getOwnPropertySymbols(item).length) invalid('Symbol properties are not portable.');
+    if (Array.isArray(item) && (Object.keys(item).length !== item.length || Object.keys(item).some((key, index) => key !== String(index)))) invalid('Arrays must be dense and contain no named properties.');
+    ancestors.add(item as object);
+    for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(item))) {
+      if (Array.isArray(item) && key === 'length') continue;
+      if (!('value' in descriptor) || !descriptor.enumerable) invalid('Accessor and hidden properties are not portable.');
+      visit(descriptor.value, depth + 1);
+    }
+    ancestors.delete(item as object);
+  };
+  visit(value, 0);
+}
+export function sealSpecification(value: Omit<SemanticSpecification, 'artifact_id'> | SemanticSpecification): SemanticSpecification {
+  assertPortable(value);
+  const result = normalized({ ...value, artifact_id: specificationIdentity(value) });
+  validateSpecification(result);
+  return result;
+}
+export function operationTypeEnvironment(spec: SemanticSpecification, operation: SemanticSpecification['operations'][number]): TypeEnvironment {
+  const state: ValueType = { kind: 'record', fields: Object.fromEntries(spec.states.map(item => [item.id, item.type])) };
+  return { input: { kind: 'record', fields: operation.inputs }, output: operation.output, before: state, after: state };
+}
+function expressions(expr: Expression, visit: (expr: Expression) => void): void {
+  visit(expr);
+  if ('value' in expr && expr.kind !== 'literal') expressions(expr.value, visit);
+  if ('terms' in expr) expr.terms.forEach(term => expressions(term, visit));
+  if ('left' in expr) { expressions(expr.left, visit); expressions(expr.right, visit); }
+  if ('collection' in expr) expressions(expr.collection, visit);
+  if ('predicate' in expr) expressions(expr.predicate, visit);
+}
+export function validateSpecification(value: unknown): asserts value is SemanticSpecification {
+  assertPortable(value);
+  if (!checkSchema(value)) invalid(`Specification schema mismatch: ${checkSchema.errors?.[0]?.instancePath ?? ''} ${checkSchema.errors?.[0]?.message ?? ''}`);
+  const spec = value as SemanticSpecification;
+  if (spec.artifact_id !== specificationIdentity(spec)) invalid('Specification digest does not match its content.');
+  if ((spec.perspective === 'intended') !== (spec.provenance.origin === 'user-directed-design')) invalid('Intended requirements and source interpretations need distinct provenance.');
+  const allIds = new Set<string>();
+  const unique = (id: string) => { if (allIds.has(id)) invalid(`Duplicate canonical ID: ${id}`); allIds.add(id); };
+  for (const item of [...spec.operations, ...spec.states, ...spec.sources]) unique(item.id);
+  const aliases = new Set<string>();
+  const operations = new Map(spec.operations.map(item => [item.id, item]));
+  const states = new Map(spec.states.map(item => [item.id, item]));
+  const sources = new Set(spec.sources.map(item => item.id));
+  const evidence = (ids: string[]) => { for (const id of ids) if (!sources.has(id)) invalid(`Missing source reference: ${id}`); };
+  for (const source of spec.sources) if (source.sha256 !== sha256(source.text)) invalid(`Source text hash mismatch: ${source.id}`);
+  for (const state of spec.states) evidence(state.evidence_ids);
+  for (const operation of spec.operations) {
+    if (aliases.has(operation.alias) || (operations.has(operation.alias) && operation.alias !== operation.id)) invalid(`Ambiguous operation alias: ${operation.alias}`);
+    aliases.add(operation.alias); evidence(operation.evidence_ids);
+    const environment = operationTypeEnvironment(spec, operation);
+    const expression = (expr: Expression, expected: ValueType, guard = false) => {
+      requireExpressionType(expr, expected, environment);
+      expressions(expr, node => {
+        if (node.kind !== 'ref') return;
+        if (guard && (node.root === 'after' || node.root === 'output')) invalid('Outcome guards can only read inputs and initial state.');
+        if (node.root === 'before' || node.root === 'after') {
+          if (!node.path.length) invalid('State expressions must name a field.');
+          const field = node.path[0]!;
+          if (![...operation.reads, ...operation.writes].includes(field)) invalid(`Undeclared state access: ${field}`);
+        }
+      });
+    };
+    for (const id of [...operation.reads, ...operation.writes]) if (!states.has(id)) invalid(`Missing state field: ${id}`);
+    const depIds = new Set<string>();
+    for (const dependency of operation.dependencies) {
+      if (depIds.has(dependency.operation_id)) invalid('Duplicate operation dependency.');
+      depIds.add(dependency.operation_id);
+      if (dependency.requirement === 'required' && !operations.has(dependency.operation_id)) throw new ClearingsError('MISSING_REQUIRED_DEPENDENCY', `Required operation is missing: ${dependency.operation_id}`);
+    }
+    const effects = new Set<string>();
+    for (const effect of operation.effects.allowed) { if (effects.has(effect.id)) invalid('Duplicate effect ID.'); effects.add(effect.id); }
+    for (const rule of [...operation.guarantees, ...operation.outcomes.flatMap(outcome => outcome.ensures)]) {
+      unique(rule.id); evidence(rule.evidence_ids); expression(rule.predicate, { kind: 'boolean' });
+    }
+    for (const outcome of operation.outcomes) {
+      unique(outcome.id); evidence(outcome.evidence_ids); expression(outcome.when, { kind: 'boolean' }, true);
+      const updated = new Set<string>();
+      for (const update of outcome.updates) {
+        if (!operation.writes.includes(update.state_id) || updated.has(update.state_id)) invalid('Outcome update needs a unique declared writable field.');
+        updated.add(update.state_id); expression(update.value, states.get(update.state_id)!.type);
+      }
+      const outcomeEffects = new Set<string>();
+      for (const effect of outcome.effects) {
+        if (!effects.has(effect.effect_id) || outcomeEffects.has(effect.effect_id)) invalid('Outcome references an absent or duplicate effect.');
+        outcomeEffects.add(effect.effect_id);
+      }
+      for (const transition of outcome.transitions) if (!depIds.has(transition.operation_id)) invalid('Transition target needs an explicit operation dependency.');
+    }
+    for (const implementation of operation.implementations) evidence(implementation.evidence_ids);
+    for (const decision of operation.decisions) { unique(decision.id); evidence(decision.evidence_ids); }
+    if (operation.coverage === 'partial' && !operation.decisions.length) invalid('Partial operations must explain their open boundary.');
+  }
+}
+
+File: src/specification/expressions.ts
+import { canonical } from '../repository/inventory.js';
+import { ClearingsError } from '../model/types.js';
+import type { Expression, JsonValue, ValueType } from './model.js';
+
+export interface ExpressionEnvironment {
+  input?: JsonValue; before?: JsonValue; after?: JsonValue; output?: JsonValue; local?: Record<string, JsonValue>;
+}
+export type ExpressionValue = { known: true; value: JsonValue } | { known: false; reason: string };
+const unknown = (reason: string): ExpressionValue => ({ known: false, reason });
+const known = (value: JsonValue): ExpressionValue => ({ known: true, value });
+const equal = (left: JsonValue, right: JsonValue) => canonical(left) === canonical(right);
+const own = (value: object, name: string) => Object.prototype.hasOwnProperty.call(value, name);
+
+/** Closed interpreter with a work limit. Source strings never enter eval/Function. */
+export function evaluateExpression(expression: Expression, environment: ExpressionEnvironment, maxSteps = 100000): ExpressionValue {
+  let remaining = maxSteps;
+  const evaluate = (expr: Expression, env: ExpressionEnvironment): ExpressionValue => {
+    if (--remaining < 0) return unknown('Expression work limit reached.');
+    switch (expr.kind) {
+      case 'literal': return known(expr.value);
+      case 'opaque': return unknown(expr.reason);
+      case 'ref': {
+        let value: JsonValue | undefined = env[expr.root];
+        for (const key of expr.path) {
+          if (!value || typeof value !== 'object' || Array.isArray(value) || !own(value, key)) return unknown(`Missing observation: ${expr.root}.${expr.path.join('.')}`);
+          value = value[key];
+        }
+        return value === undefined ? unknown(`Missing observation: ${expr.root}`) : known(value);
+      }
+      case 'all': case 'any': {
+        let unresolved: ExpressionValue | undefined;
+        for (const term of expr.terms) {
+          const result = evaluate(term, env);
+          if (!result.known) unresolved = result;
+          else if (typeof result.value !== 'boolean') return unknown('Boolean operand expected.');
+          else if (result.value === (expr.kind === 'any')) return known(result.value);
+        }
+        return unresolved ?? known(expr.kind === 'all');
+      }
+      case 'not': case 'length': case 'unique': {
+        const result = evaluate(expr.value, env); if (!result.known) return result;
+        if (expr.kind === 'not') return typeof result.value === 'boolean' ? known(!result.value) : unknown('Boolean operand expected.');
+        if (expr.kind === 'length') return Array.isArray(result.value) || typeof result.value === 'string' ? known(result.value.length) : unknown('Collection operand expected.');
+        return Array.isArray(result.value) ? known(new Set(result.value.map(item => canonical(item))).size === result.value.length) : unknown('List operand expected.');
+      }
+      case 'compare': {
+        const a = evaluate(expr.left, env), b = evaluate(expr.right, env);
+        if (!a.known) return a; if (!b.known) return b;
+        if (expr.op === 'eq' || expr.op === 'ne') return known(equal(a.value, b.value) === (expr.op === 'eq'));
+        if (typeof a.value !== 'number' || typeof b.value !== 'number') return unknown('Numeric operands expected.');
+        return known(expr.op === 'lt' ? a.value < b.value : expr.op === 'lte' ? a.value <= b.value : expr.op === 'gt' ? a.value > b.value : a.value >= b.value);
+      }
+      case 'contains': case 'subset': {
+        const collection = evaluate(expr.collection, env), value = evaluate(expr.value, env);
+        if (!collection.known) return collection; if (!value.known) return value;
+        if (!Array.isArray(collection.value)) return unknown('List operand expected.');
+        const items = new Set(collection.value.map(item => canonical(item)));
+        if (expr.kind === 'contains') return known(items.has(canonical(value.value)));
+        return Array.isArray(value.value) ? known(value.value.every(item => items.has(canonical(item)))) : unknown('Subset operand must be a list.');
+      }
+      case 'every': {
+        const collection = evaluate(expr.collection, env); if (!collection.known) return collection;
+        if (!Array.isArray(collection.value)) return unknown('List operand expected.');
+        let unresolved: ExpressionValue | undefined;
+        for (const item of collection.value) {
+          const result = evaluate(expr.predicate, { ...env, local: { ...env.local, [expr.variable]: item } });
+          if (!result.known) unresolved = result;
+          else if (typeof result.value !== 'boolean') return unknown('Boolean predicate expected.');
+          else if (!result.value) return known(false);
+          if (remaining < 0) return unknown('Expression work limit reached.');
+        }
+        return unresolved ?? known(true);
+      }
+    }
+  };
+  return evaluate(expression, environment);
+}
+
+export function matchesType(value: unknown, type: ValueType): value is JsonValue {
+  switch (type.kind) {
+    case 'null': return value === null;
+    case 'boolean': case 'string': return typeof value === type.kind;
+    case 'integer': return typeof value === 'number' && Number.isSafeInteger(value);
+    case 'number': return typeof value === 'number' && Number.isFinite(value);
+    case 'enum': return typeof value === 'string' && type.values.includes(value);
+    case 'list': return Array.isArray(value) && value.every(item => matchesType(item, type.element));
+    case 'record': return !!value && typeof value === 'object' && !Array.isArray(value)
+      && Object.keys(value).length === Object.keys(type.fields).length
+      && Object.entries(type.fields).every(([key, field]) => own(value, key) && matchesType((value as Record<string, unknown>)[key], field));
+  }
+}
+
+type InferredType = ValueType | { kind: 'empty' };
+export type TypeEnvironment = Record<'input' | 'before' | 'after' | 'output', ValueType> & { local?: Record<string, ValueType> };
+const invalid = (message: string): never => { throw new ClearingsError('SPEC_TYPE', message); };
+const compatible = (a: InferredType, b: InferredType): boolean => {
+  if (a.kind === 'empty' || b.kind === 'empty') return true;
+  if (['integer', 'number'].includes(a.kind) && ['integer', 'number'].includes(b.kind)) return true;
+  if (['string', 'enum'].includes(a.kind) && ['string', 'enum'].includes(b.kind)) return true;
+  if (a.kind === 'list' && b.kind === 'list') return compatible(a.element, b.element);
+  if (a.kind === 'record' && b.kind === 'record') return Object.keys(a.fields).length === Object.keys(b.fields).length && Object.entries(a.fields).every(([key, type]) => b.fields[key] && compatible(type, b.fields[key]!));
+  return a.kind === b.kind;
+};
+function literalType(value: JsonValue): InferredType {
+  if (value === null) return { kind: 'null' };
+  if (Array.isArray(value)) {
+    // Empty literals have no element constraints; this sentinel is internal only.
+    if (!value.length) return { kind: 'list', element: { kind: 'empty' } as unknown as ValueType };
+    const type = literalType(value[0]!);
+    if (!value.every(item => compatible(type, literalType(item)))) invalid('List literals must have a consistent element type.');
+    return { kind: 'list', element: type as ValueType };
+  }
+  if (typeof value === 'object') return { kind: 'record', fields: Object.fromEntries(Object.entries(value).map(([key, field]) => [key, literalType(field) as ValueType])) };
+  if (typeof value === 'number') return { kind: Number.isSafeInteger(value) ? 'integer' : 'number' };
+  return { kind: typeof value as 'boolean' | 'string' };
+}
+export function expressionType(expr: Expression, environment: TypeEnvironment): InferredType {
+  const infer = (value: Expression) => expressionType(value, environment);
+  const requireKind = (type: InferredType, kinds: string[]) => { if (!kinds.includes(type.kind)) invalid(`Expected ${kinds.join('/')} expression; received ${type.kind}.`); };
+  switch (expr.kind) {
+    case 'literal': return literalType(expr.value);
+    case 'opaque': return { kind: 'boolean' };
+    case 'ref': {
+      let type: ValueType = expr.root === 'local' ? { kind: 'record', fields: environment.local ?? {} } : environment[expr.root];
+      for (const key of expr.path) {
+        if (type.kind !== 'record' || !own(type.fields, key)) invalid(`Unknown typed reference ${expr.root}.${expr.path.join('.')}.`);
+        type = (type as Extract<ValueType, { kind: 'record' }>).fields[key]!;
+      }
+      return type;
+    }
+    case 'not': requireKind(infer(expr.value), ['boolean']); return { kind: 'boolean' };
+    case 'length': requireKind(infer(expr.value), ['list', 'string']); return { kind: 'integer' };
+    case 'unique': requireKind(infer(expr.value), ['list']); return { kind: 'boolean' };
+    case 'all': case 'any': for (const term of expr.terms) requireKind(infer(term), ['boolean']); return { kind: 'boolean' };
+    case 'compare': {
+      const left = infer(expr.left), right = infer(expr.right);
+      if (expr.op === 'eq' || expr.op === 'ne') { if (!compatible(left, right)) invalid('Equality operands have incompatible types.'); }
+      else { requireKind(left, ['integer', 'number']); requireKind(right, ['integer', 'number']); }
+      return { kind: 'boolean' };
+    }
+    case 'contains': case 'subset': {
+      const collection = infer(expr.collection), value = infer(expr.value);
+      if (collection.kind !== 'list') return invalid('Collection expression must be a list.');
+      if (expr.kind === 'subset' && value.kind !== 'list') invalid('Subset expression must be a list.');
+      const element = expr.kind === 'subset' ? (value as Extract<ValueType, { kind: 'list' }>).element : value;
+      if (!compatible(collection.element, element)) invalid('Collection operands have incompatible element types.');
+      return { kind: 'boolean' };
+    }
+    case 'every': {
+      const collection = infer(expr.collection);
+      if (collection.kind !== 'list') return invalid('Quantified collection must be a list.');
+      const predicate = expressionType(expr.predicate, { ...environment, local: { ...environment.local, [expr.variable]: collection.element } });
+      requireKind(predicate, ['boolean']); return { kind: 'boolean' };
+    }
+  }
+}
+export function requireExpressionType(expr: Expression, expected: ValueType, environment: TypeEnvironment): void {
+  if (expr.kind === 'literal') { if (!matchesType(expr.value, expected)) invalid('Literal has the wrong declared type.'); return; }
+  const actual = expressionType(expr, environment);
+  const assignable = (from: InferredType, to: ValueType): boolean => {
+    if (from.kind === 'empty') return true;
+    if (to.kind === 'number' && from.kind === 'integer') return true;
+    if (to.kind === 'string' && from.kind === 'enum') return true;
+    if (to.kind === 'enum') return from.kind === 'enum' && from.values.every(value => to.values.includes(value));
+    if (to.kind === 'list') return from.kind === 'list' && assignable(from.element, to.element);
+    if (to.kind === 'record') return from.kind === 'record' && Object.keys(from.fields).length === Object.keys(to.fields).length
+      && Object.entries(to.fields).every(([key, type]) => own(from.fields, key) && assignable(from.fields[key]!, type));
+    return from.kind === to.kind;
+  };
+  if (!assignable(actual, expected)) invalid('Expression result has the wrong type.');
+}
+
+export function formatExpression(expr: Expression): string {
+  switch (expr.kind) {
+    case 'literal': return JSON.stringify(expr.value);
+    case 'ref': return [expr.root, ...expr.path].join('.');
+    case 'opaque': return `Unformalized: ${expr.text}`;
+    case 'not': return `not (${formatExpression(expr.value)})`;
+    case 'length': case 'unique': return `${expr.kind}(${formatExpression(expr.value)})`;
+    case 'all': case 'any': return expr.terms.map(term => `(${formatExpression(term)})`).join(expr.kind === 'all' ? ' and ' : ' or ') || (expr.kind === 'all' ? 'true' : 'false');
+    case 'compare': return `${formatExpression(expr.left)} ${{ eq: '=', ne: '≠', lt: '<', lte: '≤', gt: '>', gte: '≥' }[expr.op]} ${formatExpression(expr.right)}`;
+    case 'contains': return `${formatExpression(expr.collection)} contains ${formatExpression(expr.value)}`;
+    case 'subset': return `${formatExpression(expr.value)} is a subset of ${formatExpression(expr.collection)}`;
+    case 'every': return `every ${expr.variable} in ${formatExpression(expr.collection)}: ${formatExpression(expr.predicate)}`;
+  }
+}
+
+File: src/specification/render.ts
+import { html as h, markdown as md, codeFence } from '../renderers/report.js';
+import { REPORT_CSS } from '../renderers/assets.js';
+import { assembleContext, type OperationContext } from './context.js';
+import { checkOperation } from './check.js';
+import { ClearingsError } from '../model/types.js';
+import { formatExpression } from './expressions.js';
+import type { OperationCheck, OperationObservation, SemanticSpecification, ValueType } from './model.js';
+
+export interface CheckedScenario { name: string; operation_id: string; observation: OperationObservation; result: OperationCheck }
+export interface SpecificationReportOptions { format?: 'html' | 'markdown'; maxBytes?: number; scenarios?: CheckedScenario[] }
+const fence = (value: unknown) => codeFence(JSON.stringify(value, null, 2)).replace('typescript\n', 'json\n');
+const typeName = (type: ValueType): string => type.kind === 'enum' ? type.values.join(' | ') : type.kind === 'list' ? `list of ${typeName(type.element)}` : type.kind === 'record' ? `{ ${Object.entries(type.fields).map(([name, field]) => `${name}: ${typeName(field)}`).join(', ')} }` : type.kind;
+const anchor = (id: string) => 'record-' + Buffer.from(id).toString('hex');
+
+export function renderOperationContext(context: OperationContext, options: SpecificationReportOptions = {}): string {
+  if (options.format !== undefined && !['html', 'markdown'].includes(options.format)) throw new ClearingsError('INVALID_ARGUMENTS', 'Specification reports support html and markdown.');
+  const root = context.operations[0]!;
+  const scenarios = options.scenarios ?? [];
+  for (const scenario of scenarios) if (scenario.result.artifact_id !== context.artifact_id || scenario.result.operation_id !== scenario.operation_id || !context.operations.some(operation => operation.id === scenario.operation_id)) throw new ClearingsError('INVALID_SELECTION', 'Report scenarios must belong to included operations in this specification.');
+  const status = `${context.perspective === 'intended' ? 'Proposed intended behavior' : 'Proposed source interpretation'}. ${context.operations.length} operations. Source hashes checked; source authenticity and claim support are not established.`;
+  if (options.format !== 'html') {
+    return [`# ${md(root.name)}`, '', md(root.purpose), '', status, '', `Specification: \`${context.artifact_id}\`.`, '',
+      '## A concrete case', '', ...(scenarios.length ? scenarios.flatMap(scenario => [`### ${md(scenario.name)}`, '', `Operation: \`${scenario.operation_id}\`. Scenario check: **${scenario.result.verdict}**.`, '', '<details>', '<summary>Open inputs, outcome, and checks</summary>', '', fence({ observation: scenario.observation, result: scenario.result }), '', '</details>', '']) : ['Inspect the conditions below to find the outcome for your case.', '']),
+      ...(context.states.length ? ['## State used by these rules', '', '| State | Type | Meaning |', '| --- | --- | --- |', ...context.states.map(state => `| ${md(state.name)} | ${md(typeName(state.type))} | ${md(state.description)} |`), ''] : []),
+      ...context.operations.flatMap(operation => [`<a id="${anchor(operation.id)}"></a>`, `## ${md(operation.name)}`, '', md(operation.purpose), '',
+        '| Condition | Outcome | Required result |', '| --- | --- | --- |', ...operation.outcomes.map(outcome => `| ${md(formatExpression(outcome.when))} | ${md(outcome.description)} | ${md(outcome.ensures.map(rule => rule.description).join(' '))} |`), '',
+        ...operation.guarantees.map(rule => `- ${md(rule.description)}`), '',
+        ...(operation.implementations.length ? ['| Implementation | Responsibility |', '| --- | --- |', ...operation.implementations.map(item => `| ${md(item.name)} | ${md(item.responsibility)} |`), ''] : []),
+        ...operation.decisions.map(item => `- **${item.disposition}${item.blocking ? '; blocking' : ''}:** ${md(item.question)} ${md(item.consequence)}`), '',
+        '<details>', '<summary>Types, state, effects, and exact rules</summary>', '', fence(operation), '', '</details>', '']),
+      '## Relationships', '', 'These are declared dependencies. The labels state their purpose; they are not an execution trace.', '', '| From | Target | Relationship | Role |', '| --- | --- | --- | --- |',
+      ...context.links.map(link => `| ${md(context.operations.find(operation => operation.id === link.from_id)!.name)} | ${md(link.target_name ?? link.to_id)} | ${md(link.kind)} | ${md(link.role)}${link.included ? '' : ' (deferred)'} |`), '',
+      '## Source and design evidence', '', ...context.sources.flatMap(source => [`<a id="${anchor(source.id)}"></a>`, '<details>', `<summary>${md(source.locator)}</summary>`, '', `Origin: ${source.origin}. SHA-256: \`${source.sha256}\`.`, '', codeFence(source.text).replace('typescript\n', source.origin === 'source' ? 'typescript\n' : 'text\n'), '', '</details>', '']),
+      '## Context scope', '', `${context.budget.used_bytes} UTF-8 bytes in the canonical JSON package. Text rendering has a different size.`, '', fence(context.omissions), '', md(context.retrieval), '', 'Scenario checks evaluate supplied observations. They do not prove the implementation or authenticate requirements.', ''].join('\n');
+  }
+  const evidenceLinks = (ids: string[]) => ids.map(id => `<a href="#${anchor(id)}">Source</a>`).join(' · ');
+  const checkView = (scenario: CheckedScenario) => `<details class="scenario"><summary>${h(scenario.name)} <span class="tag">${h(scenario.result.verdict)}</span></summary><p>Operation: ${h(scenario.operation_id)}. This checks supplied observations against the model.</p><pre tabindex="0" aria-label="Scenario inputs and outcome"><code>${h(JSON.stringify(scenario.observation, null, 2))}</code></pre><ul>${scenario.result.checks.map(check => `<li><strong>${h(check.verdict)}</strong> — ${h(check.description)}${check.reason ? ` ${h(check.reason)}` : ''}</li>`).join('')}</ul><p>${h(scenario.result.limitations.join(' '))}</p></details>`;
+  return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${h(root.name)} · Clearings</title><style>${REPORT_CSS}
+main{max-width:940px;margin:auto;padding:36px 24px}h1{max-width:24ch}section{margin:36px 0}.lead{font-size:1.18rem;max-width:70ch}.status{color:var(--muted);font-size:.9rem}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;margin:16px 0}th,td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}td{min-width:120px}pre{padding:16px;overflow:auto;background:var(--soft);border-radius:8px}code{white-space:pre}details{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:8px}summary{cursor:pointer}p,td,li{overflow-wrap:anywhere}.tag{font-size:.85rem;margin-left:8px;color:var(--muted)}.rule{margin:12px 0}nav{display:flex;flex-wrap:wrap;gap:16px;margin:24px 0}@media(max-width:600px){main{padding:20px 14px}h1{font-size:2rem}th,td{padding:8px}}
+</style></head><body><a class="skip" href="#main">Skip to content</a><main id="main"><p>Clearings · Internal representation for AI coding</p><h1>${h(root.name)}</h1><p class="lead">${h(root.purpose)}</p><p class="status">${h(status)}</p><nav aria-label="Reading path"><a href="#cases">Try a case</a><a href="#rules">Rules and outcomes</a><a href="#relationships">Relationships</a><a href="#evidence">Evidence</a></nav>
+<section id="cases"><h2>A concrete case</h2>${scenarios.length ? scenarios.map(checkView).join('') : '<p>Start with an outcome condition below. Open its exact rule when you need the formal expression.</p>'}</section>
+${context.states.length ? `<section id="state"><h2>State used by these rules</h2><div class="table-wrap" tabindex="0" aria-label="State definitions"><table><thead><tr><th>State</th><th>Type</th><th>Meaning</th></tr></thead><tbody>${context.states.map(state => `<tr><td>${h(state.name)}</td><td>${h(typeName(state.type))}</td><td>${h(state.description)} ${evidenceLinks(state.evidence_ids)}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
+<section id="rules"><h2>Rules and outcomes</h2>${context.operations.map(operation => `<article id="${anchor(operation.id)}"><h3>${h(operation.name)}</h3><p>${h(operation.purpose)}</p><div class="table-wrap" tabindex="0" aria-label="Conditional outcomes"><table><thead><tr><th>Condition</th><th>Outcome</th></tr></thead><tbody>${operation.outcomes.map(outcome => `<tr><td><code>${h(formatExpression(outcome.when))}</code></td><td>${h(outcome.description)} ${evidenceLinks(outcome.evidence_ids)}<details><summary>Required result and effects</summary><ul>${outcome.ensures.map(rule => `<li>${h(rule.description)}<br><code>${h(formatExpression(rule.predicate))}</code> ${evidenceLinks(rule.evidence_ids)}</li>`).join('')}${outcome.updates.map(update => `<li>Set ${h(update.state_id)} to <code>${h(formatExpression(update.value))}</code>.</li>`).join('')}${outcome.effects.map(effect => `<li>${h(effect.occurrence)} effect: ${h(effect.effect_id)}.</li>`).join('')}${outcome.transitions.map(transition => `<li>${h(transition.handoff)} ${h(transition.operation_id)}: ${h(transition.description)}</li>`).join('')}</ul></details></td></tr>`).join('')}</tbody></table></div>
+${operation.guarantees.length ? `<ul>${operation.guarantees.map(rule => `<li>${h(rule.description)} ${evidenceLinks(rule.evidence_ids)}</li>`).join('')}</ul>` : ''}
+${operation.implementations.length ? `<h4>Which implementation contributes?</h4><div class="table-wrap" tabindex="0" aria-label="Implementation responsibilities"><table><thead><tr><th>Implementation</th><th>Responsibility</th></tr></thead><tbody>${operation.implementations.map(item => `<tr><td>${h(item.name)}</td><td>${h(item.responsibility)} ${evidenceLinks(item.evidence_ids)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+${operation.decisions.length ? `<h4>Open boundaries</h4><ul>${operation.decisions.map(item => `<li><strong>${h(item.question)}</strong> ${h(item.consequence)} <span class="tag">${h(item.disposition)}${item.blocking ? '; blocking' : ''}</span></li>`).join('')}</ul>` : ''}
+<details><summary>Types, state, and canonical operation</summary><p>Inputs: ${h(Object.entries(operation.inputs).map(([name, type]) => `${name}: ${typeName(type)}`).join('; ') || 'none')}.</p><p>Output: ${h(typeName(operation.output))}. State frame: ${h(operation.frame)}. Effect boundary: ${h(operation.effects.completeness)}.</p><pre tabindex="0" aria-label="Canonical operation JSON"><code>${h(JSON.stringify(operation, null, 2))}</code></pre></details></article>`).join('')}</section>
+<section id="relationships"><h2>Relationships</h2><p>These are declared dependencies. Their roles do not establish an observed execution order.</p><div class="table-wrap" tabindex="0" aria-label="Operation relationships"><table><thead><tr><th>From</th><th>Target</th><th>Role</th></tr></thead><tbody>${context.links.map(link => `<tr><td>${h(context.operations.find(operation => operation.id === link.from_id)!.name)}</td><td>${link.included ? `<a href="#${anchor(link.to_id)}">${h(link.target_name!)}</a>` : h(link.target_name ?? link.to_id)}<br><span class="tag">${h(link.kind)}${link.included ? '' : '; deferred'}</span></td><td>${h(link.role)}</td></tr>`).join('')}</tbody></table></div></section>
+<section id="evidence"><h2>Source and design evidence</h2><p>Attached text is exact. A valid hash establishes content integrity. Source authenticity, claim support, and requirement acceptance need separate checks.</p>${context.sources.map(source => `<details id="${anchor(source.id)}"><summary>${h(source.locator)}</summary><p>${h(source.origin)} · ${h(source.sha256)}</p>${source.binding ? `<p>Source artifact: ${h(source.binding.artifact_id)}. Snapshot: ${h(source.binding.snapshot_id ?? 'not supplied')}.</p>` : ''}<pre tabindex="0" aria-label="Exact attached source"><code>${h(source.text)}</code></pre></details>`).join('')}</section>
+<details><summary>Package identity and omissions</summary><p>${h(context.artifact_id)}</p><p>${context.budget.used_bytes} UTF-8 bytes in the canonical JSON package. HTML has a different size.</p><pre tabindex="0" aria-label="Context omissions"><code>${h(JSON.stringify(context.omissions, null, 2))}</code></pre><p>${h(context.retrieval)}</p></details><p class="status">Scenario checks evaluate supplied observations. They do not prove the implementation or authenticate requirements.</p></main></body></html>\n`;
+}
+export function renderSpecification(spec: SemanticSpecification, selection: string, options: SpecificationReportOptions = {}): string {
+  const context = assembleContext(spec, selection, { maxBytes: options.maxBytes ?? 2097152 });
+  const scenarios = options.scenarios?.map(scenario => ({ ...scenario, result: checkOperation(spec, scenario.operation_id, scenario.observation) }));
+  return renderOperationContext(context, { ...options, ...(scenarios ? { scenarios } : {}) });
+}
+
+File: src/model/types.ts
+export const SCHEMA_VERSION = '0.1.0' as const;
+export const TOOL_VERSION = '0.0.1' as const;
+
+export interface Diagnostic {
+  code: string;
+  message: string;
+}
+
+export interface Snapshot {
+  mode: 'git-commit';
+  object_format: 'sha1' | 'sha256';
+  commit_sha: string;
+  tree_sha: string;
+}
+
+export interface Scope {
+  include: string[];
+  exclude: string[];
+}
+
+export interface InventoryFile {
+  path: string;
+  object_id: string;
+  mode: string;
+  object_type: 'blob' | 'commit';
+  size_bytes: number | null;
+  kind: 'source' | 'declaration' | 'config' | 'other';
+  test_named: boolean;
+  status: 'inventoried' | 'excluded';
+  reason: 'outside-scope' | 'explicit-exclusion' | 'symlink' | 'submodule' | null;
+}
+
+export interface Coverage {
+  tracked_entries: number;
+  inventoried_files: number;
+  excluded_entries: number;
+  inventoried_bytes: number;
+  parsed_files: 0;
+  semantic_analysis: 'not-run';
+}
+
+export interface InventoryData {
+  tool_version: typeof TOOL_VERSION;
+  analysis_level: 'inventory';
+  snapshot: Snapshot;
+  scope: Scope;
+  files: InventoryFile[];
+}
+
+export interface Envelope<T> {
+  schema_version: typeof SCHEMA_VERSION;
+  command: string;
+  status: 'complete' | 'partial' | 'failed';
+  snapshot_id: string | null;
+  data: T;
+  diagnostics: Diagnostic[];
+  coverage: Coverage | null;
+}
+
+export type InventoryResult = Envelope<InventoryData> & {
+  command: 'inventory';
+  status: 'complete';
+  snapshot_id: string;
+  coverage: Coverage;
+};
+
+export class ClearingsError extends Error {
+  constructor(public readonly code: string, message: string, public readonly exitCode: 1 | 2 = 2) {
+    super(message);
+  }
+}
+
+File: src/model/semantic.ts
+import type { Declaration, Evidence, ScanCoverage, ScanDiagnostic, SourceUnit } from './structural.js';
+
+export interface EvidenceExcerpt extends Evidence { path: string; text: string }
+export interface ProposalRequest {
+  schema_version: '0.1.0'; command: 'propose'; status: 'complete' | 'partial';
+  snapshot_id: string; request_id: string;
+  data: {
+    scan_artifact_id: string;
+    scope: { instruction: string; paths: string[] };
+    max_bytes: number;
+    instructions: string;
+    files: SourceUnit[];
+    symbols: Declaration[];
+    evidence: EvidenceExcerpt[];
+    scan_coverage: ScanCoverage;
+  };
+  diagnostics: ScanDiagnostic[];
+  coverage: { scope_files: number; evidence_records: number; omitted_scope_evidence: number };
+}
+export type SemanticKind = 'concept' | 'claim' | 'relation' | 'flow' | 'step' | 'function' | 'behavior' | 'unknown';
+export interface Concept {
+  id: string; kind: 'component' | 'capability' | 'state' | 'external';
+  alias: string; title: string; description: string;
+  evidence_ids: string[]; symbol_ids: string[];
+}
+export interface Claim {
+  id: string; text: string; subject_ids: string[]; evidence_ids: string[];
+  category: 'purpose' | 'behavior' | 'state' | 'effect' | 'failure' | 'constraint';
+}
+export interface Relation {
+  id: string; kind: 'contains' | 'exposes' | 'implements' | 'depends_on' | 'reads' | 'writes' | 'invokes' | 'produces' | 'constrained_by';
+  from_id: string; to_id: string; evidence_ids: string[];
+}
+export interface FlowStep {
+  id: string; title: string; kind: 'action' | 'branch' | 'repeat' | 'failure' | 'unresolved';
+  claim_ids: string[]; evidence_ids: string[];
+  next: { step_id: string; condition: string | null; evidence_ids: string[] }[];
+}
+export interface CapabilityFlow {
+  id: string; capability_id: string; entry_symbol_ids: string[]; entry_step_ids: string[];
+  steps: FlowStep[];
+}
+export interface SemanticProposal {
+  schema_version: '0.1.0'; command: 'proposal'; snapshot_id: string; request_id: string;
+  producer: { kind: 'agent' | 'human'; name: string; model: string | null; input_tokens: number | null; output_tokens: number | null };
+  data: {
+    concepts: Concept[]; claims: Claim[]; relations: Relation[]; flows: CapabilityFlow[];
+    unknowns: { subject_id: string; question: string; critical: boolean; evidence_ids: string[] }[];
+  };
+}
+export interface SemanticModel {
+  schema_version: '0.1.0'; command: 'import'; status: 'complete' | 'partial';
+  snapshot_id: string; artifact_id: string;
+  data: {
+    transport: 'file-exchange' | 'recorded-replay';
+    request: ProposalRequest; proposal: SemanticProposal; proposal_id: string;
+    claim_checks: { claim_id: string; origin: 'model-inference' | 'human-declaration'; citations: 'valid'; verification: 'unknown'; acceptance: 'proposed' }[];
+  };
+  diagnostics: ScanDiagnostic[];
+  coverage: { capabilities: number; claims: number; cited_evidence_records: number; unknowns: number; claim_support: 'not-reviewed' };
+}
+

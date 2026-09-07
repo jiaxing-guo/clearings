@@ -542,7 +542,7 @@ ID: `behavior:23db580d-4b14-4e4d-9176-ffaca2c65853`.
 - [C18: The repeated\-next guard throws before the current frame&\#39;s handler try/catch, so that frame does not process its own guard error through onError\.](#claim-5a6d5b53-546a-4ad0-bb93-b028876d1d12)
 - [C34: If a parent handler awaits a child continuation and its rejection reaches the parent handler call, the parent frame catch can handle an Error through onError\. An unawaited continuation is not guaranteed to reach that catch\.](#claim-d8b4fcf8-5869-40ef-a225-ff4e3d13bb99)
 
-**Failure**: A handler throws an Error and onError exists\. → Configured error callback
+**Failure**: A handler throws an Error and onError exists\. → [Configured error callback (function:98d308f3-506e-458a-9b99-bfe76154df29)](#function-98d308f3-506e-458a-9b99-bfe76154df29)
 
 - [C16: The handler catch uses onError only when the thrown value is an Error and an onError callback exists\.](#claim-544dbd7e-acd1-4040-8b00-00b91c0e8f8d)
 - [C20: Before invoking onError, the handler catch writes the caught Error into context\.error\.](#claim-6a188938-736d-4970-a698-88df4b787329)
@@ -644,7 +644,7 @@ ID: `behavior:ba3e06c3-f41a-40e3-9419-b871a1776622`.
 - [C18: The repeated\-next guard throws before the current frame&\#39;s handler try/catch, so that frame does not process its own guard error through onError\.](#claim-5a6d5b53-546a-4ad0-bb93-b028876d1d12)
 - [C34: If a parent handler awaits a child continuation and its rejection reaches the parent handler call, the parent frame catch can handle an Error through onError\. An unawaited continuation is not guaranteed to reach that catch\.](#claim-d8b4fcf8-5869-40ef-a225-ff4e3d13bb99)
 
-**Failure**: A handler throws an Error and onError exists\. → Configured error callback
+**Failure**: A handler throws an Error and onError exists\. → [Configured error callback (function:98d308f3-506e-458a-9b99-bfe76154df29)](#function-98d308f3-506e-458a-9b99-bfe76154df29)
 
 - [C16: The handler catch uses onError only when the thrown value is an Error and an onError callback exists\.](#claim-544dbd7e-acd1-4040-8b00-00b91c0e8f8d)
 - [C20: Before invoking onError, the handler catch writes the caught Error into context\.error\.](#claim-6a188938-736d-4970-a698-88df4b787329)
@@ -711,12 +711,12 @@ Role: arrow. [src/context\.ts](#evidence-3964d7755fbe93590183216380561fc4f6cf9ee
 
 - [C19: Context\.notFound installs a fallback callback only when its private handler is nullish, then invokes the handler with this context\.](#claim-5e705c38-4dd9-4e55-be1b-2f016881b2bd)
 
-**Dependency**: Context not\-found fallback arrow
+**Dependency**: [Context not\-found fallback arrow (function:49d6bd1e-9aaf-4234-8f34-2aa0011e86b4)](#function-49d6bd1e-9aaf-4234-8f34-2aa0011e86b4)
 
 - [C19: Context\.notFound installs a fallback callback only when its private handler is nullish, then invokes the handler with this context\.](#claim-5e705c38-4dd9-4e55-be1b-2f016881b2bd)
 - [C32: The fallback arrow installed by Context\.notFound calls createResponseInstance with no arguments and returns its result\.](#claim-d5dd3300-e498-4ec8-b548-9d8308c15576)
 
-**Dependency**: Configured not\-found callback
+**Dependency**: [Configured not\-found callback (function:2ed115cb-3d2d-4d04-9657-d8829ba4ee56)](#function-2ed115cb-3d2d-4d04-9657-d8829ba4ee56)
 
 - [C19: Context\.notFound installs a fallback callback only when its private handler is nullish, then invokes the handler with this context\.](#claim-5e705c38-4dd9-4e55-be1b-2f016881b2bd)
 
@@ -773,7 +773,7 @@ Role: function. [src/compose\.ts](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc
 - [C18: The repeated\-next guard throws before the current frame&\#39;s handler try/catch, so that frame does not process its own guard error through onError\.](#claim-5a6d5b53-546a-4ad0-bb93-b028876d1d12)
 - [C34: If a parent handler awaits a child continuation and its rejection reaches the parent handler call, the parent frame catch can handle an Error through onError\. An unawaited continuation is not guaranteed to reach that catch\.](#claim-d8b4fcf8-5869-40ef-a225-ff4e3d13bb99)
 
-**Failure**: A handler throws an Error and onError exists\. → Configured error callback
+**Failure**: A handler throws an Error and onError exists\. → [Configured error callback (function:98d308f3-506e-458a-9b99-bfe76154df29)](#function-98d308f3-506e-458a-9b99-bfe76154df29)
 
 - [C16: The handler catch uses onError only when the thrown value is an Error and an onError callback exists\.](#claim-544dbd7e-acd1-4040-8b00-00b91c0e8f8d)
 - [C20: Before invoking onError, the handler catch writes the caught Error into context\.error\.](#claim-6a188938-736d-4970-a698-88df4b787329)
@@ -799,30 +799,30 @@ Role: function. [src/compose\.ts](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc
 - [C35: The composed frame assigns context\.res after the handler catch\. A failure from that assignment escapes the current handler catch and can reach an awaiting parent or application dispatcher\.](#claim-e1b56a2f-0a30-4965-865a-3ab75c96f399)
 - [C34: If a parent handler awaits a child continuation and its rejection reaches the parent handler call, the parent frame catch can handle an Error through onError\. An unawaited continuation is not guaranteed to reach that catch\.](#claim-d8b4fcf8-5869-40ef-a225-ff4e3d13bb99)
 
-**Dependency**: Recursive middleware continuation
+**Dependency**: [Recursive middleware continuation (function:a30d9cc8-bde8-4f72-8469-44f9b1e91a23)](#function-a30d9cc8-bde8-4f72-8469-44f9b1e91a23)
 
 - [C24: A handler receives a continuation that recursively dispatches i \+ 1 using the same context\.](#claim-87cd957c-bb51-49fe-b9a4-291c106e08c5)
 
-**Dependency**: Selected application handler
+**Dependency**: [Selected application handler (function:d888d262-67d4-4c35-a3d3-b88a00f3deb6)](#function-d888d262-67d4-4c35-a3d3-b88a00f3deb6)
 
 - [C10: A present middleware entry supplies its handler from middleware\[i\]\[0\]\[0\]\.](#claim-36389804-ee71-4da7-bbdc-e77cb1d247b1)
 - [C1: The dispatcher awaits each handler result, allowing synchronous return values and promises to feed the same response handling\.](#claim-005c1ad3-dcc5-4f77-b36f-7ee4a420f22c)
 
-**Dependency**: Supplied outer continuation
+**Dependency**: [Supplied outer continuation (function:e677a038-abee-4d92-8888-4b401adf7370)](#function-e677a038-abee-4d92-8888-4b401adf7370)
 
 - [C3: The supplied outer next callback is eligible only at exactly middleware\.length when no middleware entry exists\.](#claim-0df938c1-9773-4d05-84ba-5bcecf66fb6c)
 
-**Dependency**: Configured error callback
+**Dependency**: [Configured error callback (function:98d308f3-506e-458a-9b99-bfe76154df29)](#function-98d308f3-506e-458a-9b99-bfe76154df29)
 
 - [C16: The handler catch uses onError only when the thrown value is an Error and an onError callback exists\.](#claim-544dbd7e-acd1-4040-8b00-00b91c0e8f8d)
 - [C20: Before invoking onError, the handler catch writes the caught Error into context\.error\.](#claim-6a188938-736d-4970-a698-88df4b787329)
 - [C11: After awaiting onError, the dispatcher marks the result as an error response\.](#claim-3744e538-0f07-4ea4-a210-02d1a6c03781)
 
-**Dependency**: Configured not\-found callback
+**Dependency**: [Configured not\-found callback (function:2ed115cb-3d2d-4d04-9657-d8829ba4ee56)](#function-2ed115cb-3d2d-4d04-9657-d8829ba4ee56)
 
 - [C36: Without a selected handler, onNotFound runs only when context\.finalized is exactly false and the callback exists\.](#claim-e8b03c7a-182a-46d4-aeb8-bf4295b82798)
 
-**Dependency**: Context\.res setter
+**Dependency**: [Context\.res setter (function:9cb45f6c-5651-4587-89b1-acc02a5e7fb3)](#function-9cb45f6c-5651-4587-89b1-acc02a5e7fb3)
 
 - [C41: A truthy response result is assigned to context\.res only when context is not finalized or the result came through onError\.](#claim-fca39081-cbda-4fe7-8212-cf21fdc9a885)
 
@@ -914,7 +914,7 @@ Role: arrow. [src/compose\.ts](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc166
 
 None recorded; this does not prove absence.
 
-**Dependency**: Returned composition runner
+**Dependency**: [Returned composition runner (function:bc6399ac-1a94-4541-b51b-4cc6cc66aea8)](#function-bc6399ac-1a94-4541-b51b-4cc6cc66aea8)
 
 - [C13: compose accepts middleware entries and optional error and not\-found callbacks\. It returns a runner that accepts a Context and optional outer next callback\.](#claim-39cc9873-5187-41f4-8403-332e355f7db9)
 
@@ -1021,7 +1021,7 @@ Role: arrow. [src/compose\.ts](#evidence-f0fbf304d7f634b2604843eb1d434ace3bbc166
 
 None recorded; this does not prove absence.
 
-**Dependency**: Nested middleware dispatch
+**Dependency**: [Nested middleware dispatch (function:03f326d3-1de0-4410-808f-b673a2c4cfb3)](#function-03f326d3-1de0-4410-808f-b673a2c4cfb3)
 
 - [C24: A handler receives a continuation that recursively dispatches i \+ 1 using the same context\.](#claim-87cd957c-bb51-49fe-b9a4-291c106e08c5)
 
@@ -1061,7 +1061,7 @@ None recorded; this does not prove absence.
 
 - [C9: The runner returns dispatch\(0\)\. This nested async function resolves to the shared context after successful completion and can reject on a propagated failure\.](#claim-2c55a0d3-2faf-413e-8173-4aa184a3094e)
 
-**Dependency**: Nested middleware dispatch
+**Dependency**: [Nested middleware dispatch (function:03f326d3-1de0-4410-808f-b673a2c4cfb3)](#function-03f326d3-1de0-4410-808f-b673a2c4cfb3)
 
 - [C28: The runner begins asynchronous dispatch at middleware index zero\.](#claim-b1c5caa4-d40d-4e99-a478-a0483a83437a)
 

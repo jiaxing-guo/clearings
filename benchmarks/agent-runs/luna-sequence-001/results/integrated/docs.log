@@ -1,0 +1,58 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> clearings-semantic@0.0.1 docs:build
+> node scripts/prepare-docs.mjs && npm --prefix website run build
+
+{"artifact_id":"semantic:879ce0fdb5dee3f6f406bfa87e28f0d2f48b65fb58026479f9172bbd54b8c3f0","html_files":7,"markdown_reports":4,"fragment_links":1938,"file_hashes":"valid","source_checked_by_builder":11,"agent_record_bindings":"valid","browser_interaction":"not-run-policy-block"}
+Archive verified: 34 files in clearings-shared-review.zip
+Prepared 35 static demo assets.
+{"actual_clearings_cases":9,"authored_hono_cases":9,"rejected_output_faults":8,"context_reproduction":"identical","exact_working_source_bindings":"valid","file_hashes":"valid","fragment_links":80,"browser_interaction":"not-run"}
+Archive verified: 18 files in clearings-specification-review.zip
+Prepared 19 typed specification assets.
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> build
+> node scripts/build.mjs
+
+▲ Next.js 16.3.4 (Turbopack)
+✓ Running next.config.mjs took 83ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 14.1s
+  Running TypeScript ...
+  Finished TypeScript in 7.1s ...
+  Collecting page data using 6 workers ...
+  Generating static pages using 6 workers (0/17) ...
+  Generating static pages using 6 workers (4/17) 
+  Generating static pages using 6 workers (8/17) 
+  Generating static pages using 6 workers (12/17) 
+✓ Generating static pages using 6 workers (17/17) in 3.7s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├   /docs/[[...slug]]
+│ ├ ● /docs/contributing
+│ ├ ● /docs/demos
+│ ├ ● /docs
+│ └ ● [+10 more paths]
+└ ○ /search-index.json
+
+
+○  (Static)  prerendered as static content
+●  (SSG)     prerendered as static HTML (uses generateStaticParams)
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> clearings-semantic@0.0.1 docs:check
+> npm --prefix website run typecheck && node scripts/check-docs.mjs
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> typecheck
+> tsc --noEmit
+
+Archive verified: 34 files in clearings-shared-review.zip
+Archive verified: 18 files in clearings-specification-review.zip
+{"static_html_pages":27,"links_checked":2398,"base_path":"/clearings-semantic","static_search_queries":3,"demo_artifact":"semantic:879ce0fdb5dee3f6f406bfa87e28f0d2f48b65fb58026479f9172bbd54b8c3f0","external_assets":0,"browser_check":"not run; static checks only"}

@@ -1,0 +1,563 @@
+{
+  "artifact_id": "specification:ee36f59b41f2a94d6cc6fb9172cf49a2a04c5f5e32b79a7284adc248a5a0d0e3",
+  "kind": "specification",
+  "name": "Check operation sequences in Clearings",
+  "operations": [
+    {
+      "alias": "check-sequence",
+      "coverage": "complete",
+      "decisions": [
+        {
+          "blocking": true,
+          "consequence": "The caller must establish this; scope metadata alone is insufficient.",
+          "disposition": "unresolved-requirement",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "decision:shared-storage",
+          "question": "Do the selected state IDs refer to the same storage across these observations?"
+        },
+        {
+          "blocking": false,
+          "consequence": "The API checks the supplied records only. No source trace or conformance proof is provided.",
+          "disposition": "analysis-limit",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "decision:runtime-order",
+          "question": "Were these records produced by source execution in the supplied order?"
+        },
+        {
+          "blocking": false,
+          "consequence": "No general effect monitor is supplied. Review and tests cover the bounded pure implementation.",
+          "disposition": "analysis-limit",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "decision:effects",
+          "question": "Did the checker implementation perform external effects?"
+        }
+      ],
+      "dependencies": [],
+      "effects": {
+        "allowed": [],
+        "completeness": "partial"
+      },
+      "evidence_ids": [
+        "requirement:sequence-api"
+      ],
+      "frame": "complete",
+      "guarantees": [
+        {
+          "description": "Retain one result for each supplied step.",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "rule:step-count",
+          "predicate": {
+            "kind": "compare",
+            "left": {
+              "kind": "ref",
+              "path": [
+                "step_count"
+              ],
+              "root": "output"
+            },
+            "op": "eq",
+            "right": {
+              "kind": "ref",
+              "path": [
+                "step_count"
+              ],
+              "root": "input"
+            }
+          }
+        },
+        {
+          "description": "Retain each adjacent-pair and selected-state comparison.",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "rule:link-count",
+          "predicate": {
+            "kind": "compare",
+            "left": {
+              "kind": "ref",
+              "path": [
+                "link_count"
+              ],
+              "root": "output"
+            },
+            "op": "eq",
+            "right": {
+              "kind": "ref",
+              "path": [
+                "expected_link_count"
+              ],
+              "root": "input"
+            }
+          }
+        },
+        {
+          "description": "Every nested result equals checkOperation for that exact step, with the canonical operation ID and original index.",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "rule:delegate",
+          "predicate": {
+            "kind": "opaque",
+            "reason": "The expression language cannot quantify over arbitrary specification records and API exceptions. Frozen tests and source review cover this requirement.",
+            "text": "Every nested result equals checkOperation for that exact step, with the canonical operation ID and original index."
+          }
+        },
+        {
+          "description": "Compare only own after and before values of adjacent records, for explicitly selected shared state. Missing values remain unknown. JSON object order does not matter; array order matters.",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "rule:continuity",
+          "predicate": {
+            "kind": "opaque",
+            "reason": "The expression language cannot quantify over arbitrary specification records and API exceptions. Frozen tests and source review cover this requirement.",
+            "text": "Compare only own after and before values of adjacent records, for explicitly selected shared state. Missing values remain unknown. JSON object order does not matter; array order matters."
+          }
+        },
+        {
+          "description": "Validate the complete specification, portable wrappers, explicit options, 1–256 steps, known state IDs, and observations with the exact errors in API.md.",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "rule:validation",
+          "predicate": {
+            "kind": "opaque",
+            "reason": "The expression language cannot quantify over arbitrary specification records and API exceptions. Frozen tests and source review cover this requirement.",
+            "text": "Validate the complete specification, portable wrappers, explicit options, 1–256 steps, known state IDs, and observations with the exact errors in API.md."
+          }
+        },
+        {
+          "description": "Return fresh mutable result objects without sharing mutable inputs or previous results. Preserve proposed acceptance, perspective, and supplied-observations-only interpretation.",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "rule:ownership",
+          "predicate": {
+            "kind": "opaque",
+            "reason": "The expression language cannot quantify over arbitrary specification records and API exceptions. Frozen tests and source review cover this requirement.",
+            "text": "Return fresh mutable result objects without sharing mutable inputs or previous results. Preserve proposed acceptance, perspective, and supplied-observations-only interpretation."
+          }
+        },
+        {
+          "description": "Normalize state IDs with unique default string ordering. Keep input step order and then pair/state order for continuity records. Keep every result after failed checks.",
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "rule:ordering",
+          "predicate": {
+            "kind": "opaque",
+            "reason": "The expression language cannot quantify over arbitrary specification records and API exceptions. Frozen tests and source review cover this requirement.",
+            "text": "Normalize state IDs with unique default string ordering. Keep input step order and then pair/state order for continuity records. Keep every result after failed checks."
+          }
+        }
+      ],
+      "id": "operation:check-sequence",
+      "implementations": [
+        {
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "name": "checkOperationSequence",
+          "responsibility": "Validate wrappers, retain operation checks, compare adjacent selected state, and combine verdicts.",
+          "symbol_id": null
+        },
+        {
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "name": "checkOperation",
+          "responsibility": "Check one supplied observation against its operation contract without executing target code.",
+          "symbol_id": null
+        }
+      ],
+      "inputs": {
+        "continuity_verdicts": {
+          "element": {
+            "kind": "enum",
+            "values": [
+              "pass",
+              "fail",
+              "unknown"
+            ]
+          },
+          "kind": "list"
+        },
+        "expected_link_count": {
+          "kind": "integer"
+        },
+        "step_count": {
+          "kind": "integer"
+        },
+        "step_verdicts": {
+          "element": {
+            "kind": "enum",
+            "values": [
+              "pass",
+              "fail",
+              "unknown"
+            ]
+          },
+          "kind": "list"
+        }
+      },
+      "name": "Check a supplied sequence",
+      "outcome_policy": "exclusive",
+      "outcomes": [
+        {
+          "description": "All supplied checks pass.",
+          "effects": [],
+          "ensures": [
+            {
+              "description": "Return pass.",
+              "evidence_ids": [
+                "requirement:sequence-api"
+              ],
+              "id": "rule:verdict-pass",
+              "predicate": {
+                "kind": "compare",
+                "left": {
+                  "kind": "ref",
+                  "path": [
+                    "verdict"
+                  ],
+                  "root": "output"
+                },
+                "op": "eq",
+                "right": {
+                  "kind": "literal",
+                  "value": "pass"
+                }
+              }
+            }
+          ],
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "sequence:pass",
+          "transitions": [],
+          "updates": [],
+          "when": {
+            "kind": "all",
+            "terms": [
+              {
+                "kind": "not",
+                "value": {
+                  "kind": "any",
+                  "terms": [
+                    {
+                      "collection": {
+                        "kind": "ref",
+                        "path": [
+                          "step_verdicts"
+                        ],
+                        "root": "input"
+                      },
+                      "kind": "contains",
+                      "value": {
+                        "kind": "literal",
+                        "value": "fail"
+                      }
+                    },
+                    {
+                      "collection": {
+                        "kind": "ref",
+                        "path": [
+                          "continuity_verdicts"
+                        ],
+                        "root": "input"
+                      },
+                      "kind": "contains",
+                      "value": {
+                        "kind": "literal",
+                        "value": "fail"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "not",
+                "value": {
+                  "kind": "any",
+                  "terms": [
+                    {
+                      "collection": {
+                        "kind": "ref",
+                        "path": [
+                          "step_verdicts"
+                        ],
+                        "root": "input"
+                      },
+                      "kind": "contains",
+                      "value": {
+                        "kind": "literal",
+                        "value": "unknown"
+                      }
+                    },
+                    {
+                      "collection": {
+                        "kind": "ref",
+                        "path": [
+                          "continuity_verdicts"
+                        ],
+                        "root": "input"
+                      },
+                      "kind": "contains",
+                      "value": {
+                        "kind": "literal",
+                        "value": "unknown"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "description": "No check fails, but at least one is unknown.",
+          "effects": [],
+          "ensures": [
+            {
+              "description": "Return unknown.",
+              "evidence_ids": [
+                "requirement:sequence-api"
+              ],
+              "id": "rule:verdict-unknown",
+              "predicate": {
+                "kind": "compare",
+                "left": {
+                  "kind": "ref",
+                  "path": [
+                    "verdict"
+                  ],
+                  "root": "output"
+                },
+                "op": "eq",
+                "right": {
+                  "kind": "literal",
+                  "value": "unknown"
+                }
+              }
+            }
+          ],
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "sequence:unknown",
+          "transitions": [],
+          "updates": [],
+          "when": {
+            "kind": "all",
+            "terms": [
+              {
+                "kind": "not",
+                "value": {
+                  "kind": "any",
+                  "terms": [
+                    {
+                      "collection": {
+                        "kind": "ref",
+                        "path": [
+                          "step_verdicts"
+                        ],
+                        "root": "input"
+                      },
+                      "kind": "contains",
+                      "value": {
+                        "kind": "literal",
+                        "value": "fail"
+                      }
+                    },
+                    {
+                      "collection": {
+                        "kind": "ref",
+                        "path": [
+                          "continuity_verdicts"
+                        ],
+                        "root": "input"
+                      },
+                      "kind": "contains",
+                      "value": {
+                        "kind": "literal",
+                        "value": "fail"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "any",
+                "terms": [
+                  {
+                    "collection": {
+                      "kind": "ref",
+                      "path": [
+                        "step_verdicts"
+                      ],
+                      "root": "input"
+                    },
+                    "kind": "contains",
+                    "value": {
+                      "kind": "literal",
+                      "value": "unknown"
+                    }
+                  },
+                  {
+                    "collection": {
+                      "kind": "ref",
+                      "path": [
+                        "continuity_verdicts"
+                      ],
+                      "root": "input"
+                    },
+                    "kind": "contains",
+                    "value": {
+                      "kind": "literal",
+                      "value": "unknown"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "description": "At least one check fails.",
+          "effects": [],
+          "ensures": [
+            {
+              "description": "Return fail.",
+              "evidence_ids": [
+                "requirement:sequence-api"
+              ],
+              "id": "rule:verdict-fail",
+              "predicate": {
+                "kind": "compare",
+                "left": {
+                  "kind": "ref",
+                  "path": [
+                    "verdict"
+                  ],
+                  "root": "output"
+                },
+                "op": "eq",
+                "right": {
+                  "kind": "literal",
+                  "value": "fail"
+                }
+              }
+            }
+          ],
+          "evidence_ids": [
+            "requirement:sequence-api"
+          ],
+          "id": "sequence:fail",
+          "transitions": [],
+          "updates": [],
+          "when": {
+            "kind": "any",
+            "terms": [
+              {
+                "collection": {
+                  "kind": "ref",
+                  "path": [
+                    "step_verdicts"
+                  ],
+                  "root": "input"
+                },
+                "kind": "contains",
+                "value": {
+                  "kind": "literal",
+                  "value": "fail"
+                }
+              },
+              {
+                "collection": {
+                  "kind": "ref",
+                  "path": [
+                    "continuity_verdicts"
+                  ],
+                  "root": "input"
+                },
+                "kind": "contains",
+                "value": {
+                  "kind": "literal",
+                  "value": "fail"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "output": {
+        "fields": {
+          "link_count": {
+            "kind": "integer"
+          },
+          "step_count": {
+            "kind": "integer"
+          },
+          "verdict": {
+            "kind": "enum",
+            "values": [
+              "pass",
+              "fail",
+              "unknown"
+            ]
+          }
+        },
+        "kind": "record"
+      },
+      "purpose": "Check each operation and compare selected shared state across adjacent records.",
+      "reads": [
+        "input-digest"
+      ],
+      "writes": []
+    }
+  ],
+  "perspective": "intended",
+  "provenance": {
+    "author": "Clearings experiment requirement author",
+    "notes": [
+      "Frozen before the fresh coding session. The caller chooses fields that identify the same shared storage.",
+      "The observation adapter supplies independently measured counts and direct step checks. It is trusted test code.",
+      "The model cannot establish source execution, transition order, concurrency, or behavior equivalence."
+    ],
+    "origin": "user-directed-design",
+    "review": "proposed"
+  },
+  "schema_version": "0.3.0",
+  "sources": [
+    {
+      "binding": null,
+      "id": "requirement:sequence-api",
+      "locator": "API.md",
+      "origin": "requirement",
+      "sha256": "9c79c8e0268dc6a6bfe726856ab5e096e61d1c09123e045834345c6aea0d3bae",
+      "text": "# Check a sequence of supplied operation observations\n\nAdd `checkOperationSequence` to the public library API. It checks each supplied operation record and compares selected shared state across adjacent records. It does not execute code, prove call order, follow declared transitions, or model concurrent operations.\n\n## API\n\n```ts\ninterface SequenceStep {\n  operation: string;\n  observation: OperationObservation;\n}\ninterface SequenceOptions { stateIds: readonly string[] }\ninterface ContinuityCheck {\n  from_index: number;\n  to_index: number;\n  state_id: string;\n  verdict: Verdict;\n  reason: string | null;\n}\ninterface OperationSequenceCheck {\n  schema_version: '0.3.0';\n  command: 'check-sequence';\n  artifact_id: string;\n  perspective: SemanticSpecification['perspective'];\n  state_ids: string[];\n  steps: { index: number; operation_id: string; result: OperationCheck }[];\n  continuity: ContinuityCheck[];\n  verdict: Verdict;\n  interpretation: 'supplied-observations-only';\n  acceptance: 'proposed';\n}\nfunction checkOperationSequence(\n  spec: SemanticSpecification,\n  steps: readonly SequenceStep[],\n  options: SequenceOptions,\n): OperationSequenceCheck;\n```\n\nExport the function and all four new interfaces through `src/index.ts`. Put the implementation and interfaces in `src/specification/sequence.ts`. Existing public behavior and dependencies must stay unchanged. No CLI, schema change, target execution, file access, network access, or dependency installation is needed.\n\n## Validation and errors\n\nValidate the whole specification first with `validateSpecification`. Preserve its error code, including a missing required dependency outside the selected operations and stale identity.\n\nSteps must be a dense portable array of 1–256 records. Each record has exactly the two own enumerable fields `operation` and `observation`. Missing or extra fields, a non-array, or a count outside the range throws `ClearingsError('INVALID_OBSERVATION', ...)`. A non-string operation selection throws `INVALID_SELECTION`; an unknown string retains the error from `checkOperation`. Portable structural failures (including sparse arrays, accessors, hidden fields, cycles, nonfinite numbers, and undefined values) retain `INVALID_SPECIFICATION` from `assertPortable`. Call `assertPortable` before reading step or option contents. JavaScript proxies are outside this API contract.\n\nOptions are required. They must be a portable object with exactly one own enumerable field `stateIds`, whose value is a dense array of known state ID strings. Missing options, null, a non-object, extra fields, wrong member types, or unknown state IDs throws `INVALID_ARGUMENTS`, except that portable structural failures retain `INVALID_SPECIFICATION`. Handle omitted options explicitly before `assertPortable`. An empty state list is valid. Duplicate IDs are accepted. Use unique IDs sorted by JavaScript's default string order in the report. Do not sort by locale.\n\nAfter validating the wrapper and options, use `checkOperation(spec, step.operation, step.observation)` for every step. Preserve its validation errors and its exact result. An observation is valid under the existing checker; do not add required before/after fields to its state maps. Invalid input returns no partial report. Error text is not fixed. For simultaneous wrapper and option errors, either wrapper-first or option-first is allowed after specification validation.\n\n## Step and state rules\n\nRetain step order, zero-based indexes, and canonical operation IDs. Do not stop when a step verdict is fail or unknown. The nested result must equal a direct `checkOperation` result for that step.\n\nThe caller explicitly chooses `stateIds` that refer to the same logical storage across the sequence. Scope metadata alone cannot establish that identity. Do not automatically select other state fields. For each adjacent pair, compare each selected field from the earlier observation's `after` map with the later observation's `before` map. Use only own properties. If either value is absent, return unknown for that link. Do not infer an after value from a before value, a frame rule, or a more distant record.\n\nIf both values exist, compare portable JSON values by content. Object key order does not matter. Array order does matter. Matching values pass; different values fail. A value of null, false, zero, or an empty string is present. State IDs such as `constructor` and `toString` are legal and must not use inherited object properties.\n\nOrder continuity records first by the earlier step index and then by the normalized state ID list. A sequence of N steps and K selected states has exactly (N-1)*K continuity records. One step or an empty state list has none. A passing continuity record has `reason: null`. A failing or unknown continuity record has a nonempty explanation.\n\nThe overall verdict combines all nested step verdicts and all continuity verdicts. Any fail gives fail. Otherwise any unknown gives unknown. Otherwise return pass. A modeled failure outcome can pass its contract; it must not become a failed check merely because its name describes failure.\n\nCopy artifact identity and perspective from the validated specification. Report `interpretation: 'supplied-observations-only'` and `acceptance: 'proposed'`. Do not add a claim that transitions ran or source code conforms. Return fresh report data on each call. Do not mutate the specification, steps, observations, or options, and do not share mutable input or output objects across calls.\n\n## Reading the supplied representation\n\n`specification.json` is the proposed intended model for this addition. `context.json` is generated by the current `assembleContext` and serializer. It contains that operation's rules and this API mapping. Typed rules check verdict selection, record counts, and input preservation through an observation adapter. Other requirements remain explicit opaque rules and require tests or review. An unknown typed result is expected when those rules are included; do not remove them to obtain pass.\n"
+    }
+  ],
+  "states": [
+    {
+      "description": "Digest of the specification, steps, and options before and after the call.",
+      "evidence_ids": [
+        "requirement:sequence-api"
+      ],
+      "id": "input-digest",
+      "name": "Input content digest",
+      "scope": "invocation",
+      "type": {
+        "kind": "string"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Correct malformed wrapper test fixture so it reaches operation selection validation.

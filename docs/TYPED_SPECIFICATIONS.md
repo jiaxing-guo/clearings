@@ -49,7 +49,7 @@ All remain proposed. Approval of a design direction does not approve every preci
 
 Types are booleans, strings, safe integers, finite numbers, null, string enums, homogeneous lists, and exact records. State fields have stable IDs and an explicit scope. Operations declare reads, writes, and complete or partial state/effect boundaries.
 
-Conditions use a closed expression tree: literals, scoped references, boolean operators, equality, numeric comparisons, length, uniqueness, membership, subsets, and bounded universal quantification. `opaque` retains an unsupported boolean condition and returns unknown. The interpreter uses no `eval`, generated JavaScript, or target code.
+Conditions use a closed expression tree: literals, scoped references, boolean operators, equality, numeric comparisons, length, uniqueness, membership, subsets, bounded universal quantification, and bounded reachability over explicit string-ID edges. `opaque` retains an unsupported boolean condition and returns unknown. The interpreter uses no `eval`, generated JavaScript, or target code.
 
 References use `input`, `before`, `after`, `output`, or quantified `local` values. Outcome guards can use only inputs and initial state. Postconditions can inspect the resulting output and state. State assignments must match the declared type, including nested enum and integer constraints.
 
@@ -97,7 +97,7 @@ node scripts/check-bootstrap-demo.mjs benchmarks/results/local/my-bootstrap
 python scripts/package-shared-demo.py benchmarks/results/local/my-bootstrap
 ```
 
-Use a new directory. Open `index.html`. The bundle contains both specifications, actual agent contexts, two human views and Markdown copies, nine actual Clearings cases, nine authored Hono cases, seven rejected output faults, exact implementation source bindings, and an author development record.
+Use a new directory. Open `index.html`. The bundle contains both specifications, actual agent contexts, two human views and Markdown copies, nine actual Clearings cases, nine authored Hono cases, eight rejected output faults, exact implementation source bindings, and an author development record.
 
 The Clearings design preceded the refactor. The active author implemented the kernel and assembler and used the typed rules to check actual results, including assembly of its own specification. A separate fixed-point reference checks minimal dependency membership. Full-record equality checks prevent loss of operation fields. The adapter measures bytes and input digests outside the expression kernel.
 
@@ -115,10 +115,16 @@ The separate [Luna experiment](../benchmarks/agent-runs/luna-impact-001/REPORT.m
 
 The result supports feasibility for this bounded task. It does not establish an advantage over ordinary instructions: the agent read prose and source, eight rule records remained opaque, and the typed checker returned unknown. The captured candidate stays outside production source. See the report for the weak agent-authored checks, observation-adapter limits, and exact frozen inputs.
 
-The next gate is review of the current design and evidence. Further self-use should test state changes and failure handling with a matched prose-only comparison. Automatic requirement interviews, arbitrary code generation, source-to-specification inference, general behavior equivalence, and formal proof remain future work.
+A second fresh-agent task now adds sequence checks to the production API on the PR branch. See [sequence checks](SEQUENCE_CHECKS.md) and the [experiment report](../benchmarks/agent-runs/luna-sequence-001/REPORT.md). It passed frozen tests and source review before integration. A matched prose-only comparison remains pending. Automatic requirement interviews, arbitrary code generation, source-to-specification inference, general behavior equivalence, and formal proof remain future work.
 
 ## Review corrections
 
 Operation guarantees are checked even when the observation omits its outcome. Missing values still return unknown; a known guarantee violation returns fail. Selected inspection uses the supported 2 MiB limit. Both demo archives are verified before the site copies them and after static export. Legacy walkthrough evidence follows the selected assertion, and state inspection follows the selected function. The accepted audience reports and semantic model remain unchanged.
 
 Verification after these corrections: typecheck and all 78 library tests pass. Both rebuilt archives pass exact-content checks. The documentation build and static checks pass for 27 HTML pages, 2,292 links, and three local search queries. Browser interaction was not run.
+
+## Check consecutive observations
+
+`checkOperationSequence(spec, steps, { stateIds })` checks each supplied operation and compares selected shared state between adjacent records. It accepts 1–256 steps and preserves missing observations as unknown. A valid rejected write can pass its contract. See [the API guide](SEQUENCE_CHECKS.md) for state selection, result fields, and errors. The model in `specifications/clearings/sequence-check.json` is the frozen intended requirement used by the fresh coding agent.
+
+Equality validation rejects impossible enum comparisons, including misspelled string literals. `reachable` takes a string root and an explicit list of `{ from, to }` edges. It returns the unique reachable IDs, including the root, in default string order. Missing input or an exhausted work budget returns unknown. The context model now checks both required closure and minimal membership. It rejects an unrelated available operation even when omission accounting remains consistent.

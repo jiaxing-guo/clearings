@@ -32,6 +32,12 @@ Solvers, concurrency model checking, provider transport, automated requirements 
 
 The following scope records the previous sequence. Its completion statements do not establish that the internal representation passed the later user review.
 
+## Latest self-development result
+
+A fresh Luna agent has added sequence checks from frozen intended requirements and current Clearings context. The first submission passed 17 withheld test groups and 81 regression/own tests. After source review, its source was integrated unchanged into the library on PR #6. The previous impact-analysis candidate remains archived outside production. See [the report](../benchmarks/agent-runs/luna-sequence-001/REPORT.md).
+
+This completes one bounded cycle through integration. PR merge, independent human review, a further coding cycle, and a matched prose-only comparison remain separate. Five requirements still need tests or review because the expression language cannot encode them. This is not a self-hosting compiler or a proof of an IR advantage.
+
 ## Product goal and first prototype
 
 Clearings gives a coding agent an inspectable representation of repository behavior. People use that same representation through reports suited to their tasks.

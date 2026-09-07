@@ -4,7 +4,7 @@ Give an agent the selected operation and its required rules together\. Preserve 
 
 Proposed intended behavior. 4 operations. Source hashes checked; source authenticity and claim support are not established.
 
-Specification: `specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853`.
+Specification: `specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6`.
 
 ## A concrete case
 
@@ -49,7 +49,7 @@ Operation: `assemble-context`. Scenario check: **pass**.
     }
   },
   "result": {
-    "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
     "operation_id": "assemble-context",
     "perspective": "intended",
     "verdict": "pass",
@@ -92,6 +92,12 @@ Operation: `assemble-context`. Scenario check: **pass**.
       {
         "id": "rule:dependency-closure",
         "description": "Every required dependency of an included operation is included.",
+        "verdict": "pass",
+        "reason": null
+      },
+      {
+        "id": "rule:minimal-closure",
+        "description": "Every included operation is reachable from the selected root through required edges.",
         "verdict": "pass",
         "reason": null
       },
@@ -220,7 +226,7 @@ Operation: `assemble-context`. Scenario check: **pass**.
     }
   },
   "result": {
-    "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
     "operation_id": "assemble-context",
     "perspective": "intended",
     "verdict": "pass",
@@ -263,6 +269,12 @@ Operation: `assemble-context`. Scenario check: **pass**.
       {
         "id": "rule:dependency-closure",
         "description": "Every required dependency of an included operation is included.",
+        "verdict": "pass",
+        "reason": null
+      },
+      {
+        "id": "rule:minimal-closure",
+        "description": "Every included operation is reachable from the selected root through required edges.",
         "verdict": "pass",
         "reason": null
       },
@@ -405,7 +417,7 @@ Operation: `assemble-context`. Scenario check: **pass**.
     }
   },
   "result": {
-    "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
     "operation_id": "assemble-context",
     "perspective": "intended",
     "verdict": "pass",
@@ -448,6 +460,12 @@ Operation: `assemble-context`. Scenario check: **pass**.
       {
         "id": "rule:dependency-closure",
         "description": "Every required dependency of an included operation is included.",
+        "verdict": "pass",
+        "reason": null
+      },
+      {
+        "id": "rule:minimal-closure",
+        "description": "Every included operation is reachable from the selected root through required edges.",
         "verdict": "pass",
         "reason": null
       },
@@ -553,7 +571,7 @@ Operation: `assemble-context`. Scenario check: **pass**.
     }
   },
   "result": {
-    "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
     "operation_id": "assemble-context",
     "perspective": "intended",
     "verdict": "pass",
@@ -596,6 +614,12 @@ Operation: `assemble-context`. Scenario check: **pass**.
       {
         "id": "rule:dependency-closure",
         "description": "Every required dependency of an included operation is included.",
+        "verdict": "pass",
+        "reason": null
+      },
+      {
+        "id": "rule:minimal-closure",
+        "description": "Every included operation is reachable from the selected root through required edges.",
         "verdict": "pass",
         "reason": null
       },
@@ -699,7 +723,7 @@ Operation: `assemble-context`. Scenario check: **pass**.
     }
   },
   "result": {
-    "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
     "operation_id": "assemble-context",
     "perspective": "intended",
     "verdict": "pass",
@@ -797,7 +821,7 @@ Operation: `assemble-context`. Scenario check: **pass**.
     }
   },
   "result": {
-    "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
     "operation_id": "assemble-context",
     "perspective": "intended",
     "verdict": "pass",
@@ -882,7 +906,7 @@ Operation: `assemble-context`. Scenario check: **pass**.
     }
   },
   "result": {
-    "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
     "operation_id": "assemble-context",
     "perspective": "intended",
     "verdict": "pass",
@@ -972,7 +996,7 @@ Operation: `assemble-context`. Scenario check: **pass**.
     }
   },
   "result": {
-    "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
     "operation_id": "assemble-context",
     "perspective": "intended",
     "verdict": "pass",
@@ -1068,14 +1092,14 @@ Operation: `assemble-context`. Scenario check: **pass**.
           "decision_id": "decision:closure-errors"
         }
       ],
-      "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
       "max_bytes": 131072
     },
     "before": {
-      "model-digest": "4a9ddb17a90b3df3a4c1825b3563cf616f206506180a2ce2fea6ec178d7efaf3"
+      "model-digest": "8309b342a1ef302f216f647b2e521ced7972b7668e42b2b5a81613e76f2c85b1"
     },
     "after": {
-      "model-digest": "4a9ddb17a90b3df3a4c1825b3563cf616f206506180a2ce2fea6ec178d7efaf3"
+      "model-digest": "8309b342a1ef302f216f647b2e521ced7972b7668e42b2b5a81613e76f2c85b1"
     },
     "effects": [],
     "outcome": "outcome:ready",
@@ -1094,13 +1118,13 @@ Operation: `assemble-context`. Scenario check: **pass**.
         "decision:encoding",
         "decision:closure-errors"
       ],
-      "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
-      "used_bytes": 27276,
-      "required_bytes": 27276
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
+      "used_bytes": 29489,
+      "required_bytes": 29489
     }
   },
   "result": {
-    "artifact_id": "specification:7f46bff0021c2f9aad3d1742d471b7bab45a7c7d17456eb70909d632e061a853",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
     "operation_id": "assemble-context",
     "perspective": "intended",
     "verdict": "pass",
@@ -1143,6 +1167,12 @@ Operation: `assemble-context`. Scenario check: **pass**.
       {
         "id": "rule:dependency-closure",
         "description": "Every required dependency of an included operation is included.",
+        "verdict": "pass",
+        "reason": null
+      },
+      {
+        "id": "rule:minimal-closure",
+        "description": "Every included operation is reachable from the selected root through required edges.",
         "verdict": "pass",
         "reason": null
       },
@@ -1220,7 +1250,7 @@ Give an agent the selected operation and its required rules together\. Preserve 
 
 | Condition | Outcome | Required result |
 | --- | --- | --- |
-| \(input\.available\_ids contains input\.root\_id\) and \(every edge in input\.required\_edges: input\.available\_ids contains local\.edge\.to\) and \(\(input\.max\_bytes ≥ 1\) and \(input\.max\_bytes ≤ 2097152\)\) | Return the complete required context package\. | The result identifies a ready package\. The selected operation is present\. Each operation appears once, including in cycles\. Every included operation comes from this specification\. Every required dependency of an included operation is included\. Every open decision on an included operation remains available\. Every available operation is included or explicitly omitted\. An included operation is never listed as omitted\. The package identifies the input specification\. The exact serialized output fits its byte budget\. This required\-only package reports its full size as required\. |
+| \(input\.available\_ids contains input\.root\_id\) and \(every edge in input\.required\_edges: input\.available\_ids contains local\.edge\.to\) and \(\(input\.max\_bytes ≥ 1\) and \(input\.max\_bytes ≤ 2097152\)\) | Return the complete required context package\. | The result identifies a ready package\. The selected operation is present\. Each operation appears once, including in cycles\. Every included operation comes from this specification\. Every required dependency of an included operation is included\. Every included operation is reachable from the selected root through required edges\. Every open decision on an included operation remains available\. Every available operation is included or explicitly omitted\. An included operation is never listed as omitted\. The package identifies the input specification\. The exact serialized output fits its byte budget\. This required\-only package reports its full size as required\. |
 | \(input\.available\_ids contains input\.root\_id\) and \(every edge in input\.required\_edges: input\.available\_ids contains local\.edge\.to\) and \(\(input\.max\_bytes ≥ 1\) and \(input\.max\_bytes ≤ 2097152\)\) | Report the required size without returning truncated context\. | The result identifies insufficient budget\. The measured required size exceeds the requested budget\. No truncated operation list is returned\. |
 | not \(input\.available\_ids contains input\.root\_id\) | Reject an unknown operation selection\. | The error identifies an unknown selection\. |
 | not \(every edge in input\.required\_edges: input\.available\_ids contains local\.edge\.to\) | Reject a missing required dependency\. | The error identifies a missing dependency\. |
@@ -1232,7 +1262,7 @@ Give an agent the selected operation and its required rules together\. Preserve 
 | assembleContext | Validate the specification, select required operations, attach state and evidence, and reject an insufficient budget\. |
 
 - **analysis-limit:** Does this context improve a fresh agent coding task? This continuing\-session bootstrap checks behavior and counterexamples\. It does not establish independent agent benefit\.
-- **analysis-limit:** Does the implementation select the least required closure? The typed closure rules prevent missing dependencies\. An independently written reference algorithm also checks that extra operations are not added\.
+- **analysis-limit:** Does the implementation select the least required closure? Typed rules check required closure and root reachability\. A separate reference algorithm also checks exact membership against actual assembler output\.
 - **analysis-limit:** Does used\_bytes equal actual UTF\-8 serialization? The expression kernel compares supplied values\. The conformance adapter measures actual bytes independently\.
 
 <details>
@@ -1253,7 +1283,7 @@ Give an agent the selected operation and its required rules together\. Preserve 
     },
     {
       "blocking": false,
-      "consequence": "The typed closure rules prevent missing dependencies. An independently written reference algorithm also checks that extra operations are not added.",
+      "consequence": "Typed rules check required closure and root reachability. A separate reference algorithm also checks exact membership against actual assembler output.",
       "disposition": "analysis-limit",
       "evidence_ids": [],
       "id": "decision:minimum-closure",
@@ -1511,6 +1541,40 @@ Give an agent the selected operation and its required rules together\. Preserve 
               ]
             },
             "variable": "edge"
+          }
+        },
+        {
+          "description": "Every included operation is reachable from the selected root through required edges.",
+          "evidence_ids": [
+            "design:context"
+          ],
+          "id": "rule:minimal-closure",
+          "predicate": {
+            "collection": {
+              "edges": {
+                "kind": "ref",
+                "path": [
+                  "required_edges"
+                ],
+                "root": "input"
+              },
+              "kind": "reachable",
+              "root": {
+                "kind": "ref",
+                "path": [
+                  "root_id"
+                ],
+                "root": "input"
+              }
+            },
+            "kind": "subset",
+            "value": {
+              "kind": "ref",
+              "path": [
+                "included_ids"
+              ],
+              "root": "output"
+            }
           }
         },
         {
@@ -2588,7 +2652,7 @@ Traverse required dependency references once per operation\. Keep cycles finite 
 
 | Condition | Outcome | Required result |
 | --- | --- | --- |
-| input\.available\_ids contains input\.root\_id | Return required operation IDs beginning with the selected root\. | The root belongs to the selected closure\. The closure has no duplicate IDs\. Every selected required edge stays inside the closure\. |
+| input\.available\_ids contains input\.root\_id | Return required operation IDs beginning with the selected root\. | The root belongs to the selected closure\. Every selected ID is reachable from the root through required edges\. The closure has no duplicate IDs\. Every selected required edge stays inside the closure\. |
 
 
 | Implementation | Responsibility |
@@ -2684,6 +2748,38 @@ Traverse required dependency references once per operation\. Keep cycles finite 
                 "root_id"
               ],
               "root": "input"
+            }
+          }
+        },
+        {
+          "description": "Every selected ID is reachable from the root through required edges.",
+          "evidence_ids": [
+            "design:context"
+          ],
+          "id": "rule:closure-minimal",
+          "predicate": {
+            "collection": {
+              "edges": {
+                "kind": "ref",
+                "path": [
+                  "required_edges"
+                ],
+                "root": "input"
+              },
+              "kind": "reachable",
+              "root": {
+                "kind": "ref",
+                "path": [
+                  "root_id"
+                ],
+                "root": "input"
+              }
+            },
+            "kind": "subset",
+            "value": {
+              "kind": "ref",
+              "path": [],
+              "root": "output"
             }
           }
         },
@@ -2815,7 +2911,7 @@ These are declared dependencies. The labels state their purpose; they are not an
 <details>
 <summary>docs/SPECIFICATION\_ARCHITECTURE\.md</summary>
 
-Origin: design. SHA-256: `e7931d9eebc3a4a0d7b5bbd1da5c07eb25aa720e0c26ca58c91e9c45da97ac3d`.
+Origin: design. SHA-256: `114b3da3e52397851a85fad60b55fa58a05cbabfe13d839141f319b58128263b`.
 
 ```text
 # Typed specifications and Clearings self-development
@@ -2834,7 +2930,7 @@ The v0.3 specification has an explicit `perspective`: `intended` or `observed`. 
 
 An operation owns typed inputs and outputs, its own purpose, state reads/writes, conditional outcomes, guarantees, permitted effects, dependency roles, implementation responsibilities, and open decisions. Dependencies are typed references, not an execution trace. Cycles are valid. A transition links an outcome to a declared dependent operation, with a specific handoff role. A complete call graph is not claimed.
 
-Conditions use an expression tree with literals, scoped references, boolean composition, comparisons, collection membership, and bounded universal quantification. No source, JavaScript, or expression string is executed. `opaque` conditions retain unsupported meaning explicitly and evaluate to unknown. The interpreter reports pass, fail, or unknown. A model accepting a scenario is not a proof that source implements the model.
+Conditions use an expression tree with literals, scoped references, boolean composition, comparisons, collection membership, bounded universal quantification, and bounded reachability over explicit string-ID edges. No source, JavaScript, or expression string is executed. `opaque` conditions retain unsupported meaning explicitly and evaluate to unknown. The interpreter reports pass, fail, or unknown. A model accepting a scenario is not a proof that source implements the model.
 
 State fields have separate identities and types. A complete frame preserves every modeled field outside the write set; a partial frame makes no such guarantee. Effect declarations distinguish required from permitted effects. An empty complete effect list forbids effects; an empty partial list does not establish purity.
 
@@ -2843,7 +2939,7 @@ Open decisions distinguish unresolved requirements, analysis limits, and intenti
 ## Context assembly requirements
 
 1. Resolve a root by exact ID or unique alias. Reject an absent or ambiguous root.
-2. Follow required dependency edges to a fixed point. Keep each operation once, including in cycles. Required dependency order is stable and starts with the selected operation.
+2. Follow required dependency edges to a fixed point. Select the smallest reachable set. Keep each operation once, including in cycles. Required dependency order is stable and starts with the selected operation.
 3. Reject missing required dependencies. Optional dependencies may be absent, and remain listed as deferred references.
 4. Return each operation's meaning with its fields inline. Dependency references include the target's name and the reason for the link. Implementation entries explain each function's individual responsibility.
 5. Include all state fields and source records referenced by the selected operations. Keep every applicable open decision, including blocking decisions. A partial package is inspectable; it is not an accepted specification.
@@ -2856,6 +2952,8 @@ Open decisions distinguish unresolved requirements, analysis limits, and intenti
 
 The author-reviewed cases are: a single operation; a diamond dependency; a dependency cycle; a missing root; a missing required edge; an absent optional target; a blocking unknown; exact and insufficient byte budgets; Unicode; a state write with an unchanged field; an undeclared effect; and an opaque condition. Independent held-out evaluation remains future work.
 
+A later [fresh-agent experiment](../benchmarks/agent-runs/luna-impact-001/REPORT.md) used a separately frozen dependency-impact task. Its candidate passed the withheld feature checks. This does not change the authorship or evidence boundary of the original context-assembly bootstrap. The new task also exposed a gap: some executable predicates cover less than their English descriptions. The review must distinguish predicate results from unverified prose obligations.
+
 The conformance checks must also reject deliberately incorrect implementations: dropping a required dependency, losing an unknown, claiming the wrong specification identity, silently truncating to fit, and changing input data. These cases live outside the specification consumed by the implementation.
 
 ## Human and agent interfaces
@@ -2867,13 +2965,19 @@ The legacy v0.2 adapter resolves assertion text without inventing formal predica
 ## Scope
 
 Implement the typed kernel, scenario checker, required-context closure, readable projections, CLI, Clearings specification/demo, and Hono response-selection example. Do not add a solver, hosted service, provider SDK, universal source-to-specification conversion, or automatic requirement acceptance. Formal proof, concurrency model checking, source equivalence, and fresh-agent performance evaluation are not established by this bootstrap.
+
+## Review corrections and sequence integration
+
+Equality validation rejects literals outside an enum domain and comparisons between disjoint enum domains. The `reachable` expression returns unique IDs reachable from its string root through supplied `{ from, to }` edges, including the root. It uses a bounded fixed-point calculation and returns unknown if observations or work are insufficient. The context contract uses this expression to exclude unrelated operations as well as require dependencies. This is a graph constraint over supplied data, not source execution.
+
+The sequence-check addition has a separate frozen intended model and fresh-agent evaluation. It was integrated after independent test authorship and source review; those frozen inputs remain unchanged by these later core corrections. See [sequence checks](SEQUENCE_CHECKS.md).
 ```
 
 </details>
 
 ## Context scope
 
-27276 UTF-8 bytes in the canonical JSON package. Text rendering has a different size.
+29489 UTF-8 bytes in the canonical JSON package. Text rendering has a different size.
 
 ```json
 {

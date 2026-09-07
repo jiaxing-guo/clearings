@@ -2,6 +2,16 @@
 
 Initial implementation verified on 5 September 2026. Fresh-agent evidence was added on 6 September 2026. The current architecture and reproduction commands are in [TYPED_SPECIFICATIONS.md](TYPED_SPECIFICATIONS.md).
 
+## Latest verification: 7 September 2026
+
+All nine review findings received fixes across the two PR branches. The sequence checker is integrated from a fresh Luna submission without changes. That submission passed 17 frozen test groups and 81 regression/own tests before integration. The final combined code passes typecheck and all 103 library tests. See [the experiment report](../benchmarks/agent-runs/luna-sequence-001/REPORT.md).
+
+The context specification now rejects unrelated operations through bounded reachability. Enum equality rejects out-of-domain literals and disjoint domains. Operation guarantees run without a supplied outcome, and selected inspection supports the full 2 MiB limit. Report destinations retain their canonical IDs.
+
+The rebuilt bootstrap has nine actual Clearings cases, nine authored Hono cases, and eight rejected output faults. The shared report checks 11 exact source excerpts and 1,938 fragment links. Main reading text and semantic JSON are unchanged; canonical destination links were corrected. Both archives pass exact-content checks. Fumadocs builds and checks 27 pages, 2,398 links, and three search queries, with no external assets. Package inspection finds 159 files and excludes site and experiment assets. Browser interaction was not rerun.
+
+The earlier verification below describes the initial implementation. The frozen experiments preserve their original inputs and results. A further coding cycle using the improved version has not started.
+
 ## Implemented
 
 - A portable v0.3 schema with separate intended and observed perspectives.

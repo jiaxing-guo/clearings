@@ -13,6 +13,7 @@ export type Expression =
   | { kind: 'all' | 'any'; terms: Expression[] }
   | { kind: 'compare'; op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte'; left: Expression; right: Expression }
   | { kind: 'contains' | 'subset'; collection: Expression; value: Expression }
+  | { kind: 'reachable'; root: Expression; edges: Expression }
   | { kind: 'every'; collection: Expression; variable: string; predicate: Expression }
   | { kind: 'opaque'; text: string; reason: string };
 

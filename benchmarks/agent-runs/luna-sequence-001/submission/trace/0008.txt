@@ -1,0 +1,1 @@
+Implement sequence validation, delegation, continuity comparison, verdict aggregation, and public exports in the allowed source files.

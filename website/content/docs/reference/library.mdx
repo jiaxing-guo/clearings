@@ -74,9 +74,12 @@ See [the specification guide](/docs/guides/specifications) for a complete case. 
 | `serializeOperationContext(context)` | Emit compact JSON plus a final newline |
 | `validateOperationContext(context, spec)` | Reconstruct and verify a received package against its exact specification |
 | `checkOperation(spec, operation, observation)` | Return pass, fail, or unknown for the supplied observation |
+| `checkOperationSequence(spec, steps, { stateIds })` | Check each operation and selected shared state across adjacent supplied records |
 | `renderSpecification(spec, operation, options)` | Render the same rules as HTML or Markdown |
 | `createContractBrief(model, selection, options)` | Resolve historical assertion prose in place, without formalizing it |
 
-Types include `SemanticSpecification`, `SemanticOperation`, `OperationContext`, `OperationObservation`, `OperationCheck`, `Expression`, and `ValueType`. Caller code owns I/O. No target code is executed by these functions. A passing check is not a source-conformance proof.
+`checkOperationSequence` accepts 1–256 records. The caller must select fields that refer to the same storage across the sequence. Missing adjacent values remain unknown. The result retains each operation check and each state comparison. This does not execute source or prove record order.
+
+Types include `SequenceStep`, `SequenceOptions`, `ContinuityCheck`, `OperationSequenceCheck`, `SemanticSpecification`, `SemanticOperation`, `OperationContext`, `OperationObservation`, `OperationCheck`, `Expression`, and `ValueType`. Caller code owns I/O. No target code is executed by these functions. A passing check is not a source-conformance proof.
 
 The APIs read source and return objects or text. They do not save files, send prompts, execute target code, or certify assertions. Callers own file I/O, agent transport, review, and source notice distribution.

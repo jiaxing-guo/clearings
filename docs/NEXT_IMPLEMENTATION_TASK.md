@@ -1,19 +1,18 @@
-# Next task: review the typed core and fresh-agent result
+# Next task: review the integrated sequence checker
 
-The active request replaces the prose-heavy IR with a typed specification core and a Clearings self-development slice. See [the active plan](PROTOTYPE_PLAN.md) and [typed specifications](TYPED_SPECIFICATIONS.md). The previous report task below is historical.
+The review fixes and one fresh-agent self-development cycle are complete on the PR branches. The sequence checker was implemented by a fresh Luna agent from frozen requirements and current Clearings context. Its first submission passed all 17 frozen test groups and 81 regression/own tests without repairs. Source review approved integration without code changes.
 
-1. Open the Clearings bootstrap page. Inspect the dependency-cycle case and seven rejected output faults. Check whether the rules express the intended behavior independently of the implementation.
-2. Open the Hono typed page. Compare direct and Promise fallbacks, then inspect the getter, setter, and middleware assignment as separate operations.
-3. Inspect the actual context JSON. Conditions, outcomes, state, responsibilities, and decisions must be meaningful without joining assertion IDs.
-4. Check the boundary between scenario agreement and implementation conformance. The checker evaluates supplied observations; it does not run source or authenticate requirements.
-5. Review the new report in a browser. Then inspect the [fresh Luna experiment](../benchmarks/agent-runs/luna-impact-001/REPORT.md), its frozen specification, generated context, captured patch, and withheld tests. The initial candidate passed all 19 feature tests. The separate oracle self-check also passed. A recorded evaluator setup correction allowed the remaining two regression tests to run; all 73 passed across the two runs.
-6. Check which requirements remain prose-only. Eight of the experiment's 16 rules are opaque, and the typed checker returns unknown. Luna's own test command ran zero tests, and two manual graph fixtures failed before calling the feature. The withheld tests provide the useful evidence.
+Read [sequence checks](SEQUENCE_CHECKS.md) and the [experiment report](../benchmarks/agent-runs/luna-sequence-001/REPORT.md).
 
-The current priority is PR review. The experiment is a separate archived candidate; `analyzeImpact` is not part of the production API. Its results do not approve the candidate for integration or establish a coding advantage.
+1. Review the exact API and its explicit shared-storage assumption. The caller must identify which fields represent the same storage across records.
+2. Inspect the captured code and frozen tests. Check rejected writes, missing observations, and invalid inputs.
+3. Compare the four recorded examples with their operation and continuity checks. Five opaque requirements keep the intended-model checks unknown.
+4. Review the PR. The feature is integrated into production source on the branch; the PR is not merged by this task.
+5. Select the next development task and a matched prose-only comparison before a further coding cycle. Keep requirements and tests fixed for both runs.
 
-After the architecture review, select a second task with state changes and failure handling. Compare a fresh agent using Clearings with a separate fresh agent using the same requirements as ordinary prose. Freeze equivalent requirements and independent tests before either run. Neither a second coding run nor the comparison is started by this handoff.
+The earlier impact-analysis candidate stays outside production. Its frozen inputs and results are unchanged. The new `checkOperationSequence` is part of the public library API on this branch. No further development cycle using the improved version has started.
 
-Keep intended specifications and observed source models separate. Preserve the accepted reading guides. Do not silently edit intent to fit an implementation. Keep the repository private and do not deploy or publish packages as part of this task.
+Keep intended requirements separate from observed source interpretations. Preserve the accepted reading text. Do not silently change intent to fit code. Keep the repository private. Deployment, package publication, CI, and public access remain deferred.
 
 ## Historical report handoff
 

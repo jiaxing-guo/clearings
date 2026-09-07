@@ -1,0 +1,46 @@
+{
+  "verified_at": "2026-09-07T00:17:20.271155+00:00",
+  "library_typecheck": "pass",
+  "library_tests": {
+    "total": 103,
+    "pass": 103,
+    "fail": 0
+  },
+  "first_submission_source_unchanged": true,
+  "source_hashes": {
+    "src/index.ts": "4bb0e90e6a41612b14e6ae1df5f69332126a3869de22d2d8b885726748b539cf",
+    "src/specification/sequence.ts": "c93fe575cc877e93e7507b9bab407705128cd57530ff5244bd8a86dfdf784844",
+    "src/specification/check.ts": "7bca7b9e8e291e6a0bc2bfff6a32f6a20f4d15ba8db77a4455e75c267124baa1",
+    "src/specification/expressions.ts": "05ede1d8c0d625e159b868084a9ebb6a1e16b1e83906407b773def981658d177",
+    "src/specification/validate.ts": "78fccfbd002572cb6d457b47cc69a97b40ff54497e36d5d5132d62c24f1f7d88"
+  },
+  "static_docs": {
+    "html_pages": 27,
+    "links": 2398,
+    "search_queries": 3,
+    "external_assets": 0,
+    "browser_interaction": "not run"
+  },
+  "bootstrap": {
+    "actual_clearings_cases": 9,
+    "authored_hono_cases": 9,
+    "rejected_output_faults": 8,
+    "deterministic_context": true
+  },
+  "shared_reports": {
+    "source_excerpts_verified": 11,
+    "fragment_links": 1938,
+    "main_reading_text_unchanged": true,
+    "canonical_target_links": "corrected"
+  },
+  "package": {
+    "files": 159,
+    "sequence_runtime_and_types": true,
+    "experiment_and_site_excluded": true
+  },
+  "follow_up_core_fixes": [
+    "Reject impossible enum comparisons.",
+    "Use bounded reachability to require minimal context membership."
+  ],
+  "further_development_cycle": "not started"
+}

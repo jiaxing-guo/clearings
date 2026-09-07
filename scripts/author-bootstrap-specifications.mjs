@@ -38,6 +38,8 @@ const output = record({ kind: choice('ready', 'invalid-selection', 'missing-depe
 const inputs = { root_id: str, available_ids: list(str), required_edges: list(edge), applicable_decisions: list(record({ operation_id: str, decision_id: str })), artifact_id: str, max_bytes: int };
 const closureRule = rule('rule:dependency-closure', 'Every required dependency of an included operation is included.',
   every(ref('input', 'required_edges'), 'edge', any(not(contains(selected, ref('local', 'edge', 'from'))), contains(selected, ref('local', 'edge', 'to')))));
+const reachable = { kind: 'reachable', root: ref('input', 'root_id'), edges: ref('input', 'required_edges') };
+const minimalRule = rule('rule:minimal-closure', 'Every included operation is reachable from the selected root through required edges.', { kind: 'subset', collection: reachable, value: selected });
 const knownDecisions = rule('rule:retain-decisions', 'Every open decision on an included operation remains available.',
   every(ref('input', 'applicable_decisions'), 'decision', any(not(contains(selected, ref('local', 'decision', 'operation_id'))), contains(ref('output', 'decision_ids'), ref('local', 'decision', 'decision_id')))));
 const root = operation('assemble-context', 'Assemble context for a coding agent',
@@ -47,7 +49,7 @@ const root = operation('assemble-context', 'Assemble context for a coding agent'
       rule('rule:root-present', 'The selected operation is present.', contains(selected, ref('input', 'root_id'))),
       rule('rule:no-duplicates', 'Each operation appears once, including in cycles.', { kind: 'unique', value: selected }),
       rule('rule:known-records', 'Every included operation comes from this specification.', { kind: 'subset', collection: available, value: selected }),
-      closureRule, knownDecisions,
+      closureRule, minimalRule, knownDecisions,
       rule('rule:omissions', 'Every available operation is included or explicitly omitted.', every(available, 'id', any(contains(selected, ref('local', 'id')), contains(ref('output', 'omitted_ids'), ref('local', 'id'))))),
       rule('rule:disjoint-omissions', 'An included operation is never listed as omitted.', every(selected, 'id', not(contains(ref('output', 'omitted_ids'), ref('local', 'id'))))),
       rule('rule:identity', 'The package identifies the input specification.', eq(ref('output', 'artifact_id'), ref('input', 'artifact_id'))),
@@ -69,12 +71,13 @@ const root = operation('assemble-context', 'Assemble context for a coding agent'
     dependency('render-context', 'Show the same package to a person in reading order.', 'optional'),
   ], implementations: [implementation('assembleContext', 'Validate the specification, select required operations, attach state and evidence, and reject an insufficient budget.')], decisions: [
     decision('decision:bootstrap-coverage', 'Does this context improve a fresh agent coding task?', 'This continuing-session bootstrap checks behavior and counterexamples. It does not establish independent agent benefit.'),
-    decision('decision:minimum-closure', 'Does the implementation select the least required closure?', 'The typed closure rules prevent missing dependencies. An independently written reference algorithm also checks that extra operations are not added.'),
+    decision('decision:minimum-closure', 'Does the implementation select the least required closure?', 'Typed rules check required closure and root reachability. A separate reference algorithm also checks exact membership against actual assembler output.'),
     decision('decision:encoding', 'Does used_bytes equal actual UTF-8 serialization?', 'The expression kernel compares supplied values. The conformance adapter measures actual bytes independently.'),
   ] });
 const closure = operation('select-required', 'Select required dependencies', 'Traverse required dependency references once per operation. Keep cycles finite and leave optional relationships deferred.',
   { root_id: str, available_ids: list(str), required_edges: list(edge) }, list(str), [outcome('outcome:closure', 'Return required operation IDs beginning with the selected root.', rootExists, [
     rule('rule:closure-root', 'The root belongs to the selected closure.', contains(ref('output'), ref('input', 'root_id'))),
+    rule('rule:closure-minimal', 'Every selected ID is reachable from the root through required edges.', { kind: 'subset', collection: reachable, value: ref('output') }),
     rule('rule:closure-unique', 'The closure has no duplicate IDs.', { kind: 'unique', value: ref('output') }),
     rule('rule:closure-edges', 'Every selected required edge stays inside the closure.', every(ref('input', 'required_edges'), 'edge', any(not(contains(ref('output'), ref('local', 'edge', 'from'))), contains(ref('output'), ref('local', 'edge', 'to'))))),
   ])], { coverage: 'partial', implementations: [implementation('requiredClosure', 'Use a queue and visited IDs to expand required references without recursion.')], decisions: [decision('decision:closure-errors', 'How are absent roots or targets reported?', 'The public assembly operation specifies these errors. This local contract covers a valid graph.')] });

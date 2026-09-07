@@ -287,3 +287,39 @@ test('CLI reads, renders, checks and exports specifications while protecting the
   obs.output = 'context-response'; writeFileSync(casePath, JSON.stringify(obs)); assert.equal(run('check', path, '--operation', 'response-selection', '--observation', casePath).status, 1);
   delete obs.output; writeFileSync(casePath, JSON.stringify(obs)); assert.equal(run('check', path, '--operation', 'response-selection', '--observation', casePath).status, 3);
 });
+
+test('enum equality rejects impossible literals and disjoint domains without rejecting overlap',()=>{
+ const make=predicate=>{const op=operation('enum-check');op.inputs={mode:{kind:'enum',values:['ready','failed']},other:{kind:'enum',values:['ready','waiting']},disjoint:{kind:'enum',values:['missing']},nested:{kind:'record',fields:{mode:{kind:'enum',values:['ready']}}}};op.outcomes[0].when=predicate;return graph([op]);};
+ for(const predicate of [eq(ref('input','mode'),literal('raedy')),eq(literal('raedy'),ref('input','mode')),{kind:'compare',op:'ne',left:ref('input','mode'),right:literal('absent')},eq(ref('input','mode'),ref('input','disjoint')),eq(ref('input','nested'),literal({mode:'bad'}))])assert.throws(()=>make(predicate),{code:'SPEC_TYPE'});
+ assert.doesNotThrow(()=>make(eq(ref('input','mode'),ref('input','other'))));assert.doesNotThrow(()=>make(eq(ref('input','mode'),literal('ready'))));
+});
+
+test('bounded reachability handles cycles, disconnected components, order, and unknown input',()=>{
+ const expr={kind:'reachable',root:ref('input','root'),edges:ref('input','edges')};
+ const edges=[{from:'c',to:'a'},{from:'b',to:'c'},{from:'a',to:'b'},{from:'unrelated',to:'itself'},{from:'a',to:'b'}];
+ assert.deepEqual(evaluateExpression(expr,{input:{root:'a',edges}}),{known:true,value:['a','b','c']});
+ assert.deepEqual(evaluateExpression(expr,{input:{root:'a',edges:edges.toReversed()}}),{known:true,value:['a','b','c']});
+ assert.deepEqual(evaluateExpression(expr,{input:{root:'alone',edges:[]}}),{known:true,value:['alone']});
+ assert.equal(evaluateExpression(expr,{input:{root:'a',edges}},4).known,false);
+ assert.equal(evaluateExpression(expr,{input:{root:'a'}}).known,false);
+ assert.equal(evaluateExpression(expr,{input:{root:'a',edges:[{from:1,to:'b'}]}}).known,false);
+});
+
+test('reachability typing validates edges and checks nested outcome-guard references',()=>{
+ const make=(root,edges)=>{const op=operation('reach');op.output={kind:'string'};op.outcomes[0].when={kind:'contains',collection:{kind:'reachable',root,edges},value:literal('root')};return graph([op]);};
+ assert.doesNotThrow(()=>make(literal('root'),literal([])));
+ assert.throws(()=>make(literal(1),literal([])),{code:'SPEC_TYPE'});
+ assert.throws(()=>make(literal('root'),literal([{from:'root',to:5}])),{code:'SPEC_TYPE'});
+ assert.throws(()=>make(literal('root'),literal([{source:'root',to:'next'}])),{code:'SPEC_TYPE'});
+ assert.throws(()=>make(ref('output'),literal([])),{code:'INVALID_SPECIFICATION'});
+});
+
+test('typed context rules reject unrelated records even when closure and omissions agree',()=>{
+ const spec=graph([operation('root',['dep']),operation('dep'),operation('unrelated',['other']),operation('other',['unrelated'])]);
+ const pack=assembleContext(spec,'root',{maxBytes:65536});const observed=conformanceObservation(spec,pack,65536);
+ assert.equal(checkOperation(bootstrap,'assemble-context',observed).verdict,'pass');
+ observed.output.included_ids.push('unrelated','other');observed.output.omitted_ids=[];
+ const result=checkOperation(bootstrap,'assemble-context',observed);
+ assert.equal(result.verdict,'fail');assert.equal(result.checks.find(x=>x.id==='rule:minimal-closure').verdict,'fail');
+ assert.equal(result.checks.find(x=>x.id==='rule:dependency-closure').verdict,'pass');assert.equal(result.checks.find(x=>x.id==='rule:disjoint-omissions').verdict,'pass');
+});
