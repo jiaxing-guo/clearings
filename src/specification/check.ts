@@ -10,6 +10,8 @@ export function resolveOperation(spec: SemanticSpecification, selection: string)
   return operation;
 }
 const combine = (checks: RuleCheck[]): Verdict => checks.some(item => item.verdict === 'fail') ? 'fail' : checks.some(item => item.verdict === 'unknown') ? 'unknown' : 'pass';
+const observedState = (values: Record<string, JsonValue> | undefined, id: string): JsonValue | undefined =>
+  values && Object.prototype.hasOwnProperty.call(values, id) ? values[id] : undefined;
 
 /** Check supplied observations against a model. Does not execute or verify source. */
 export function checkOperation(spec: SemanticSpecification, selection: string, observation: OperationObservation): OperationCheck {
@@ -53,14 +55,17 @@ export function checkOperation(spec: SemanticSpecification, selection: string, o
     if (!outcome) throw new ClearingsError('INVALID_OBSERVATION', 'Unknown outcome ID.');
     const guard = guards.get(outcome.id)!;
     add('outcome-condition', outcome.description, !guard.known ? 'unknown' : guard.value === true ? 'pass' : 'fail', guard.known ? null : guard.reason);
-    if (operation.outcome_policy === 'exclusive' && uncertain.some(id => id !== outcome.id)) add('outcome-exclusivity', 'Other exclusive guards are false.', 'unknown', 'Another outcome condition is unformalized or lacks observations.');
+    if (operation.outcome_policy === 'exclusive' && applicable.length <= 1) {
+      if (applicable.some(id => id !== outcome.id)) add('outcome-exclusivity', 'Other exclusive guards are false.', 'fail', 'Another exclusive guard is true for the supplied outcome.');
+      else if (uncertain.some(id => id !== outcome.id)) add('outcome-exclusivity', 'Other exclusive guards are false.', 'unknown', 'Another outcome condition is unformalized or lacks observations.');
+    }
     for (const rule of outcome.ensures) {
       const value = evaluateExpression(rule.predicate, environment);
       add(rule.id, rule.description, !value.known ? 'unknown' : value.value === true ? 'pass' : 'fail', value.known ? null : value.reason);
     }
     for (const update of outcome.updates) {
       const value = evaluateExpression(update.value, environment);
-      const actual = observation.after?.[update.state_id];
+      const actual = observedState(observation.after, update.state_id);
       add(`update:${update.state_id}`, `Update ${update.state_id} as specified.`, !value.known || actual === undefined ? 'unknown' : canonical(value.value) === canonical(actual) ? 'pass' : 'fail', !value.known ? value.reason : actual === undefined ? 'Missing resulting state.' : null);
     }
     if (operation.effects.completeness === 'complete' || outcome.effects.some(item => item.occurrence === 'required')) {
@@ -73,7 +78,7 @@ export function checkOperation(spec: SemanticSpecification, selection: string, o
     }
   }
   if (operation.frame === 'complete') for (const state of spec.states.filter(item => !operation.writes.includes(item.id))) {
-    const before = observation.before[state.id], after = observation.after?.[state.id];
+    const before = observedState(observation.before, state.id), after = observedState(observation.after, state.id);
     add(`frame:${state.id}`, `Preserve ${state.name}.`, before === undefined || after === undefined ? 'unknown' : canonical(before) === canonical(after) ? 'pass' : 'fail', before === undefined || after === undefined ? 'Both state observations are required to check preservation.' : null);
   }
   return { artifact_id: spec.artifact_id, operation_id: operation.id, perspective: spec.perspective, verdict: combine(checks), applicable_outcome_ids: applicable, uncertain_outcome_ids: uncertain, checks,

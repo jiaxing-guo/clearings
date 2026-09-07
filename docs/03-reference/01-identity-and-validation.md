@@ -53,7 +53,7 @@ Legacy request/model validation can additionally revalidate source against a sup
 
 The portability guard defaults to at most 200,000 visited values and nesting depth 64. Violations produce `INVALID_SPECIFICATION`, including when the guard is reused for observation or sequence wrapper validation. These bounds are separate from the expression evaluator's work budget and the context byte budget.
 
-The CLI JSON reader currently applies a 64 MiB file limit. Its shared type probe also applies that limit to legacy `validate` input; this is a known compatibility regression in the inspected implementation. It is not an intrinsic limit of the inventory/scan schema or a change introduced by this documentation.
+The CLI reader used by inspection, context, checking, and semantic exchange applies a 64 MiB file limit. The `validate` command identifies the artifact family after parsing and applies that limit to specifications. Legacy validation has no explicit file-size cap; inventory and scan artifacts larger than 64 MiB remain validatable, subject to available memory and their existing validation rules.
 
 ## Claims outside validation
 

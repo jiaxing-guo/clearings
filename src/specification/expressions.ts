@@ -121,7 +121,7 @@ const compatible = (a: InferredType, b: InferredType): boolean => {
   if (a.kind === 'enum' && b.kind === 'enum') return a.values.some(value => b.values.includes(value));
   if (['string', 'enum'].includes(a.kind) && ['string', 'enum'].includes(b.kind)) return true;
   if (a.kind === 'list' && b.kind === 'list') return compatible(a.element, b.element);
-  if (a.kind === 'record' && b.kind === 'record') return Object.keys(a.fields).length === Object.keys(b.fields).length && Object.entries(a.fields).every(([key, type]) => b.fields[key] && compatible(type, b.fields[key]!));
+  if (a.kind === 'record' && b.kind === 'record') return Object.keys(a.fields).length === Object.keys(b.fields).length && Object.entries(a.fields).every(([key, type]) => own(b.fields, key) && compatible(type, b.fields[key]!));
   return a.kind === b.kind;
 };
 function literalWithinDomains(value: JsonValue, type: InferredType): boolean {
@@ -133,13 +133,23 @@ function literalWithinDomains(value: JsonValue, type: InferredType): boolean {
   }
   return true;
 }
+/** Unify all literal elements, retaining constraints learned after empty lists. */
+function mergeLiteralTypes(a: InferredType, b: InferredType): InferredType {
+  if (a.kind === 'empty') return b;
+  if (b.kind === 'empty') return a;
+  if (!compatible(a, b)) return invalid('List literals must have a consistent element type.');
+  if (a.kind === 'list' && b.kind === 'list') return { kind: 'list', element: mergeLiteralTypes(a.element, b.element) as ValueType };
+  if (a.kind === 'record' && b.kind === 'record') return { kind: 'record', fields: Object.fromEntries(Object.entries(a.fields).map(([key, field]) => [key, mergeLiteralTypes(field, b.fields[key]!) as ValueType])) };
+  if ((a.kind === 'integer' && b.kind === 'number') || (a.kind === 'number' && b.kind === 'integer')) return { kind: 'number' };
+  return a;
+}
 function literalType(value: JsonValue): InferredType {
   if (value === null) return { kind: 'null' };
   if (Array.isArray(value)) {
     // Empty literals have no element constraints; this sentinel is internal only.
     if (!value.length) return { kind: 'list', element: { kind: 'empty' } as unknown as ValueType };
-    const type = literalType(value[0]!);
-    if (!value.every(item => compatible(type, literalType(item)))) invalid('List literals must have a consistent element type.');
+    let type = literalType(value[0]!);
+    for (let index = 1; index < value.length; index++) type = mergeLiteralTypes(type, literalType(value[index]!));
     return { kind: 'list', element: type as ValueType };
   }
   if (typeof value === 'object') return { kind: 'record', fields: Object.fromEntries(Object.entries(value).map(([key, field]) => [key, literalType(field) as ValueType])) };

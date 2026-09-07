@@ -37,13 +37,18 @@ export function assembleContext(spec: SemanticSpecification, selection: string, 
   const stateIds = new Set(operations.some(item => item.frame === 'complete') ? spec.states.map(item => item.id) : operations.flatMap(item => [...item.reads, ...item.writes]));
   const states = spec.states.filter(state => stateIds.has(state.id)).sort((a, b) => a.id < b.id ? -1 : 1);
   const sourceIds = new Set<string>();
-  const evidence = (value: unknown): void => {
-    if (Array.isArray(value)) value.forEach(evidence);
-    else if (value && typeof value === 'object') for (const [key, field] of Object.entries(value)) {
-      if (key === 'evidence_ids' && Array.isArray(field)) field.forEach(id => sourceIds.add(id)); else evidence(field);
+  const evidence = (record: { evidence_ids: string[] }): void => { record.evidence_ids.forEach(id => sourceIds.add(id)); };
+  states.forEach(evidence);
+  for (const operation of operations) {
+    evidence(operation);
+    operation.guarantees.forEach(evidence);
+    operation.implementations.forEach(evidence);
+    operation.decisions.forEach(evidence);
+    for (const outcome of operation.outcomes) {
+      evidence(outcome);
+      outcome.ensures.forEach(evidence);
     }
-  };
-  evidence(operations); evidence(states);
+  }
   const links = operations.flatMap(operation => operation.dependencies.map(dependency => ({ from_id: operation.id, to_id: dependency.operation_id,
     target_name: index.get(dependency.operation_id)?.name ?? null, kind: dependency.kind, role: dependency.role, included: included.has(dependency.operation_id) })));
   const pack: OperationContext = normalized({ schema_version: '0.3.0', command: 'context', artifact_id: spec.artifact_id, perspective: spec.perspective,

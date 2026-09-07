@@ -26,7 +26,7 @@ Each outcome contains an ID, description, Boolean `when` guard, `ensures` rules,
 
 | Declaration | Meaning | Current enforcement |
 | --- | --- | --- |
-| `outcome_policy: exclusive` | At most one guard may apply; coverage determines whether a case must be covered | Detect multiple true guards for the supplied observation; uncertainty in another guard can make exclusivity unknown |
+| `outcome_policy: exclusive` | At most one guard may apply; coverage determines whether a case must be covered | Fail multiple true guards or a true alternative to the supplied outcome, even if the supplied outcome's guard is unknown; unresolved alternatives otherwise yield unknown |
 | `outcome_policy: allowed` | Guards may overlap; the supplied outcome must have an applicable guard | Check the supplied outcome, without requiring other applicable outcomes' postconditions |
 | `coverage: complete` | The model claims to cover the relevant input domain | Fail an observed case with no true or unknown guard; no exhaustive coverage proof |
 | `coverage: partial` | Behavior outside modeled cases is unspecified | Require at least one decision explaining the boundary; an uncovered case yields unknown |
@@ -40,6 +40,8 @@ Each `StateField` has a stable ID, name, description, type, evidence, and scope:
 An outcome update must target a unique field in the operation's write set. The update expression is evaluated against the supplied observation environment and compared with `after[state_id]`. Updates are constraints, not sequential assignments executed by the checker; later entries do not consume an earlier update's computed value.
 
 For `frame: complete`, every modeled field in the specification outside the operation's write set must retain its value. Checking preservation requires both before and after observations. For `frame: partial`, unrecorded state changes are not excluded.
+
+State maps contain only explicitly supplied own properties. An omitted field named `constructor`, `toString`, or `hasOwnProperty` remains missing; inherited object properties cannot satisfy an update or frame condition.
 
 A writable field without an update or postcondition remains unconstrained. Declaring `reads` does not monitor runtime reads. An empty write set with a partial frame does not establish purity.
 

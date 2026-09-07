@@ -23,6 +23,8 @@ Starting from the root, it computes the least set closed under required dependen
 
 Each selected operation is retained in full, including every outcome, rule, implementation responsibility, and decision. State selection includes all declared reads/writes; if any selected operation has a complete frame, all modeled state fields are included. State and source records are sorted by ID. All evidence referenced by selected operations and state records is attached.
 
+Evidence references come from the schema-defined `evidence_ids` fields on operations, guarantees, outcomes, postconditions, implementation responsibilities, decisions, and selected state records. Keys named `evidence_ids` inside expression literals are ordinary JSON data and do not select source records.
+
 The package retains specification identity, perspective, provenance, relationship roles, omitted operation IDs, and deferred dependencies. A deferred dependency records whether its target exists in the original specification. An optional target can still be included if it is reachable through another required path.
 
 ## Budget semantics

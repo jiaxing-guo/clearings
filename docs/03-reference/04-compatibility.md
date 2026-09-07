@@ -26,8 +26,10 @@ Any future schema migration must define input/output versions, retained informat
 
 The exact [bootstrap design](../SPECIFICATION_ARCHITECTURE.md) remains at its original path because its text is embedded in [context-assembly.json](../../specifications/clearings/context-assembly.json). Its chronological statements are historical; the numbered reference defines the current documentation structure. [SEQUENCE_CHECKS.md](../SEQUENCE_CHECKS.md) remains a compatibility entry for links from that design.
 
-The former top-level documentation is organized under [the archive](../archive/README.md). Relative Markdown links were rebased during relocation. Frozen source tarballs, manifests, prompts, submissions, test inputs, and generated review archives remain unchanged. To reproduce a frozen run, use its archived source baseline rather than copying current documentation into that baseline.
+The former top-level documentation is organized under [the archive](../archive/README.md). Relative Markdown links were rebased during relocation. Frozen experiment source tarballs, manifests, prompts, submissions, test inputs, and review archives remain unchanged. To reproduce a frozen run, use its archived source baseline rather than copying current documentation into that baseline.
 
-## Known limitations
+The current [bootstrap demonstration](../../benchmarks/results/clearings-bootstrap/README.md) records exact working-source bindings. When those functions change, regenerate the demonstration, its checksums, and its download archive against the new implementation. Earlier demonstration revisions remain in Git history; regenerating this demonstration does not rerun or modify the frozen agent experiments.
 
-The shared CLI JSON type probe applies a 64 MiB limit to legacy validation, although the legacy inventory/scan schema does not impose that size limit. This regression remains separate runtime work. The documentation presentation changes do not migrate schemas or alter runtime semantics.
+## Validation compatibility
+
+Legacy `validate` accepts inventory and scan files larger than 64 MiB. Artifact detection does not impose the specification reader's size limit on legacy validation. Specification validation retains its 64 MiB file limit. These compatibility fixes do not change schema versions or rewrite historical artifacts.

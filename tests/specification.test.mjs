@@ -429,3 +429,104 @@ test('schema regeneration reproduces the committed schema including reachability
   assert.deepEqual(readFileSync(join(directory, 'schemas/specification.v0.3.json')), readFileSync(new URL('../schemas/specification.v0.3.json', import.meta.url)));
   validateSpecification(bootstrap);
 });
+
+test('state updates and frames require own observations for prototype-named fields', () => {
+  for (const id of ['constructor', 'toString', 'hasOwnProperty']) {
+    const op = operation('own-state'); op.writes = [id];
+    op.outcomes[0].updates = [{ state_id: id, value: literal(1) }];
+    const spec = graph([operation('own-state')]); spec.operations = [op]; spec.states = [state(id, 'integer')];
+    const updating = sealSpecification(spec);
+    const observation = { input: {}, before: {}, outcome: 'outcome:own-state', output: null, effects: [] };
+    for (const after of [undefined, {}, Object.create(null)]) {
+      const supplied = { ...observation, ...(after === undefined ? {} : { after }) };
+      const result = checkOperation(updating, 'own-state', supplied);
+      assert.equal(result.verdict, 'unknown');
+      assert.equal(result.checks.find(rule => rule.id === `update:${id}`).verdict, 'unknown');
+    }
+    assert.equal(checkOperation(updating, 'own-state', { ...observation, after: { [id]: 1 } }).verdict, 'pass');
+    assert.equal(checkOperation(updating, 'own-state', { ...observation, after: { [id]: 2 } }).verdict, 'fail');
+    op.writes = []; op.outcomes[0].updates = []; op.frame = 'complete';
+    const preserving = sealSpecification(spec);
+    for (const [before, after] of [[{}, {}], [{ [id]: 1 }, {}], [{}, { [id]: 1 }]]) {
+      assert.equal(checkOperation(preserving, 'own-state', { ...observation, before, after }).verdict, 'unknown');
+    }
+    assert.equal(checkOperation(preserving, 'own-state', { ...observation, before: { [id]: 1 }, after: { [id]: 1 } }).verdict, 'pass');
+    assert.equal(checkOperation(preserving, 'own-state', { ...observation, before: { [id]: 1 }, after: { [id]: 2 } }).verdict, 'fail');
+  }
+});
+
+test('exclusive outcomes reject a true alternative even when the selected guard is unknown', () => {
+  const guards = [literal(true), literal(false), { kind: 'opaque', text: 'Unknown guard.', reason: 'No predicate.' }];
+  const exclusive = [['fail', 'pass', 'unknown'], ['fail', 'fail', 'fail'], ['fail', 'unknown', 'unknown']];
+  for (const policy of ['exclusive', 'allowed']) for (let selected = 0; selected < 3; selected++) for (let other = 0; other < 3; other++) {
+    const op = operation('choose'); op.outcome_policy = policy;
+    op.outcomes[0].when = guards[selected];
+    op.outcomes.push({ ...structuredClone(op.outcomes[0]), id: 'alternative', when: guards[other] });
+    const result = checkOperation(graph([op]), 'choose', { input: {}, before: {}, outcome: 'outcome:choose', output: null, effects: [] });
+    assert.equal(result.verdict, policy === 'exclusive' ? exclusive[selected][other] : ['pass', 'fail', 'unknown'][selected], `${policy}: ${selected}, ${other}`);
+    assert.equal(new Set(result.checks.map(rule => rule.id)).size, result.checks.length);
+  }
+});
+
+test('list literal inference retains constraints across empty elements and nested records', () => {
+  const list = element => ({ kind: 'list', element });
+  const make = (type, predicate) => { const op = operation('nested'); op.inputs = { value: type }; op.outcomes[0].when = predicate; return graph([op]); };
+  const value = ref('input', 'value'), strings = list(list({ kind: 'string' }));
+  for (const bad of [[[], [1]], [[1], []], [[], ['valid'], [1]], [[], [1], ['invalid']]]) {
+    for (const predicate of [eq(value, literal(bad)), eq(literal(bad), value), { kind: 'subset', collection: value, value: literal(bad) }, { kind: 'subset', collection: literal(bad), value }]) {
+      assert.throws(() => make(strings, predicate), { code: 'SPEC_TYPE' });
+    }
+  }
+  for (const good of [[], [[], []], [[], ['valid']], [['valid'], []]]) assert.doesNotThrow(() => make(strings, eq(value, literal(good))));
+  const records = list({ kind: 'record', fields: { items: list({ kind: 'string' }) } });
+  assert.throws(() => make(records, eq(value, literal([{ items: [] }, { items: [1] }]))), { code: 'SPEC_TYPE' });
+  assert.doesNotThrow(() => make(records, eq(value, literal([{ items: [] }, { items: ['valid'] }]))));
+  assert.throws(() => make(list(strings), { kind: 'contains', collection: value, value: literal([[], [1]]) }), { code: 'SPEC_TYPE' });
+  assert.throws(() => make(strings, { kind: 'contains', collection: literal([[[], [1]]]), value }), { code: 'SPEC_TYPE' });
+  // Quantification must receive the common type, including numeric widening.
+  for (const numbers of [[1, 1.5], [1.5, 1]]) assert.doesNotThrow(() => make({ kind: 'null' }, {
+    kind: 'every', variable: 'item', collection: literal(numbers), predicate: eq(ref('local', 'item'), literal(1.5)),
+  }));
+  assert.throws(() => make({ kind: 'null' }, {
+    kind: 'every', variable: 'item', collection: literal([[], [1]]), predicate: eq(ref('local', 'item'), literal(['wrong'])),
+  }), { code: 'SPEC_TYPE' });
+});
+
+test('context evidence follows declared metadata and never keys inside literal data', () => {
+  const op = operation('root', ['child']), child = operation('child'), excluded = operation('excluded');
+  const data = { evidence_ids: ['source:unrelated'] };
+  op.evidence_ids = ['source:operation']; child.evidence_ids = ['source:child']; excluded.evidence_ids = ['source:excluded'];
+  op.guarantees = [{ id: 'literal-rule', description: 'Compare literal records.', predicate: eq(literal(data), literal(data)), evidence_ids: ['source:guarantee'] }];
+  op.outcomes[0].when = eq(literal(data), literal(data));
+  op.outcomes[0].evidence_ids = ['source:outcome'];
+  op.outcomes[0].ensures = [{ id: 'literal-ensure', description: 'Retain literal data.', predicate: eq(literal([data]), literal([data])), evidence_ids: ['source:ensure'] }];
+  op.implementations[0].evidence_ids = ['source:implementation'];
+  op.decisions = [{ id: 'choice', question: 'Choose an algorithm?', consequence: 'Implementation remains open.', disposition: 'implementation-choice', blocking: false, evidence_ids: ['source:decision'] }];
+  const payload = state('payload', 'record'); payload.type = { kind: 'record', fields: { evidence_ids: { kind: 'list', element: { kind: 'string' } } } }; payload.evidence_ids = ['source:state'];
+  op.writes = ['payload']; op.outcomes[0].updates = [{ state_id: 'payload', value: literal(data) }];
+  const unused = state('unused', 'integer'); unused.evidence_ids = ['source:unused'];
+  const expected = ['operation', 'child', 'guarantee', 'outcome', 'ensure', 'implementation', 'decision', 'state'].map(id => `source:${id}`).sort();
+  const spec = graph([operation('root')]); spec.operations = [op, child, excluded]; spec.states = [payload, unused];
+  spec.sources = [...expected, 'source:excluded', 'source:unused', 'source:unrelated'].map(id => {
+    const text = id === 'source:unrelated' ? 'Unrelated text. '.repeat(10000) : id;
+    return { id, origin: 'design', locator: `fixture:${id}`, text, sha256: hash(text), binding: null };
+  });
+  const sealed = sealSpecification(spec), before = JSON.stringify(sealed);
+  const pack = assembleContext(sealed, 'root', { maxBytes: 65536 });
+  assert.deepEqual(pack.sources.map(source => source.id), expected);
+  assert(pack.budget.used_bytes < 65536);
+  validateOperationContext(pack, sealed);
+  assert.equal(JSON.stringify(sealed), before);
+});
+
+test('specification validation retains its file-size limit', t => {
+  const directory = mkdtempSync(join(tmpdir(), 'clearings-spec-limit-')); t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const path = join(directory, 'spec.json');
+  writeFileSync(path, JSON.stringify(hono) + ' '.repeat(64 * 1024 * 1024));
+  for (const command of ['validate', 'inspect']) {
+    const result = spawnSync(process.execPath, ['dist/cli/main.js', command, path], { encoding: 'utf8' });
+    assert.equal(result.status, 2, result.stderr);
+    assert.equal(JSON.parse(result.stdout).diagnostics[0].code, 'INVALID_JSON');
+    assert.match(result.stderr, /maximum 64 MiB/);
+  }
+});

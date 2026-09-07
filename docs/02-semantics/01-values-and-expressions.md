@@ -77,6 +77,8 @@ Roots are `input`, `before`, `after`, `output`, and quantified `local`. Outcome 
 
 Predicates must have Boolean type. Numeric ordering requires numeric operands. Collection operators require compatible element types. Assignments must be assignable to the declared state type: an integer can enter a number domain, and an enum can enter a string domain; the reverse assignments are not generally valid.
 
+List literal inference combines constraints from every element, recursively through nested lists and records. Empty lists introduce no element constraint; later elements determine that constraint. Mixed integer and number literals infer `number`. For example, `[[], [1]]` has type `list<list<integer>>` and cannot be compared with a `list<list<string>>` input.
+
 Equality and collection validation reject literal values outside enum and safe-integer domains, including nested records/lists. Equality between disjoint enum domains is invalid. Integer ordering against a fractional bound remains meaningful and valid. These are local type/domain checks; validation does not solve arbitrary satisfiability, outcome exhaustiveness, or implications between predicates.
 
 ## Work bounds

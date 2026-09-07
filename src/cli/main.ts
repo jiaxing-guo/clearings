@@ -60,7 +60,7 @@ try {
     const allowed: Record<string, string[]> = { inventory: ['ref', 'target', 'scope', 'include', 'exclude', 'out'], scan: ['ref', 'target', 'scope', 'include', 'exclude', 'out', 'project', 'mode', 'strict'], 'benchmark-fetch': ['target', 'out'], validate: ['repository', 'scan', 'request'], check: ['operation', 'id', 'observation', 'format', 'out', 'repository'], inspect: ['operation', 'id', 'capability', 'behavior', 'format', 'scan', 'repository', 'out'], context: ['operation', 'id', 'capability', 'behavior', 'format', 'scan', 'repository', 'out', 'max-bytes', 'no-neighbors'], propose: ['schema-version', 'repository', 'instruction', 'include', 'evidence', 'max-bytes', 'out'], evidence: ['repository', 'id', 'out'], import: ['repository', 'request', 'scan', 'out'], replay: ['repository', 'request', 'scan', 'out'], explain: ['operation', 'id', 'max-bytes', 'repository', 'scan', 'capability', 'out', 'format', 'presentation', 'audience', 'companion'] };
     if (!allowed[command] || Object.keys(values).some((key) => !allowed[command]?.includes(key))) throw new ClearingsError('INVALID_ARGUMENTS', 'Unknown command or unsupported option; use --help.');
     let specificationHandled = false;
-    if (['inspect', 'context', 'check', 'explain', 'validate'].includes(command) && positionals.length === 2) {
+    if (['inspect', 'context', 'check', 'explain'].includes(command) && positionals.length === 2) {
       const { readJson } = await import('./semantic.js');
       const artifact = readJson(positionals[1]!);
       if (artifact && typeof artifact === 'object' && 'kind' in artifact && artifact.kind === 'specification') {
@@ -116,25 +116,34 @@ try {
     } else {
       if (positionals.length !== 2) throw new ClearingsError('INVALID_ARGUMENTS', 'Validate requires one artifact JSON file.');
       let value: unknown;
-      try { value = JSON.parse(readFileSync(positionals[1]!, 'utf8')); }
+      let inputBytes: number;
+      try { const json = readFileSync(positionals[1]!); inputBytes = json.length; value = JSON.parse(json.toString('utf8')); }
       catch { throw new ClearingsError('INVALID_JSON', 'Cannot read artifact JSON.'); }
-      let snapshot_id; let coverage;
-      const isScan = !!value && typeof value === 'object' && 'command' in value && value.command === 'scan';
-      const isSemantic = !!value && typeof value === 'object' && 'command' in value && ['propose', 'proposal', 'import'].includes(String(value.command));
-      if (isSemantic) {
-        const { validateSemanticArtifact } = await import('./semantic.js');
-        const checked = validateSemanticArtifact(value, values); snapshot_id = checked.snapshot_id; coverage = checked.coverage;
-      } else if (isScan) {
-        if (values.scan || values.request) throw new ClearingsError('INVALID_ARGUMENTS', '--scan/--request apply only to semantic artifacts.');
-        const validateScan: typeof import('../model/validate-scan.js').validateScan = (await import('../model/validate-scan.js')).validateScan;
-        validateScan(value, values.repository ? { repository: values.repository } : {});
-        snapshot_id = value.snapshot_id; coverage = value.coverage;
+      // Legacy validation has no file-size cap. Apply the specification limit only
+      // after identifying that artifact family, without parsing the file twice.
+      if (value && typeof value === 'object' && 'kind' in value && value.kind === 'specification') {
+        if (inputBytes > 64 * 1024 * 1024) throw new ClearingsError('INVALID_JSON', 'Cannot read artifact JSON (maximum 64 MiB).');
+        const { specificationCommand } = await import('./specification.js');
+        specificationCommand(command, positionals, values, value);
       } else {
-        if (values.scan || values.request) throw new ClearingsError('INVALID_ARGUMENTS', '--scan/--request apply only to semantic artifacts.');
-        if (values.repository) throw new ClearingsError('INVALID_ARGUMENTS', '--repository source validation requires a scan artifact.');
-        validateInventory(value); snapshot_id = value.snapshot_id; coverage = value.coverage;
+        let snapshot_id; let coverage;
+        const isScan = !!value && typeof value === 'object' && 'command' in value && value.command === 'scan';
+        const isSemantic = !!value && typeof value === 'object' && 'command' in value && ['propose', 'proposal', 'import'].includes(String(value.command));
+        if (isSemantic) {
+          const { validateSemanticArtifact } = await import('./semantic.js');
+          const checked = validateSemanticArtifact(value, values); snapshot_id = checked.snapshot_id; coverage = checked.coverage;
+        } else if (isScan) {
+          if (values.scan || values.request) throw new ClearingsError('INVALID_ARGUMENTS', '--scan/--request apply only to semantic artifacts.');
+          const validateScan: typeof import('../model/validate-scan.js').validateScan = (await import('../model/validate-scan.js')).validateScan;
+          validateScan(value, values.repository ? { repository: values.repository } : {});
+          snapshot_id = value.snapshot_id; coverage = value.coverage;
+        } else {
+          if (values.scan || values.request) throw new ClearingsError('INVALID_ARGUMENTS', '--scan/--request apply only to semantic artifacts.');
+          if (values.repository) throw new ClearingsError('INVALID_ARGUMENTS', '--repository source validation requires a scan artifact.');
+          validateInventory(value); snapshot_id = value.snapshot_id; coverage = value.coverage;
+        }
+        process.stdout.write(`${JSON.stringify({ schema_version: SCHEMA_VERSION, command, status: 'complete', snapshot_id, data: { valid: true, checks: ['schema', 'digest', 'coverage', ...(!isSemantic ? ['ordering'] : []), 'scope-consistency', ...(isSemantic ? ['semantic-references', 'flow-integrity', 'unreviewed-claim-status', ...(values.repository ? ['source-blobs', 'evidence-spans'] : [])] : []), ...(isScan ? ['record-references', ...(values.repository ? ['source-blobs', 'evidence-spans'] : [])] : [])], source_rechecked: !!values.repository }, diagnostics: [], coverage }, null, 2)}\n`);
       }
-      process.stdout.write(`${JSON.stringify({ schema_version: SCHEMA_VERSION, command, status: 'complete', snapshot_id, data: { valid: true, checks: ['schema', 'digest', 'coverage', ...(!isSemantic ? ['ordering'] : []), 'scope-consistency', ...(isSemantic ? ['semantic-references', 'flow-integrity', 'unreviewed-claim-status', ...(values.repository ? ['source-blobs', 'evidence-spans'] : [])] : []), ...(isScan ? ['record-references', ...(values.repository ? ['source-blobs', 'evidence-spans'] : [])] : [])], source_rechecked: !!values.repository }, diagnostics: [], coverage }, null, 2)}\n`);
     }
   }
 } catch (error) {

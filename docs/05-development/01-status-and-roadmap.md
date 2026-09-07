@@ -1,6 +1,6 @@
 # Status and development roadmap
 
-This status describes the implementation inspected at `bb4c90a` and the subsequent documentation-only reorganization. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
+This status describes the v0.3 implementation, documentation integration, and subsequent correctness fixes in PR #6. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
 
 ## Read the evidence at the correct scope
 
@@ -28,7 +28,7 @@ These results support specification-guided development. They do not establish a 
 | [Fresh impact implementation](../../benchmarks/agent-runs/luna-impact-001/REPORT.md) | First candidate passed 19 withheld feature tests | Candidate remains outside production; eight rules opaque |
 | [Fresh sequence implementation](../../benchmarks/agent-runs/luna-sequence-001/REPORT.md) | First candidate passed 17 evaluation groups, including the fixture self-check; integrated unchanged after source review | Five rules opaque; no further development cycle with the improved version |
 
-The sequence experiment's baseline regression run passed 78 existing tests plus three agent-authored tests. The later combined implementation status reports 112 library tests. These are recorded results, not measurements produced by reorganizing this documentation.
+The sequence experiment's baseline regression run passed 78 existing tests plus three agent-authored tests. The later combined implementation passed 112 library tests. After the final review fixes, the full suite passes 118 tests, including six new regression tests for the corrected semantics and CLI compatibility. Historical experiment counts remain bound to their recorded baselines.
 
 The coding agents received prose and source as well as generated context. There is no matched prose-only comparison, repeated-trial performance result, independently authenticated reviewer, or formal source-refinement proof. Frozen tests were authored separately from the coding agent, but shared-filesystem isolation was by protocol.
 
@@ -50,4 +50,4 @@ The Fumadocs build now renders the numbered reference from ordinary Markdown. Ge
 | 4 | Run a matched prose-only comparison | Same task, equivalent available requirements/source, frozen scoring, recorded access |
 | 5 | Evaluate a proposed implementation IR | Distinct consumer, operation semantics, refinement obligations, and checked transformation |
 
-Known runtime work includes the legacy validation size regression described in [compatibility](../03-reference/04-compatibility.md). Broader repositories/languages, provider transport, general inference, solvers, concurrency verification, package publication, CI, and public hosting remain separate scope decisions. Historical task instructions do not override the current user request.
+The final review fixes preserve missing state observations, reject incompatible nested literal types and inconsistent exclusive outcomes, restrict context evidence selection to declared metadata, and restore [legacy validation compatibility](../03-reference/04-compatibility.md). Broader repositories/languages, provider transport, general inference, solvers, concurrency verification, package publication, CI, and public hosting remain separate scope decisions. Historical task instructions do not override the current user request.
