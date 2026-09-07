@@ -1,13 +1,15 @@
 // Deterministic authored examples. This script never invokes the implementation.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { sealSpecification } from '../dist/index.js';
 import { sealConformanceProfile, sealExecutionRecord } from '../dist/conformance/index.js';
 import { canonical } from '../dist/repository/inventory.js';
 
-const output = resolve(process.argv[2] ?? 'specifications/clearings/conformance');
+const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
+const output = process.argv[2] === undefined ? join(repositoryRoot, 'specifications/clearings/conformance') : resolve(process.argv[2]);
 const lit = value => ({ kind: 'literal', value });
 const ref = (root, ...path) => ({ kind: 'ref', root, path });
 const compare = (op, left, right) => ({ kind: 'compare', op, left, right });
@@ -89,14 +91,14 @@ const measurements = [
   ['input-records', 'arguments-before', hashes, 'Hash complete canonical input operation records, retaining one entry per operation.'],
   ['returned-records', 'return', hashes, 'Hash every complete returned operation record; record count and IDs must agree with the raw returned operations array.'],
   ['returned-context', 'return', row(Object.fromEntries(Object.entries(returned.output.fields).filter(([key]) => key !== 'measured_bytes'))), 'Project every returned record and reported counter faithfully. Keep independent serialized bytes in the separate serialized-bytes measurement.'],
-  ['serialized-bytes', 'independent', integer, 'Encode the entire returned package as compact JSON plus one newline and count UTF-8 bytes without calling production serialization or accounting helpers.'],
-  ['reference-required-bytes', 'independent', integer, 'Independently construct the complete required package and solve the counter fixed point for the requested budget; do not use the candidate package or error to compute this value.'],
-  ['expected-projection', 'independent', row({ operation_ids: strings, state_ids: strings, source_ids: strings }), 'Compute expected ordering and state/evidence selection from the original invocation using independently implemented reference procedures.'],
+  ['serialized-bytes', 'independent', integer, 'Encode the entire returned package as compact JSON plus one newline and count UTF-8 bytes without calling production serialization or accounting helpers.', ['return']],
+  ['reference-required-bytes', 'independent', integer, 'Independently construct the complete required package and solve the counter fixed point for the requested budget; do not use the candidate package or error to compute this value.', ['arguments-before']],
+  ['expected-projection', 'independent', row({ operation_ids: strings, state_ids: strings, source_ids: strings }), 'Compute expected ordering and state/evidence selection from the original invocation using independently implemented reference procedures.', ['arguments-before']],
   ['arguments-before-digest', 'arguments-before', string, 'Hash canonical arguments immediately before invocation.'],
   ['arguments-after-digest', 'arguments-after', string, 'Hash canonical arguments immediately after return or exception; a missing snapshot remains unobserved.'],
   ['exception', 'exception', thrown.output, 'Read the actual exception code and optional structured required_bytes detail. An absent detail becomes an empty list, not a fabricated zero; do not parse the message.'],
-  ['effects', 'instrumentation', strings, 'Record effect IDs only if the monitor covers the declared boundary. No monitor is supplied in this PR; mark this measurement unobserved.'],
-].map(([id, source, type, procedure]) => ({ id, source, type, description: procedure, procedure }));
+  ['effects', 'instrumentation', strings, 'Record effect IDs only if the monitor covers the declared boundary. No monitor is supplied in this PR; mark this measurement unobserved.', []],
+].map(([id, source, type, procedure, capture_requirements = [source]]) => ({ id, source, capture_requirements, type, description: procedure, procedure }));
 const obligations = [];
 function obligation(id, requirement, operations, rules, measurement_ids, verification, limitation, mandatory = true) {
   obligations.push({ id, requirement, operation_ids: operations, rule_ids: rules, measurement_ids, mandatory, verification, limitation });
@@ -134,7 +136,12 @@ const profile = sealConformanceProfile({ schema_version: '0.1.0', kind: 'conform
 }, spec);
 const baseline = '9d1fede2a32c9575635e22aa7fabed1158224306';
 const module = profile.target.module;
-const source = execFileSync('git', ['show', `${baseline}:${module}`]);
+let source;
+try {
+  source = execFileSync('git', ['show', `${baseline}:${module}`], { cwd: repositoryRoot, stdio: ['ignore', 'pipe', 'pipe'] });
+} catch (cause) {
+  throw new Error(`Cannot read baseline source ${baseline}:${module} from ${repositoryRoot}. Ensure Git is available and this checkout contains the baseline object; for shallow history, run git fetch origin ${baseline} from the repository root before regenerating the examples.`, { cause });
+}
 const argumentsBefore = { specification: { example: 'Illustrative arguments only; not an executable conformance fixture.' }, selection: 'root', options: { maxBytes: 65536 } };
 const absent = reason => ({ status: 'unavailable', reason });
 const examples = [

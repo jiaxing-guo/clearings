@@ -35,6 +35,7 @@ def artifact(kind, properties):
 
 measurement = obj({'id': ID, 'description': TEXT,
                    'source': enum('arguments-before', 'arguments-after', 'return', 'exception', 'independent', 'instrumentation'),
+                   'capture_requirements': array(enum('arguments-before', 'arguments-after', 'return', 'exception'), unique=True),
                    'type': ref('ValueType'), 'procedure': TEXT})
 verification = {'oneOf': [obj({'kind': enum('predicate'), 'rule_ids': array(ID, 1, True)}),
                            obj({'kind': enum('independent-check'), 'check_id': ID}),

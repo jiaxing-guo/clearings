@@ -2,10 +2,12 @@ import type { JsonValue, ValueType } from '../specification/model.js';
 
 /** Evaluation metadata, separate from the operation specification and its verdicts. */
 export type MeasurementSource = 'arguments-before' | 'arguments-after' | 'return' | 'exception' | 'independent' | 'instrumentation';
+export type CaptureRequirement = 'arguments-before' | 'arguments-after' | 'return' | 'exception';
 export interface MeasurementDefinition {
   id: string;
   description: string;
   source: MeasurementSource;
+  capture_requirements: CaptureRequirement[];
   type: ValueType;
   procedure: string;
 }

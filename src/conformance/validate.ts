@@ -35,6 +35,9 @@ export function validateConformanceProfile(value: unknown, spec: SemanticSpecifi
   unique(selected, 'completion operation');
   for (const id of selected) if (!operations.has(id)) invalid(`Unknown completion operation: ${id}`);
   unique(profile.measurements.map(item => item.id), 'measurement definition');
+  for (const measurement of profile.measurements) {
+    if (measurement.source !== 'independent' && measurement.source !== 'instrumentation' && !measurement.capture_requirements.includes(measurement.source)) invalid(`Measurement must require its source capture: ${measurement.id}`);
+  }
   unique(profile.obligations.map(item => item.id), 'obligation');
   const measurements = new Set(profile.measurements.map(item => item.id));
   const requirements = new Set(profile.scope.requirements);
@@ -90,9 +93,14 @@ export function validateExecutionRecord(value: unknown, profile: ConformanceProf
     if (!definition) invalid(`Unknown recorded measurement: ${measurement.id}`);
     if (measurement.status === 'unobserved') continue;
     if (!matchesType(measurement.value, definition!.type)) invalid(`Measurement has an invalid value type: ${measurement.id}`);
-    if (definition!.source === 'return' && (record.completion.kind !== 'return' || record.completion.result.status !== 'captured')) invalid('Return measurements require a captured return.');
-    if (definition!.source === 'exception' && (record.completion.kind !== 'throw' || record.completion.thrown.status !== 'captured')) invalid('Exception measurements require a captured exception.');
-    if (definition!.source === 'arguments-after' && record.arguments_after.status !== 'captured') invalid('Resulting argument measurements require a captured snapshot.');
+    for (const capture of definition!.capture_requirements) {
+      // Original arguments are always present as a portable value in a valid record.
+      const available = capture === 'arguments-before' ||
+        capture === 'arguments-after' && record.arguments_after.status === 'captured' ||
+        capture === 'return' && record.completion.kind === 'return' && record.completion.result.status === 'captured' ||
+        capture === 'exception' && record.completion.kind === 'throw' && record.completion.thrown.status === 'captured';
+      if (!available) invalid(`Observed measurement requires a captured ${capture}: ${measurement.id}`);
+    }
   }
 }
 

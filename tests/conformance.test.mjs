@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, mkdirSync, cpSync, rmSync, readdirSync } from 'node:fs';
+import { readFileSync, mkdtempSync, mkdirSync, cpSync, rmSync, readdirSync, symlinkSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { conformanceProfileIdentity, executionRecordIdentity, sealConformanceProfile, sealExecutionRecord,
   validateConformanceProfile, validateExecutionRecord } from 'clearings/conformance';
 import { validateSpecification, sealSpecification, checkOperation } from '../dist/index.js';
@@ -43,6 +44,10 @@ test('profile coverage rejects stale references, missing obligations, and opaque
     p => { p.completion_operations.throw = 'missing'; },
     p => { p.completion_operations.throw = p.completion_operations.return; },
     p => { p.measurements.push(p.measurements[0]); },
+    p => { delete p.measurements[0].capture_requirements; },
+    p => { p.measurements[0].capture_requirements = []; },
+    p => { p.measurements[0].capture_requirements = ['arguments-before', 'arguments-before']; },
+    p => { p.measurements[0].capture_requirements = ['unknown-capture']; },
     p => { p.obligations.pop(); },
     p => { p.obligations[0].measurement_ids = ['absent']; },
     p => { p.obligations[0].rule_ids = ['missing']; },
@@ -118,6 +123,45 @@ test('measurements preserve missing information and reject incompatible completi
   }
 });
 
+test('independent measurements require their declared captures across completion classes', () => {
+  const completions = [
+    ...examples.map(example => example.completion),
+    { kind: 'return', result: { status: 'unavailable', reason: 'Capture failed.' } },
+    { kind: 'throw', thrown: { status: 'unavailable', reason: 'Capture failed.' } },
+    { kind: 'return', result: { status: 'captured', value: null } },
+    { kind: 'throw', thrown: { status: 'captured', value: null } },
+  ];
+  for (const completion of completions) {
+    const measured = editRecord(r => {
+      r.completion = completion;
+      r.measurements[r.measurements.findIndex(m => m.id === 'serialized-bytes')] = { id: 'serialized-bytes', status: 'observed', value: 42 };
+    });
+    if (completion.kind === 'return' && completion.result.status === 'captured') validateExecutionRecord(measured, profile, specification);
+    else assert.throws(() => validateExecutionRecord(measured, profile, specification), { code: 'INVALID_CONFORMANCE', message: /captured return: serialized-bytes/ });
+    // An independent reference constructed from original arguments needs no candidate return.
+    measured.measurements = measured.measurements.map(m => m.id === 'serialized-bytes'
+      ? { id: m.id, status: 'unobserved', reason: 'No return measurement.' }
+      : m.id === 'reference-required-bytes' ? { id: m.id, status: 'observed', value: 42 } : m);
+    validateExecutionRecord(sealExecutionRecord(measured, profile, specification), profile, specification);
+  }
+  // Multiple prerequisites are conjunctive, including for independent exception measurements.
+  const combined = editProfile(p => {
+    const measurement = p.measurements.find(m => m.id === 'serialized-bytes');
+    measurement.description = measurement.procedure = 'Synthetic independent check of exception and resulting arguments.';
+    measurement.capture_requirements = ['exception', 'arguments-after'];
+  });
+  for (const capturedException of [false, true]) for (const capturedAfter of [false, true]) {
+    const record = editRecord(r => {
+      r.profile_id = combined.artifact_id;
+      r.completion = { kind: 'throw', thrown: capturedException ? { status: 'captured', value: null } : { status: 'unavailable', reason: 'Missing exception.' } };
+      r.arguments_after = capturedAfter ? { status: 'captured', value: null } : { status: 'unavailable', reason: 'Missing snapshot.' };
+      r.measurements[r.measurements.findIndex(m => m.id === 'serialized-bytes')] = { id: 'serialized-bytes', status: 'observed', value: 42 };
+    });
+    if (capturedException && capturedAfter) validateExecutionRecord(record, combined, specification);
+    else assert.throws(() => validateExecutionRecord(record, combined, specification), { code: 'INVALID_CONFORMANCE' });
+  }
+});
+
 test('return conformance distinguishes reported byte counts and retains residual unknowns', () => {
   const digest = sha256(canonical({ id: 'root', purpose: 'Retained record' }));
   const record = { id: 'root', sha256: digest };
@@ -166,8 +210,21 @@ test('schema and authored artifact generation reproduce committed files', t => {
   execFileSync('python3', [join(directory, 'scripts/generate-conformance-schemas.py')]);
   for (const file of ['conformance-profile.v0.1.json', 'execution-record.v0.1.json']) assert.deepEqual(readFileSync(join(directory, 'schemas', file)), readFileSync(join('schemas', file)));
   const output = join(directory, 'authored');
-  execFileSync(process.execPath, ['scripts/build-conformance-examples.mjs', output]);
+  execFileSync(process.execPath, [fileURLToPath(new URL('../scripts/build-conformance-examples.mjs', import.meta.url)), output], { cwd: directory });
   for (const file of ['specification.json', 'profile.json', ...readdirSync(join(output, 'examples')).map(name => `examples/${name}`)]) {
     assert.deepEqual(readFileSync(join(output, file)), readFileSync(join('specifications/clearings/conformance', file)));
   }
+});
+
+test('authored artifact generation diagnoses missing baseline history before writing output', t => {
+  const directory = mkdtempSync(join(tmpdir(), 'clearings-conformance-no-history-')); t.after(() => rmSync(directory, { recursive: true, force: true }));
+  mkdirSync(join(directory, 'scripts'));
+  cpSync('scripts/build-conformance-examples.mjs', join(directory, 'scripts/build-conformance-examples.mjs'));
+  symlinkSync(fileURLToPath(new URL('../dist', import.meta.url)), join(directory, 'dist'), 'dir');
+  execFileSync('git', ['init', '--quiet', directory]);
+  const result = spawnSync(process.execPath, [join(directory, 'scripts/build-conformance-examples.mjs')], { encoding: 'utf8' });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Cannot read baseline source 9d1fede2a32c9575635e22aa7fabed1158224306:src\/specification\/context.ts/);
+  assert.match(result.stderr, /git fetch origin 9d1fede2a32c9575635e22aa7fabed1158224306/);
+  assert.equal(existsSync(join(directory, 'specifications')), false);
 });

@@ -59,7 +59,7 @@ The recorder retains original JSON invocation arguments before execution, an ava
 
 Before constructing an observation, the adapter must validate the required measurement types and availability. Partial v0.3 output records are not allowed. If required fields cannot be constructed, preserve the unmapped record and the mapping failure; do not insert plausible defaults. Unknown exception codes remain visible as unsupported or failing behavior. Outcome IDs must be selected from the observed completion and code, never copied from fixture expectations.
 
-The current artifact validator checks declared measurement types and basic completion consistency. It does not perform this mapping, verify its fidelity, or recompute measurements from raw captures. Those are adapter and evaluator responsibilities.
+The current artifact validator checks declared measurement types, explicit capture prerequisites, and completion consistency. Measurement origin does not determine every prerequisite: independently encoding a returned package still requires a captured return, while independently constructing a reference package requires only the original arguments. The validator does not perform the observation mapping, verify its fidelity, or recompute measurements from raw captures. Those are adapter and evaluator responsibilities.
 
 ## Scope and error precedence
 

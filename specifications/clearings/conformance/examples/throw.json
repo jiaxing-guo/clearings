@@ -12,7 +12,7 @@
       "example": "Illustrative arguments only; not an executable conformance fixture."
     }
   },
-  "artifact_id": "execution-record:7a4be4c67fcf52dfda19cceaf47beddf8cd63a1cca4d1924f3a828ae54eae48d",
+  "artifact_id": "execution-record:42355c3a0f2abca8af414e44b4804d7e9fb493b5c4401ad47d0cc79c51c92257",
   "case_id": "example:throw",
   "completion": {
     "kind": "throw",
@@ -121,7 +121,7 @@
     }
   ],
   "origin": "authored-example",
-  "profile_id": "conformance-profile:8c17eaaaf442742290603c9cf7f3cb35b4887736aec7b8ac48deddc0255af9dc",
+  "profile_id": "conformance-profile:59035434c0d1c72b4aa5b1c9905064cd8dfbfab83096da39fef159dce77fe362",
   "schema_version": "0.1.0",
   "specification_id": "specification:e987fb10d13fb6f1b6d25b9a55b4f295593305558c21054d7ced3ad1b020e5e7"
 }

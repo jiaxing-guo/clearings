@@ -37,7 +37,7 @@ The [profile schema](../../schemas/conformance-profile.v0.1.json) and [TypeScrip
 | `target` | Repository-relative module and exported API; recorded metadata, never a dynamic import instruction |
 | `scope` | Input-domain assumptions, explicit requirement IDs, and exclusions |
 | `completion_operations` | Distinct specification operation IDs for return and throw |
-| `measurements` | Unique IDs, value types, origins, and concrete measurement procedures |
+| `measurements` | Unique IDs, value types, origins, capture prerequisites, and concrete measurement procedures |
 | `obligations` | One entry for every declared requirement, with operation/rule/measurement references, method, mandatory flag, and limitation |
 
 Verification methods are `predicate`, `independent-check`, and `unresolved`. An independent check ID names a required procedure; it is not evidence that the procedure exists or has run. Requirement descriptions can be stronger than predicates, so a profile still requires semantic review even when references validate.
@@ -78,7 +78,9 @@ The [execution-record schema](../../schemas/execution-record.v0.1.json) requires
 
 The record digest uses the existing canonical serializer and includes all record fields except `artifact_id`. Consequently, a changed fixture, capture, measurement, limitation, or identity changes the record identity. Validation never resolves repository locators, opens claimed component files, loads an adapter, or verifies a signature.
 
-An observed measurement must match its profile value type. Return-derived measurements require a captured return; exception-derived measurements require a captured exception; resulting-argument measurements require a captured resulting snapshot. Other measurement fidelity, timing, and independent computation remain outside structural validation.
+An observed measurement must match its profile value type and satisfy every entry in its definition's `capture_requirements`. The permitted prerequisites are `arguments-before`, `arguments-after`, `return`, and `exception`; an empty list declares no capture prerequisite. Original arguments are always present in a valid record. The other prerequisites require a captured resulting snapshot, return value, or exception respectively. A direct capture source must appear in its measurement's prerequisites.
+
+Measurement origin and capture prerequisites are separate properties. `serialized-bytes` has `source: "independent"` and `capture_requirements: ["return"]`: independent computation still requires the candidate's captured return. `reference-required-bytes` and `expected-projection` require only `arguments-before` and may be observed without a candidate return. Missing prerequisites require an unobserved measurement. Validation checks these declarations; their semantic completeness, measurement fidelity, timing, and independent computation remain outside structural validation.
 
 ## Library interfaces
 
@@ -106,6 +108,8 @@ node scripts/build-conformance-examples.mjs
 node --test tests/conformance.test.mjs
 ```
 
-The schema generator reuses the existing v0.3 value-domain definitions. The authored-artifact builder writes only the new conformance directory and never invokes `assembleContext`. It reads the baseline implementation bytes from Git commit `9d1fede2a32c9575635e22aa7fabed1158224306` to identify the example target. Regeneration therefore requires that Git object; a checkout must fetch that baseline if its history is shallow. An optional output-directory argument lets the builder reproduce the artifacts elsewhere.
+The schema generator reuses the existing v0.3 value-domain definitions. The authored-artifact builder writes only the new conformance directory and never invokes `assembleContext`. It resolves the repository root and default output directory relative to its own file, so invocation does not depend on the working directory. An explicit relative output-directory argument resolves against the caller's working directory.
+
+The builder reads baseline implementation bytes from Git commit `9d1fede2a32c9575635e22aa7fabed1158224306` to identify the example target. Regeneration requires that Git object. If it is missing from a shallow checkout, run `git fetch origin 9d1fede2a32c9575635e22aa7fabed1158224306` from the repository root. A failed baseline read reports the required commit and source path before writing artifacts.
 
 Frozen experiments and the historical bootstrap specification are not rewritten. See [conformance semantics](../02-semantics/04-executable-conformance.md) for the observation mapping and acceptance boundary.

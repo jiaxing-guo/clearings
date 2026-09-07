@@ -119,6 +119,7 @@
           "id",
           "description",
           "source",
+          "capture_requirements",
           "type",
           "procedure"
         ],
@@ -140,6 +141,19 @@
               "independent",
               "instrumentation"
             ]
+          },
+          "capture_requirements": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "arguments-before",
+                "arguments-after",
+                "return",
+                "exception"
+              ]
+            },
+            "minItems": 0,
+            "uniqueItems": true
           },
           "type": {
             "$ref": "#/definitions/ValueType"

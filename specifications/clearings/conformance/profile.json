@@ -1,5 +1,5 @@
 {
-  "artifact_id": "conformance-profile:8c17eaaaf442742290603c9cf7f3cb35b4887736aec7b8ac48deddc0255af9dc",
+  "artifact_id": "conformance-profile:59035434c0d1c72b4aa5b1c9905064cd8dfbfab83096da39fef159dce77fe362",
   "completion_operations": {
     "return": "assembly-return",
     "throw": "assembly-throw"
@@ -7,6 +7,9 @@
   "kind": "conformance-profile",
   "measurements": [
     {
+      "capture_requirements": [
+        "arguments-before"
+      ],
       "description": "Extract root ID, available IDs, required edges, integer budget, artifact identity, and applicable decisions from the concrete invocation; resolve a valid alias against the input specification.",
       "id": "invocation",
       "procedure": "Extract root ID, available IDs, required edges, integer budget, artifact identity, and applicable decisions from the concrete invocation; resolve a valid alias against the input specification.",
@@ -61,6 +64,9 @@
       }
     },
     {
+      "capture_requirements": [
+        "arguments-before"
+      ],
       "description": "Hash complete canonical input operation records, retaining one entry per operation.",
       "id": "input-records",
       "procedure": "Hash complete canonical input operation records, retaining one entry per operation.",
@@ -81,6 +87,9 @@
       }
     },
     {
+      "capture_requirements": [
+        "return"
+      ],
       "description": "Hash every complete returned operation record; record count and IDs must agree with the raw returned operations array.",
       "id": "returned-records",
       "procedure": "Hash every complete returned operation record; record count and IDs must agree with the raw returned operations array.",
@@ -101,6 +110,9 @@
       }
     },
     {
+      "capture_requirements": [
+        "return"
+      ],
       "description": "Project every returned record and reported counter faithfully. Keep independent serialized bytes in the separate serialized-bytes measurement.",
       "id": "returned-context",
       "procedure": "Project every returned record and reported counter faithfully. Keep independent serialized bytes in the separate serialized-bytes measurement.",
@@ -165,6 +177,9 @@
       }
     },
     {
+      "capture_requirements": [
+        "return"
+      ],
       "description": "Encode the entire returned package as compact JSON plus one newline and count UTF-8 bytes without calling production serialization or accounting helpers.",
       "id": "serialized-bytes",
       "procedure": "Encode the entire returned package as compact JSON plus one newline and count UTF-8 bytes without calling production serialization or accounting helpers.",
@@ -174,6 +189,9 @@
       }
     },
     {
+      "capture_requirements": [
+        "arguments-before"
+      ],
       "description": "Independently construct the complete required package and solve the counter fixed point for the requested budget; do not use the candidate package or error to compute this value.",
       "id": "reference-required-bytes",
       "procedure": "Independently construct the complete required package and solve the counter fixed point for the requested budget; do not use the candidate package or error to compute this value.",
@@ -183,6 +201,9 @@
       }
     },
     {
+      "capture_requirements": [
+        "arguments-before"
+      ],
       "description": "Compute expected ordering and state/evidence selection from the original invocation using independently implemented reference procedures.",
       "id": "expected-projection",
       "procedure": "Compute expected ordering and state/evidence selection from the original invocation using independently implemented reference procedures.",
@@ -212,6 +233,9 @@
       }
     },
     {
+      "capture_requirements": [
+        "arguments-before"
+      ],
       "description": "Hash canonical arguments immediately before invocation.",
       "id": "arguments-before-digest",
       "procedure": "Hash canonical arguments immediately before invocation.",
@@ -221,6 +245,9 @@
       }
     },
     {
+      "capture_requirements": [
+        "arguments-after"
+      ],
       "description": "Hash canonical arguments immediately after return or exception; a missing snapshot remains unobserved.",
       "id": "arguments-after-digest",
       "procedure": "Hash canonical arguments immediately after return or exception; a missing snapshot remains unobserved.",
@@ -230,6 +257,9 @@
       }
     },
     {
+      "capture_requirements": [
+        "exception"
+      ],
       "description": "Read the actual exception code and optional structured required_bytes detail. An absent detail becomes an empty list, not a fabricated zero; do not parse the message.",
       "id": "exception",
       "procedure": "Read the actual exception code and optional structured required_bytes detail. An absent detail becomes an empty list, not a fabricated zero; do not parse the message.",
@@ -250,6 +280,7 @@
       }
     },
     {
+      "capture_requirements": [],
       "description": "Record effect IDs only if the monitor covers the declared boundary. No monitor is supplied in this PR; mark this measurement unobserved.",
       "id": "effects",
       "procedure": "Record effect IDs only if the monitor covers the declared boundary. No monitor is supplied in this PR; mark this measurement unobserved.",
