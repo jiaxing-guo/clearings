@@ -49,7 +49,7 @@ node dist/cli/main.js evidence scan.json --repository repo --id '<evidence-id>'
 
 Inspection validates model integrity. Add both `--scan scan.json` and `--repository repo` to revalidate source. The output reports `source_rechecked`. A repository path used only to protect `--out` does not imply a source recheck. JSON-only inspection does not authenticate the repository.
 
-The current report renderer accepts the historical v0.1 model. Report integration with v0.2 is the next task. Keep each presentation plan bound to its original artifact until that adaptation is explicit.
+The report renderer accepts both v0.1 and v0.2 models with matching presentation versions. New contract-bound reports and an actual-query walkthrough are described in [shared demos](SHARED_DEMOS.md). Historical plans remain bound to their original artifacts.
 
 ## Library API
 

@@ -10,3 +10,11 @@ coverage/
 runs/
 benchmark-checkouts/
 benchmarks/results/local/
+
+# Local documentation build
+website/.next/
+website/out/
+website/.source/
+website/next-env.d.ts
+website/*.tsbuildinfo
+website/public/demo/

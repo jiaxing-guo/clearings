@@ -1,0 +1,163 @@
+{
+  "artifact_id": "semantic:879ce0fdb5dee3f6f406bfa87e28f0d2f48b65fb58026479f9172bbd54b8c3f0",
+  "producer": {
+    "kind": "agent",
+    "name": "Codex (continuing implementation session)",
+    "model": null,
+    "input_tokens": null,
+    "output_tokens": null,
+    "usage_reason": "Exact model identifier and per-task usage are not exposed to this session."
+  },
+  "protocol": {
+    "fresh_inference_for_answers": true,
+    "isolated": false,
+    "blind": false,
+    "prior_project_and_source_exposure": true,
+    "expected_answers_supplied": false,
+    "independent": false
+  },
+  "trace": [
+    {
+      "event": "input",
+      "file": "input.json"
+    },
+    {
+      "event": "read-ir",
+      "view": "Union of both selected packs: assertion text and IDs, then state-access function fields, state concepts, and unknowns. No expected-answer file was opened."
+    },
+    {
+      "event": "answer",
+      "file": "answers.json",
+      "additional_evidence_requests": []
+    },
+    {
+      "event": "author-source-review",
+      "note": "After answers were recorded, the author reviewed the 11 attached pinned excerpts. The replacement answer now states finalized === false explicitly. This review source access is not part of the IR-only answer phase.",
+      "revision": "initial-answers.json → answers.json"
+    }
+  ],
+  "additional_evidence_requests": [],
+  "answers": [
+    {
+      "id": "head",
+      "answer": "HEAD changes the dispatch method argument to GET for the recursive call. The same Request object is retained, so this branch does not rewrite its method. The wrapper awaits that dispatch and constructs a new Response with a null body and the returned response as initialization. A failure in the wrapper rejects its Promise; these records do not establish a guaranteed local error callback for that failure.",
+      "record_ids": [
+        "claim:085248c3-81b0-4cad-986d-05fee44fe506",
+        "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb",
+        "claim:07e14fa8-6312-422f-920f-8de6ebf3639f",
+        "unknown:a3c78386-5043-4a92-92dc-a230cd2fa4c4"
+      ],
+      "unresolved": [
+        "Handling beyond the HEAD wrapper is outside this scope."
+      ]
+    },
+    {
+      "id": "missing-result",
+      "answer": "Exactly one handler bypasses compose. The code uses instanceof Promise to select the Promise path. For a direct non-Promise null or undefined, it calls not-found without checking finalized. That fallback lies outside the direct handler catch. Other non-nullish direct values pass through unchanged. In the Promise path, a truthy resolved value wins. A falsy resolved value uses c.res if finalized; otherwise it calls not-found. Rejections in that chain go to the private error handler. In composition, each handler result is awaited. A falsy result skips response assignment. If no handler is selected, not-found runs only when finalized is exactly false and the callback exists. After the runner completes, the application dispatcher requires a finalized context. If it is unfinalized, it raises an Error within its composed-path catch scope; otherwise it returns context.res.",
+      "record_ids": [
+        "claim:3c7751cc-3137-4636-a809-aa2a0ee43c9e",
+        "claim:3ebf7dad-d613-4994-9e9e-f59bb1d79317",
+        "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+        "claim:bf2950af-c55d-401a-9691-50acf819a3f2",
+        "claim:5b606765-089d-4722-8213-b675dde66bf5",
+        "claim:32832fda-23d3-411c-8392-6782b3634057",
+        "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+        "claim:6b5a8b30-ea42-46e9-880d-53099dbe6c56",
+        "claim:005c1ad3-dcc5-4f77-b36f-7ee4a420f22c",
+        "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc",
+        "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798",
+        "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+        "claim:7af68846-ae57-44cd-8e06-49e5596a226b",
+        "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d"
+      ],
+      "unresolved": [
+        "The configured fallback and error callback can have behavior not supplied here."
+      ]
+    },
+    {
+      "id": "replacement",
+      "answer": "In the composed frame, a truthy result is assigned only when finalized is exactly false or the result came through onError. A normal returned response therefore cannot replace a finalized response through this condition. A truthy onError result can. A falsy result skips this assignment. Direct use of the res setter can replace stored response state and sets finalized to true, including for undefined, if the setter reaches those final assignments. Header merging occurs first and can fail before that update. When old and new responses both exist, the setter copies the new response and merges old headers except old content-type; old set-cookie values replace the new cookie collection. Merely reading res can create response storage without finalizing it.",
+      "record_ids": [
+        "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+        "claim:1724bbd4-e936-42d3-a4cd-dabd7f2051aa",
+        "claim:d5e3c85d-4a1d-4991-87d8-bd5369c091ab",
+        "claim:7f3aafe6-876f-4b5a-9bac-698144b2adfc",
+        "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0",
+        "claim:b3a42479-5499-4eed-8d21-09169deaf214",
+        "claim:146991bd-ed7d-4ae1-8868-888a11dedf6e",
+        "claim:0b57c11a-c767-4573-8888-f3d49cbdf5c6",
+        "claim:161b91b9-a49b-44d3-a919-0758464c5af3"
+      ],
+      "unresolved": [
+        "Uninspected response and header helpers can have further effects or failures."
+      ]
+    },
+    {
+      "id": "repeated-next",
+      "answer": "Each runner starts its progression index at -1. A child dispatch with i less than or equal to the last dispatched index rejects with the repeated-next Error. This guard executes before that child frame enters its handler try/catch. It therefore bypasses its own handler catch. If an awaiting parent handler receives that rejection, the parent frame can handle the Error through onError when that callback exists. A propagated Error can also reach the application dispatcher. The code does not guarantee that a user handler awaits next, so an unawaited continuation is not guaranteed to reach the parent catch. A non-Error value or an Error without onError is rethrown by that frame.",
+      "record_ids": [
+        "claim:a4808f91-eb8a-4a52-aed2-72effb4a139e",
+        "claim:25d1b193-56d5-4ad3-8be1-b7bb1bb30d2b",
+        "claim:5a6d5b53-546a-4ad0-bb93-b028876d1d12",
+        "claim:d8b4fcf8-5869-40ef-a225-ff4e3d13bb99",
+        "claim:544dbd7e-acd1-4040-8b00-00b91c0e8f8d",
+        "claim:37cba2c0-333b-4a16-b503-49cd1b020ffa",
+        "claim:7af68846-ae57-44cd-8e06-49e5596a226b",
+        "unknown:19f56761-77f3-4f8c-a6b8-b80a5b89db8a",
+        "unknown:a4a48a8c-d7c2-4bb7-8983-6894c3565a05"
+      ],
+      "unresolved": [
+        "Whether a user handler awaits the continuation is unknown."
+      ]
+    },
+    {
+      "id": "finalization",
+      "answer": "The response-state concept links response storage and finalized across the functions. finalized starts false. The res getter can create storage and prepared headers without setting finalized. The res setter writes storage and sets finalized true if its earlier work succeeds. The direct-next callback awaits not-found and assigns through that setter. The Promise-result callback reads finalized to choose between stored response and fallback. The nested middleware dispatcher reads this state to decide whether to call not-found or assign a result. The composed-finalization wrapper checks it after the runner and returns context.res or raises an Error. The application dispatcher connects those paths. These records do not prove that all possible application writes are represented.",
+      "record_ids": [
+        "concept:15b53c40-cf7c-454c-bdab-3c1d77c4f3e3",
+        "function:e4635ca2-ec40-4091-ad54-7be94f4c32ba",
+        "function:9cb45f6c-5651-4587-89b1-acc02a5e7fb3",
+        "function:05c0f3fe-c675-4fc7-a1ef-4028fad0ac09",
+        "function:94ab9b66-e4ca-4f2d-83ce-ab7711ff65da",
+        "function:03f326d3-1de0-4410-808f-b673a2c4cfb3",
+        "function:379c4b0e-13f0-4689-aa90-c2c2d12abb62",
+        "function:066fbdc1-2b42-4637-b456-7e8f96224eb4",
+        "claim:6f5292fe-ce44-4891-9436-47ae3462ead0",
+        "claim:161b91b9-a49b-44d3-a919-0758464c5af3",
+        "claim:1d2eae5b-efd0-4237-8671-50d5055dafe0",
+        "claim:6a9ded64-407c-492b-904d-328bc04d3373",
+        "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+        "claim:fca39081-cbda-4fe7-8212-cf21fdc9a885",
+        "claim:e8b03c7a-182a-46d4-aeb8-bf4295b82798",
+        "claim:b962178a-0e5d-4e27-a698-38b48e7fdd3a",
+        "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d",
+        "claim:b3a42479-5499-4eed-8d21-09169deaf214"
+      ],
+      "unresolved": [
+        "User handlers can perform state changes outside this evidence scope."
+      ]
+    },
+    {
+      "id": "unknown-handlers",
+      "answer": "The call sites supply a context and continuation. They do not establish which application handler runs, its result, state changes, effects, failures, or whether it awaits next. The configured error and not-found callbacks also have unknown behavior; the local default implementations do not establish custom callback behavior. The outer next callback may be supplied by a caller and has unknown effects. Router internals and uninspected construction/response helpers also remain outside this scope. No purity, complete runtime call graph, or guaranteed application response follows from the absence of further recorded effects.",
+      "record_ids": [
+        "claim:f360cf06-1fc5-4b71-891d-37fdddbfeaa4",
+        "claim:eb4d17a9-fa20-4ecc-9768-52ed19a28dea",
+        "claim:f984c4f5-e5e0-4ce9-a0fc-0b8884e34883",
+        "claim:56b29496-273a-4a7a-ba0e-f3b36aff76a3",
+        "claim:a6cc6269-0179-4714-a6d7-a690685fd58b",
+        "unknown:c5b36898-0d54-4362-a89b-09549b8feed4",
+        "unknown:103c40c5-62e1-4e74-95ec-43efdf897f20",
+        "unknown:e636a574-910c-4417-9f46-31ea8e287929",
+        "unknown:81934ba3-ea7d-4e75-93b3-64dcc42a5c7e",
+        "unknown:eba96660-bcf1-4b91-9e5c-49c5d2765a07",
+        "unknown:f193b7f6-8caf-48c5-a3ef-a5b459f57a8e"
+      ],
+      "unresolved": [
+        "Handler selection, results, effects, failures, and await behavior.",
+        "Configured callback behavior.",
+        "Uninspected helper and router behavior."
+      ]
+    }
+  ]
+}

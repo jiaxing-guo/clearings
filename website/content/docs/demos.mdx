@@ -1,0 +1,46 @@
+---
+title: "One model, three demos"
+description: "Choose the view that fits your question."
+---
+
+All three demos identify the same v0.2 semantic artifact. The human reports keep their audience prose in separate reading plans. Their contract reference fields come directly from the model.
+
+## Start with purpose and outcomes
+
+The overview reports explain three main actions, a simple case, possible results, and important limits.
+
+- <DemoLink file="request-dispatch.overview.html">Request dispatch: overview</DemoLink>
+- <DemoLink file="middleware-composition.overview.html">Middleware composition: overview</DemoLink>
+
+Try to name a normal outcome and a failure outcome before opening the source details.
+
+## Follow the implementation
+
+The engineer guides start with one case, explain its mechanism with exact code, then show alternatives. Contract records and source audit come after the article.
+
+- <DemoLink file="request-dispatch.engineer.html">Request dispatch: engineer guide</DemoLink>
+- <DemoLink file="middleware-composition.engineer.html">Middleware composition: engineer guide</DemoLink>
+
+Find the direct/Promise fallback distinction. Then follow an implementation link to the canonical function contract. Partial source focuses are labeled and include expandable surrounding code.
+
+## Inspect the internal representation
+
+<DemoLink file="internal.html">Open the internal walkthrough</DemoLink>. It selects a behavior, follows a function and shared state, checks an assertion against source, and exports context. The relationship table is generated from the behavior record.
+
+- <DemoLink file="semantic.json">Semantic model</DemoLink>
+- <DemoLink file="walkthrough.json">Actual inspection and context output</DemoLink>
+- <DemoLink file="request-dispatch.context.json">Sample context pack</DemoLink>
+- <DemoLink file="agent/answers.json">Recorded agent answers and trace</DemoLink>
+- <DemoLink file="agent/review.json">Comprehension review</DemoLink>
+- <DemoLink file="review.json">Build and verification record</DemoLink>
+- <DemoLink file="clearings-shared-review.zip">Complete review package</DemoLink>
+
+The comprehension example uses six questions. It is a continuing-session author demonstration with prior project and source exposure. It is not blind or independent. Exact model and token usage are unavailable. No speed, token saving, or coding-performance claim is made.
+
+## Review the result
+
+The source is pinned to Hono commit `eebdf7be39abf0a872671835ccce0c4f03ea497a`. The model has 22 function contracts, four behavior contracts, 73 assertions, and ten critical unknowns over 11 source excerpts.
+
+Source checks establish citation integrity. Semantic assertions and the reading plans still need independent content review. Browser results from older reports are historical; consult the build record for checks performed on this bundle.
+
+The downloaded package includes HTML, Markdown, JSON, commands, hashes, and the Hono source notice. See [reproduction](/docs/quickstart#reproduce-the-three-demos).

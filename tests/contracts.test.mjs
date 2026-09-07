@@ -174,3 +174,75 @@ test('narrative text that resembles record IDs does not create query dependencie
   assert.equal(pack.records.functions[0].title, p.data.functions[0].title);
   assert(!pack.deferred_evidence_ids.some(id => id.includes('this is')));
 });
+
+test('canonical report references work on original shared-state and callback fixtures', async t => {
+  const d = setup(t);
+  const { renderCapability, createPresentationPlan, createSemanticWalkthrough } = await import('../dist/index.js');
+  const presentation = createPresentationPlan(d.model, 'select-response');
+  for (const format of ['html', 'markdown']) {
+    const page = renderCapability(d.model, 'select-response', { presentation, format });
+    assert(page.includes('Canonical contracts'));
+    assert(page.includes('function-00000000-0000-4000-8000-000000000005'));
+    assert(page.includes('external-callback'));
+    assert(page.includes('What effects can the supplied handler cause?'));
+    assert(page.includes('If a result is undefined'));
+  }
+  const view = createSemanticWalkthrough(d.model, { behavior: 'response-selection', scan: d.structural, repository: d.repository });
+  assert.equal(view.checks.source_rechecked, true);
+  assert(view.queries.every(q => q.checks.source_rechecked));
+  const modelPath=join(d.directory,'report-model.json'), scanPath=join(d.directory,'report-scan.json');
+  writeFileSync(modelPath,JSON.stringify(d.model)); writeFileSync(scanPath,JSON.stringify(d.structural));
+  const args=[join(root,'dist/cli/main.js'),'explain',modelPath,'--scan',scanPath,'--repository',d.repository,'--capability','select-response','--format','html'];
+  const result=spawnSync(process.execPath,args,{encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr); assert(result.stdout.includes('Canonical contracts'));
+  const blocked=spawnSync(process.execPath,[...args,'--out',join(d.repository,'report.html')],{encoding:'utf8'});
+  assert.notEqual(blocked.status,0); assert.equal(existsSync(join(d.repository,'report.html')),false);
+});
+
+test('reports retain valid contract selections larger than the agent context limit', async t => {
+  const d = setup(t);
+  const { createPresentationPlan, renderCapability, validatePresentationPlan } = await import('../dist/index.js');
+  const proposal = structuredClone(d.proposal);
+  for (let n = 100; n < 290; n++) proposal.data.claims.push({
+    ...proposal.data.claims[0], id: id('claim', n), text: `Condition ${n}: ` + 'x'.repeat(11500),
+  });
+  const model = importContractProposal(d.request, proposal, { replay: true });
+  assert.throws(() => createContextPack(model, { capability: 'select-response' }, { maxBytes: 2097152 }), { code: 'CONTEXT_BUDGET' });
+  const plan = createPresentationPlan(model, 'select-response');
+  validatePresentationPlan(plan, model, 'select-response');
+  const page = renderCapability(model, 'select-response', { presentation: plan, format: 'markdown' });
+  assert(page.includes(proposal.data.claims.at(-1).text));
+  assert(Buffer.byteLength(page) > 2097152);
+});
+
+test('reports follow component members and cross-component dependencies through cycles', async t => {
+  const d = setup(t);
+  const { createPresentationPlan, renderCapability, validatePresentationPlan } = await import('../dist/index.js');
+  const { reportContracts } = await import('../dist/presentation/plan.js');
+  const proposal = structuredClone(d.proposal);
+  for (const n of [20, 21, 22]) proposal.data.concepts.push({
+    ...proposal.data.concepts[1], id: id('concept', n), alias: `component-${n}`,
+  });
+  const member = (n, component, targets) => ({
+    ...structuredClone(proposal.data.functions[4]), id: id('function', n), alias: `member-${n}`, title: `Member ${n}`,
+    component_id: id('concept', component), unknown_ids: [id('unknown', 2)],
+    dependencies: targets.map(target => ({ target_id: id('function', target), claim_ids: [id('claim', 7)] })),
+  });
+  proposal.data.functions.push(member(20, 4, [21]), member(21, 20, []), member(22, 20, [23]), member(23, 21, [20]), member(24, 21, []), member(25, 22, []));
+  const model = importContractProposal(d.request, proposal, { replay: true });
+  const before = JSON.stringify(model);
+  const records = reportContracts(model, 'select-response');
+  assert.deepEqual(records.functions.map(fn => fn.id), [1, 2, 3, 4, 5, 20, 21, 22, 23, 24].map(n => id('function', n)));
+  assert(records.concepts.some(c => c.id === id('concept', 21)));
+  assert(!records.concepts.some(c => c.id === id('concept', 22)));
+  assert.equal(records.callables.length, d.model.data.request.data.callables.length);
+  assert.deepEqual(records.unknowns.map(u => u.id), [id('unknown', 1), id('unknown', 2)]);
+  const plan = createPresentationPlan(model, 'select-response');
+  validatePresentationPlan(plan, model, 'select-response');
+  for (const format of ['html', 'markdown']) {
+    const page = renderCapability(model, 'select-response', { presentation: plan, format });
+    for (const n of [20, 21, 22, 23, 24]) assert(page.includes(`id="${id('function', n).replace(':', '-')}"`));
+  }
+  assert.deepEqual(records, reportContracts(model, 'select-response'));
+  assert.equal(JSON.stringify(model), before);
+});

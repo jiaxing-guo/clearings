@@ -1,0 +1,539 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "presentation.v0.2.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "semantic_artifact_id",
+    "capability_id",
+    "origin",
+    "review_status",
+    "introduction",
+    "stages",
+    "cases",
+    "sequence",
+    "function_bindings",
+    "behavior_ids"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.2.0"
+    },
+    "semantic_artifact_id": {
+      "type": "string",
+      "pattern": "^semantic:[0-9a-f]{64}$"
+    },
+    "capability_id": {
+      "type": "string",
+      "pattern": "^concept:[0-9a-f-]+$"
+    },
+    "origin": {
+      "enum": [
+        "authored",
+        "derived"
+      ]
+    },
+    "review_status": {
+      "const": "unreviewed"
+    },
+    "introduction": {
+      "$ref": "#/definitions/Explanation"
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "title",
+          "summary",
+          "step_ids",
+          "claim_ids",
+          "notes",
+          "cautions"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,63}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          },
+          "summary": {
+            "$ref": "#/definitions/Explanation"
+          },
+          "step_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^step:[0-9a-f-]+$"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "claim_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^claim:[0-9a-f-]+$"
+            },
+            "minItems": 0,
+            "uniqueItems": true
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Explanation"
+            },
+            "minItems": 0
+          },
+          "cautions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Explanation"
+            },
+            "minItems": 0
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "question",
+          "answer",
+          "stage_keys"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,63}$"
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          },
+          "answer": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Explanation"
+            },
+            "minItems": 1
+          },
+          "stage_keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{0,63}$"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          }
+        }
+      },
+      "minItems": 0
+    },
+    "sequence": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "title",
+            "assumption",
+            "participants",
+            "messages"
+          ],
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "assumption": {
+              "$ref": "#/definitions/Explanation"
+            },
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "label"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{0,63}$"
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 28
+                  }
+                }
+              },
+              "minItems": 2,
+              "maxItems": 4
+            },
+            "messages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "from",
+                  "to",
+                  "label",
+                  "kind",
+                  "claim_ids"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{0,63}$"
+                  },
+                  "to": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9-]{0,63}$"
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 48
+                  },
+                  "kind": {
+                    "enum": [
+                      "call",
+                      "return"
+                    ]
+                  },
+                  "claim_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^claim:[0-9a-f-]+$"
+                    },
+                    "minItems": 1,
+                    "uniqueItems": true
+                  }
+                }
+              },
+              "minItems": 1,
+              "maxItems": 12
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "overview": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "purpose": {
+          "$ref": "#/definitions/Explanation"
+        },
+        "journey": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8000
+              },
+              "summary": {
+                "$ref": "#/definitions/Explanation"
+              }
+            },
+            "required": [
+              "title",
+              "summary"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 4
+        },
+        "example": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "description": {
+              "$ref": "#/definitions/Explanation"
+            }
+          },
+          "required": [
+            "title",
+            "description"
+          ]
+        },
+        "outcomes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8000
+              },
+              "description": {
+                "$ref": "#/definitions/Explanation"
+              },
+              "kind": {
+                "enum": [
+                  "normal",
+                  "fallback",
+                  "failure"
+                ]
+              }
+            },
+            "required": [
+              "title",
+              "description",
+              "kind"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 4
+        },
+        "limits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Explanation"
+          },
+          "minItems": 0,
+          "maxItems": 5
+        }
+      },
+      "required": [
+        "title",
+        "purpose",
+        "journey",
+        "example",
+        "outcomes",
+        "limits"
+      ]
+    },
+    "guide": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "introduction": {
+          "$ref": "#/definitions/Explanation"
+        },
+        "example": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8000
+            },
+            "description": {
+              "$ref": "#/definitions/Explanation"
+            }
+          },
+          "required": [
+            "title",
+            "description"
+          ]
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,63}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8000
+              },
+              "paragraphs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/Explanation"
+                },
+                "minItems": 1,
+                "maxItems": 8
+              },
+              "stage_keys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,63}$"
+                },
+                "minItems": 1,
+                "maxItems": 100,
+                "uniqueItems": true
+              },
+              "code": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "evidence_id": {
+                    "type": "string",
+                    "pattern": "^evidence:[0-9a-f]{64}$"
+                  },
+                  "start_line": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "end_line": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "evidence_id",
+                  "start_line",
+                  "end_line"
+                ]
+              }
+            },
+            "required": [
+              "key",
+              "title",
+              "paragraphs",
+              "stage_keys"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 10
+        },
+        "limits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Explanation"
+          },
+          "minItems": 0,
+          "maxItems": 5
+        }
+      },
+      "required": [
+        "title",
+        "introduction",
+        "example",
+        "sections",
+        "limits"
+      ]
+    },
+    "behavior_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^behavior:[0-9a-f-]+$"
+      }
+    },
+    "function_bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "function_id",
+          "stage_keys"
+        ],
+        "properties": {
+          "function_id": {
+            "type": "string",
+            "pattern": "^function:[0-9a-f-]+$"
+          },
+          "stage_keys": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Explanation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "claim_ids",
+        "unknown_indices"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        "claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^claim:[0-9a-f-]+$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "unknown_indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^evidence:[0-9a-f]{64}$"
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

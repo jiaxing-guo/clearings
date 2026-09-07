@@ -1,9 +1,9 @@
 # Clearings development instructions
 
-Read docs/PROTOTYPE_PLAN.md, docs/NEXT_IMPLEMENTATION_TASK.md, and docs/SEMANTIC_EXCHANGE.md before implementation. Read docs/SEMANTIC_CONTRACTS.md for the completed contract APIs. The next scope is shared report/demo integration and a recorded agent comprehension run. Historical plans and handoffs do not override the active task.
+Read docs/PROTOTYPE_PLAN.md, docs/NEXT_IMPLEMENTATION_TASK.md, and docs/SEMANTIC_EXCHANGE.md before implementation. Read docs/SEMANTIC_CONTRACTS.md for the completed contract APIs. Read docs/SHARED_DEMOS.md for the completed shared report integration, author comprehension example, and static documentation. Select subsequent implementation scope from the current user request. Historical plans and handoffs do not override the active task.
 
 - Product name: Clearings. Slogan: "Internal representation for AI coding".
-- Build one TypeScript library plus CLI. The first prototype needs PM and engineer reports plus an internal-representation demo over the same Hono model. Function and behavior contracts, inspection, and bounded context are implemented. The next task connects the reports and internal demo to that model. A code-change demo is optional and separate. Broader Hono coverage and other repositories/languages remain subsequent work.
+- Build one TypeScript library plus CLI. The first prototype needs PM and engineer reports plus an internal-representation demo over the same Hono model. Function and behavior contracts, inspection, and bounded context are implemented. The reports and internal demo now use that model. The documentation uses Fumadocs static export; CI, serving, and public access are deferred. A code-change demo is optional and separate. Broader Hono coverage and other repositories/languages remain subsequent work.
 - Keep repository evidence, semantic interpretation, and presentation as separate responsibilities. Reports and agent context consume the same canonical contracts; presentation data owns audience prose and layout.
 - Do not execute target-repository scripts, modify its source, or install its dependencies during a scan.
 - Keep compiler API objects and provider SDK types out of the semantic interchange model.

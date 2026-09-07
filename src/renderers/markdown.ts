@@ -1,9 +1,11 @@
+import { contractsMarkdown } from './contracts.js';
 import type { Explanation } from '../presentation/plan.js';
 import { anchor, markdown as escape, html as escapeHtml, codeFence, type Report } from './report.js';
 
 export function renderMarkdown(report: Report): string {
   const { model, plan, concept, claims, flow, claimLabels, steps, unknowns, relations, concepts, evidence, evidenceMap, entries } = report;
-  const { request, proposal } = model.data;
+  const { proposal } = model.data;
+  const { request } = report;
   const refs = (ids: string[]) => ids.map((id) => { const item = evidenceMap.get(id)!; return `[${escape(item.path)}:${item.start_line}](#${anchor(id)})`; }).join(', ');
   const claimRefs = (ids: string[]) => ids.map((id) => `[${claimLabels.get(id)}](#${anchor(id)})`).join(', ');
   const support = (item: Explanation) => [claimRefs(item.claim_ids), refs(item.evidence_ids ?? []), ...item.unknown_indices.map((index) => `[Scope note ${index + 1}](#unknown-${index})`)].filter(Boolean).join(' · ');
@@ -43,7 +45,7 @@ export function renderMarkdown(report: Report): string {
     ...(unknowns.length ? [] : ['No unknowns were supplied. This does not establish complete coverage.', '']),
     '<a id="claims"></a>', '', `## Claim inventory (${claims.length})`, '', 'Use this inventory to audit the explanation. The claim text is preserved from the semantic proposal.', '', '<details>', '<summary>Open all claims</summary>', '',
     ...claims.flatMap((claim) => [`<a id="${anchor(claim.id)}"></a>`, '', `**${claimLabels.get(claim.id)} · ${escape(claim.category)}:** ${escape(claim.text)} ${refs(claim.evidence_ids)}`, '']), '</details>', '',
-    '<a id="evidence"></a>', '', '## Evidence', '', 'Source text is preserved from the recorded request.', '');
+    ...(report.contractFunctions.length ? [contractsMarkdown(report)] : []), '<a id="evidence"></a>', '', '## Evidence', '', 'Source text is preserved from the recorded request.', '');
   for (const item of evidence) lines.push(`<a id="${anchor(item.id)}"></a>`, '', '<details>', `<summary>${escapeHtml(item.path)}:${item.start_line}–${item.end_line}</summary>`, '',
     `Evidence: \`${item.id}\`. Blob: \`${item.blob_sha}\`. UTF-8 bytes [${item.start_byte}, ${item.end_byte}).`, '', codeFence(item.text), '', '</details>', '');
   lines.push('<a id="report-details"></a>', '', '## Report details', '', '<details>', '<summary>Source, coverage, and record details</summary>', '',

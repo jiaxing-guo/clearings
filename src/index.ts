@@ -15,7 +15,7 @@ export { newSemanticId } from './semantics/identity.js';
 export { validateRequest, validateProposal, validateSemanticModel } from './semantics/validate.js';
 export { renderCapability } from './renderers/capability.js';
 export type { RenderCapabilityOptions } from './renderers/capability.js';
-export { createPresentationPlan, validatePresentationPlan, PRESENTATION_INSTRUCTIONS } from './presentation/plan.js';
+export { createPresentationPlan, validatePresentationPlan, PRESENTATION_INSTRUCTIONS, CONTRACT_PRESENTATION_INSTRUCTIONS } from './presentation/plan.js';
 export type * from './presentation/plan.js';
 
 export type * from './model/contracts.js';
@@ -23,3 +23,5 @@ export { createContractRequest, importContractProposal, CONTRACT_INSTRUCTIONS } 
 export { validateContractRequest, validateContractProposal, validateContractModel } from './contracts/validate.js';
 export { inspectSemantic, createContextPack, serializeContextPack } from './contracts/query.js';
 export type { SemanticSelection, Inspection, ContextPack, ContractRecords, EvidenceReference } from './contracts/query.js';
+export { createSemanticWalkthrough, renderSemanticWalkthrough } from './renderers/walkthrough.js';
+export type { SemanticWalkthrough } from './renderers/walkthrough.js';

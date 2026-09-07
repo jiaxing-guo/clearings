@@ -1,0 +1,32 @@
+---
+title: "Render a reading guide"
+description: "Use audience prose and canonical contracts together."
+---
+
+A reading plan chooses wording, examples, stage order, and source focuses. It binds to one semantic artifact and capability. Contract fields belong to the model.
+
+## Render an engineer guide
+
+```bash
+node dist/cli/main.js explain semantic.json --scan scan.json --repository repo --capability request-dispatch --presentation plan.json --audience engineer --format html --out engineer.html
+```
+
+Use `--format markdown` for Markdown. Use `--audience overview` for the shorter purpose-and-outcome view. An overview requires an authored overview in the plan. Without a plan, the engineer view derives a flow from existing records; it does not invent a shorter article.
+
+Add `--companion overview.html` to link a report in the same directory. Companion links must be local filenames.
+
+## Bind the right version
+
+Use `schemas/presentation.v0.2.json` and `CONTRACT_PRESENTATION_INSTRUCTIONS` for contract models. Its `function_bindings` place canonical functions beside reading stages; `behavior_ids` retain all capability behaviors. Historical v0.1 plans retain their authored function summaries and original model binding.
+
+The new schema rejects missing required or component-related function references and behaviors. Each flow step belongs to exactly one reading stage. Every selected assertion remains assigned to a stage. Unknown indices are scoped to the exact artifact; contract records retain stable unknown IDs.
+
+Changing the model requires an explicit new plan and prose review. Matching IDs do not prove that a new summary means the same thing.
+
+## Preserve source text
+
+Choose a coherent source range where practical. Label partial ranges and include surrounding recorded source. Do not add braces or ellipses as if they were source. The renderer escapes supplied text and preserves exact code.
+
+HTML reports contain their own assets. Native expandable sections work without JavaScript; open them manually when a link points into a closed section. Markdown viewers can differ in their support for expandable sections.
+
+The [demo page](/docs/demos) includes all four audience/format pairs.

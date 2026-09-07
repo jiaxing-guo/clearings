@@ -1,5 +1,7 @@
 # Capability reading guides
 
+The v0.2 contract integration is described in [shared demos](SHARED_DEMOS.md). Historical v0.1 plans keep their authored summaries; new plans generate contract reference fields directly from the model.
+
 Each capability has an overview and an engineer guide. Both are available as HTML and Markdown. They share the same semantic model and presentation plan.
 
 The Hono examples use authored presentation data over the existing recorded semantic model. They are not fresh model analysis. The user accepted the report presentation. Independent claim-support review remains pending.

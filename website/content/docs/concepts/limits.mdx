@@ -1,0 +1,32 @@
+---
+title: "Evidence, support, and limits"
+description: "Read the checks according to what they establish."
+---
+
+A report can look convincing while its interpretation is wrong. Clearings retains the distinction between evidence integrity and semantic support.
+
+| Check | Establishes | Does not establish |
+| --- | --- | --- |
+| Schema and link validation | Records are structurally consistent | English claims are true |
+| Artifact digest | Content matches its recorded identity | The repository is authentic |
+| Source revalidation | Anchors and bytes match the supplied pinned Git source | Citations entail the claims |
+| Claim-support review | A reviewer's assessment of claim meaning | Complete runtime coverage |
+| Reader acceptance | A reader accepts the presentation | Independent semantic verification |
+
+## Current analysis limits
+
+Scans use committed snapshots and a bounded TypeScript adapter. They do not run target code, load installed target dependencies, or perform a complete target typecheck. Supporting source and failed files remain explicit.
+
+Function contracts are proposed interpretations. External callbacks have unknown implementations. The model does not prove purity, complete control flow, semantic equivalence, or safe code changes.
+
+## Current demonstration limits
+
+The Hono example has author source review, with independent review pending. The comprehension answers come from the same continuing implementation session. Prior source exposure prevents a blind evaluation claim. Exact per-task model and token metadata are unavailable.
+
+Replay demonstrates reproducibility. Static report checks establish link and source fidelity. Neither result proves better comprehension or improved coding performance. No code-change benefit or efficiency comparison is claimed.
+
+## Output safety
+
+CLI writes require new files outside the target checkout and Git object store. Symlink and linked-worktree protections also apply. Library APIs return data; their callers own file writes and must enforce an appropriate output boundary.
+
+Source strings and proposal text are data. Reports escape them. Documentation MDX is trusted repository content; never compile an untrusted proposal as MDX.
