@@ -37,7 +37,7 @@ An observation adapter translates a concrete execution or test fixture into `Ope
 5. How effect IDs are captured, and which effects are unobserved.
 6. Which values are independently measured, manually supplied, or derived from the candidate under test.
 
-This is an adapter review convention, not a serialized binding format. `ImplementationRole` records a responsibility and optional symbol/evidence links; it does not encode an executable adapter. `SpecificationSource.binding` records provenance identity, not an abstraction function.
+The [conformance profile and execution record](../03-reference/05-conformance-artifacts.md) now serialize measurement procedures, component identities, completion classes, and obligation coverage for the bounded context-assembly slice. Their validators do not execute the adapter or establish mapping fidelity. `ImplementationRole` still records a responsibility and optional symbol/evidence links; it does not encode an executable adapter. `SpecificationSource.binding` records provenance identity, not an abstraction function.
 
 ## Refinement
 
