@@ -32,11 +32,14 @@ export function validateContextInvocation(value: unknown): asserts value is Cont
   try { validateSpecification(invocation.specification); }
   catch (error) {
     if (!(error instanceof ClearingsError) || error.code !== 'MISSING_REQUIRED_DEPENDENCY') throw error;
-    // The original schema and digest have been checked. Remove only absent required
-    // references in a copy so later validation errors cannot hide behind the first one.
+    // The original schema and digest have been checked. Relax only target presence
+    // in a validation copy, retaining dependencies for transition and uniqueness checks.
+    // The original invocation, including its required edges, is executed and recorded.
     const relaxed = structuredClone(invocation.specification!);
     const ids = new Set(relaxed.operations.map(operation => operation.id));
-    for (const operation of relaxed.operations) operation.dependencies = operation.dependencies.filter(dependency => dependency.requirement !== 'required' || ids.has(dependency.operation_id));
+    for (const operation of relaxed.operations) for (const dependency of operation.dependencies) {
+      if (dependency.requirement === 'required' && !ids.has(dependency.operation_id)) dependency.requirement = 'optional';
+    }
     sealSpecification(relaxed);
   }
 }

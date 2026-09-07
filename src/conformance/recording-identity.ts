@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { lstatSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { sha256 } from '../repository/source.js';
@@ -8,7 +8,13 @@ import type { ExecutionRecord } from './model.js';
 /** A conservative file-set manifest, not compiler provenance or a dynamic import proof. */
 export function componentFiles(root: string): { path: string; sha256: string }[] {
   const paths = ['package.json', 'package-lock.json'];
+  function checkDirectory(path: string): boolean {
+    const stat = lstatSync(join(root, path), { throwIfNoEntry: false });
+    if (stat && !stat.isDirectory()) throw new Error(`Expected a regular component directory: ${path}`);
+    return stat !== undefined;
+  }
   function walk(path: string): void {
+    if (!checkDirectory(path)) return;
     for (const entry of readdirSync(join(root, path), { withFileTypes: true })) {
       const child = `${path}/${entry.name}`;
       if (entry.isSymbolicLink()) throw new Error(`Component manifests require regular files: ${child}`);
@@ -16,10 +22,12 @@ export function componentFiles(root: string): { path: string; sha256: string }[]
       else if (/\.(?:ts|js|json)$/.test(child) && !child.endsWith('.d.ts')) paths.push(child);
     }
   }
-  for (const directory of ['src', 'dist', 'schemas']) if (existsSync(join(root, directory))) walk(directory);
-  for (const name of ['profile', 'specification']) {
-    const path = `specifications/clearings/conformance/${name}.json`;
-    if (existsSync(join(root, path))) paths.push(path);
+  for (const directory of ['src', 'dist', 'schemas']) walk(directory);
+  if (['specifications', 'specifications/clearings', 'specifications/clearings/conformance'].every(checkDirectory)) {
+    for (const name of ['profile', 'specification']) {
+      const path = `specifications/clearings/conformance/${name}.json`;
+      if (lstatSync(join(root, path), { throwIfNoEntry: false })) paths.push(path);
+    }
   }
   for (const path of ['src/specification/context.ts', 'dist/specification/context.js']) if (!paths.includes(path)) throw new Error(`Missing context-assembly component file: ${path}`);
   return paths.sort().map(path => {

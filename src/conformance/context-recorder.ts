@@ -60,6 +60,7 @@ async function execute(module_url: string, invocation: ContextAssemblyInvocation
 
 /** Execute only the declared synchronous context-assembly API in an isolated worker. */
 export async function recordContextAssembly(options: RecordContextAssemblyOptions): Promise<ExecutionRecord> {
+  if (!options || typeof options !== 'object' || Array.isArray(options)) throw new ClearingsError('INVALID_CONFORMANCE', 'Expected a recording options object.');
   const timeout = options.timeout_ms ?? 10000;
   if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000) throw new ClearingsError('INVALID_CONFORMANCE', 'timeout_ms must be an integer from 1 through 60000.');
   if (typeof options.case_id !== 'string' || !/^[a-zA-Z][a-zA-Z0-9_.:/-]*$/.test(options.case_id)) throw new ClearingsError('INVALID_CONFORMANCE', 'Expected a nonempty canonical case_id.');

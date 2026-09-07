@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, rmSync, renameSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -85,6 +85,32 @@ test('actual exceptions preserve structured details and observed validation prec
         assert.deepEqual(error.details, record.completion.thrown.value.details); assert.equal(error.exitCode, 2); return true;
       });
     } else assert.deepEqual(measurement(record, 'exception').value.required_bytes, []);
+  }
+});
+
+test('missing required targets retain dependency records used by transitions', async () => {
+  const input = invocation();
+  input.specification.operations[0].dependencies[0].operation_id = 'absent';
+  input.specification.operations[0].outcomes[0].transitions.push({ operation_id: 'absent', handoff: 'invoke', description: 'Invoke the required dependency.' });
+  input.specification.artifact_id = specificationIdentity(input.specification);
+  const original = structuredClone(input);
+  const record = await recordContextAssembly({ case_id: 'missing-transition-target', invocation: input });
+  assert.equal(record.completion.kind, 'throw');
+  assert.equal(record.completion.thrown.value.code, 'MISSING_REQUIRED_DEPENDENCY');
+  assert.deepEqual(record.arguments_before, original); assert.deepEqual(record.arguments_after.value, original); assert.deepEqual(input, original);
+  assert.equal(mapContextAssemblyObservation(record).observation.outcome, 'thrown-dependency');
+  assert(!checked(record).checks.some(check => check.verdict === 'fail'));
+});
+
+test('missing required targets do not conceal other invalid specification references', async () => {
+  for (const defect of ['duplicate-dependency', 'undeclared-transition', 'missing-evidence']) {
+    const input = invocation(), root = input.specification.operations[0];
+    root.dependencies[0].operation_id = 'absent';
+    if (defect === 'duplicate-dependency') root.dependencies.push(structuredClone(root.dependencies[0]));
+    if (defect === 'undeclared-transition') root.outcomes[0].transitions.push({ operation_id: 'undeclared', handoff: 'invoke', description: 'Invalid transition.' });
+    if (defect === 'missing-evidence') root.outcomes[0].evidence_ids.push('missing-source');
+    input.specification.artifact_id = specificationIdentity(input.specification);
+    await assert.rejects(recordContextAssembly({ case_id: defect, invocation: input }), { code: 'INVALID_SPECIFICATION' });
   }
 });
 
@@ -179,4 +205,30 @@ test('invalid recording requests and out-of-domain inputs fail before invocation
   const invalid = invocation(); invalid.specification.name = 'Stale identity';
   await assert.rejects(recordContextAssembly({ case_id: 'stale-input', invocation: invalid }), { code: 'INVALID_SPECIFICATION' });
   await assert.rejects(recordContextAssembly({ case_id: 'missing-checkout', invocation: invocation(), implementation_root: '/does-not-exist-clearings' }), { code: 'CONFORMANCE_PREPARATION' });
+});
+
+test('non-object recording requests use the conformance error contract', async () => {
+  for (const value of [null, undefined, true, 1, 'request', [], () => {}]) {
+    await assert.rejects(recordContextAssembly(value), { code: 'INVALID_CONFORMANCE' });
+  }
+});
+
+test('component bindings reject symlinked and non-directory manifest ancestors', async t => {
+  for (const path of ['src', 'dist', 'schemas', 'specifications', 'specifications/clearings', 'specifications/clearings/conformance']) {
+    const root = candidate(t, 'export function assembleContext() { return null; }');
+    mkdirSync(join(root, 'schemas'));
+    mkdirSync(join(root, 'specifications/clearings/conformance'), { recursive: true });
+    writeFileSync(join(root, 'specifications/clearings/conformance/profile.json'), '{}');
+    const outside = mkdtempSync(join(tmpdir(), 'clearings-recorder-external-'));
+    t.after(() => rmSync(outside, { recursive: true, force: true }));
+    renameSync(join(root, path), join(outside, 'component'));
+    symlinkSync(join(outside, 'component'), join(root, path), 'dir');
+    await assert.rejects(recordContextAssembly({ case_id: 'symlinked-component', invocation: invocation(), implementation_root: root }), { code: 'CONFORMANCE_PREPARATION' });
+  }
+  for (const kind of ['file', 'dangling-symlink']) {
+    const root = candidate(t, 'export function assembleContext() { return null; }');
+    if (kind === 'file') writeFileSync(join(root, 'schemas'), '{}');
+    else symlinkSync(join(root, 'absent'), join(root, 'schemas'), 'dir');
+    await assert.rejects(recordContextAssembly({ case_id: kind, invocation: invocation(), implementation_root: root }), { code: 'CONFORMANCE_PREPARATION' });
+  }
 });
