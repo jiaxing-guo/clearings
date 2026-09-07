@@ -8,7 +8,7 @@ Review findings received fixes across both PR branches, including the later docu
 
 The context specification now rejects unrelated operations through bounded reachability. Enum equality rejects out-of-domain literals and disjoint domains. Operation guarantees run without a supplied outcome, and selected inspection supports the full 2 MiB limit. Report destinations retain their canonical IDs.
 
-The rebuilt bootstrap has nine actual Clearings cases, nine authored Hono cases, and eight rejected output faults. The shared report checks 11 exact source excerpts and 1,938 fragment links. Main reading text and semantic JSON are unchanged; canonical destination links were corrected. Both archives pass exact-content checks. Fumadocs builds and checks 27 pages, 2,398 links, and three search queries, with no external assets. Package inspection finds 159 files and excludes site and experiment assets. Browser interaction was not rerun.
+The rebuilt bootstrap has nine actual Clearings cases, nine authored Hono cases, and eight rejected output faults. The shared report checks 11 exact source excerpts and 1,938 fragment links. Main reading text and semantic JSON are unchanged; canonical destination links were corrected. Both archives pass exact-content checks. Fumadocs builds and checks 27 pages, 2,398 links, and three search queries, with no external HTML asset references. Package inspection finds 159 files and excludes site and experiment assets. Browser interaction was not rerun.
 
 Local references now require quantifier scope. Reports retain complete cross-component references without the agent transport limit. Collection predicates validate enum literals on both sides, and context scenario reports require the original specification and recompute results. Documentation checks reject external asset authorities, require Python 3.9+ as `python3`, and use that command in generated reproduction instructions. The complete 109-test library run passes; the final documentation build and archive checks also pass.
 
@@ -47,7 +47,7 @@ The bootstrap package includes exact working-source spans and hashes in `impleme
 | Accepted reports and original source model | All eight reports and model remain byte-identical |
 | Shared bundle static checks | Seven HTML pages; 1,836 fragment links; hashes and source/scenario bindings valid |
 | Bootstrap static checks | Three HTML pages; 78 fragment links; hashes and bindings valid |
-| Fumadocs export and check | 27 HTML pages; 2,292 links; three local search queries; zero external assets |
+| Fumadocs export and check | 27 HTML pages; 2,292 links; three local search queries; zero external HTML asset references |
 | Package inspection | 156 files; typed runtime/schema included; demos and site excluded |
 
 The static documentation check used `/clearings-semantic`. The first export omitted the new guide; a clean rebuild produced it and the final check passed. Browser interaction and the root-path export were not rerun in this pass.

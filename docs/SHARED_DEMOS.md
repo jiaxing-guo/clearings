@@ -48,7 +48,7 @@ npm run docs:build
 npm run docs:check
 ```
 
-The site exports to `website/out`. Default base path: `/clearings-semantic`. Use `DOCS_BASE_PATH=''` for a root export. The build clears generated Next.js/output directories so removed routes and earlier prefixes cannot survive. Search loads `search-index.json` and runs locally. Fonts and other assets are local. No deployment, GitHub Pages setup, CI, public access, or package publication is included.
+The site exports to `website/out`. Default base path: `/clearings-semantic`. Use `DOCS_BASE_PATH=''` for a root export. The build clears generated Next.js/output directories so removed routes and earlier prefixes cannot survive. Search loads `search-index.json` and runs locally. The build bundles fonts and static assets. The export check examines HTML asset links; it does not inspect CSS or JavaScript references and does not establish that the site makes no network requests. No deployment, GitHub Pages setup, CI, public access, or package publication is included.
 
 The README now starts with purpose and a runnable inspection. CONTRIBUTING.md covers useful changes, setup, source-backed review, writing, and PR conventions. [Writing approach](DOCUMENTATION_STYLE.md) records how the requested examples informed the structure.
 
@@ -58,7 +58,7 @@ The README now starts with purpose and a runnable inspection. CONTRIBUTING.md co
 - Contract replay verifies all 11 retained excerpts and leaves target bytes unchanged. Repeated report renders are identical.
 - Historical semantic replay remains intact. The original model and all eight audience reports are byte-identical after the adapter change.
 - The demo static check validates file hashes, all local report links, 1,792 fragment links, source/agent bindings, keyboard code attributes, and local assets.
-- The Fumadocs static export checks 22 HTML pages, 2,113 links, and three search queries at both `/clearings-semantic` and the empty root path, with no external assets. Build-time examples use the actual library and CLI.
+- The Fumadocs static export checks 22 HTML pages, 2,113 links, and three search queries at both `/clearings-semantic` and the empty root path, with no external HTML asset references. Build-time examples use the actual library and CLI.
 - Package inspection excludes the website and benchmark assets and includes the new presentation schema.
 
 Browser policy blocked local preview earlier in this session. No alternate browser route was used. Desktop/mobile interaction, focus behavior, and reader comprehension still need review. Static checks do not establish those results. Independent claim-support review remains pending. The prototype is technically integrated and reviewable; stronger reliability and coding-benefit claims remain outside this result.
@@ -67,7 +67,7 @@ Browser policy blocked local preview earlier in this session. No alternate brows
 
 The documentation development command now prepares demo assets before starting the server. Download archives are checked for exact membership and content before they enter the site, and the exported copy is checked again. The walkthrough selects evidence from the chosen assertion and state from the chosen function. Source replay retains all 11 excerpts, leaves the target unchanged, and preserves the eight accepted reports. Typecheck and all 61 library tests pass.
 
-The static documentation build passes. The exported site check covers 22 HTML pages, 2,113 links, and three local search queries. It also verifies the downloadable archive and finds no external assets.
+The static documentation build passes. The exported site check covers 22 HTML pages, 2,113 links, and three local search queries. It also verifies the downloadable archive and finds no external HTML asset references.
 
 A follow-up source review found missing destination IDs in canonical contract fields. Failure and dependency destinations now retain their canonical IDs and link to the relevant function in HTML and Markdown. The main reading text and semantic model remain unchanged. All six focused presentation tests pass, and the rebuilt bundle passes source, link, and archive checks.
 
@@ -78,3 +78,5 @@ Verification of the final documentation fixes: the archive regression test passe
 ### Complete report selection
 
 Reports select canonical records directly, without the byte limit used for agent context. Related component functions and their required references are added until the selection stops changing. Component membership still does not establish runtime call order. Regression checks cover a valid report larger than 2 MiB and dependencies that cross components and form a cycle.
+
+The static check reports `external_html_asset_references` and its exact scope. CSS imports, inline styles, and JavaScript requests are outside that check. Its result must not be used as proof that every resource is local. A full browser network audit remains separate work.
