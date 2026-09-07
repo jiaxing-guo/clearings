@@ -152,6 +152,7 @@ export function expressionType(expr: Expression, environment: TypeEnvironment): 
     case 'literal': return literalType(expr.value);
     case 'opaque': return { kind: 'boolean' };
     case 'ref': {
+      if (expr.root === 'local' && environment.local === undefined) invalid('Local reference requires a quantifier scope.');
       let type: ValueType = expr.root === 'local' ? { kind: 'record', fields: environment.local ?? {} } : environment[expr.root];
       for (const key of expr.path) {
         if (type.kind !== 'record' || !own(type.fields, key)) invalid(`Unknown typed reference ${expr.root}.${expr.path.join('.')}.`);
@@ -178,6 +179,8 @@ export function expressionType(expr: Expression, environment: TypeEnvironment): 
       const element = expr.kind === 'subset' ? (value as Extract<ValueType, { kind: 'list' }>).element : value;
       if (!compatible(collection.element, element)) invalid('Collection operands have incompatible element types.');
       if (expr.value.kind === 'literal' && !literalWithinEnumDomains(expr.value.value, expr.kind === 'subset' ? collection : collection.element)) invalid('Collection literal is outside the declared enum domain.');
+      if (expr.collection.kind === 'literal' && Array.isArray(expr.collection.value)
+        && !expr.collection.value.every(item => literalWithinEnumDomains(item, element))) invalid('Collection literal is outside the declared enum domain.');
       return { kind: 'boolean' };
     }
     case 'reachable': {

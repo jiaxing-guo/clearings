@@ -346,3 +346,39 @@ test('context scenario reports recheck changed observations and reject an unboun
  const bad=structuredClone(scenario);bad.observation.output=3;assert.throws(()=>renderOperationContext(pack,{scenarios:[bad],specification:sealed}),{code:'INVALID_OBSERVATION'});
  assert(renderSpecification(sealed,'scenario',{scenarios:[scenario]}).includes('**fail**'));
 });
+
+test('local references require a scope and nested quantifiers retain outer bindings', () => {
+  const make = predicate => { const op = operation('scoped'); op.outcomes[0].when = predicate; return graph([op]); };
+  for (const predicate of [eq(ref('local'), literal({})), eq(ref('local', 'x'), literal(1))]) {
+    assert.throws(() => make(predicate), { code: 'SPEC_TYPE' });
+  }
+  const every = (variable, collection, predicate) => ({ kind: 'every', variable, collection, predicate });
+  const nested = every('outer', literal([1]), every('inner', literal([1]), eq(ref('local', 'inner'), ref('local', 'outer'))));
+  const whole = every('item', literal([1]), eq(ref('local'), literal({ item: 1 })));
+  for (const predicate of [nested, whole]) {
+    const spec = make(predicate);
+    assert.equal(checkOperation(spec, 'scoped', { input: {}, before: {}, after: {}, outcome: 'outcome:scoped', output: null, effects: [] }).verdict, 'pass');
+  }
+  // A binding is unavailable in its collection and after its predicate ends.
+  assert.throws(() => make(every('x', ref('local', 'x'), literal(true))), { code: 'SPEC_TYPE' });
+  assert.throws(() => make({ kind: 'all', terms: [whole, eq(ref('local'), literal({ item: 1 }))] }), { code: 'SPEC_TYPE' });
+});
+
+test('literal collections respect enum domains in scalar and nested value operands', () => {
+  const enumType = { kind: 'enum', values: ['ready'] };
+  const make = (valueType, kind, collection) => {
+    const op = operation('literal-collection'); op.inputs = { value: valueType };
+    op.outcomes[0].when = { kind, collection: literal(collection), value: ref('input', 'value') };
+    return graph([op]);
+  };
+  for (const [type, kind, good, bad] of [
+    [enumType, 'contains', ['ready'], ['raedy']],
+    [{ kind: 'list', element: enumType }, 'subset', ['ready'], ['ready', 'raedy']],
+    [{ kind: 'record', fields: { mode: enumType } }, 'contains', [{ mode: 'ready' }], [{ mode: 'raedy' }]],
+    [{ kind: 'list', element: enumType }, 'contains', [['ready']], [['raedy']]],
+  ]) {
+    assert.throws(() => make(type, kind, bad), { code: 'SPEC_TYPE' });
+    assert.doesNotThrow(() => make(type, kind, good));
+    assert.doesNotThrow(() => make(type, kind, []));
+  }
+});

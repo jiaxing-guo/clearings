@@ -131,4 +131,4 @@ Equality validation rejects impossible enum comparisons, including misspelled st
 
 Collection predicates also reject literals outside their declared enum element domains. For reports with scenarios, `renderOperationContext` requires `options.specification`, validates the context against it, and recomputes each result from its observation. `renderSpecification` supplies this binding automatically. A cached result never determines the displayed verdict.
 
-The final combined verification after the follow-up reviews passes typecheck and all 105 library tests. The static documentation rebuild passes for 27 pages and 2,398 links; both archive checks pass. The first-submission experiment scores and frozen inputs are unchanged.
+The final combined verification after the follow-up reviews passes typecheck and all 109 library tests. The static documentation rebuild passes for 27 pages and 2,398 links; both archive checks pass. The first-submission experiment scores and frozen inputs are unchanged.
