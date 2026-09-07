@@ -1,0 +1,212 @@
+File: src/specification/sequence.ts
+import { canonical } from '../repository/inventory.js';
+import { ClearingsError } from '../model/types.js';
+import { assertPortable, validateSpecification } from './validate.js';
+import { checkOperation } from './check.js';
+import type { JsonValue, OperationCheck, OperationObservation, SemanticSpecification, Verdict } from './model.js';
+
+export interface SequenceStep {
+  operation: string;
+  observation: OperationObservation;
+}
+
+export interface SequenceOptions {
+  stateIds: readonly string[];
+}
+
+export interface ContinuityCheck {
+  from_index: number;
+  to_index: number;
+  state_id: string;
+  verdict: Verdict;
+  reason: string | null;
+}
+
+export interface OperationSequenceCheck {
+  schema_version: '0.3.0';
+  command: 'check-sequence';
+  artifact_id: string;
+  perspective: SemanticSpecification['perspective'];
+  state_ids: string[];
+  steps: { index: number; operation_id: string; result: OperationCheck }[];
+  continuity: ContinuityCheck[];
+  verdict: Verdict;
+  interpretation: 'supplied-observations-only';
+  acceptance: 'proposed';
+}
+
+const own = (value: object, key: string): boolean => Object.prototype.hasOwnProperty.call(value, key);
+const combine = (verdicts: Verdict[]): Verdict => verdicts.includes('fail') ? 'fail' : verdicts.includes('unknown') ? 'unknown' : 'pass';
+
+function validateSteps(value: unknown): asserts value is readonly SequenceStep[] {
+  // Structural validation must happen before any wrapper fields are read.
+  assertPortable(value);
+  if (!Array.isArray(value) || value.length < 1 || value.length > 256) {
+    throw new ClearingsError('INVALID_OBSERVATION', 'Steps must be an array containing 1 to 256 records.');
+  }
+  for (const step of value) {
+    if (!step || typeof step !== 'object' || Array.isArray(step) || Object.keys(step).length !== 2
+      || !own(step, 'operation') || !own(step, 'observation')) {
+      throw new ClearingsError('INVALID_OBSERVATION', 'Each step must contain exactly operation and observation.');
+    }
+  }
+}
+
+function validateOptions(value: unknown, spec: SemanticSpecification): string[] {
+  if (value === undefined) throw new ClearingsError('INVALID_ARGUMENTS', 'Sequence options are required.');
+  // assertPortable is intentionally before reading stateIds. Primitive JSON values pass
+  // this check and are then rejected as argument-shape errors.
+  assertPortable(value);
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 1
+    || !own(value, 'stateIds') || !Array.isArray((value as { stateIds?: unknown }).stateIds)) {
+    throw new ClearingsError('INVALID_ARGUMENTS', 'Options must contain only a stateIds array.');
+  }
+  const stateIds = (value as { stateIds: unknown[] }).stateIds;
+  if (stateIds.some(id => typeof id !== 'string')) throw new ClearingsError('INVALID_ARGUMENTS', 'stateIds must contain strings.');
+  const known = new Set(spec.states.map(state => state.id));
+  if (stateIds.some(id => !known.has(id as string))) throw new ClearingsError('INVALID_ARGUMENTS', 'stateIds must name known state fields.');
+  return [...new Set(stateIds as string[])].sort();
+}
+
+function selectedValue(observation: OperationObservation, phase: 'before' | 'after', stateId: string): JsonValue | undefined {
+  const map = observation[phase];
+  return map !== undefined && own(map, stateId) ? map[stateId] : undefined;
+}
+
+export function checkOperationSequence(
+  spec: SemanticSpecification,
+  steps: readonly SequenceStep[],
+  options: SequenceOptions,
+): OperationSequenceCheck {
+  validateSpecification(spec);
+  validateSteps(steps);
+  const stateIds = validateOptions(options, spec);
+
+  const checkedSteps: { index: number; operation_id: string; result: OperationCheck }[] = [];
+  for (let index = 0; index < steps.length; index += 1) {
+    const step = steps[index]!;
+    if (typeof step.operation !== 'string') throw new ClearingsError('INVALID_SELECTION', 'Operation selection must be a string.');
+    const result = checkOperation(spec, step.operation, step.observation);
+    checkedSteps.push({ index, operation_id: result.operation_id, result });
+  }
+
+  const continuity: ContinuityCheck[] = [];
+  for (let index = 0; index + 1 < checkedSteps.length; index += 1) {
+    const earlier = steps[index]!.observation;
+    const later = steps[index + 1]!.observation;
+    for (const stateId of stateIds) {
+      const before = selectedValue(earlier, 'after', stateId);
+      const after = selectedValue(later, 'before', stateId);
+      if (before === undefined || after === undefined) {
+        continuity.push({ from_index: index, to_index: index + 1, state_id: stateId, verdict: 'unknown', reason: 'Both adjacent state values are required.' });
+      } else if (canonical(before) === canonical(after)) {
+        continuity.push({ from_index: index, to_index: index + 1, state_id: stateId, verdict: 'pass', reason: null });
+      } else {
+        continuity.push({ from_index: index, to_index: index + 1, state_id: stateId, verdict: 'fail', reason: 'Adjacent state values differ.' });
+      }
+    }
+  }
+  return {
+    schema_version: '0.3.0', command: 'check-sequence', artifact_id: spec.artifact_id, perspective: spec.perspective,
+    state_ids: [...stateIds], steps: checkedSteps, continuity, verdict: combine([...checkedSteps.map(step => step.result.verdict), ...continuity.map(item => item.verdict)]),
+    interpretation: 'supplied-observations-only', acceptance: 'proposed',
+  };
+}
+
+File: src/index.ts
+export { inventory } from './repository/inventory.js';
+export type { InventoryOptions } from './repository/inventory.js';
+export { readTarget, fetchTarget } from './repository/target.js';
+export type { Target } from './repository/target.js';
+export { validateInventory } from './model/validate.js';
+export * from './model/types.js';
+export { scan } from './analysis/scan.js';
+export type { ScanOptions } from './analysis/scan.js';
+export { validateScan, readEvidence, createEvidenceReader } from './model/validate-scan.js';
+export type * from './model/structural.js';
+export type * from './model/semantic.js';
+export { createProposalRequest, importProposal } from './semantics/exchange.js';
+export type { RequestOptions } from './semantics/exchange.js';
+export { newSemanticId } from './semantics/identity.js';
+export { validateRequest, validateProposal, validateSemanticModel } from './semantics/validate.js';
+export { renderCapability } from './renderers/capability.js';
+export type { RenderCapabilityOptions } from './renderers/capability.js';
+export { createPresentationPlan, validatePresentationPlan, PRESENTATION_INSTRUCTIONS, CONTRACT_PRESENTATION_INSTRUCTIONS } from './presentation/plan.js';
+export type * from './presentation/plan.js';
+
+export type * from './model/contracts.js';
+export { createContractRequest, importContractProposal, CONTRACT_INSTRUCTIONS } from './contracts/exchange.js';
+export { validateContractRequest, validateContractProposal, validateContractModel } from './contracts/validate.js';
+export { inspectSemantic, createContextPack, serializeContextPack } from './contracts/query.js';
+export type { SemanticSelection, Inspection, ContextPack, ContractRecords, EvidenceReference } from './contracts/query.js';
+export { createSemanticWalkthrough, renderSemanticWalkthrough } from './renderers/walkthrough.js';
+export type { SemanticWalkthrough } from './renderers/walkthrough.js';
+
+export type * from './specification/model.js';
+export { sealSpecification, validateSpecification, specificationIdentity } from './specification/validate.js';
+export { evaluateExpression, formatExpression } from './specification/expressions.js';
+export { checkOperation, resolveOperation } from './specification/check.js';
+export { checkOperationSequence } from './specification/sequence.js';
+export type { SequenceStep, SequenceOptions, ContinuityCheck, OperationSequenceCheck } from './specification/sequence.js';
+export { assembleContext, serializeOperationContext, validateOperationContext, describeOperation } from './specification/context.js';
+export type { OperationContext } from './specification/context.js';
+export { renderSpecification, renderOperationContext } from './specification/render.js';
+export type { SpecificationReportOptions, CheckedScenario } from './specification/render.js';
+export { createContractBrief, serializeContractBrief } from './contracts/brief.js';
+export type { ContractBrief } from './contracts/brief.js';
+
+File: tests/sequence.test.mjs
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { sealSpecification, checkOperation, checkOperationSequence, ClearingsError } from '../dist/index.js';
+
+const sourceText = 'sequence test';
+const source = { id: 'source', origin: 'requirement', locator: 'test', text: sourceText, sha256: createHash('sha256').update(sourceText).digest('hex'), binding: null };
+const spec = sealSpecification({
+  schema_version: '0.3.0', kind: 'specification', artifact_id: '', name: 'test', perspective: 'intended',
+  provenance: { author: 'test', origin: 'user-directed-design', review: 'proposed', notes: ['test'] },
+  sources: [source], states: [
+    { id: 'value', name: 'Value', description: 'A value.', scope: 'request', type: { kind: 'integer' }, evidence_ids: ['source'] },
+    { id: 'constructor', name: 'Constructor', description: 'A value.', scope: 'request', type: { kind: 'integer' }, evidence_ids: ['source'] },
+  ], operations: [{
+    id: 'operation:test', alias: 'test', name: 'Test', purpose: 'Test.', inputs: {}, output: { kind: 'null' }, reads: ['value'], writes: ['value'],
+    frame: 'partial', effects: { completeness: 'partial', allowed: [] }, outcome_policy: 'exclusive', coverage: 'complete',
+    outcomes: [{ id: 'ok', description: 'Ok.', when: { kind: 'literal', value: true }, ensures: [], updates: [], effects: [], transitions: [], evidence_ids: ['source'] }],
+    guarantees: [], dependencies: [], implementations: [], decisions: [], evidence_ids: ['source'],
+  }],
+});
+const observation = (before, after) => ({ input: {}, before, outcome: 'ok', after });
+
+test('checks steps and selected adjacent state in normalized order', () => {
+  const steps = [
+    { operation: 'test', observation: observation({ value: 0, constructor: 1 }, { value: 2, constructor: 1 }) },
+    { operation: 'operation:test', observation: observation({ value: 2, constructor: 1 }, { value: 3, constructor: 1 }) },
+  ];
+  const report = checkOperationSequence(spec, steps, { stateIds: ['constructor', 'value', 'value'] });
+  assert.deepEqual(report.state_ids, ['constructor', 'value']);
+  assert.equal(report.steps.length, 2);
+  assert.equal(report.continuity.length, 2);
+  assert.deepEqual(report.continuity.map(item => item.verdict), ['pass', 'pass']);
+  assert.equal(report.verdict, 'pass');
+  assert.deepEqual(report.steps[0].result, checkOperation(spec, 'test', steps[0].observation));
+});
+
+test('reports unknown for an absent selected value and preserves failed steps', () => {
+  const report = checkOperationSequence(spec, [
+    { operation: 'test', observation: observation({ value: 0 }, { value: 2 }) },
+    { operation: 'test', observation: observation({ value: 9 }, { value: 3 }) },
+  ], { stateIds: ['value'] });
+  assert.equal(report.continuity[0].verdict, 'fail');
+  assert.equal(report.verdict, 'fail');
+  assert.equal(report.steps.length, 2);
+  const unknown = checkOperationSequence(spec, [{ operation: 'test', observation: observation({}, {}) }, { operation: 'test', observation: observation({}, {}) }], { stateIds: ['value'] });
+  assert.equal(unknown.continuity[0].verdict, 'unknown');
+});
+
+test('rejects malformed wrappers with the required error codes', () => {
+  assert.throws(() => checkOperationSequence(spec, [{ operation: 1, observation: observation({}, {}) }], { stateIds: [] }), error => error instanceof ClearingsError && error.code === 'INVALID_SELECTION');
+  assert.throws(() => checkOperationSequence(spec, [], { stateIds: [] }), error => error instanceof ClearingsError && error.code === 'INVALID_OBSERVATION');
+  assert.throws(() => checkOperationSequence(spec, [{ operation: 'test', observation: observation({}, {}) }], { stateIds: ['missing'] }), error => error instanceof ClearingsError && error.code === 'INVALID_ARGUMENTS');
+});
+

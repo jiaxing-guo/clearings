@@ -1,0 +1,7 @@
+src/index.ts:35:export { analyzeImpact } from './specification/impact.js';
+src/index.ts:36:export type { ImpactOptions, ImpactEntry, ImpactReport } from './specification/impact.js';
+src/specification/impact.ts:5:export interface ImpactOptions { mode?: 'required' | 'all' }
+src/specification/impact.ts:13:export interface ImpactReport {
+src/specification/impact.ts:45:export function analyzeImpact(
+src/specification/impact.ts:48:  options?: ImpactOptions,
+src/specification/impact.ts:49:): ImpactReport {

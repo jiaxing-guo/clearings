@@ -5,7 +5,7 @@ import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symli
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { inventory, readTarget, validateInventory } from '../dist/index.js';
+import { inventory, scan, readTarget, validateInventory, validateScan } from '../dist/index.js';
 import { snapshotId } from '../dist/repository/inventory.js';
 
 const project = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -159,6 +159,20 @@ test('CLI errors use documented envelopes and exit codes', (t) => {
   assert.equal(invoke('inventory', dir).status, 1);
   assert.equal(invoke('--help').status, 0);
   assert.match(invoke('--version').stdout, /^0\.0\.1\n$/);
+});
+
+test('legacy inventory and scan validation accept valid JSON files above 64 MiB', t => {
+  const { repo, dir } = fixture(t);
+  const artifacts = [inventory({ repository: repo }), scan({ repository: repo })];
+  validateInventory(artifacts[0]); validateScan(artifacts[1]);
+  for (const artifact of artifacts) {
+    const path = join(dir, `${artifact.command}.json`);
+    writeFileSync(path, JSON.stringify(artifact) + ' '.repeat(64 * 1024 * 1024));
+    const result = invoke('validate', path);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(JSON.parse(result.stdout).data.valid, true);
+    rmSync(path);
+  }
 });
 
 test('target reader strips evaluation metadata and CLI enforces manifest scope', (t) => {

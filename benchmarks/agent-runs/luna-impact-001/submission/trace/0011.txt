@@ -1,0 +1,18 @@
+
+> clearings-semantic@0.0.1 test
+> npm run build && node --test tests/*.test.mjs
+
+
+> clearings-semantic@0.0.1 build
+> tsc
+
+ℹ tests 0
+ℹ suites 0
+ℹ pass 0
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7.54672
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.

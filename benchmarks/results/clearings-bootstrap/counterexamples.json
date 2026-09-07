@@ -1,0 +1,1449 @@
+[
+  {
+    "name": "Dropped required dependency",
+    "method": "injected incorrect observation; not a separately compiled faulty implementation",
+    "observation": {
+      "input": {
+        "root_id": "root",
+        "available_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "required_edges": [
+          {
+            "from": "root",
+            "to": "left"
+          },
+          {
+            "from": "root",
+            "to": "right"
+          },
+          {
+            "from": "left",
+            "to": "shared"
+          },
+          {
+            "from": "right",
+            "to": "shared"
+          },
+          {
+            "from": "shared",
+            "to": "root"
+          }
+        ],
+        "applicable_decisions": [
+          {
+            "operation_id": "shared",
+            "decision_id": "decision:callback"
+          }
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "max_bytes": 65536
+      },
+      "before": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "after": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "effects": [],
+      "outcome": "outcome:ready",
+      "output": {
+        "kind": "ready",
+        "included_ids": [
+          "root"
+        ],
+        "omitted_ids": [
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "decision_ids": [
+          "decision:callback"
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "used_bytes": 5972,
+        "required_bytes": 5972
+      }
+    },
+    "result": {
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
+      "operation_id": "assemble-context",
+      "perspective": "intended",
+      "verdict": "fail",
+      "applicable_outcome_ids": [
+        "outcome:ready",
+        "outcome:budget"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Return the complete required context package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:ready-tag",
+          "description": "The result identifies a ready package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:root-present",
+          "description": "The selected operation is present.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:no-duplicates",
+          "description": "Each operation appears once, including in cycles.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:known-records",
+          "description": "Every included operation comes from this specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:dependency-closure",
+          "description": "Every required dependency of an included operation is included.",
+          "verdict": "fail",
+          "reason": null
+        },
+        {
+          "id": "rule:minimal-closure",
+          "description": "Every included operation is reachable from the selected root through required edges.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:retain-decisions",
+          "description": "Every open decision on an included operation remains available.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:omissions",
+          "description": "Every available operation is included or explicitly omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:disjoint-omissions",
+          "description": "An included operation is never listed as omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:identity",
+          "description": "The package identifies the input specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:within-budget",
+          "description": "The exact serialized output fits its byte budget.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:required-size",
+          "description": "This required-only package reports its full size as required.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "effects:allowed",
+          "description": "Only effects allowed for this outcome occur.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "frame:model-digest",
+          "description": "Preserve Input model content digest.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "analysis-limit: Does this context improve a fresh agent coding task?",
+        "analysis-limit: Does the implementation select the least required closure?",
+        "analysis-limit: Does used_bytes equal actual UTF-8 serialization?"
+      ]
+    }
+  },
+  {
+    "name": "Lost blocking decision",
+    "method": "injected incorrect observation; not a separately compiled faulty implementation",
+    "observation": {
+      "input": {
+        "root_id": "root",
+        "available_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "required_edges": [
+          {
+            "from": "root",
+            "to": "left"
+          },
+          {
+            "from": "root",
+            "to": "right"
+          },
+          {
+            "from": "left",
+            "to": "shared"
+          },
+          {
+            "from": "right",
+            "to": "shared"
+          },
+          {
+            "from": "shared",
+            "to": "root"
+          }
+        ],
+        "applicable_decisions": [
+          {
+            "operation_id": "shared",
+            "decision_id": "decision:callback"
+          }
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "max_bytes": 65536
+      },
+      "before": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "after": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "effects": [],
+      "outcome": "outcome:ready",
+      "output": {
+        "kind": "ready",
+        "included_ids": [
+          "root",
+          "left",
+          "right",
+          "shared"
+        ],
+        "omitted_ids": [
+          "optional"
+        ],
+        "decision_ids": [],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "used_bytes": 5972,
+        "required_bytes": 5972
+      }
+    },
+    "result": {
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
+      "operation_id": "assemble-context",
+      "perspective": "intended",
+      "verdict": "fail",
+      "applicable_outcome_ids": [
+        "outcome:ready",
+        "outcome:budget"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Return the complete required context package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:ready-tag",
+          "description": "The result identifies a ready package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:root-present",
+          "description": "The selected operation is present.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:no-duplicates",
+          "description": "Each operation appears once, including in cycles.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:known-records",
+          "description": "Every included operation comes from this specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:dependency-closure",
+          "description": "Every required dependency of an included operation is included.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:minimal-closure",
+          "description": "Every included operation is reachable from the selected root through required edges.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:retain-decisions",
+          "description": "Every open decision on an included operation remains available.",
+          "verdict": "fail",
+          "reason": null
+        },
+        {
+          "id": "rule:omissions",
+          "description": "Every available operation is included or explicitly omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:disjoint-omissions",
+          "description": "An included operation is never listed as omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:identity",
+          "description": "The package identifies the input specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:within-budget",
+          "description": "The exact serialized output fits its byte budget.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:required-size",
+          "description": "This required-only package reports its full size as required.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "effects:allowed",
+          "description": "Only effects allowed for this outcome occur.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "frame:model-digest",
+          "description": "Preserve Input model content digest.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "analysis-limit: Does this context improve a fresh agent coding task?",
+        "analysis-limit: Does the implementation select the least required closure?",
+        "analysis-limit: Does used_bytes equal actual UTF-8 serialization?"
+      ]
+    }
+  },
+  {
+    "name": "Included an unrelated available operation",
+    "method": "injected incorrect observation; not a separately compiled faulty implementation",
+    "observation": {
+      "input": {
+        "root_id": "root",
+        "available_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "required_edges": [
+          {
+            "from": "root",
+            "to": "left"
+          },
+          {
+            "from": "root",
+            "to": "right"
+          },
+          {
+            "from": "left",
+            "to": "shared"
+          },
+          {
+            "from": "right",
+            "to": "shared"
+          },
+          {
+            "from": "shared",
+            "to": "root"
+          }
+        ],
+        "applicable_decisions": [
+          {
+            "operation_id": "shared",
+            "decision_id": "decision:callback"
+          }
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "max_bytes": 65536
+      },
+      "before": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "after": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "effects": [],
+      "outcome": "outcome:ready",
+      "output": {
+        "kind": "ready",
+        "included_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "omitted_ids": [],
+        "decision_ids": [
+          "decision:callback"
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "used_bytes": 5972,
+        "required_bytes": 5972
+      }
+    },
+    "result": {
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
+      "operation_id": "assemble-context",
+      "perspective": "intended",
+      "verdict": "fail",
+      "applicable_outcome_ids": [
+        "outcome:ready",
+        "outcome:budget"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Return the complete required context package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:ready-tag",
+          "description": "The result identifies a ready package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:root-present",
+          "description": "The selected operation is present.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:no-duplicates",
+          "description": "Each operation appears once, including in cycles.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:known-records",
+          "description": "Every included operation comes from this specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:dependency-closure",
+          "description": "Every required dependency of an included operation is included.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:minimal-closure",
+          "description": "Every included operation is reachable from the selected root through required edges.",
+          "verdict": "fail",
+          "reason": null
+        },
+        {
+          "id": "rule:retain-decisions",
+          "description": "Every open decision on an included operation remains available.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:omissions",
+          "description": "Every available operation is included or explicitly omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:disjoint-omissions",
+          "description": "An included operation is never listed as omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:identity",
+          "description": "The package identifies the input specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:within-budget",
+          "description": "The exact serialized output fits its byte budget.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:required-size",
+          "description": "This required-only package reports its full size as required.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "effects:allowed",
+          "description": "Only effects allowed for this outcome occur.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "frame:model-digest",
+          "description": "Preserve Input model content digest.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "analysis-limit: Does this context improve a fresh agent coding task?",
+        "analysis-limit: Does the implementation select the least required closure?",
+        "analysis-limit: Does used_bytes equal actual UTF-8 serialization?"
+      ]
+    }
+  },
+  {
+    "name": "Wrong artifact identity",
+    "method": "injected incorrect observation; not a separately compiled faulty implementation",
+    "observation": {
+      "input": {
+        "root_id": "root",
+        "available_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "required_edges": [
+          {
+            "from": "root",
+            "to": "left"
+          },
+          {
+            "from": "root",
+            "to": "right"
+          },
+          {
+            "from": "left",
+            "to": "shared"
+          },
+          {
+            "from": "right",
+            "to": "shared"
+          },
+          {
+            "from": "shared",
+            "to": "root"
+          }
+        ],
+        "applicable_decisions": [
+          {
+            "operation_id": "shared",
+            "decision_id": "decision:callback"
+          }
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "max_bytes": 65536
+      },
+      "before": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "after": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "effects": [],
+      "outcome": "outcome:ready",
+      "output": {
+        "kind": "ready",
+        "included_ids": [
+          "root",
+          "left",
+          "right",
+          "shared"
+        ],
+        "omitted_ids": [
+          "optional"
+        ],
+        "decision_ids": [
+          "decision:callback"
+        ],
+        "artifact_id": "wrong",
+        "used_bytes": 5972,
+        "required_bytes": 5972
+      }
+    },
+    "result": {
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
+      "operation_id": "assemble-context",
+      "perspective": "intended",
+      "verdict": "fail",
+      "applicable_outcome_ids": [
+        "outcome:ready",
+        "outcome:budget"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Return the complete required context package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:ready-tag",
+          "description": "The result identifies a ready package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:root-present",
+          "description": "The selected operation is present.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:no-duplicates",
+          "description": "Each operation appears once, including in cycles.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:known-records",
+          "description": "Every included operation comes from this specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:dependency-closure",
+          "description": "Every required dependency of an included operation is included.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:minimal-closure",
+          "description": "Every included operation is reachable from the selected root through required edges.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:retain-decisions",
+          "description": "Every open decision on an included operation remains available.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:omissions",
+          "description": "Every available operation is included or explicitly omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:disjoint-omissions",
+          "description": "An included operation is never listed as omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:identity",
+          "description": "The package identifies the input specification.",
+          "verdict": "fail",
+          "reason": null
+        },
+        {
+          "id": "rule:within-budget",
+          "description": "The exact serialized output fits its byte budget.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:required-size",
+          "description": "This required-only package reports its full size as required.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "effects:allowed",
+          "description": "Only effects allowed for this outcome occur.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "frame:model-digest",
+          "description": "Preserve Input model content digest.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "analysis-limit: Does this context improve a fresh agent coding task?",
+        "analysis-limit: Does the implementation select the least required closure?",
+        "analysis-limit: Does used_bytes equal actual UTF-8 serialization?"
+      ]
+    }
+  },
+  {
+    "name": "Duplicate operation",
+    "method": "injected incorrect observation; not a separately compiled faulty implementation",
+    "observation": {
+      "input": {
+        "root_id": "root",
+        "available_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "required_edges": [
+          {
+            "from": "root",
+            "to": "left"
+          },
+          {
+            "from": "root",
+            "to": "right"
+          },
+          {
+            "from": "left",
+            "to": "shared"
+          },
+          {
+            "from": "right",
+            "to": "shared"
+          },
+          {
+            "from": "shared",
+            "to": "root"
+          }
+        ],
+        "applicable_decisions": [
+          {
+            "operation_id": "shared",
+            "decision_id": "decision:callback"
+          }
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "max_bytes": 65536
+      },
+      "before": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "after": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "effects": [],
+      "outcome": "outcome:ready",
+      "output": {
+        "kind": "ready",
+        "included_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "shared"
+        ],
+        "omitted_ids": [
+          "optional"
+        ],
+        "decision_ids": [
+          "decision:callback"
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "used_bytes": 5972,
+        "required_bytes": 5972
+      }
+    },
+    "result": {
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
+      "operation_id": "assemble-context",
+      "perspective": "intended",
+      "verdict": "fail",
+      "applicable_outcome_ids": [
+        "outcome:ready",
+        "outcome:budget"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Return the complete required context package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:ready-tag",
+          "description": "The result identifies a ready package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:root-present",
+          "description": "The selected operation is present.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:no-duplicates",
+          "description": "Each operation appears once, including in cycles.",
+          "verdict": "fail",
+          "reason": null
+        },
+        {
+          "id": "rule:known-records",
+          "description": "Every included operation comes from this specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:dependency-closure",
+          "description": "Every required dependency of an included operation is included.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:minimal-closure",
+          "description": "Every included operation is reachable from the selected root through required edges.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:retain-decisions",
+          "description": "Every open decision on an included operation remains available.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:omissions",
+          "description": "Every available operation is included or explicitly omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:disjoint-omissions",
+          "description": "An included operation is never listed as omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:identity",
+          "description": "The package identifies the input specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:within-budget",
+          "description": "The exact serialized output fits its byte budget.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:required-size",
+          "description": "This required-only package reports its full size as required.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "effects:allowed",
+          "description": "Only effects allowed for this outcome occur.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "frame:model-digest",
+          "description": "Preserve Input model content digest.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "analysis-limit: Does this context improve a fresh agent coding task?",
+        "analysis-limit: Does the implementation select the least required closure?",
+        "analysis-limit: Does used_bytes equal actual UTF-8 serialization?"
+      ]
+    }
+  },
+  {
+    "name": "Claimed success above the budget",
+    "method": "injected incorrect observation; not a separately compiled faulty implementation",
+    "observation": {
+      "input": {
+        "root_id": "root",
+        "available_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "required_edges": [
+          {
+            "from": "root",
+            "to": "left"
+          },
+          {
+            "from": "root",
+            "to": "right"
+          },
+          {
+            "from": "left",
+            "to": "shared"
+          },
+          {
+            "from": "right",
+            "to": "shared"
+          },
+          {
+            "from": "shared",
+            "to": "root"
+          }
+        ],
+        "applicable_decisions": [
+          {
+            "operation_id": "shared",
+            "decision_id": "decision:callback"
+          }
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "max_bytes": 65536
+      },
+      "before": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "after": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "effects": [],
+      "outcome": "outcome:ready",
+      "output": {
+        "kind": "ready",
+        "included_ids": [
+          "root",
+          "left",
+          "right",
+          "shared"
+        ],
+        "omitted_ids": [
+          "optional"
+        ],
+        "decision_ids": [
+          "decision:callback"
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "used_bytes": 65537,
+        "required_bytes": 5972
+      }
+    },
+    "result": {
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
+      "operation_id": "assemble-context",
+      "perspective": "intended",
+      "verdict": "fail",
+      "applicable_outcome_ids": [
+        "outcome:ready",
+        "outcome:budget"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Return the complete required context package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:ready-tag",
+          "description": "The result identifies a ready package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:root-present",
+          "description": "The selected operation is present.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:no-duplicates",
+          "description": "Each operation appears once, including in cycles.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:known-records",
+          "description": "Every included operation comes from this specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:dependency-closure",
+          "description": "Every required dependency of an included operation is included.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:minimal-closure",
+          "description": "Every included operation is reachable from the selected root through required edges.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:retain-decisions",
+          "description": "Every open decision on an included operation remains available.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:omissions",
+          "description": "Every available operation is included or explicitly omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:disjoint-omissions",
+          "description": "An included operation is never listed as omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:identity",
+          "description": "The package identifies the input specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:within-budget",
+          "description": "The exact serialized output fits its byte budget.",
+          "verdict": "fail",
+          "reason": null
+        },
+        {
+          "id": "rule:required-size",
+          "description": "This required-only package reports its full size as required.",
+          "verdict": "fail",
+          "reason": null
+        },
+        {
+          "id": "effects:allowed",
+          "description": "Only effects allowed for this outcome occur.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "frame:model-digest",
+          "description": "Preserve Input model content digest.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "analysis-limit: Does this context improve a fresh agent coding task?",
+        "analysis-limit: Does the implementation select the least required closure?",
+        "analysis-limit: Does used_bytes equal actual UTF-8 serialization?"
+      ]
+    }
+  },
+  {
+    "name": "Changed input model",
+    "method": "injected incorrect observation; not a separately compiled faulty implementation",
+    "observation": {
+      "input": {
+        "root_id": "root",
+        "available_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "required_edges": [
+          {
+            "from": "root",
+            "to": "left"
+          },
+          {
+            "from": "root",
+            "to": "right"
+          },
+          {
+            "from": "left",
+            "to": "shared"
+          },
+          {
+            "from": "right",
+            "to": "shared"
+          },
+          {
+            "from": "shared",
+            "to": "root"
+          }
+        ],
+        "applicable_decisions": [
+          {
+            "operation_id": "shared",
+            "decision_id": "decision:callback"
+          }
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "max_bytes": 65536
+      },
+      "before": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "after": {
+        "model-digest": "changed"
+      },
+      "effects": [],
+      "outcome": "outcome:ready",
+      "output": {
+        "kind": "ready",
+        "included_ids": [
+          "root",
+          "left",
+          "right",
+          "shared"
+        ],
+        "omitted_ids": [
+          "optional"
+        ],
+        "decision_ids": [
+          "decision:callback"
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "used_bytes": 5972,
+        "required_bytes": 5972
+      }
+    },
+    "result": {
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
+      "operation_id": "assemble-context",
+      "perspective": "intended",
+      "verdict": "fail",
+      "applicable_outcome_ids": [
+        "outcome:ready",
+        "outcome:budget"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Return the complete required context package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:ready-tag",
+          "description": "The result identifies a ready package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:root-present",
+          "description": "The selected operation is present.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:no-duplicates",
+          "description": "Each operation appears once, including in cycles.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:known-records",
+          "description": "Every included operation comes from this specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:dependency-closure",
+          "description": "Every required dependency of an included operation is included.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:minimal-closure",
+          "description": "Every included operation is reachable from the selected root through required edges.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:retain-decisions",
+          "description": "Every open decision on an included operation remains available.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:omissions",
+          "description": "Every available operation is included or explicitly omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:disjoint-omissions",
+          "description": "An included operation is never listed as omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:identity",
+          "description": "The package identifies the input specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:within-budget",
+          "description": "The exact serialized output fits its byte budget.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:required-size",
+          "description": "This required-only package reports its full size as required.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "effects:allowed",
+          "description": "Only effects allowed for this outcome occur.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "frame:model-digest",
+          "description": "Preserve Input model content digest.",
+          "verdict": "fail",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "analysis-limit: Does this context improve a fresh agent coding task?",
+        "analysis-limit: Does the implementation select the least required closure?",
+        "analysis-limit: Does used_bytes equal actual UTF-8 serialization?"
+      ]
+    }
+  },
+  {
+    "name": "Included operation also listed as omitted",
+    "method": "injected incorrect observation; not a separately compiled faulty implementation",
+    "observation": {
+      "input": {
+        "root_id": "root",
+        "available_ids": [
+          "root",
+          "left",
+          "right",
+          "shared",
+          "optional"
+        ],
+        "required_edges": [
+          {
+            "from": "root",
+            "to": "left"
+          },
+          {
+            "from": "root",
+            "to": "right"
+          },
+          {
+            "from": "left",
+            "to": "shared"
+          },
+          {
+            "from": "right",
+            "to": "shared"
+          },
+          {
+            "from": "shared",
+            "to": "root"
+          }
+        ],
+        "applicable_decisions": [
+          {
+            "operation_id": "shared",
+            "decision_id": "decision:callback"
+          }
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "max_bytes": 65536
+      },
+      "before": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "after": {
+        "model-digest": "50a95bd688f8eaa21e761cff85b05ac12e9696b3c32bf21e558192e73d82091c"
+      },
+      "effects": [],
+      "outcome": "outcome:ready",
+      "output": {
+        "kind": "ready",
+        "included_ids": [
+          "root",
+          "left",
+          "right",
+          "shared"
+        ],
+        "omitted_ids": [
+          "optional",
+          "shared"
+        ],
+        "decision_ids": [
+          "decision:callback"
+        ],
+        "artifact_id": "specification:bed319137b79b4c54ad4784bf55352f3f0c6f9851165bb7122eaab9cd9b3d9f0",
+        "used_bytes": 5972,
+        "required_bytes": 5972
+      }
+    },
+    "result": {
+      "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6",
+      "operation_id": "assemble-context",
+      "perspective": "intended",
+      "verdict": "fail",
+      "applicable_outcome_ids": [
+        "outcome:ready",
+        "outcome:budget"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Return the complete required context package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:ready-tag",
+          "description": "The result identifies a ready package.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:root-present",
+          "description": "The selected operation is present.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:no-duplicates",
+          "description": "Each operation appears once, including in cycles.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:known-records",
+          "description": "Every included operation comes from this specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:dependency-closure",
+          "description": "Every required dependency of an included operation is included.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:minimal-closure",
+          "description": "Every included operation is reachable from the selected root through required edges.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:retain-decisions",
+          "description": "Every open decision on an included operation remains available.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:omissions",
+          "description": "Every available operation is included or explicitly omitted.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:disjoint-omissions",
+          "description": "An included operation is never listed as omitted.",
+          "verdict": "fail",
+          "reason": null
+        },
+        {
+          "id": "rule:identity",
+          "description": "The package identifies the input specification.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:within-budget",
+          "description": "The exact serialized output fits its byte budget.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:required-size",
+          "description": "This required-only package reports its full size as required.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "effects:allowed",
+          "description": "Only effects allowed for this outcome occur.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "frame:model-digest",
+          "description": "Preserve Input model content digest.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "analysis-limit: Does this context improve a fresh agent coding task?",
+        "analysis-limit: Does the implementation select the least required closure?",
+        "analysis-limit: Does used_bytes equal actual UTF-8 serialization?"
+      ]
+    }
+  }
+]

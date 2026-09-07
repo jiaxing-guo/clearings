@@ -202,49 +202,121 @@
       "from_id": "behavior:252223db-4880-4aca-b951-6070c8f7e4c6",
       "relation": "participating-function",
       "to_id": "function:066fbdc1-2b42-4637-b456-7e8f96224eb4",
-      "title": "#dispatch"
+      "title": "#dispatch",
+      "result_assertions": [
+        {
+          "id": "claim:f30ea83a-a386-4f3c-93af-21067f7f47cb",
+          "text": "HEAD constructs a new Response with a null body and the awaited GET-dispatch response as its initialization argument."
+        },
+        {
+          "id": "claim:32832fda-23d3-411c-8392-6782b3634057",
+          "text": "A truthy resolved response from that Promise is returned before consulting finalized context state."
+        },
+        {
+          "id": "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+          "text": "A falsy resolved Promise value falls back to c.res when finalized, otherwise to the configured not-found handler."
+        },
+        {
+          "id": "claim:abe1d0e6-876f-40a3-b8e1-aac696dd56f5",
+          "text": "A non-Promise nullish direct result invokes the not-found handler; this expression does not consult c.finalized."
+        },
+        {
+          "id": "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d",
+          "text": "The composition path returns context.res after checking finalized."
+        },
+        {
+          "id": "claim:5b606765-089d-4722-8213-b675dde66bf5",
+          "text": "A direct non-Promise result that is neither null nor undefined is returned unchanged. That expression does not check whether the value is a Response."
+        }
+      ]
     },
     {
       "from_id": "behavior:252223db-4880-4aca-b951-6070c8f7e4c6",
       "relation": "participating-function",
       "to_id": "function:05c0f3fe-c675-4fc7-a1ef-4028fad0ac09",
-      "title": "Direct handler next callback"
+      "title": "Direct handler next callback",
+      "result_assertions": [
+        {
+          "id": "claim:6a9ded64-407c-492b-904d-328bc04d3373",
+          "text": "The direct-path async next callback awaits not-found, assigns the result to c.res, and has no explicit return value. It can reject if the awaited callback or assignment fails."
+        }
+      ]
     },
     {
       "from_id": "behavior:252223db-4880-4aca-b951-6070c8f7e4c6",
       "relation": "participating-function",
       "to_id": "function:94ab9b66-e4ca-4f2d-83ce-ab7711ff65da",
-      "title": "Direct Promise result selection"
+      "title": "Direct Promise result selection",
+      "result_assertions": [
+        {
+          "id": "claim:32832fda-23d3-411c-8392-6782b3634057",
+          "text": "A truthy resolved response from that Promise is returned before consulting finalized context state."
+        },
+        {
+          "id": "claim:876a95e6-ca91-46c2-b831-60091068b69d",
+          "text": "A falsy resolved Promise value falls back to c.res when finalized, otherwise to the configured not-found handler."
+        }
+      ]
     },
     {
       "from_id": "behavior:252223db-4880-4aca-b951-6070c8f7e4c6",
       "relation": "participating-function",
       "to_id": "function:c14693d1-3c79-4916-a155-6c5fd1f91121",
-      "title": "Direct Promise rejection callback"
+      "title": "Direct Promise rejection callback",
+      "result_assertions": [
+        {
+          "id": "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15",
+          "text": "The private error handler delegates Error instances to the configured error callback and rethrows other values."
+        }
+      ]
     },
     {
       "from_id": "behavior:252223db-4880-4aca-b951-6070c8f7e4c6",
       "relation": "participating-function",
       "to_id": "function:379c4b0e-13f0-4689-aa90-c2c2d12abb62",
-      "title": "Composed result finalization"
+      "title": "Composed result finalization",
+      "result_assertions": [
+        {
+          "id": "claim:7ce9d699-11e2-481a-866e-c1e4356ea24d",
+          "text": "The composition path returns context.res after checking finalized."
+        }
+      ]
     },
     {
       "from_id": "behavior:252223db-4880-4aca-b951-6070c8f7e4c6",
       "relation": "participating-function",
       "to_id": "function:e4635ca2-ec40-4091-ad54-7be94f4c32ba",
-      "title": "Context.res getter"
+      "title": "Context.res getter",
+      "result_assertions": [
+        {
+          "id": "claim:161b91b9-a49b-44d3-a919-0758464c5af3",
+          "text": "The res getter lazily creates response storage with prepared headers; the getter itself does not set finalized."
+        }
+      ]
     },
     {
       "from_id": "behavior:252223db-4880-4aca-b951-6070c8f7e4c6",
       "relation": "participating-function",
       "to_id": "function:9cb45f6c-5651-4587-89b1-acc02a5e7fb3",
-      "title": "Context.res setter"
+      "title": "Context.res setter",
+      "result_assertions": [
+        {
+          "id": "claim:d543fd57-c7cb-4a8b-9078-fc6050980cf1",
+          "text": "The res setter accepts Response or undefined by annotation and has no explicit return value. It does not validate the argument type at runtime."
+        }
+      ]
     },
     {
       "from_id": "behavior:252223db-4880-4aca-b951-6070c8f7e4c6",
       "relation": "participating-function",
       "to_id": "function:0ae4f7fa-8fab-4114-b656-e0c4a210b97e",
-      "title": "#handleError"
+      "title": "#handleError",
+      "result_assertions": [
+        {
+          "id": "claim:f5f65ad6-ca98-41d8-95dd-293ac83d5f15",
+          "text": "The private error handler delegates Error instances to the configured error callback and rethrows other values."
+        }
+      ]
     }
   ],
   "queries": [

@@ -1,0 +1,90 @@
+{
+  "schema_version": "0.3.0",
+  "command": "impact",
+  "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+  "perspective": "observed",
+  "mode": "required",
+  "changed_operation_ids": [
+    "store-response"
+  ],
+  "affected": [
+    {
+      "operation_id": "middleware-result",
+      "name": "Decide whether middleware replaces the response",
+      "distance": 1,
+      "witness": [
+        "middleware-result",
+        "store-response"
+      ],
+      "decisions": [
+        {
+          "blocking": false,
+          "consequence": "The model covers the stated decisions. Callback effects, platform failures, and source outside these excerpts remain unknown.",
+          "disposition": "analysis-limit",
+          "evidence_ids": [],
+          "id": "decision:middleware-result-scope",
+          "question": "What happens inside unmodeled callbacks or platform helpers?"
+        }
+      ]
+    },
+    {
+      "operation_id": "response-selection",
+      "name": "Select the response after handler execution",
+      "distance": 1,
+      "witness": [
+        "response-selection",
+        "store-response"
+      ],
+      "decisions": [
+        {
+          "blocking": false,
+          "consequence": "The typed table starts after successful handler execution. The direct not-found call is outside the local handler catch. Promise rejection and composed failures have different boundaries; see the attached source.",
+          "disposition": "analysis-limit",
+          "evidence_ids": [],
+          "id": "decision:dispatch-boundary",
+          "question": "What if a handler or fallback throws instead of producing a result?"
+        },
+        {
+          "blocking": false,
+          "consequence": "The source uses instanceof Promise. The path input represents that classification; this model does not classify arbitrary thenables.",
+          "disposition": "analysis-limit",
+          "evidence_ids": [],
+          "id": "decision:promise-classification",
+          "question": "How is a Promise recognized?"
+        },
+        {
+          "blocking": false,
+          "consequence": "The scenarios model the declared boolean state. Arbitrary external mutation is outside this scope.",
+          "disposition": "analysis-limit",
+          "evidence_ids": [],
+          "id": "decision:finalized-domain",
+          "question": "Can external code put a non-boolean value in finalized?"
+        }
+      ]
+    },
+    {
+      "operation_id": "store-response",
+      "name": "Store a response and finalize context",
+      "distance": 0,
+      "witness": [
+        "store-response"
+      ],
+      "decisions": [
+        {
+          "blocking": false,
+          "consequence": "Header copying, content-type, and set-cookie rules are retained in source. This small model represents merge success as an input and does not claim to model intermediate mutations.",
+          "disposition": "analysis-limit",
+          "evidence_ids": [],
+          "id": "decision:setter-headers",
+          "question": "What changes during header merging?"
+        }
+      ]
+    }
+  ],
+  "omitted_operation_ids": [
+    "read-response"
+  ],
+  "unavailable_optional_dependencies": [],
+  "interpretation": "potential-impact-from-declared-dependencies",
+  "acceptance": "proposed"
+}

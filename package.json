@@ -1,5 +1,5 @@
 {
-  "name": "clearings-semantic",
+  "name": "clearings",
   "version": "0.0.1",
   "private": true,
   "description": "Internal representation for AI coding",
@@ -21,7 +21,8 @@
     "./schemas/semantic": "./schemas/semantic.v0.1.json",
     "./schemas/presentation": "./schemas/presentation.v0.1.json",
     "./schemas/contracts": "./schemas/semantic.v0.2.json",
-    "./schemas/contract-presentation": "./schemas/presentation.v0.2.json"
+    "./schemas/contract-presentation": "./schemas/presentation.v0.2.json",
+    "./schemas/specification": "./schemas/specification.v0.3.json"
   },
   "files": [
     "dist",
@@ -34,9 +35,11 @@
     "test": "npm run build && node --test tests/*.test.mjs",
     "benchmark:fetch": "node dist/cli/main.js benchmark-fetch --target benchmarks/targets/hono.json --out benchmark-checkouts/hono.git",
     "demo:build": "npm run build && node scripts/build-shared-demo.mjs",
-    "docs:dev": "node scripts/prepare-docs.mjs && npm --prefix website run dev",
-    "docs:build": "node scripts/prepare-docs.mjs && npm --prefix website run build",
-    "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs"
+    "docs:dev": "node scripts/dev-docs.mjs",
+    "docs:build": "npm run build && node scripts/prepare-docs.mjs && npm --prefix website run build",
+    "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs",
+    "bootstrap:demo": "npm run build && node scripts/build-bootstrap-demo.mjs",
+    "docs:check:markdown": "npm run build && node scripts/check-markdown-docs.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

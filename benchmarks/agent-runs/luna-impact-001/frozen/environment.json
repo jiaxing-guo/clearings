@@ -1,0 +1,8 @@
+{
+  "node": "v24.19.0",
+  "npm": "11.9.0",
+  "baseline_git_commit": "5efbac9309954ab64a80c02ffff8a952ffe845be",
+  "baseline_is_uncommitted_worktree": true,
+  "dependencies": "Existing installed node_modules, shared by symlink; frozen package lock.",
+  "workspace_boundary": "Protocol only; shared container, not OS-enforced isolation."
+}

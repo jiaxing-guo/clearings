@@ -6,7 +6,7 @@ Clearings connects repository code to behavior. It keeps the conditions, state c
 
 - **Overview reports** explain purpose, main actions, outcomes, and limits.
 - **Engineer guides** explain mechanisms with exact code and canonical function contracts.
-- **Semantic records** support inspection, source lookup, and context export.
+- **Typed operation records** keep conditions, outcomes, state, effects, and open decisions together for inspection and context export.
 
 This is a private, unpublished review prototype. The included Hono example covers request dispatch and middleware composition. Independent claim-support review is pending.
 
@@ -17,18 +17,20 @@ Use Node.js 24, npm 11, and Git 2.51 or later. Run these commands from an author
 ```bash
 npm ci --ignore-scripts
 npm run build
-node dist/cli/main.js inspect benchmarks/results/hono-contracts/semantic.json --behavior response-selection
+node dist/cli/main.js inspect specifications/hono/response-selection.json --operation response-selection
 ```
 
-The result identifies a behavior and its functions, assertions, state, unknowns, and evidence references. No Hono checkout or API key is needed for this recorded inspection. `source_rechecked: false` means the command checked model integrity without reopening source.
+The result contains typed operations with individual function responsibilities and exact attached source. No Hono checkout or API key is needed. This is an authored source interpretation; hash checks establish integrity, not source authenticity or claim support.
 
 Export the rules for an agent:
 
 ```bash
-node dist/cli/main.js context benchmarks/results/hono-contracts/semantic.json --behavior response-selection --max-bytes 131072 --no-neighbors
+node dist/cli/main.js context specifications/hono/response-selection.json --operation response-selection --max-bytes 131072
 ```
 
-The pack retains required conditions and critical unknowns. Its byte count covers the exact compact JSON plus its final newline. Exact source is available separately through evidence lookup.
+The pack retains each required operation, its conditions, decisions, and source. Its byte count covers exact compact JSON plus its final newline. Read [the typed specification guide](docs/04-guides/01-check-a-case.md) to check a concrete case or use the API.
+
+Clearings also has a proposed specification for its own context assembler. [Review the self-use demo](benchmarks/results/clearings-bootstrap/README.md) or download [its review package](benchmarks/results/clearings-bootstrap/clearings-specification-review.zip). Intended requirements and observed source behavior remain separate artifacts.
 
 ## Explore the three demos
 
@@ -39,7 +41,7 @@ Download [the review package](benchmarks/results/hono-shared/clearings-shared-re
 | Overview | [Purpose and outcomes](benchmarks/results/hono-shared/request-dispatch.overview.md) | [Purpose and outcomes](benchmarks/results/hono-shared/middleware-composition.overview.md) |
 | Engineer | [Conditions and source](benchmarks/results/hono-shared/request-dispatch.engineer.md) | [Conditions and source](benchmarks/results/hono-shared/middleware-composition.engineer.md) |
 
-[Inspect the internal representation](benchmarks/results/hono-shared/internal.md) to follow a behavior through a function, shared state, assertion, and source. The walkthrough uses actual query output from the same model as both reports.
+[Inspect the typed response decisions](benchmarks/results/hono-shared/internal.md) to compare conditions, state changes, function responsibilities, and source. Agents receive `operation.context.json`; HTML is the human view. The typed slice is bound to checked source from the historical model. The accepted reading guides retain that original model; the [legacy walkthrough](benchmarks/results/hono-shared/internal-legacy.md) remains available.
 
 The model has 22 function contracts, four behavior contracts, 73 assertions, and ten critical unknowns. The [recorded agent demonstration](benchmarks/agent-runs/hono-comprehension/README.md) answers six questions from selected IR. It is an author demonstration with prior source exposure, not an independent evaluation or an efficiency benchmark.
 
@@ -58,15 +60,27 @@ The library has no built-in model endpoint. Scans read immutable Git objects; th
 
 ## Documentation
 
-The documentation uses Fumadocs and Next.js static export. It includes guides, concepts, API and CLI references, and the three demos.
+Start with [Your first operation contract](docs/00-learn/01-first-contract.md), use the [practical guides](docs/04-guides/01-check-a-case.md), or consult the [technical reference](docs/README.md). Fumadocs presents the canonical Markdown in four reading paths: learning, guides, reference, and architecture. The operation-contract page compares passing, failing, and incomplete observations.
+
+To read and edit the documentation locally, use Node.js 24, npm 11, and Python 3.9 or newer under `python3`. From the repository root:
 
 ```bash
-npm ci --prefix website --ignore-scripts
+npm ci --ignore-scripts
+npm --prefix website ci --ignore-scripts
+npm run docs:dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The command builds the library, prepares the documentation assets, and starts Next.js. Changes under the canonical numbered `docs/` directories regenerate automatically. Use `npm run docs:dev -- --port 3001` if you need another port, and stop with Ctrl+C.
+
+For a production export and validation:
+
+```bash
+npm run docs:check:markdown
 npm run docs:build
 npm run docs:check
 ```
 
-Documentation commands require Python 3.9 or newer, available as `python3`, to verify the demo archives. The static output is in `website/out`. The default base path is `/clearings-semantic` for a future GitHub Pages project site. Set `DOCS_BASE_PATH=''` for a root-path build. Search uses a local static index. CI, serving, and public access are deferred; no hosted documentation URL is claimed.
+Output is written to `website/out`. Production builds default to `/clearings`; local development defaults to `/`. Set `DOCS_BASE_PATH=''` for a root production export and use the same value for `docs:check`. [Documentation maintenance](docs/05-development/02-documentation.md) describes the authoring conventions, watcher scope, and verification checks. Public hosting, CI, and package publication remain separate scope decisions.
 
 ## Contribute
 
@@ -79,4 +93,4 @@ npm test
 
 The archive tests require Python 3.9 or newer under the `python3` command.
 
-The [active plan](docs/PROTOTYPE_PLAN.md) records scope and remaining work. Historical artifacts and their replay stay available. Distributed Hono excerpts include the upstream [MIT notice](benchmarks/results/hono-shared/LICENSE-HONO).
+The [status and roadmap](docs/05-development/01-status-and-roadmap.md) records scope and remaining work. Historical artifacts and their replay stay available. Distributed Hono excerpts include the upstream [MIT notice](benchmarks/results/hono-shared/LICENSE-HONO).

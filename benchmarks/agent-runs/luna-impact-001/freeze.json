@@ -1,0 +1,74 @@
+{
+  "run_id": "luna-impact-001",
+  "frozen_at": "2026-09-06T01:13:59.812656+00:00",
+  "requested_model": "gpt-5.6-luna",
+  "fork_turns": "none",
+  "native_token_usage": "unavailable",
+  "coding_started": false,
+  "files": {
+    "evaluation/evaluate.mjs": {
+      "sha256": "3142ab6a72a97a73acce02a28fbd2de6a421c1bfa70937954f67f4b96025050a",
+      "bytes": 2168
+    },
+    "evaluation/hono.json": {
+      "sha256": "8de112474a2a332b8a09e3403cbfcc114a71980f80b211a60e52e8478a9af54b",
+      "bytes": 51630
+    },
+    "evaluation/impact.test.mjs": {
+      "sha256": "b5388bdd945d01b6b4f497f1c2c1fb2a5ebe441b93d3d9713d1a9b78dbaa4395",
+      "bytes": 14472
+    },
+    "frozen/API.md": {
+      "sha256": "34e1f7a206a5b21f2a5c68f4f7766658385006a921c6006a7cc7a30422d3b182",
+      "bytes": 3335
+    },
+    "frozen/PROTOCOL.md": {
+      "sha256": "675caad7bf23d64d1efe8c6dd8ad537d70d478f60d7520109671aefd1878a6f7",
+      "bytes": 3693
+    },
+    "frozen/TASK.md": {
+      "sha256": "1c0582d6912937345ae813182ed3c18295bf8688f8a19b074f12693d378beaa0",
+      "bytes": 1744
+    },
+    "frozen/agent-prompt.txt": {
+      "sha256": "ddfc91c6a3583f3647d567845bbd11d35857ccfcc45ffab349560abd021c89c3",
+      "bytes": 1453
+    },
+    "frozen/author-specification.mjs": {
+      "sha256": "120712fe08d3bd689b85002072bc473a83e6e29cf3aa0c5a48e227d45830b355",
+      "bytes": 9881
+    },
+    "frozen/context.json": {
+      "sha256": "73b953a7f07e76ceaddaac0445ac3029446ed063a78b072423c8b5429ebe7844",
+      "bytes": 17518
+    },
+    "frozen/environment.json": {
+      "sha256": "8687001f9aacae01a5a2db730aafb77bfbccb21c477d02b757975e68f7297547",
+      "bytes": 338
+    },
+    "frozen/integration-inputs.tar.gz": {
+      "sha256": "2210389d19bdff3a9d67d0ea3e5da29e5feabea6e0ed8687e22319abc7697548",
+      "bytes": 1583965
+    },
+    "frozen/prepare.py": {
+      "sha256": "b3c0eef6c165f02d22a9efe85f97497216c16b4beb22d055c5cb40e61b81db8f",
+      "bytes": 5337
+    },
+    "frozen/record.mjs": {
+      "sha256": "24b1446737e11afc332c8a087716be7f224b14b21e313edc090d29efd35bdb27",
+      "bytes": 2952
+    },
+    "frozen/source-baseline.tar.gz": {
+      "sha256": "2132cde676086c7dfa697d7f998f6108d32a168fe8a3ace8fcf53b4b14f42859",
+      "bytes": 149627
+    },
+    "frozen/source-files.json": {
+      "sha256": "d491c82766001faa2173af9b3fd386e55cb7cf8f06f0738e1844876aaf91cc27",
+      "bytes": 10607
+    },
+    "frozen/specification.json": {
+      "sha256": "f94739dc8583512ae5723918bd6cf469609ecdd582ec347eb505ec8f760a26ff",
+      "bytes": 26642
+    }
+  }
+}

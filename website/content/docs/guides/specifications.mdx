@@ -1,0 +1,92 @@
+---
+title: "Use a typed specification"
+description: "Inspect an operation, check a case, and export its rules for an agent."
+---
+
+An operation keeps its conditions, results, state changes, effects, and decisions together. Agents receive these records as JSON. A human report renders the same records with cases and source details.
+
+## Inspect one operation
+
+After the [local setup](/docs/quickstart), run:
+
+```bash
+node dist/cli/main.js inspect specifications/hono/response-selection.json --operation read-response
+```
+
+The getter creates response storage when it is absent. It does not set `finalized`. The record contains separate state fields and an explicit preservation rule. Its implementation entry describes the getter's own responsibility.
+
+<DemoLink file="internal.html">Open the typed Hono report</DemoLink> to compare this operation with response selection, storage, and middleware assignment. The conditions use an abstract decision domain; they are not original function arguments or an executable simulation of Hono.
+
+## Check a concrete case
+
+Save this observation as `case.json`:
+
+```json
+{
+  "input": { "path": "direct", "value": "nullish" },
+  "before": { "finalized": true },
+  "outcome": "outcome:direct-missing",
+  "output": "not-found"
+}
+```
+
+```bash
+node dist/cli/main.js check specifications/hono/response-selection.json --operation response-selection --observation case.json
+```
+
+The result passes the modeled rules. Change `output` to `context-response` and it fails: this direct fallback does not consult finalization. Remove `output` and the result is unknown. The checker evaluates supplied observations. It does not execute or prove source code.
+
+## Export the operation for an agent
+
+```bash
+node dist/cli/main.js context specifications/hono/response-selection.json --operation response-selection --max-bytes 131072
+```
+
+The output includes the selected operation and its required dependencies, each once. Every selected outcome and decision stays in the package. Optional dependencies are deferred explicitly. A typed reachability rule rejects unrelated operations, even when the included set is closed under required edges. Exact referenced source and provenance are attached. If the required package exceeds the budget, the command reports its size and returns an error.
+
+The budget measures compact UTF-8 JSON plus one newline, including the counters. It is not a token estimate. Use `serializeOperationContext` in library code and `validateOperationContext` to check a received package against its exact specification.
+
+## Separate intent and observation
+
+`perspective: intended` describes proposed requirements. `perspective: observed` describes a proposed source interpretation. Neither is automatically accepted or proved. A passing scenario does not establish that implementation meets intent.
+
+Clearings has an intended specification for its context assembler. The bootstrap runner executes Clearings on original fixtures, then assembles this specification itself. It checks cycles, decisions, exact budgets, identity, and unchanged input. Eight deliberately incorrect output observations must fail.
+
+- <DemoLink file="bootstrap/clearings.html">Review the Clearings self-use cases</DemoLink>
+- <DemoLink file="bootstrap/clearings.context.json">Read its actual agent context</DemoLink>
+- <DemoLink file="bootstrap/implementation-bindings.json">Inspect exact implementation bindings</DemoLink>
+- <DemoLink file="bootstrap/author-development-record.json">Read the author development record</DemoLink>
+- <DemoLink file="bootstrap/clearings-specification-review.zip">Download the review package</DemoLink>
+
+This is a continuing-session author bootstrap. It does not establish a fresh-agent benefit, generated implementation, or formal conformance.
+
+A separate fresh Luna experiment used a frozen specification, API mapping, and library source to implement dependency-impact analysis. Its initial code passed all 19 withheld feature tests without repairs. Eight of the 16 rules still depended on prose, so the typed checker returned unknown. There is no comparison with ordinary instructions. The candidate is retained for review outside the production API. Read `benchmarks/agent-runs/luna-impact-001/REPORT.md` in the repository for the inputs, tests, patch, and limits.
+
+## Check records in order
+
+Use the library API when you need to compare shared state across several supplied observations:
+
+```typescript
+import { checkOperationSequence } from 'clearings'
+
+const result = checkOperationSequence(specification, [
+  { operation: 'store', observation: firstWrite },
+  { operation: 'store', observation: secondWrite },
+], { stateIds: ['value'] })
+```
+
+Each observation follows the operation's declared types. The checker compares the first record's resulting `value` with the next record's starting `value`. Matching values pass; different values fail; missing values remain unknown. It also retains both operation checks. If any check fails, the overall result is fail. Otherwise, an unknown check makes the result unknown.
+
+Select only state IDs that refer to the same storage across these records. The checker cannot infer storage identity from scope labels. It accepts 1–256 records and does not execute source, follow transitions, or prove execution order.
+
+A second fresh Luna experiment produced this API from frozen requirements and generated Clearings context. Its first submission passed 17 withheld test groups and 81 regression/own tests. After source review, the implementation was integrated unchanged on the PR branch. Five intended-model rules remain opaque. This shows one bounded addition, without establishing an advantage over ordinary instructions. Read `benchmarks/agent-runs/luna-sequence-001/REPORT.md` for the record.
+
+## Reproduce the bootstrap
+
+```bash
+npm run bootstrap:demo -- benchmarks/results/local/my-bootstrap
+node scripts/check-bootstrap-demo.mjs benchmarks/results/local/my-bootstrap
+python3 scripts/package-shared-demo.py benchmarks/results/local/my-bootstrap
+```
+
+Use a new output directory. Hono is not executed. The runner records actual Clearings cases and separately authored Hono scenarios. Read the generated README for the observation adapter and verification limits.

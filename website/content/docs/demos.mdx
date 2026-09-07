@@ -1,9 +1,9 @@
 ---
-title: "One model, three demos"
+title: "Reports and typed operations"
 description: "Choose the view that fits your question."
 ---
 
-All three demos identify the same v0.2 semantic artifact. The human reports keep their audience prose in separate reading plans. Their contract reference fields come directly from the model.
+The accepted reading guides use the v0.2 source model. The new internal view uses a separate typed response slice bound to its checked excerpts. Each view identifies its own artifact. Read [typed specifications](/docs/guides/specifications) for the current agent interface and the Clearings self-use demo.
 
 ## Start with purpose and outcomes
 
@@ -25,7 +25,12 @@ Find the direct/Promise fallback distinction. Then follow an implementation link
 
 ## Inspect the internal representation
 
-<DemoLink file="internal.html">Open the internal walkthrough</DemoLink>. It selects a behavior, follows a function and shared state, checks an assertion against source, and exports context. The relationship table is generated from the behavior record.
+<DemoLink file="internal.html">Open the typed response view</DemoLink>. Start with a concrete case, compare its conditions and state rules, then inspect each function's responsibility. The relationship table is derived from typed dependencies and does not claim execution order.
+
+- <DemoLink file="specification.json">Typed observed specification</DemoLink>
+- <DemoLink file="operation.context.json">Actual typed agent context</DemoLink>
+- <DemoLink file="operation.scenarios.json">Checked model scenarios</DemoLink>
+- <DemoLink file="internal-legacy.html">Historical prose walkthrough</DemoLink>
 
 - <DemoLink file="semantic.json">Semantic model</DemoLink>
 - <DemoLink file="walkthrough.json">Actual inspection and context output</DemoLink>
@@ -35,7 +40,7 @@ Find the direct/Promise fallback distinction. Then follow an implementation link
 - <DemoLink file="review.json">Build and verification record</DemoLink>
 - <DemoLink file="clearings-shared-review.zip">Complete review package</DemoLink>
 
-The comprehension example uses six questions. It is a continuing-session author demonstration with prior project and source exposure. It is not blind or independent. Exact model and token usage are unavailable. No speed, token saving, or coding-performance claim is made.
+The historical comprehension example uses six questions over the v0.2 model. It is a continuing-session author demonstration with prior project and source exposure. It does not evaluate the new typed slice. No speed, token saving, or coding-performance claim is made.
 
 ## Review the result
 

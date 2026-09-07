@@ -6,7 +6,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "node ../scripts/dev-docs.mjs",
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit"
   },

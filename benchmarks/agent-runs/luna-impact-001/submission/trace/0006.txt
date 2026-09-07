@@ -1,0 +1,1 @@
+Implement analyzeImpact graph query, validation, deterministic witnesses, and report types in src/specification/impact.ts; export public API from src/index.ts

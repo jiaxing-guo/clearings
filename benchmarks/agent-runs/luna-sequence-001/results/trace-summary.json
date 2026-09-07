@@ -1,0 +1,40 @@
+{
+  "recorded_actions": 25,
+  "started_at": "2026-09-06T23:56:20.866Z",
+  "finished_at": "2026-09-06T23:59:07.079Z",
+  "failed_actions": [
+    {
+      "action": "read",
+      "args": [
+        "tests/specification.test.mjs",
+        "tests/specification-check.test.mjs"
+      ],
+      "status": 1
+    },
+    {
+      "action": "run",
+      "args": [
+        "git",
+        "diff",
+        "--",
+        "src/specification/sequence.ts",
+        "src/index.ts",
+        "tests/sequence.test.mjs"
+      ],
+      "status": 1
+    }
+  ],
+  "own_tests": {
+    "run": "node --test tests/sequence.test.mjs",
+    "tests": 3,
+    "passed": 3
+  },
+  "source_reads_recorded": true,
+  "withheld_test_reads_recorded": false,
+  "notes": [
+    "A read of absent test files inside the coding workspace failed. Those tests were not supplied.",
+    "The recorder rejected a git command. No Git history was available in the coding workspace.",
+    "The shared filesystem was not isolated by the OS. Recorder entries do not prove that unrecorded access was impossible.",
+    "Native token usage is not available."
+  ]
+}

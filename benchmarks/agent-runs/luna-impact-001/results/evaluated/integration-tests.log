@@ -1,0 +1,467 @@
+TAP version 13
+# node:internal/modules/esm/resolve:271
+#     throw new ERR_MODULE_NOT_FOUND(
+#           ^
+# Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/workspace/scratch/06f15dda6fa2/luna-impact-001-evaluation/scripts/check-claim-review.mjs' imported from /workspace/scratch/06f15dda6fa2/luna-impact-001-evaluation/tests/claim-review.test.mjs
+#     at finalizeResolution (node:internal/modules/esm/resolve:271:11)
+#     at moduleResolve (node:internal/modules/esm/resolve:865:10)
+#     at defaultResolve (node:internal/modules/esm/resolve:992:11)
+#     at \#cachedDefaultResolve (node:internal/modules/esm/loader:701:20)
+#     at \#resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)
+#     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)
+#     at \#resolve (node:internal/modules/esm/loader:683:17)
+#     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)
+#     at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33)
+#     at ModuleJob.link (node:internal/modules/esm/module_job:253:17) {
+#   code: 'ERR_MODULE_NOT_FOUND',
+#   url: 'file:///workspace/scratch/06f15dda6fa2/luna-impact-001-evaluation/scripts/check-claim-review.mjs'
+# }
+# Node.js v24.19.0
+# Subtest: tests/claim-review.test.mjs
+not ok 1 - tests/claim-review.test.mjs
+  ---
+  duration_ms: 103.358406
+  type: 'test'
+  location: '/workspace/scratch/06f15dda6fa2/luna-impact-001-evaluation/tests/claim-review.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: contract reports retain model identity, canonical fields, source fidelity, and every link in both audience formats
+ok 2 - contract reports retain model identity, canonical fields, source fidelity, and every link in both audience formats
+  ---
+  duration_ms: 3563.435589
+  type: 'test'
+  ...
+# Subtest: new plans reject historical rebinding and omitted or unrelated contracts
+ok 3 - new plans reject historical rebinding and omitted or unrelated contracts
+  ---
+  duration_ms: 1342.662877
+  type: 'test'
+  ...
+# Subtest: walkthrough is generated from actual queries and keeps source-check and membership boundaries
+ok 4 - walkthrough is generated from actual queries and keeps source-check and membership boundaries
+  ---
+  duration_ms: 209.668515
+  type: 'test'
+  ...
+# Subtest: contract exchange preserves distinct accessor implementations, mutable state, and callback uncertainty
+ok 5 - contract exchange preserves distinct accessor implementations, mutable state, and callback uncertainty
+  ---
+  duration_ms: 502.146486
+  type: 'test'
+  ...
+# Subtest: contract validation rejects invalid endpoints, anchors, assertions, unknowns, and self-certification
+ok 6 - contract validation rejects invalid endpoints, anchors, assertions, unknowns, and self-certification
+  ---
+  duration_ms: 252.597252
+  type: 'test'
+  ...
+# Subtest: inspection reports direct links and source-check scope; context preserves required conditions and critical unknowns
+ok 7 - inspection reports direct links and source-check scope; context preserves required conditions and critical unknowns
+  ---
+  duration_ms: 223.481582
+  type: 'test'
+  ...
+# Subtest: CLI contract import, inspect, context, and validate retain source/output protection
+ok 8 - CLI contract import, inspect, context, and validate retain source/output protection
+  ---
+  duration_ms: 11017.227114
+  type: 'test'
+  ...
+# Subtest: context omits optional neighbors explicitly and does not expand attribution into unrelated behavior
+ok 9 - context omits optional neighbors explicitly and does not expand attribution into unrelated behavior
+  ---
+  duration_ms: 178.413786
+  type: 'test'
+  ...
+# Subtest: narrative text that resembles record IDs does not create query dependencies
+ok 10 - narrative text that resembles record IDs does not create query dependencies
+  ---
+  duration_ms: 146.054103
+  type: 'test'
+  ...
+# Subtest: canonical report references work on original shared-state and callback fixtures
+ok 11 - canonical report references work on original shared-state and callback fixtures
+  ---
+  duration_ms: 2507.665593
+  type: 'test'
+  ...
+# Subtest: cross-file and dynamic-dispatch fixtures are inventoried without semantic claims
+    # Subtest: direct-calls
+    ok 1 - direct-calls
+      ---
+      duration_ms: 73.830564
+      type: 'test'
+      ...
+    # Subtest: dynamic-dispatch
+    ok 2 - dynamic-dispatch
+      ---
+      duration_ms: 74.652362
+      type: 'test'
+      ...
+    1..2
+ok 12 - cross-file and dynamic-dispatch fixtures are inventoried without semantic claims
+  ---
+  duration_ms: 149.829117
+  type: 'test'
+  ...
+# Subtest: immutable reads ignore dirty, staged, untracked, and replacement objects; target stays unchanged
+ok 13 - immutable reads ignore dirty, staged, untracked, and replacement objects; target stays unchanged
+  ---
+  duration_ms: 158.968267
+  type: 'test'
+  ...
+# Subtest: all entries remain in coverage; unusual names, symlinks, and submodules are explicit
+ok 14 - all entries remain in coverage; unusual names, symlinks, and submodules are explicit
+  ---
+  duration_ms: 89.977545
+  type: 'test'
+  ...
+# Subtest: refs normalize, pins are enforced, and invalid scope is rejected
+ok 15 - refs normalize, pins are enforced, and invalid scope is rejected
+  ---
+  duration_ms: 181.79426
+  type: 'test'
+  ...
+# Subtest: SHA-256 object stores and empty commits are supported
+ok 16 - SHA-256 object stores and empty commits are supported
+  ---
+  duration_ms: 103.929878
+  type: 'test'
+  ...
+# Subtest: validation rejects tampering, inconsistent coverage, and invalid modes despite recomputed digests
+ok 17 - validation rejects tampering, inconsistent coverage, and invalid modes despite recomputed digests
+  ---
+  duration_ms: 50.678023
+  type: 'test'
+  ...
+# Subtest: CLI emits stable JSON, validates artifacts, and does not overwrite or write into its target
+ok 18 - CLI emits stable JSON, validates artifacts, and does not overwrite or write into its target
+  ---
+  duration_ms: 2550.988194
+  type: 'test'
+  ...
+# Subtest: CLI errors use documented envelopes and exit codes
+ok 19 - CLI errors use documented envelopes and exit codes
+  ---
+  duration_ms: 1479.610401
+  type: 'test'
+  ...
+# Subtest: target reader strips evaluation metadata and CLI enforces manifest scope
+ok 20 - target reader strips evaluation metadata and CLI enforces manifest scope
+  ---
+  duration_ms: 564.637179
+  type: 'test'
+  ...
+# Subtest: both audiences and formats retain claims, branches, unknowns, and source without changing the model
+ok 21 - both audiences and formats retain claims, branches, unknowns, and source without changing the model
+  ---
+  duration_ms: 175.433762
+  type: 'test'
+  ...
+# Subtest: presentation rejects stale bindings, missing records, hidden limits, and invalid function or code references
+ok 22 - presentation rejects stale bindings, missing records, hidden limits, and invalid function or code references
+  ---
+  duration_ms: 126.340169
+  type: 'test'
+  ...
+# Subtest: source and presentation text cannot enter executable HTML, Markdown links, or diagram markup
+ok 23 - source and presentation text cannot enter executable HTML, Markdown links, or diagram markup
+  ---
+  duration_ms: 28.427835
+  type: 'test'
+  ...
+# Subtest: an engineer guide works without optional function summaries or a companion file
+ok 24 - an engineer guide works without optional function summaries or a companion file
+  ---
+  duration_ms: 6.591586
+  type: 'test'
+  ...
+# Subtest: the single-handler source focus includes the complete branch and offers its surrounding source
+ok 25 - the single-handler source focus includes the complete branch and offers its surrounding source
+  ---
+  duration_ms: 13.310219
+  type: 'test'
+  ...
+# Subtest: code focuses preserve tabs, CRLF, generics, and fence characters without adding a blank source line
+ok 26 - code focuses preserve tabs, CRLF, generics, and fence characters without adding a blank source line
+  ---
+  duration_ms: 0.940487
+  type: 'test'
+  ...
+# Subtest: Markdown fences preserve large excerpts with many separate backtick runs
+ok 27 - Markdown fences preserve large excerpts with many separate backtick runs
+  ---
+  duration_ms: 21.74598
+  type: 'test'
+  ...
+# Subtest: engineer introductions, examples, and limits retain evidence and unknown links in both formats
+ok 28 - engineer introductions, examples, and limits retain evidence and unknown links in both formats
+  ---
+  duration_ms: 55.866773
+  type: 'test'
+  ...
+# Subtest: requests are bounded, source-verified, portable, and deterministic; readers capture immutable evidence
+ok 29 - requests are bounded, source-verified, portable, and deterministic; readers capture immutable evidence
+  ---
+  duration_ms: 502.188944
+  type: 'test'
+  ...
+# Subtest: file exchange and replay preserve IDs while citation integrity never certifies claim meaning
+ok 30 - file exchange and replay preserve IDs while citation integrity never certifies claim meaning
+  ---
+  duration_ms: 428.549797
+  type: 'test'
+  ...
+# Subtest: proposal validation rejects dangling, stale, self-certified, and contradictory record structure
+ok 31 - proposal validation rejects dangling, stale, self-certified, and contradictory record structure
+  ---
+  duration_ms: 145.142835
+  type: 'test'
+  ...
+# Subtest: every step with multiple outgoing edges requires nonblank labels
+ok 32 - every step with multiple outgoing edges requires nonblank labels
+  ---
+  duration_ms: 142.187128
+  type: 'test'
+  ...
+# Subtest: request and model tampering cannot reuse source evidence from another scan
+ok 33 - request and model tampering cannot reuse source evidence from another scan
+  ---
+  duration_ms: 347.622997
+  type: 'test'
+  ...
+# Subtest: human pages expose provenance, unknowns, branches and evidence while escaping proposal HTML
+ok 34 - human pages expose provenance, unknowns, branches and evidence while escaping proposal HTML
+  ---
+  duration_ms: 189.134461
+  type: 'test'
+  ...
+# Subtest: partial source scans keep failures visible in evidence requests
+ok 35 - partial source scans keep failures visible in evidence requests
+  ---
+  duration_ms: 204.158003
+  type: 'test'
+  ...
+# Subtest: CLI exports, imports, replays, validates and renders without target writes or implicit execution
+ok 36 - CLI exports, imports, replays, validates and renders without target writes or implicit execution
+  ---
+  duration_ms: 14486.615738
+  type: 'test'
+  ...
+# Subtest: report CLI encodes terminal controls while preserving exact files and redirected output
+ok 37 - report CLI encodes terminal controls while preserving exact files and redirected output
+  ---
+  duration_ms: 5991.634625
+  type: 'test'
+  ...
+# Subtest: typed specifications separate intent from observations and bind source/content identities
+ok 38 - typed specifications separate intent from observations and bind source/content identities
+  ---
+  duration_ms: 53.592516
+  type: 'test'
+  ...
+# Subtest: the type checker rejects invalid predicates, state writes, outcome scopes, and transitions
+ok 39 - the type checker rejects invalid predicates, state writes, outcome scopes, and transitions
+  ---
+  duration_ms: 22.510492
+  type: 'test'
+  ...
+# Subtest: the closed interpreter preserves unknowns, short-circuit logic, quantifier scope, and value types
+ok 40 - the closed interpreter preserves unknowns, short-circuit logic, quantifier scope, and value types
+  ---
+  duration_ms: 1.24345
+  type: 'test'
+  ...
+# Subtest: state assignments preserve nested integer and enum constraints
+ok 41 - state assignments preserve nested integer and enum constraints
+  ---
+  duration_ms: 4.463132
+  type: 'test'
+  ...
+# Subtest: received context is checked against the exact specification including prose and provenance
+ok 42 - received context is checked against the exact specification including prose and provenance
+  ---
+  duration_ms: 102.22474
+  type: 'test'
+  ...
+# Subtest: scenario checking catches state/frame violations and effects; absent observations stay unknown
+ok 43 - scenario checking catches state/frame violations and effects; absent observations stay unknown
+  ---
+  duration_ms: 10.467777
+  type: 'test'
+  ...
+# Subtest: exclusive overlap and unformalized alternatives cannot produce a clean check
+ok 44 - exclusive overlap and unformalized alternatives cannot produce a clean check
+  ---
+  duration_ms: 2.685981
+  type: 'test'
+  ...
+# Subtest: required context handles diamonds/cycles and preserves roles, decisions, and deferred links
+ok 45 - required context handles diamonds/cycles and preserves roles, decisions, and deferred links
+  ---
+  duration_ms: 7.592215
+  type: 'test'
+  ...
+# Subtest: byte budgets include Unicode, metadata, and their own counters at the exact boundary
+ok 46 - byte budgets include Unicode, metadata, and their own counters at the exact boundary
+  ---
+  duration_ms: 4.01506
+  type: 'test'
+  ...
+# Subtest: bootstrap contract rejects plausible incorrect outputs independently of the implementation
+ok 47 - bootstrap contract rejects plausible incorrect outputs independently of the implementation
+  ---
+  duration_ms: 18.202068
+  type: 'test'
+  ...
+# Subtest: Hono typed decisions distinguish direct nullish, Promise falsy, and composed finalization
+ok 48 - Hono typed decisions distinguish direct nullish, Promise falsy, and composed finalization
+  ---
+  duration_ms: 30.588258
+  type: 'test'
+  ...
+# Subtest: reports expose distinct responsibilities and exact source with safe local links
+ok 49 - reports expose distinct responsibilities and exact source with safe local links
+  ---
+  duration_ms: 12.238277
+  type: 'test'
+  ...
+# Subtest: legacy brief resolves assertions while preserving their unformalized status
+ok 50 - legacy brief resolves assertions while preserving their unformalized status
+  ---
+  duration_ms: 50.134543
+  type: 'test'
+  ...
+# Subtest: malformed cyclic, sparse, accessor, and excessively nested JSON fails before interpretation
+ok 51 - malformed cyclic, sparse, accessor, and excessively nested JSON fails before interpretation
+  ---
+  duration_ms: 2.806545
+  type: 'test'
+  ...
+# Subtest: CLI reads, renders, checks and exports specifications while protecting the target
+ok 52 - CLI reads, renders, checks and exports specifications while protecting the target
+  ---
+  duration_ms: 10213.378994
+  type: 'test'
+  ...
+# Subtest: direct calls resolve to implementations and scans remain byte-stable across dirty/copy/bare inputs
+ok 53 - direct calls resolve to implementations and scans remain byte-stable across dirty/copy/bare inputs
+  ---
+  duration_ms: 389.555496
+  type: 'test'
+  ...
+# Subtest: empty root projects follow references, inherited aliases, and re-export chains
+ok 54 - empty root projects follow references, inherited aliases, and re-export chains
+  ---
+  duration_ms: 278.878518
+  type: 'test'
+  ...
+# Subtest: scoped scans label imported source as support and never extract its entire body
+ok 55 - scoped scans label imported source as support and never extract its entire body
+  ---
+  duration_ms: 268.671073
+  type: 'test'
+  ...
+# Subtest: parse failures stay in coverage and dynamic or unavailable calls have no fabricated targets
+ok 56 - parse failures stay in coverage and dynamic or unavailable calls have no fabricated targets
+  ---
+  duration_ms: 155.507578
+  type: 'test'
+  ...
+# Subtest: source evidence preserves UTF-8 bytes, BOM, CRLF and UTF-16 columns
+ok 57 - source evidence preserves UTF-8 bytes, BOM, CRLF and UTF-16 columns
+  ---
+  duration_ms: 146.58649
+  type: 'test'
+  ...
+# Subtest: artifact validation rejects dangling records and source validation detects forged spans
+ok 58 - artifact validation rejects dangling records and source validation detects forged spans
+  ---
+  duration_ms: 134.968752
+  type: 'test'
+  ...
+# Subtest: source byte budgets and unavailable tsconfig extends produce explicit partial output
+ok 59 - source byte budgets and unavailable tsconfig extends produce explicit partial output
+  ---
+  duration_ms: 101.499542
+  type: 'test'
+  ...
+# Subtest: JavaScript source participates without installed dependencies
+ok 60 - JavaScript source participates without installed dependencies
+  ---
+  duration_ms: 81.428249
+  type: 'test'
+  ...
+# Subtest: failed dependency reads remain explicit supporting units within resource limits
+ok 61 - failed dependency reads remain explicit supporting units within resource limits
+  ---
+  duration_ms: 51.871988
+  type: 'test'
+  ...
+# Subtest: default, anonymous and star exports retain source links; shadowed require is a normal call
+ok 62 - default, anonymous and star exports retain source links; shadowed require is a normal call
+  ---
+  duration_ms: 123.786558
+  type: 'test'
+  ...
+# Subtest: scan and validate CLI report JSON, strict incompleteness, and protect target writes
+ok 63 - scan and validate CLI report JSON, strict incompleteness, and protect target writes
+  ---
+  duration_ms: 3536.725253
+  type: 'test'
+  ...
+# Subtest: loop assignment targets, including destructuring, invalidate direct callees
+ok 64 - loop assignment targets, including destructuring, invalidate direct callees
+  ---
+  duration_ms: 119.88006
+  type: 'test'
+  ...
+# Subtest: class extends evaluates its expression while heritage type arguments stay type-only
+ok 65 - class extends evaluates its expression while heritage type arguments stay type-only
+  ---
+  duration_ms: 104.96463
+  type: 'test'
+  ...
+# Subtest: const callable and inline default bodies retain their declaration as caller
+ok 66 - const callable and inline default bodies retain their declaration as caller
+  ---
+  duration_ms: 116.34476
+  type: 'test'
+  ...
+# Subtest: repeated project references are canonical and project limits retain partial coverage
+ok 67 - repeated project references are canonical and project limits retain partial coverage
+  ---
+  duration_ms: 328.753368
+  type: 'test'
+  ...
+# Subtest: explicit projects require JSON but allow custom configuration filenames
+ok 68 - explicit projects require JSON but allow custom configuration filenames
+  ---
+  duration_ms: 616.456828
+  type: 'test'
+  ...
+# Subtest: module loads emit imports without duplicate calls and still visit computed arguments
+ok 69 - module loads emit imports without duplicate calls and still visit computed arguments
+  ---
+  duration_ms: 114.302133
+  type: 'test'
+  ...
+# Subtest: cached source coordinates verify all line breaks and reject forged Unicode offsets
+ok 70 - cached source coordinates verify all line breaks and reject forged Unicode offsets
+  ---
+  duration_ms: 171.772073
+  type: 'test'
+  ...
+1..70
+# tests 72
+# suites 0
+# pass 71
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 23776.93049

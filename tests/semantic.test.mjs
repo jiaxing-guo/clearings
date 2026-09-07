@@ -12,7 +12,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const cli = join(root, 'dist/cli/main.js');
 const git = (repo, ...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 function setup(t, fixture = 'direct-calls') {
-  const directory = mkdtempSync(join(tmpdir(), 'clearings-semantics-')); t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const directory = mkdtempSync(join(tmpdir(), 'clearings-')); t.after(() => rmSync(directory, { recursive: true, force: true }));
   const repository = join(directory, 'repo'); cpSync(join(root, 'tests/fixtures', fixture), repository, { recursive: true });
   git(repository, 'init', '-q', '--template='); git(repository, 'add', '.');
   git(repository, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'Fixture');

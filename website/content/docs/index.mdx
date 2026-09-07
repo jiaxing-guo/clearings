@@ -1,39 +1,33 @@
 ---
-title: "Start with a behavior question"
-description: "Inspect code through linked rules and source evidence."
+title: "Clearings documentation"
+description: "Learn the contract model, complete a task, or consult the technical reference."
 ---
 
-Clearings builds an **internal representation for AI coding**. It gives people and coding agents a shared set of records for functions, behavior, state, and source evidence.
+Clearings represents repository structure and proposed behavior, assembles bounded agent context, and checks supplied observations against typed contracts.
 
-Suppose you need to know: *If a handler returns no response, what happens next?* A call list is not enough. You also need the branch conditions, the shared state, and the failure boundary.
+## Learn Clearings
 
-Clearings keeps those rules in semantic contracts. You can read a report, inspect the records, or export a selection for your agent.
+[Your first operation contract](/docs/technical/learn/first-contract) follows one Hono behavior question through abstract values, a guard, a postcondition, and three check results. It introduces the distinctions needed to interpret a verdict.
 
-## Try the recorded example
+Then [compare the observations](/docs/technical/semantics/operations) in the operation explorer. Inspect the exact contract alongside the observation and its individual rule checks.
 
-The repository includes a Hono example. You can inspect it without an API key or a Hono checkout.
+## Complete a task
 
-```bash
-npm ci --ignore-scripts
-npm run build
-node dist/cli/main.js inspect benchmarks/results/hono-contracts/semantic.json --behavior response-selection
-```
+- [Check a Hono case](/docs/technical/guides/check-a-case): prerequisites, CLI commands, expected results, and troubleshooting.
+- [Author and review a specification](/docs/technical/guides/author-and-review): define accepted and rejected writes, constrain state and effects, and check adjacent observations.
+- [Run the documentation locally](/docs/technical/development/documentation#run-the-documentation-locally): install dependencies and start a browser preview with automatic Markdown regeneration.
 
-The JSON identifies the selected behavior and its linked functions, assertions, state, and unknowns. `source_rechecked` is `false`: this command checks the artifact's integrity but does not open the Hono repository.
+## Consult the reference
 
-[Follow the quickstart](/docs/quickstart) to export context and reproduce the reports.
-
-## Choose your view
-
-| Your task | Start here |
+| Topic | Reference |
 | --- | --- |
-| Understand purpose and possible outcomes | [Overview reports](/docs/demos) |
-| Find conditions, state changes, and failure paths | [Engineer reports](/docs/demos) |
-| Give an agent a bounded set of rules | [Inspect and export context](/docs/guides/context) |
-| Use the TypeScript library | [Library API](/docs/reference/library) |
+| Values, predicates, and unknown results | [Values and expressions](/docs/technical/semantics/values-and-expressions) |
+| Outcomes, state frames, and effects | [Operation contracts](/docs/technical/semantics/operations) |
+| Verdicts and adjacent-state continuity | [Observations and sequences](/docs/technical/semantics/observations-and-sequences) |
+| Identity, validation, context, API, and compatibility | [Complete reference index](/docs/technical) |
 
-## Know the current boundary
+## Understand the architecture
 
-This is a private review prototype. The recorded example covers Hono request dispatch and middleware composition. It does not cover all of Hono or your application handlers.
+[System architecture](/docs/technical/architecture/system) explains the processing paths and trust boundaries. [Representation inventory](/docs/technical/architecture/representations) distinguishes canonical models from projections. [Abstraction and refinement](/docs/technical/architecture/abstraction-and-refinement) explains the relation to concrete execution and identifies proposed work.
 
-Source extraction is automatic and bounded. Semantic interpretation arrives through explicit file exchange with an agent or person. Clearings has no built-in model endpoint. A valid source citation does not prove an English claim. Independent claim-support review is pending.
+The [development status](/docs/technical/development/status-and-roadmap) records the implemented capabilities and bootstrap evidence. Earlier [demonstrations](/docs/demos) and [legacy quickstart](/docs/quickstart) remain available for their recorded artifacts.

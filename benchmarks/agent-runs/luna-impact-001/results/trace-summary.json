@@ -1,0 +1,192 @@
+{
+  "recorded_events": 14,
+  "actions": {
+    "read": 5,
+    "files": 1,
+    "note": 1,
+    "run": 7
+  },
+  "unique_read_files": 21,
+  "unique_read_bytes": 155721,
+  "read_files": {
+    "input/context.json": {
+      "sha256": "73b953a7f07e76ceaddaac0445ac3029446ed063a78b072423c8b5429ebe7844",
+      "bytes": 17518
+    },
+    "input/API.md": {
+      "sha256": "34e1f7a206a5b21f2a5c68f4f7766658385006a921c6006a7cc7a30422d3b182",
+      "bytes": 3335
+    },
+    "input/TASK.md": {
+      "sha256": "1c0582d6912937345ae813182ed3c18295bf8688f8a19b074f12693d378beaa0",
+      "bytes": 1744
+    },
+    "AGENTS.md": {
+      "sha256": "49989d1466f62b599c24c74e3cf250ff418241658a03f0def77f497e1238f84b",
+      "bytes": 3916
+    },
+    "docs/PROTOTYPE_PLAN.md": {
+      "sha256": "c9765df6e2f26ee7cd66da17e5ab9b16f1a6b6a2bc249b582db01f5fc622f701",
+      "bytes": 22657
+    },
+    "docs/NEXT_IMPLEMENTATION_TASK.md": {
+      "sha256": "b510b16e245aa0cb88fb25536dee52bf21c30abdc6aba11da77fa410a75f5079",
+      "bytes": 2912
+    },
+    "docs/SEMANTIC_EXCHANGE.md": {
+      "sha256": "73207c7538ae8506da417d0745aaaedd2a3b375c6873f975d309d1a04db5de48",
+      "bytes": 11549
+    },
+    "docs/SEMANTIC_CONTRACTS.md": {
+      "sha256": "1e641224094720b2a45c1a852665abdde27ff9245b13268dd70088c8c4731c21",
+      "bytes": 9797
+    },
+    "docs/SHARED_DEMOS.md": {
+      "sha256": "ea2e5e75208c79f6605d267f63f2f5e41911b00e19a4e3394fad7fb8cd79925b",
+      "bytes": 6782
+    },
+    "docs/SPECIFICATION_ARCHITECTURE.md": {
+      "sha256": "e7931d9eebc3a4a0d7b5bbd1da5c07eb25aa720e0c26ca58c91e9c45da97ac3d",
+      "bytes": 5895
+    },
+    "docs/TYPED_SPECIFICATIONS.md": {
+      "sha256": "1be728126731bf88820a241eec6780d146e7a172f532e775ff10551ab0be5bb2",
+      "bytes": 9380
+    },
+    "src/specification/model.ts": {
+      "sha256": "623632e039762e8ee6e656be3c1923269d6934eb03de0e78763085a41a998ad1",
+      "bytes": 4122
+    },
+    "src/specification/validate.ts": {
+      "sha256": "e668a1be884e5abe54f80d09451b5514cefca588984e929fe8b742739a81a8b9",
+      "bytes": 8451
+    },
+    "src/index.ts": {
+      "sha256": "d60d765aa77082c3883094744fabf76042ad53876d2f8896c0689c1fffa6acbb",
+      "bytes": 2760
+    },
+    "src/specification/context.ts": {
+      "sha256": "ca4f5e43d19a5fb26d10e699594b3ddbbf4bc4359fdafaf1f64e73256abad771",
+      "bytes": 6108
+    },
+    "src/specification/check.ts": {
+      "sha256": "de478a4902c3da74155b69191325076f3daae98337e760c9e9db92632251bcb6",
+      "bytes": 7643
+    },
+    "package.json": {
+      "sha256": "7eb72fc42d3f38022b2a4e9a945493792fb736e3f91feb8af7bfbde9f08855cc",
+      "bytes": 1659
+    },
+    "src/model/types.ts": {
+      "sha256": "29baec45d8717d827444df63893876ea0c4346483c911752ef2f6b9a21f1ac66",
+      "bytes": 1639
+    },
+    "src/analysis/dependencies.ts": {
+      "sha256": "c457f36607ef7824d25c847298a60b9badbe98a51b81377dc19e70c6ac3f9bd8",
+      "bytes": 789
+    },
+    "tsconfig.json": {
+      "sha256": "6e01e48c0fede37baa44b8ffb1696d37811a676c1a94c4a056dedff012cbf7ce",
+      "bytes": 423
+    },
+    "input/specification.json": {
+      "sha256": "f94739dc8583512ae5723918bd6cf469609ecdd582ec347eb505ec8f760a26ff",
+      "bytes": 26642
+    }
+  },
+  "first_recorded_action": "2026-09-06T01:14:43.862Z",
+  "last_recorded_action": "2026-09-06T01:16:37.345Z",
+  "recorded_action_interval_seconds": 113.483,
+  "complete_tool_access_audit": false,
+  "native_token_usage": null,
+  "own_test_files_submitted": 0,
+  "own_npm_test_count": 0,
+  "own_manual_checks": {
+    "passed": 1,
+    "invalid_fixture_setup": 2,
+    "error_assertions_require_exceptions": false
+  },
+  "commands": [
+    {
+      "start": "2026-09-06T01:15:45.214Z",
+      "end": "2026-09-06T01:15:47.364Z",
+      "args": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "status": 0,
+      "output_file": "0007.txt"
+    },
+    {
+      "start": "2026-09-06T01:15:56.093Z",
+      "end": "2026-09-06T01:15:58.534Z",
+      "args": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "status": 0,
+      "output_file": "0009.txt"
+    },
+    {
+      "start": "2026-09-06T01:16:04.517Z",
+      "end": "2026-09-06T01:16:05.470Z",
+      "args": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "import {readFileSync} from 'node:fs'; import {analyzeImpact} from './dist/index.js'; const s=JSON.parse(readFileSync('input/specification.json','utf8')); const r=analyzeImpact(s,['analyze-impact']); if(r.affected[0]?.distance!==0||r.changed_operation_ids[0]!=='analyze-impact') throw Error('bad report'); try { analyzeImpact(s,[]) } catch(e) { if(e.code!=='INVALID_SELECTION') throw e } try { analyzeImpact(s,['analyze-impact'],{mode:'bad'}) } catch(e) { if(e.code!=='INVALID_ARGUMENTS') throw e } console.log(JSON.stringify(r));"
+      ],
+      "status": 0,
+      "output_file": "0010.txt"
+    },
+    {
+      "start": "2026-09-06T01:16:11.750Z",
+      "end": "2026-09-06T01:16:14.577Z",
+      "args": [
+        "npm",
+        "test"
+      ],
+      "status": 0,
+      "output_file": "0011.txt"
+    },
+    {
+      "start": "2026-09-06T01:16:23.366Z",
+      "end": "2026-09-06T01:16:24.284Z",
+      "args": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "import {readFileSync} from 'node:fs'; import {sealSpecification,analyzeImpact} from './dist/index.js'; const base=JSON.parse(readFileSync('input/specification.json','utf8')); const op=base.operations[0]; const mk=(id,alias,deps=[])=>({...op,id,alias,name:id,dependencies:deps,decisions:[]}); const a=mk('a','A'), b=mk('b','B',[{operation_id:'a',kind:'uses-contract',requirement:'required',role:'r'}]), c=mk('c','C',[{operation_id:'b',kind:'uses-contract',requirement:'optional',role:'o'}]); const s=sealSpecification({...base,operations:[a,b,c]}); const r=analyzeImpact(s,['a']); if(JSON.stringify(r.affected.map(x=>[x.operation_id,x.distance,x.witness]))!==JSON.stringify([['a',0,['a']],['b',1,['b','a']]])) throw Error(JSON.stringify(r.affected)); const all=analyzeImpact(s,['a'],{mode:'all'}); if(all.affected.length!==3) throw Error('all'); console.log('graph checks passed');"
+      ],
+      "status": 1,
+      "output_file": "0012.txt"
+    },
+    {
+      "start": "2026-09-06T01:16:32.349Z",
+      "end": "2026-09-06T01:16:33.265Z",
+      "args": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "import {readFileSync} from 'node:fs'; import {sealSpecification,analyzeImpact} from './dist/index.js'; const base=JSON.parse(readFileSync('input/specification.json','utf8')); const op=base.operations[0]; const mk=(id,alias,deps=[])=>({...op,id,alias,name:id,dependencies:deps}); const a=mk('a','A'), b=mk('b','B',[{operation_id:'a',kind:'uses-contract',requirement:'required',role:'r'}]), c=mk('c','C',[{operation_id:'b',kind:'uses-contract',requirement:'optional',role:'o'}]); const s=sealSpecification({...base,operations:[a,b,c]}); const r=analyzeImpact(s,['a']); if(JSON.stringify(r.affected.map(x=>[x.operation_id,x.distance,x.witness]))!==JSON.stringify([['a',0,['a']],['b',1,['b','a']]])) throw Error(JSON.stringify(r.affected)); const all=analyzeImpact(s,['a'],{mode:'all'}); if(all.affected.length!==3) throw Error('all'); console.log('graph checks passed');"
+      ],
+      "status": 1,
+      "output_file": "0013.txt"
+    },
+    {
+      "start": "2026-09-06T01:16:37.337Z",
+      "end": "2026-09-06T01:16:37.345Z",
+      "args": [
+        "rg",
+        "-n",
+        "analyzeImpact|ImpactReport|ImpactOptions",
+        "src/specification/impact.ts",
+        "src/index.ts"
+      ],
+      "status": 0,
+      "output_file": "0014.txt"
+    }
+  ]
+}

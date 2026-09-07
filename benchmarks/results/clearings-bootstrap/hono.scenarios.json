@@ -1,0 +1,465 @@
+[
+  {
+    "name": "A direct missing result calls not-found even after finalization",
+    "operation_id": "response-selection",
+    "observation": {
+      "input": {
+        "path": "direct",
+        "value": "nullish"
+      },
+      "before": {
+        "finalized": true
+      },
+      "outcome": "outcome:direct-missing",
+      "output": "not-found"
+    },
+    "result": {
+      "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+      "operation_id": "response-selection",
+      "perspective": "observed",
+      "verdict": "pass",
+      "applicable_outcome_ids": [
+        "outcome:direct-missing"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Call the not-found handler without consulting finalized.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:direct-missing",
+          "description": "The selected response source is not-found.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "Behavior outside the modeled cases remains unspecified.",
+        "Unrecorded state changes are not excluded by this partial frame.",
+        "Unrecorded external effects are not excluded.",
+        "analysis-limit: What if a handler or fallback throws instead of producing a result?",
+        "analysis-limit: How is a Promise recognized?",
+        "analysis-limit: Can external code put a non-boolean value in finalized?"
+      ]
+    }
+  },
+  {
+    "name": "A direct non-nullish falsy value is returned",
+    "operation_id": "response-selection",
+    "observation": {
+      "input": {
+        "path": "direct",
+        "value": "non-nullish-falsy"
+      },
+      "before": {
+        "finalized": true
+      },
+      "outcome": "outcome:direct-value",
+      "output": "handler-result"
+    },
+    "result": {
+      "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+      "operation_id": "response-selection",
+      "perspective": "observed",
+      "verdict": "pass",
+      "applicable_outcome_ids": [
+        "outcome:direct-value"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Use the direct non-nullish result, including a falsy value.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:direct-value",
+          "description": "The selected response source is handler-result.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "Behavior outside the modeled cases remains unspecified.",
+        "Unrecorded state changes are not excluded by this partial frame.",
+        "Unrecorded external effects are not excluded.",
+        "analysis-limit: What if a handler or fallback throws instead of producing a result?",
+        "analysis-limit: How is a Promise recognized?",
+        "analysis-limit: Can external code put a non-boolean value in finalized?"
+      ]
+    }
+  },
+  {
+    "name": "A Promise with a falsy value can use the finalized context",
+    "operation_id": "response-selection",
+    "observation": {
+      "input": {
+        "path": "promise",
+        "value": "nullish"
+      },
+      "before": {
+        "finalized": true
+      },
+      "outcome": "outcome:promise-context",
+      "output": "context-response"
+    },
+    "result": {
+      "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+      "operation_id": "response-selection",
+      "perspective": "observed",
+      "verdict": "pass",
+      "applicable_outcome_ids": [
+        "outcome:promise-context"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Read the context response after a falsy resolution when finalized is true.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:promise-context",
+          "description": "The selected response source is context-response.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "Behavior outside the modeled cases remains unspecified.",
+        "Unrecorded state changes are not excluded by this partial frame.",
+        "Unrecorded external effects are not excluded.",
+        "analysis-limit: What if a handler or fallback throws instead of producing a result?",
+        "analysis-limit: How is a Promise recognized?",
+        "analysis-limit: Can external code put a non-boolean value in finalized?"
+      ]
+    }
+  },
+  {
+    "name": "A Promise without a value or finalized context calls not-found",
+    "operation_id": "response-selection",
+    "observation": {
+      "input": {
+        "path": "promise",
+        "value": "nullish"
+      },
+      "before": {
+        "finalized": false
+      },
+      "outcome": "outcome:promise-missing",
+      "output": "not-found"
+    },
+    "result": {
+      "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+      "operation_id": "response-selection",
+      "perspective": "observed",
+      "verdict": "pass",
+      "applicable_outcome_ids": [
+        "outcome:promise-missing"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Call not-found after a falsy resolution when finalized is false.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:promise-missing",
+          "description": "The selected response source is not-found.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "Behavior outside the modeled cases remains unspecified.",
+        "Unrecorded state changes are not excluded by this partial frame.",
+        "Unrecorded external effects are not excluded.",
+        "analysis-limit: What if a handler or fallback throws instead of producing a result?",
+        "analysis-limit: How is a Promise recognized?",
+        "analysis-limit: Can external code put a non-boolean value in finalized?"
+      ]
+    }
+  },
+  {
+    "name": "A truthy Promise value wins",
+    "operation_id": "response-selection",
+    "observation": {
+      "input": {
+        "path": "promise",
+        "value": "truthy"
+      },
+      "before": {
+        "finalized": false
+      },
+      "outcome": "outcome:promise-value",
+      "output": "handler-result"
+    },
+    "result": {
+      "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+      "operation_id": "response-selection",
+      "perspective": "observed",
+      "verdict": "pass",
+      "applicable_outcome_ids": [
+        "outcome:promise-value"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Use the truthy resolved Promise value.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:promise-value",
+          "description": "The selected response source is handler-result.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "Behavior outside the modeled cases remains unspecified.",
+        "Unrecorded state changes are not excluded by this partial frame.",
+        "Unrecorded external effects are not excluded.",
+        "analysis-limit: What if a handler or fallback throws instead of producing a result?",
+        "analysis-limit: How is a Promise recognized?",
+        "analysis-limit: Can external code put a non-boolean value in finalized?"
+      ]
+    }
+  },
+  {
+    "name": "Composed execution needs finalization",
+    "operation_id": "response-selection",
+    "observation": {
+      "input": {
+        "path": "composed",
+        "value": "truthy"
+      },
+      "before": {
+        "finalized": false
+      },
+      "outcome": "outcome:composed-unfinalized",
+      "output": "finalization-error"
+    },
+    "result": {
+      "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+      "operation_id": "response-selection",
+      "perspective": "observed",
+      "verdict": "pass",
+      "applicable_outcome_ids": [
+        "outcome:composed-unfinalized"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Raise the finalization error inside the composed application catch boundary.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:composed-unfinalized",
+          "description": "The selected response source is finalization-error.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "Behavior outside the modeled cases remains unspecified.",
+        "Unrecorded state changes are not excluded by this partial frame.",
+        "Unrecorded external effects are not excluded.",
+        "analysis-limit: What if a handler or fallback throws instead of producing a result?",
+        "analysis-limit: How is a Promise recognized?",
+        "analysis-limit: Can external code put a non-boolean value in finalized?"
+      ]
+    }
+  },
+  {
+    "name": "Reading missing response storage does not finalize the context",
+    "operation_id": "read-response",
+    "observation": {
+      "input": {},
+      "before": {
+        "finalized": false,
+        "response-present": false
+      },
+      "after": {
+        "finalized": false,
+        "response-present": true
+      },
+      "outcome": "outcome:get-create",
+      "output": "created-response"
+    },
+    "result": {
+      "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+      "operation_id": "read-response",
+      "perspective": "observed",
+      "verdict": "pass",
+      "applicable_outcome_ids": [
+        "outcome:get-create"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "rule:get-finalized",
+          "description": "The getter leaves finalized unchanged.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:get-storage",
+          "description": "Successful reading leaves response storage present.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "outcome-condition",
+          "description": "Initialize response storage and return it.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:get-create",
+          "description": "Select the created response.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "update:response-present",
+          "description": "Update response-present as specified.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "Behavior outside the modeled cases remains unspecified.",
+        "Unrecorded state changes are not excluded by this partial frame.",
+        "Unrecorded external effects are not excluded.",
+        "analysis-limit: What happens inside unmodeled callbacks or platform helpers?"
+      ]
+    }
+  },
+  {
+    "name": "An undefined setter assignment can finalize without response storage",
+    "operation_id": "store-response",
+    "observation": {
+      "input": {
+        "assigned": "undefined",
+        "merge_succeeds": true
+      },
+      "before": {
+        "finalized": false,
+        "response-present": false
+      },
+      "after": {
+        "finalized": true,
+        "response-present": false
+      },
+      "outcome": "outcome:set-success",
+      "output": "stored"
+    },
+    "result": {
+      "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+      "operation_id": "store-response",
+      "perspective": "observed",
+      "verdict": "pass",
+      "applicable_outcome_ids": [
+        "outcome:set-success"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Store the assignment and finalize.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:set-result",
+          "description": "The setter completes.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "update:finalized",
+          "description": "Update finalized as specified.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "update:response-present",
+          "description": "Update response-present as specified.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "Behavior outside the modeled cases remains unspecified.",
+        "Unrecorded state changes are not excluded by this partial frame.",
+        "Unrecorded external effects are not excluded.",
+        "analysis-limit: What changes during header merging?"
+      ]
+    }
+  },
+  {
+    "name": "An error-handler result can replace a finalized response",
+    "operation_id": "middleware-result",
+    "observation": {
+      "input": {
+        "truthy_result": true,
+        "error_result": true
+      },
+      "before": {
+        "finalized": true
+      },
+      "outcome": "outcome:middleware-assign",
+      "output": "assign"
+    },
+    "result": {
+      "artifact_id": "specification:2a3da76d0f0748656e8441dd546469ae4120f0593a837cb8e2a8fb22e0d3d251",
+      "operation_id": "middleware-result",
+      "perspective": "observed",
+      "verdict": "pass",
+      "applicable_outcome_ids": [
+        "outcome:middleware-assign"
+      ],
+      "uncertain_outcome_ids": [],
+      "checks": [
+        {
+          "id": "outcome-condition",
+          "description": "Assign the result through Context.res.",
+          "verdict": "pass",
+          "reason": null
+        },
+        {
+          "id": "rule:middleware-assign",
+          "description": "Choose assignment.",
+          "verdict": "pass",
+          "reason": null
+        }
+      ],
+      "limitations": [
+        "Checks apply only to the supplied observation and modeled rules. Source implementation is not executed or proved.",
+        "Behavior outside the modeled cases remains unspecified.",
+        "Unrecorded state changes are not excluded by this partial frame.",
+        "Unrecorded external effects are not excluded.",
+        "analysis-limit: What happens inside unmodeled callbacks or platform helpers?"
+      ]
+    }
+  }
+]

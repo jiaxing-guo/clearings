@@ -1,0 +1,86 @@
+{
+  "evaluated_at": "2026-09-06T01:18:01.906Z",
+  "workspace": "/workspace/scratch/06f15dda6fa2/luna-impact-001-evaluation",
+  "source_mutated_by_evaluator": false,
+  "candidate_repaired": false,
+  "outcome": "failed-frozen-checks",
+  "commands": [
+    {
+      "label": "build",
+      "program": "npm",
+      "args": [
+        "run",
+        "build"
+      ],
+      "started_at": "2026-09-06T01:17:31.691Z",
+      "elapsed_ms": 2695,
+      "exit_code": 0,
+      "signal": null,
+      "error": null,
+      "log_sha256": "d436334ae59fe78bfef209f4784cb95ca8c0d980dc317518127bd191783a8f62",
+      "tests": 0,
+      "passed": 0,
+      "failed": 0
+    },
+    {
+      "label": "typecheck",
+      "program": "npm",
+      "args": [
+        "run",
+        "typecheck"
+      ],
+      "started_at": "2026-09-06T01:17:34.387Z",
+      "elapsed_ms": 2248,
+      "exit_code": 0,
+      "signal": null,
+      "error": null,
+      "log_sha256": "20257537403411ec159871e2823da1240f0b04a61c678a838cb3dd4bdb3653ec",
+      "tests": 0,
+      "passed": 0,
+      "failed": 0
+    },
+    {
+      "label": "withheld-tests",
+      "program": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "args": [
+        "--test",
+        "--test-reporter=tap",
+        "/workspace/scratch/06f15dda6fa2/clearings-semantics/benchmarks/agent-runs/luna-impact-001/evaluation/impact.test.mjs"
+      ],
+      "started_at": "2026-09-06T01:17:36.635Z",
+      "elapsed_ms": 1423,
+      "exit_code": 0,
+      "signal": null,
+      "error": null,
+      "log_sha256": "48dd21cabb8855561799220ab4adf2f1325daf177a6a9300e54ebbcdcb0da76b",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0
+    },
+    {
+      "label": "integration-tests",
+      "program": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+      "args": [
+        "--test",
+        "--test-reporter=tap",
+        "tests/claim-review.test.mjs",
+        "tests/contract-presentation.test.mjs",
+        "tests/contracts.test.mjs",
+        "tests/inventory.test.mjs",
+        "tests/presentation.test.mjs",
+        "tests/semantic.test.mjs",
+        "tests/specification.test.mjs",
+        "tests/structural.test.mjs"
+      ],
+      "started_at": "2026-09-06T01:17:38.059Z",
+      "elapsed_ms": 23846,
+      "exit_code": 1,
+      "signal": null,
+      "error": null,
+      "log_sha256": "e7dede702511d9756a63917c8347e0d83f9dacf384bd1e114c0ca0dabfe68063",
+      "tests": 72,
+      "passed": 71,
+      "failed": 1
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "task_name": "/root/luna_sequence",
+  "model_requested": "gpt-5.6-luna",
+  "fork_turns": "none",
+  "launched_at": "2026-09-06T23:56:29.507772+00:00",
+  "workspace": "/workspace/scratch/06f15dda6fa2/clearings-luna-sequence-coding",
+  "prompt_file": "frozen/agent-prompt.txt",
+  "prompt_prefix": "Coding workspace: /workspace/scratch/06f15dda6fa2/clearings-luna-sequence-coding",
+  "withheld_feedback_provided": false
+}

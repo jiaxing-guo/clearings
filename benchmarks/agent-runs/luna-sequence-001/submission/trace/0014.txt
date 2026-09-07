@@ -1,0 +1,1 @@
+Add runnable node:test coverage for adjacent continuity, ordering, nested delegation, and validation behavior.
