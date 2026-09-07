@@ -22,9 +22,9 @@ npm run docs:dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. The command builds the library, prepares validated documentation assets, and starts Next.js. Canonical Markdown changes regenerate the technical pages automatically; refresh the browser if navigation changes are not reflected immediately. Existing website pages and components use Next.js hot reload.
 
-The default local base path is empty. If port 3000 is occupied, use `npm run docs:dev -- --port 3001` and open [http://localhost:3001](http://localhost:3001). The terminal reports the actual address. Stop the server with Ctrl+C.
+Both `npm run docs:dev` from the repository root and `npm run dev` from `website/` use the same preparation and watch workflow. The default local base path is empty. If port 3000 is occupied, use `npm run docs:dev -- --port 3001` and open [http://localhost:3001](http://localhost:3001). The terminal reports the actual address. Stop the server with Ctrl+C.
 
-Restart after changing the library, specification fixtures, or asset-generation scripts. Those inputs are prepared at startup; the watcher covers the canonical Markdown reference. If you set `DOCS_BASE_PATH` explicitly, include that prefix in the browser URL.
+Restart after changing the library, specification fixtures, or asset-generation scripts. Those inputs are prepared at startup; the watcher covers the canonical Markdown reference. If you set `DOCS_BASE_PATH` explicitly, include that prefix in the browser URL. The startup output prints the effective documentation path. If `/` and `/docs/` return 404, check this prefix; for `DOCS_BASE_PATH=/clearings-semantic`, the documentation is at `/clearings-semantic/docs/`. To force root-path development, stop the server and run `DOCS_BASE_PATH='' npm run docs:dev` from the repository root.
 
 ## Page conventions
 

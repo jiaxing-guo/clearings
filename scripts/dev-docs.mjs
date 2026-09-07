@@ -15,8 +15,10 @@ const watcher = watch(new URL('../docs/', import.meta.url), { recursive: true },
     catch { console.error('Documentation generation failed. Correct the Markdown and save again.'); }
   }, 150);
 });
+const basePath = process.env.DOCS_BASE_PATH ?? '';
+console.log(`Documentation path: ${basePath || '/'} (append to the server address below).`);
 const child = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '--hostname', '127.0.0.1', ...process.argv.slice(2)], {
-  cwd: website, stdio: 'inherit', env: { ...process.env, DOCS_BASE_PATH: process.env.DOCS_BASE_PATH ?? '', NEXT_TELEMETRY_DISABLED: '1' },
+  cwd: website, stdio: 'inherit', env: { ...process.env, DOCS_BASE_PATH: basePath, NEXT_TELEMETRY_DISABLED: '1' },
 });
 function cleanup() { clearTimeout(timer); watcher.close(); }
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => { cleanup(); child.kill(signal); });
