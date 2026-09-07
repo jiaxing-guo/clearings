@@ -8,7 +8,7 @@ The numbered directories separate architecture, language semantics, interface re
 
 Keep semantic definitions in one reference location. Guides should link to those definitions and demonstrate them with concrete cases. Status documents should cite frozen results rather than duplicating mutable test counts throughout the reference. Historical plans belong in [the archive](../archive/README.md).
 
-Use relative repository links, Markdown tables for exact mappings, and fenced code blocks. Avoid MDX imports, framework components, required frontmatter, and site-specific routing. A future Fumadocs integration should derive navigation from this organization and preserve one source for the technical content.
+Use relative repository links, Markdown tables for exact mappings, and fenced code blocks. Avoid MDX imports, framework components, required frontmatter, and site-specific routing. The Fumadocs integration derives navigation from this organization and preserves one source for the technical content.
 
 ## Change procedure
 
@@ -33,7 +33,21 @@ This command builds the library, checks local inline Markdown link targets and d
 
 The link checker supports the documentation's inline links, ATX heading fragments, and explicit HTML IDs. It does not claim to implement a full Markdown parser or verify external sources. Use that supported syntax for navigation in this directory. Executable examples test behavior through the exported library, without modifying analyzed target source.
 
-For a runtime semantics change, also run relevant library tests and typecheck. A documentation-only reorganization does not require rebuilding or migrating the existing Fumadocs project.
+Build and check the rendered reference as well:
+
+```bash
+npm --prefix website ci --ignore-scripts
+npm run docs:build
+npm run docs:check
+```
+
+The build runs [the technical documentation generator](../../scripts/prepare-technical-docs.mjs). It reads this index and the numbered Markdown files, derives titles from their first headings, and writes ignored Markdown pages and navigation metadata under `website/content/docs/technical/`. Current reference links become local routes. Other repository links point to the Git revision selected by `DOCS_SOURCE_REF`, which defaults to the current commit. Code fences remain literal documentation; the site build does not execute `js runnable` examples.
+
+The generated `technical-reference.json` records source paths, content digests, and routes. The static checker verifies those digests, rendered page titles, local links and fragments, assets, and search results. This detects stale generated documentation as well as broken navigation.
+
+Use `npm run docs:dev` for local preview. Restart this command after changing the canonical Markdown; it regenerates the technical pages before starting Next.js. The default deployment base path is `/clearings-semantic`. Set `DOCS_BASE_PATH=''` for a root deployment, and use the same value for `docs:build` and `docs:check`.
+
+For a runtime semantics change, also run relevant library tests and typecheck.
 
 ## Historical source preservation
 

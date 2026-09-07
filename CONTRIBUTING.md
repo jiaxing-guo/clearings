@@ -45,7 +45,7 @@ npm run docs:check:markdown
 
 The command builds the library, checks local Markdown navigation, and executes trusted reference examples. Use standard technical language and distinguish implemented semantics, proposed abstractions, and external assumptions. Update the documentation index when adding a page.
 
-Fumadocs integration of the new reference is deferred. The existing website remains under `website/`; its separate `docs:build`, `docs:check`, and `docs:dev` commands remain available for explicitly scoped website work. Do not compile source excerpts or semantic proposal strings as MDX.
+Fumadocs under `website/` renders the current reference from `docs/`. Run `docs:build` and `docs:check` after changing documentation or navigation. Use `docs:dev` for local preview; restart it after editing the canonical Markdown to regenerate the technical pages. Generated files under `website/content/docs/technical/` are ignored and must not be edited directly. Do not compile source excerpts or semantic proposal strings as MDX.
 
 ## Review an explanation
 

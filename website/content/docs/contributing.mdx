@@ -25,7 +25,7 @@ npm run docs:build
 npm run docs:check
 ```
 
-The site uses Fumadocs, Next.js static export, and local search. `website/content/docs` holds trusted MDX pages. `website/lib/source.ts` builds the page tree. `website/out` is generated and ignored.
+The site uses Fumadocs, Next.js static export, and local search. `docs/` holds the canonical technical reference. The build generates ignored Markdown pages under `website/content/docs/technical/`; other trusted MDX pages remain under `website/content/docs`. Restart `npm run docs:dev` after changing canonical Markdown to regenerate the technical pages. `website/lib/source.ts` builds the page tree. `website/out` is generated and ignored.
 
 The default base path is `/clearings-semantic`. Set `DOCS_BASE_PATH=''` for a root-path build, or supply a different project path without a trailing slash. Use `npm run docs:dev` for local authoring. CI, GitHub Pages serving, and public access are separate future work.
 

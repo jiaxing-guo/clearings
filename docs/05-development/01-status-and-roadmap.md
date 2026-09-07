@@ -12,7 +12,7 @@ This status describes the implementation inspected at `bb4c90a` and the subseque
 | Context | Deterministic required closure, byte accounting, revalidation | No token-efficiency result or unrestricted retrieval planner |
 | Observation checks | Single-operation predicates and adjacent selected-state continuity | No source execution, transition legality, concurrency model, or universal proof |
 | Human views | Markdown/HTML projections and historical audience reports | Independent semantic-content review remains open |
-| Technical reference | Ordered Markdown semantics, architecture, interfaces, and examples | Fumadocs integration of this reference is deferred |
+| Technical reference | Ordered Markdown semantics, architecture, interfaces, and examples | Fumadocs renders the same Markdown with ordered navigation and static search |
 
 ## Bootstrapping evidence
 
@@ -30,9 +30,9 @@ The appropriate current description is **specification-guided self-development w
 
 ## Current documentation scope
 
-Standardize the implemented semantics, identify abstraction boundaries, organize current reference material, preserve historical evidence, and verify executable examples and links. This work introduces no implementation IR, schema migration, compiler backend, runtime fix, or website deployment.
+Standardize the implemented semantics, identify abstraction boundaries, organize current reference material, preserve historical evidence, and verify executable examples and links. The documentation and site integration introduce no implementation IR, schema migration, compiler backend, or runtime semantics change.
 
-The existing Fumadocs project remains available, but the new reference is authored and verified as ordinary Markdown. Its integration into that site is a later task.
+The Fumadocs build now renders the numbered reference from ordinary Markdown. Generated pages preserve its reading order and link to the source revision. The documentation build checks source digests, links, and static search alongside the existing recorded demonstrations.
 
 ## Subsequent development candidates
 
@@ -44,4 +44,4 @@ The existing Fumadocs project remains available, but the new reference is author
 | 4 | Run a matched prose-only comparison | Same task, equivalent available requirements/source, frozen scoring, recorded access |
 | 5 | Evaluate a proposed implementation IR | Distinct consumer, operation semantics, refinement obligations, and checked transformation |
 
-Known runtime work includes the legacy validation size regression described in [compatibility](../03-reference/04-compatibility.md). Broader repositories/languages, provider transport, general inference, solvers, concurrency verification, package publication, CI, and hosting remain separate scope decisions. Historical task instructions do not override the current user request.
+Known runtime work includes the legacy validation size regression described in [compatibility](../03-reference/04-compatibility.md). Broader repositories/languages, provider transport, general inference, solvers, concurrency verification, package publication, CI, and public hosting remain separate scope decisions. Historical task instructions do not override the current user request.

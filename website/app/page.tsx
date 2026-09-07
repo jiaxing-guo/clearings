@@ -1,6 +1,23 @@
 import Link from 'next/link';
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { baseOptions } from '@/lib/layout.shared';
+
+const sections = [
+  ['Architecture', 'Representations, processing paths, abstraction, and refinement.', 'architecture/system'],
+  ['Semantics', 'Types, expressions, operation contracts, and observation checks.', 'semantics/values-and-expressions'],
+  ['Interface reference', 'Identity, validation, context projections, API, and compatibility.', 'reference/identity-and-validation'],
+  ['Guides', 'Inspect a Hono case and author a typed specification.', 'guides/check-a-case'],
+  ['Development', 'Implemented capabilities, bootstrap evidence, and documentation maintenance.', 'development/status-and-roadmap'],
+];
+
 export default function Home() {
-  return <HomeLayout {...baseOptions()}><main className="home-intro"><h1>Internal representation<br />for AI coding.</h1><p>Clearings connects code to behavior. Inspect the conditions, state changes, and failure paths behind an explanation. Give a coding agent the records it needs for a specific question.</p><div className="home-links"><Link href="/docs">Get started →</Link><Link href="/docs/demos">Explore the three demos →</Link></div><table><thead><tr><th>Start with your question</th><th>Choose a view</th></tr></thead><tbody><tr><td>What does this part of the system do?</td><td>Overview report</td></tr><tr><td>How does it behave under these conditions?</td><td>Engineer guide</td></tr><tr><td>Which rules and source should my agent use?</td><td>Semantic records</td></tr></tbody></table><p>Review prototype. The Hono example covers two capabilities. Claims need independent support review. The library has no built-in model endpoint.</p></main></HomeLayout>;
+  return <HomeLayout {...baseOptions()}><main className="home-intro">
+    <h1>Clearings documentation</h1>
+    <p>Technical reference for the repository analysis pipeline and typed contract language. Read the semantics, inspect abstraction boundaries, and reproduce the worked examples.</p>
+    <div className="home-links"><Link href="/docs/technical">Read the technical reference →</Link><Link href="/docs/technical/guides/check-a-case">Check a Hono case →</Link></div>
+    <table><thead><tr><th>Section</th><th>Scope</th></tr></thead><tbody>
+      {sections.map(([title, description, path]) => <tr key={path}><td><Link href={`/docs/technical/${path}`}>{title}</Link></td><td>{description}</td></tr>)}
+    </tbody></table>
+    <p>The reference describes the implemented v0.3.0 contract language and its relationship to the v0.1 and v0.2 models. Proposed implementation IRs and refinement checks are identified separately.</p>
+  </main></HomeLayout>;
 }

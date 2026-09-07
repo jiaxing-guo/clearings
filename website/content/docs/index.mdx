@@ -1,39 +1,26 @@
 ---
-title: "Start with a behavior question"
-description: "Inspect code through linked rules and source evidence."
+title: "Clearings documentation"
+description: "Architecture, semantics, interfaces, and worked examples."
 ---
 
-Clearings builds an **internal representation for AI coding**. It gives people and coding agents a shared set of records for functions, behavior, state, and source evidence.
+Clearings represents repository structure and proposed behavior, constructs bounded agent context, and checks supplied observations against typed contracts.
 
-Suppose you need to know: *If a handler returns no response, what happens next?* A call list is not enough. You also need the branch conditions, the shared state, and the failure boundary.
+## Technical reference
 
-Clearings keeps those rules in semantic contracts. You can read a report, inspect the records, or export a selection for your agent.
+The [technical reference](/docs/technical) is generated from the canonical Markdown documents in the repository. Its reading order follows the numbered source directories.
 
-## Try the recorded example
-
-The repository includes a Hono example. You can inspect it without an API key or a Hono checkout.
-
-```bash
-npm ci --ignore-scripts
-npm run build
-node dist/cli/main.js inspect benchmarks/results/hono-contracts/semantic.json --behavior response-selection
-```
-
-The JSON identifies the selected behavior and its linked functions, assertions, state, and unknowns. `source_rechecked` is `false`: this command checks the artifact's integrity but does not open the Hono repository.
-
-[Follow the quickstart](/docs/quickstart) to export context and reproduce the reports.
-
-## Choose your view
-
-| Your task | Start here |
+| Section | Scope |
 | --- | --- |
-| Understand purpose and possible outcomes | [Overview reports](/docs/demos) |
-| Find conditions, state changes, and failure paths | [Engineer reports](/docs/demos) |
-| Give an agent a bounded set of rules | [Inspect and export context](/docs/guides/context) |
-| Use the TypeScript library | [Library API](/docs/reference/library) |
+| [Architecture](/docs/technical/architecture/system) | System responsibilities, representation inventory, abstraction, and refinement |
+| [Semantics](/docs/technical/semantics/values-and-expressions) | Values, expressions, operation contracts, observations, and sequences |
+| [Interface reference](/docs/technical/reference/identity-and-validation) | Identity, validation, context, API, CLI, and compatibility |
+| [Guides](/docs/technical/guides/check-a-case) | Check an existing case and author a specification |
+| [Development](/docs/technical/development/status-and-roadmap) | Implementation status, bootstrap evidence, and documentation maintenance |
 
-## Know the current boundary
+The sidebar follows the reference order. Search includes the technical reference and the existing guides. Each technical page links to its Markdown source.
 
-This is a private review prototype. The recorded example covers Hono request dispatch and middleware composition. It does not cover all of Hono or your application handlers.
+## Existing guides and demonstrations
 
-Source extraction is automatic and bounded. Semantic interpretation arrives through explicit file exchange with an agent or person. Clearings has no built-in model endpoint. A valid source citation does not prove an English claim. Independent claim-support review is pending.
+The [quickstart](/docs/quickstart) introduces the recorded Hono analysis. The [demonstrations](/docs/demos) include audience reports, the internal representation, and typed specification examples. These views retain their original routes and recorded artifacts.
+
+The numbered technical reference defines current semantics. Historical reports remain evidence for their recorded baselines.

@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { checkReviewArchive } from './review-archive.mjs';
+import './prepare-technical-docs.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
 execFileSync(process.execPath,['scripts/check-shared-demo.mjs','benchmarks/results/hono-shared'],{cwd:root,stdio:'inherit'});
 checkReviewArchive(fileURLToPath(new URL('../benchmarks/results/hono-shared/',import.meta.url)));

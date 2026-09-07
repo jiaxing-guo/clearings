@@ -60,9 +60,9 @@ The library has no built-in model endpoint. Scans read immutable Git objects; th
 
 ## Documentation
 
-Start with the [Markdown technical reference](docs/README.md) for architecture, representation definitions, operational semantics, abstraction mappings, and validation limits. The numbered directories define the reading order. Run `npm run docs:check:markdown` to verify local links and executable examples. Fumadocs integration of this reference is deferred.
+Start with the [Markdown technical reference](docs/README.md) for architecture, representation definitions, operational semantics, abstraction mappings, and validation limits. The numbered directories define the reading order. Run `npm run docs:check:markdown` to verify local links and executable examples. Fumadocs renders the same reference at `/docs/technical`, with ordered navigation, page outlines, and static search.
 
-The existing website uses Fumadocs and Next.js static export. It retains the earlier guides, references, and three demos. Its separate build commands are:
+The website uses Fumadocs and Next.js static export. The build generates technical pages from `docs/`; do not edit generated copies. Existing guides and demonstrations retain their routes. Build and verify the site with:
 
 ```bash
 npm ci --prefix website --ignore-scripts

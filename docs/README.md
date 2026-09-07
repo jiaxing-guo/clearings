@@ -33,6 +33,6 @@ The terms **must**, **must not**, and **may** express requirements or permitted 
 
 ## Organization and publishing
 
-Numbered directories and filenames define a stable reading order. Documents use ordinary Markdown, relative repository links, tables, and fenced examples. The new reference does not depend on Fumadocs, MDX, generated site assets, or a server. Integrating this reference into Fumadocs is subsequent work; the existing website remains a separate, historical presentation.
+Numbered directories and filenames define a stable reading order. Documents use ordinary Markdown, relative repository links, tables, and fenced examples. Fumadocs renders this reference at `/docs/technical`. The build derives navigation and page metadata from these files, converts links between current reference pages to site routes, and links other repository targets to the source revision. The authored reference remains ordinary Markdown and can be read independently of the site. Existing website guides and demonstration routes remain available.
 
 [Historical plans and implementation reports](archive/README.md) are retained for provenance. Two root files remain for compatibility: [the original bootstrap design](SPECIFICATION_ARCHITECTURE.md), whose exact text is embedded in the context-assembly specification, and [the sequence guide entry](SEQUENCE_CHECKS.md), which preserves a link from that design. Use the numbered reference for current semantics.

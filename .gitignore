@@ -18,3 +18,5 @@ website/.source/
 website/next-env.d.ts
 website/*.tsbuildinfo
 website/public/demo/
+website/content/docs/technical/
+website/public/technical-reference.json
