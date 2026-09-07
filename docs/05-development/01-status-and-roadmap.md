@@ -1,6 +1,6 @@
 # Status and development roadmap
 
-This status describes the v0.3 implementation, documentation integration, and subsequent correctness fixes in PR #6. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
+This status describes the v0.3 implementation, documentation integration, correctness fixes in PR #6, and initial conformance artifact definitions. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
 
 ## Read the evidence at the correct scope
 
@@ -17,6 +17,7 @@ These results support specification-guided development. They do not establish a 
 | Typed contracts | v0.3 types, predicates, state/effects, outcomes, decisions | Partial and opaque obligations remain explicit |
 | Context | Deterministic required closure, byte accounting, revalidation | No token-efficiency result or unrestricted retrieval planner |
 | Observation checks | Single-operation predicates and adjacent selected-state continuity | No source execution, transition legality, concurrency model, or universal proof |
+| Conformance definitions | Scoped return/exception contracts, 13-obligation ledger, profile and execution-record validators, four authored protocol examples | No recorder, adapter, independent evaluator, acceptance report, or new execution evidence |
 | Human views | Markdown/HTML projections and historical audience reports | Independent semantic-content review remains open |
 | Technical reference | Ordered Markdown semantics, architecture, interfaces, and examples | Fumadocs renders the same Markdown with ordered navigation and static search |
 
@@ -28,7 +29,7 @@ These results support specification-guided development. They do not establish a 
 | [Fresh impact implementation](../../benchmarks/agent-runs/luna-impact-001/REPORT.md) | First candidate passed 19 withheld feature tests | Candidate remains outside production; eight rules opaque |
 | [Fresh sequence implementation](../../benchmarks/agent-runs/luna-sequence-001/REPORT.md) | First candidate passed 17 evaluation groups, including the fixture self-check; integrated unchanged after source review | Five rules opaque; no further development cycle with the improved version |
 
-The sequence experiment's baseline regression run passed 78 existing tests plus three agent-authored tests. The later combined implementation passed 112 library tests. After the final review fixes, the full suite passes 118 tests, including six new regression tests for the corrected semantics and CLI compatibility. Historical experiment counts remain bound to their recorded baselines.
+The sequence experiment's baseline regression run passed 78 existing tests plus three agent-authored tests. The later combined implementation passed 112 library tests. PR #6's final review run passed 118 tests, including six new regression tests for the corrected semantics and CLI compatibility. Historical experiment counts remain bound to their recorded baselines.
 
 The coding agents received prose and source as well as generated context. There is no matched prose-only comparison, repeated-trial performance result, independently authenticated reviewer, or formal source-refinement proof. Frozen tests were authored separately from the coding agent, but shared-filesystem isolation was by protocol.
 
@@ -41,6 +42,8 @@ Standardize the implemented semantics, identify abstraction boundaries, organize
 The Fumadocs build now renders the numbered reference from ordinary Markdown. Generated pages preserve its reading order and link to the source revision. The documentation build checks source digests, links, and static search alongside the existing recorded demonstrations.
 
 ## Subsequent development candidates
+
+The first conformance change implements the definitions in [the four-PR implementation plan](03-conformance-plan.md). Its two artifact formats are evaluation metadata, and its examples are explicitly authored. The remaining three PRs implement recording and mapping, independent evaluation, and the reproducible command and reports. Historical bootstrap evidence retains its original scope.
 
 | Priority | Candidate | Evidence needed before broader claims |
 | --- | --- | --- |

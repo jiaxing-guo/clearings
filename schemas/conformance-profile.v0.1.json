@@ -1,0 +1,400 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://clearings.dev/schemas/conformance-profile.v0.1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "artifact_id",
+    "name",
+    "specification_id",
+    "target",
+    "scope",
+    "completion_operations",
+    "measurements",
+    "obligations"
+  ],
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "0.1.0"
+      ]
+    },
+    "kind": {
+      "enum": [
+        "conformance-profile"
+      ]
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^conformance-profile:[a-f0-9]{64}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "specification_id": {
+      "type": "string",
+      "pattern": "^specification:[a-f0-9]{64}$"
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "module",
+        "export"
+      ],
+      "properties": {
+        "module": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//)[^\\\\\\x00]+$"
+        },
+        "export": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_domain",
+        "requirements",
+        "exclusions"
+      ],
+      "properties": {
+        "input_domain": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "completion_operations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "return",
+        "throw"
+      ],
+      "properties": {
+        "return": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+        },
+        "throw": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+        }
+      }
+    },
+    "measurements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "description",
+          "source",
+          "type",
+          "procedure"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "enum": [
+              "arguments-before",
+              "arguments-after",
+              "return",
+              "exception",
+              "independent",
+              "instrumentation"
+            ]
+          },
+          "type": {
+            "$ref": "#/definitions/ValueType"
+          },
+          "procedure": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "obligations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "requirement",
+          "operation_ids",
+          "rule_ids",
+          "measurement_ids",
+          "mandatory",
+          "verification",
+          "limitation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+          },
+          "requirement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operation_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "rule_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "measurement_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "mandatory": {
+            "type": "boolean"
+          },
+          "verification": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "rule_ids"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "predicate"
+                    ]
+                  },
+                  "rule_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+                    },
+                    "minItems": 1,
+                    "uniqueItems": true
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "check_id"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "independent-check"
+                    ]
+                  },
+                  "check_id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "reason"
+                ],
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "unresolved"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          },
+          "limitation": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "minItems": 1
+    }
+  },
+  "definitions": {
+    "JsonValue": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "boolean",
+            "number",
+            "string"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/JsonValue"
+          }
+        }
+      ]
+    },
+    "ValueType": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "boolean",
+                "string",
+                "integer",
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "values"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "enum"
+              ]
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "element"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "list"
+              ]
+            },
+            "element": {
+              "$ref": "#/definitions/ValueType"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "fields"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "record"
+              ]
+            },
+            "fields": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+                "maxLength": 256
+              },
+              "additionalProperties": {
+                "$ref": "#/definitions/ValueType"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

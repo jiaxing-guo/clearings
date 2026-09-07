@@ -1,0 +1,611 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://clearings.dev/schemas/execution-record.v0.1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "artifact_id",
+    "origin",
+    "profile_id",
+    "specification_id",
+    "case_id",
+    "identities",
+    "arguments_before",
+    "arguments_after",
+    "completion",
+    "measurements",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "0.1.0"
+      ]
+    },
+    "kind": {
+      "enum": [
+        "execution-record"
+      ]
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^execution-record:[a-f0-9]{64}$"
+    },
+    "origin": {
+      "enum": [
+        "recorded-execution",
+        "authored-example"
+      ]
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^conformance-profile:[a-f0-9]{64}$"
+    },
+    "specification_id": {
+      "type": "string",
+      "pattern": "^specification:[a-f0-9]{64}$"
+    },
+    "case_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+    },
+    "identities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementation",
+        "adapter",
+        "evaluator",
+        "fixture",
+        "runtime"
+      ],
+      "properties": {
+        "implementation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository",
+            "commit",
+            "tree",
+            "module",
+            "export",
+            "files"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "commit": {
+              "type": "string",
+              "pattern": "^([a-f0-9]{40}|[a-f0-9]{64})$"
+            },
+            "tree": {
+              "type": "string",
+              "pattern": "^([a-f0-9]{40}|[a-f0-9]{64})$"
+            },
+            "module": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//)[^\\\\\\x00]+$"
+            },
+            "export": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path",
+                  "sha256"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*//)[^\\\\\\x00]+$"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                }
+              },
+              "minItems": 1
+            }
+          }
+        },
+        "adapter": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "name",
+                "sha256"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "bound"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "reason"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "unavailable"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "evaluator": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "name",
+                "sha256"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "bound"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "reason"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "unavailable"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        },
+        "fixture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "sha256"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        },
+        "runtime": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "name",
+                "version",
+                "platform",
+                "architecture",
+                "lockfile_sha256"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "bound"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "platform": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "architecture": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "lockfile_sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "status",
+                "reason"
+              ],
+              "properties": {
+                "status": {
+                  "enum": [
+                    "unavailable"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "arguments_before": {
+      "$ref": "#/definitions/JsonValue"
+    },
+    "arguments_after": {
+      "$ref": "#/definitions/CapturedValue"
+    },
+    "completion": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "result"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "return"
+              ]
+            },
+            "result": {
+              "$ref": "#/definitions/CapturedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "thrown"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "throw"
+              ]
+            },
+            "thrown": {
+              "$ref": "#/definitions/CapturedValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "limit_ms"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "timeout"
+              ]
+            },
+            "limit_ms": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "phase",
+            "message"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "harness-failure"
+              ]
+            },
+            "phase": {
+              "enum": [
+                "prepare",
+                "invoke",
+                "capture"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "measurements": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "value"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+              },
+              "status": {
+                "enum": [
+                  "observed"
+                ]
+              },
+              "value": {
+                "$ref": "#/definitions/JsonValue"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "reason"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$"
+              },
+              "status": {
+                "enum": [
+                  "unobserved"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        ]
+      },
+      "minItems": 1
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    }
+  },
+  "definitions": {
+    "JsonValue": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "boolean",
+            "number",
+            "string"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/JsonValue"
+          }
+        }
+      ]
+    },
+    "ValueType": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "boolean",
+                "string",
+                "integer",
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "values"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "enum"
+              ]
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "element"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "list"
+              ]
+            },
+            "element": {
+              "$ref": "#/definitions/ValueType"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "fields"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "record"
+              ]
+            },
+            "fields": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[a-zA-Z][a-zA-Z0-9_.:/-]*$",
+                "maxLength": 256
+              },
+              "additionalProperties": {
+                "$ref": "#/definitions/ValueType"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CapturedValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "value"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "captured"
+              ]
+            },
+            "value": {
+              "$ref": "#/definitions/JsonValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reason"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "unavailable"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+}

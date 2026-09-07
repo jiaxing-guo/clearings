@@ -1,0 +1,122 @@
+{
+  "arguments_after": {
+    "reason": "No invocation was performed.",
+    "status": "unavailable"
+  },
+  "arguments_before": {
+    "options": {
+      "maxBytes": 65536
+    },
+    "selection": "root",
+    "specification": {
+      "example": "Illustrative arguments only; not an executable conformance fixture."
+    }
+  },
+  "artifact_id": "execution-record:6c056e68ac3e88bb4ade43d83023cac5950065329ef891c336c675adeefa692e",
+  "case_id": "example:return",
+  "completion": {
+    "kind": "return",
+    "result": {
+      "status": "captured",
+      "value": {
+        "example": "Illustrative return payload; not a valid operation context."
+      }
+    }
+  },
+  "identities": {
+    "adapter": {
+      "reason": "The adapter is not implemented in this PR.",
+      "status": "unavailable"
+    },
+    "evaluator": {
+      "reason": "The independent evaluator is not implemented in this PR.",
+      "status": "unavailable"
+    },
+    "fixture": {
+      "name": "Authored protocol illustration",
+      "sha256": "9c31586d7d92aafddda6ae7fcae176acb4dd459a7d5a0841e27d04e5e613a5a5"
+    },
+    "implementation": {
+      "commit": "9d1fede2a32c9575635e22aa7fabed1158224306",
+      "export": "assembleContext",
+      "files": [
+        {
+          "path": "src/specification/context.ts",
+          "sha256": "49928b9fd51f8398aaff45685e151c99cf6439417eb872fe50b6fa4cc2785939"
+        }
+      ],
+      "module": "src/specification/context.ts",
+      "repository": "https://github.com/jiaxing-guo/clearings-semantic",
+      "tree": "2a2e2e9aa1f433237edd8bf2fb717dd0dabbf4f8"
+    },
+    "runtime": {
+      "reason": "No implementation was executed.",
+      "status": "unavailable"
+    }
+  },
+  "kind": "execution-record",
+  "limitations": [
+    "This authored example demonstrates the record schema only. It is not a conformance case, captured execution, or passing result."
+  ],
+  "measurements": [
+    {
+      "id": "invocation",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "input-records",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "returned-records",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "returned-context",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "serialized-bytes",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "reference-required-bytes",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "expected-projection",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "arguments-before-digest",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "arguments-after-digest",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "exception",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    },
+    {
+      "id": "effects",
+      "reason": "Authored format example; no measurements were performed.",
+      "status": "unobserved"
+    }
+  ],
+  "origin": "authored-example",
+  "profile_id": "conformance-profile:8c17eaaaf442742290603c9cf7f3cb35b4887736aec7b8ac48deddc0255af9dc",
+  "schema_version": "0.1.0",
+  "specification_id": "specification:e987fb10d13fb6f1b6d25b9a55b4f295593305558c21054d7ced3ad1b020e5e7"
+}

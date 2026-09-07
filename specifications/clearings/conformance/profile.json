@@ -1,0 +1,596 @@
+{
+  "artifact_id": "conformance-profile:8c17eaaaf442742290603c9cf7f3cb35b4887736aec7b8ac48deddc0255af9dc",
+  "completion_operations": {
+    "return": "assembly-return",
+    "throw": "assembly-throw"
+  },
+  "kind": "conformance-profile",
+  "measurements": [
+    {
+      "description": "Extract root ID, available IDs, required edges, integer budget, artifact identity, and applicable decisions from the concrete invocation; resolve a valid alias against the input specification.",
+      "id": "invocation",
+      "procedure": "Extract root ID, available IDs, required edges, integer budget, artifact identity, and applicable decisions from the concrete invocation; resolve a valid alias against the input specification.",
+      "source": "arguments-before",
+      "type": {
+        "fields": {
+          "applicable_decisions": {
+            "element": {
+              "fields": {
+                "decision_id": {
+                  "kind": "string"
+                },
+                "operation_id": {
+                  "kind": "string"
+                }
+              },
+              "kind": "record"
+            },
+            "kind": "list"
+          },
+          "artifact_id": {
+            "kind": "string"
+          },
+          "available_ids": {
+            "element": {
+              "kind": "string"
+            },
+            "kind": "list"
+          },
+          "max_bytes": {
+            "kind": "integer"
+          },
+          "required_edges": {
+            "element": {
+              "fields": {
+                "from": {
+                  "kind": "string"
+                },
+                "to": {
+                  "kind": "string"
+                }
+              },
+              "kind": "record"
+            },
+            "kind": "list"
+          },
+          "root_id": {
+            "kind": "string"
+          }
+        },
+        "kind": "record"
+      }
+    },
+    {
+      "description": "Hash complete canonical input operation records, retaining one entry per operation.",
+      "id": "input-records",
+      "procedure": "Hash complete canonical input operation records, retaining one entry per operation.",
+      "source": "arguments-before",
+      "type": {
+        "element": {
+          "fields": {
+            "id": {
+              "kind": "string"
+            },
+            "sha256": {
+              "kind": "string"
+            }
+          },
+          "kind": "record"
+        },
+        "kind": "list"
+      }
+    },
+    {
+      "description": "Hash every complete returned operation record; record count and IDs must agree with the raw returned operations array.",
+      "id": "returned-records",
+      "procedure": "Hash every complete returned operation record; record count and IDs must agree with the raw returned operations array.",
+      "source": "return",
+      "type": {
+        "element": {
+          "fields": {
+            "id": {
+              "kind": "string"
+            },
+            "sha256": {
+              "kind": "string"
+            }
+          },
+          "kind": "record"
+        },
+        "kind": "list"
+      }
+    },
+    {
+      "description": "Project every returned record and reported counter faithfully. Keep independent serialized bytes in the separate serialized-bytes measurement.",
+      "id": "returned-context",
+      "procedure": "Project every returned record and reported counter faithfully. Keep independent serialized bytes in the separate serialized-bytes measurement.",
+      "source": "return",
+      "type": {
+        "fields": {
+          "artifact_id": {
+            "kind": "string"
+          },
+          "decision_ids": {
+            "element": {
+              "kind": "string"
+            },
+            "kind": "list"
+          },
+          "omitted_ids": {
+            "element": {
+              "kind": "string"
+            },
+            "kind": "list"
+          },
+          "operation_ids": {
+            "element": {
+              "kind": "string"
+            },
+            "kind": "list"
+          },
+          "records": {
+            "element": {
+              "fields": {
+                "id": {
+                  "kind": "string"
+                },
+                "sha256": {
+                  "kind": "string"
+                }
+              },
+              "kind": "record"
+            },
+            "kind": "list"
+          },
+          "reported_bytes": {
+            "kind": "integer"
+          },
+          "reported_required_bytes": {
+            "kind": "integer"
+          },
+          "source_ids": {
+            "element": {
+              "kind": "string"
+            },
+            "kind": "list"
+          },
+          "state_ids": {
+            "element": {
+              "kind": "string"
+            },
+            "kind": "list"
+          }
+        },
+        "kind": "record"
+      }
+    },
+    {
+      "description": "Encode the entire returned package as compact JSON plus one newline and count UTF-8 bytes without calling production serialization or accounting helpers.",
+      "id": "serialized-bytes",
+      "procedure": "Encode the entire returned package as compact JSON plus one newline and count UTF-8 bytes without calling production serialization or accounting helpers.",
+      "source": "independent",
+      "type": {
+        "kind": "integer"
+      }
+    },
+    {
+      "description": "Independently construct the complete required package and solve the counter fixed point for the requested budget; do not use the candidate package or error to compute this value.",
+      "id": "reference-required-bytes",
+      "procedure": "Independently construct the complete required package and solve the counter fixed point for the requested budget; do not use the candidate package or error to compute this value.",
+      "source": "independent",
+      "type": {
+        "kind": "integer"
+      }
+    },
+    {
+      "description": "Compute expected ordering and state/evidence selection from the original invocation using independently implemented reference procedures.",
+      "id": "expected-projection",
+      "procedure": "Compute expected ordering and state/evidence selection from the original invocation using independently implemented reference procedures.",
+      "source": "independent",
+      "type": {
+        "fields": {
+          "operation_ids": {
+            "element": {
+              "kind": "string"
+            },
+            "kind": "list"
+          },
+          "source_ids": {
+            "element": {
+              "kind": "string"
+            },
+            "kind": "list"
+          },
+          "state_ids": {
+            "element": {
+              "kind": "string"
+            },
+            "kind": "list"
+          }
+        },
+        "kind": "record"
+      }
+    },
+    {
+      "description": "Hash canonical arguments immediately before invocation.",
+      "id": "arguments-before-digest",
+      "procedure": "Hash canonical arguments immediately before invocation.",
+      "source": "arguments-before",
+      "type": {
+        "kind": "string"
+      }
+    },
+    {
+      "description": "Hash canonical arguments immediately after return or exception; a missing snapshot remains unobserved.",
+      "id": "arguments-after-digest",
+      "procedure": "Hash canonical arguments immediately after return or exception; a missing snapshot remains unobserved.",
+      "source": "arguments-after",
+      "type": {
+        "kind": "string"
+      }
+    },
+    {
+      "description": "Read the actual exception code and optional structured required_bytes detail. An absent detail becomes an empty list, not a fabricated zero; do not parse the message.",
+      "id": "exception",
+      "procedure": "Read the actual exception code and optional structured required_bytes detail. An absent detail becomes an empty list, not a fabricated zero; do not parse the message.",
+      "source": "exception",
+      "type": {
+        "fields": {
+          "code": {
+            "kind": "string"
+          },
+          "required_bytes": {
+            "element": {
+              "kind": "integer"
+            },
+            "kind": "list"
+          }
+        },
+        "kind": "record"
+      }
+    },
+    {
+      "description": "Record effect IDs only if the monitor covers the declared boundary. No monitor is supplied in this PR; mark this measurement unobserved.",
+      "id": "effects",
+      "procedure": "Record effect IDs only if the monitor covers the declared boundary. No monitor is supplied in this PR; mark this measurement unobserved.",
+      "source": "instrumentation",
+      "type": {
+        "element": {
+          "kind": "string"
+        },
+        "kind": "list"
+      }
+    }
+  ],
+  "name": "Bounded context assembly conformance",
+  "obligations": [
+    {
+      "id": "closure",
+      "limitation": "Predicate agreement depends on faithful observation mapping; the adapter must be tested separately.",
+      "mandatory": true,
+      "measurement_ids": [
+        "invocation",
+        "returned-context"
+      ],
+      "operation_ids": [
+        "assembly-return"
+      ],
+      "requirement": "Select exactly the least required dependency closure, including the root, without duplicates.",
+      "rule_ids": [
+        "return-root",
+        "return-unique",
+        "return-closure"
+      ],
+      "verification": {
+        "kind": "predicate",
+        "rule_ids": [
+          "return-root",
+          "return-unique",
+          "return-closure"
+        ]
+      }
+    },
+    {
+      "id": "ordering",
+      "limitation": "Reference procedure is required; its implementation is deferred.",
+      "mandatory": true,
+      "measurement_ids": [
+        "invocation",
+        "returned-context",
+        "expected-projection"
+      ],
+      "operation_ids": [
+        "assembly-return"
+      ],
+      "requirement": "Preserve the documented traversal and record ordering.",
+      "rule_ids": [
+        "return-order"
+      ],
+      "verification": {
+        "check_id": "check-ordering",
+        "kind": "independent-check"
+      }
+    },
+    {
+      "id": "record-preservation",
+      "limitation": "The predicate compares supplied digests. The independent check must establish projection completeness and full raw-record equality.",
+      "mandatory": true,
+      "measurement_ids": [
+        "input-records",
+        "returned-records",
+        "returned-context"
+      ],
+      "operation_ids": [
+        "assembly-return"
+      ],
+      "requirement": "Retain complete selected operation records and one digest per selected ID.",
+      "rule_ids": [
+        "return-records"
+      ],
+      "verification": {
+        "check_id": "check-record-preservation",
+        "kind": "independent-check"
+      }
+    },
+    {
+      "id": "decisions",
+      "limitation": "Predicate agreement depends on faithful observation mapping; the adapter must be tested separately.",
+      "mandatory": true,
+      "measurement_ids": [
+        "invocation",
+        "returned-context",
+        "input-records"
+      ],
+      "operation_ids": [
+        "assembly-return"
+      ],
+      "requirement": "Retain all decisions belonging to selected operations.",
+      "rule_ids": [
+        "return-decisions"
+      ],
+      "verification": {
+        "kind": "predicate",
+        "rule_ids": [
+          "return-decisions"
+        ]
+      }
+    },
+    {
+      "id": "omissions",
+      "limitation": "Predicate agreement depends on faithful observation mapping; the adapter must be tested separately.",
+      "mandatory": true,
+      "measurement_ids": [
+        "invocation",
+        "returned-context"
+      ],
+      "operation_ids": [
+        "assembly-return"
+      ],
+      "requirement": "Partition available operations into selected and explicitly omitted IDs.",
+      "rule_ids": [
+        "return-omissions"
+      ],
+      "verification": {
+        "kind": "predicate",
+        "rule_ids": [
+          "return-omissions"
+        ]
+      }
+    },
+    {
+      "id": "state-selection",
+      "limitation": "Independent comparison must inspect full raw records, not only the projected IDs.",
+      "mandatory": true,
+      "measurement_ids": [
+        "invocation",
+        "returned-context",
+        "expected-projection"
+      ],
+      "operation_ids": [
+        "assembly-return"
+      ],
+      "requirement": "Select and preserve exactly the required state records.",
+      "rule_ids": [
+        "return-states"
+      ],
+      "verification": {
+        "check_id": "check-state-selection",
+        "kind": "independent-check"
+      }
+    },
+    {
+      "id": "evidence-selection",
+      "limitation": "Literal keys named evidence_ids do not select evidence. Source hashes do not authenticate source provenance.",
+      "mandatory": true,
+      "measurement_ids": [
+        "invocation",
+        "returned-context",
+        "expected-projection"
+      ],
+      "operation_ids": [
+        "assembly-return"
+      ],
+      "requirement": "Select and preserve exactly the sources referenced by selected schema metadata.",
+      "rule_ids": [
+        "return-evidence"
+      ],
+      "verification": {
+        "check_id": "check-evidence-selection",
+        "kind": "independent-check"
+      }
+    },
+    {
+      "id": "identity",
+      "limitation": "Predicate agreement depends on faithful observation mapping; the adapter must be tested separately.",
+      "mandatory": true,
+      "measurement_ids": [
+        "invocation",
+        "returned-context"
+      ],
+      "operation_ids": [
+        "assembly-return"
+      ],
+      "requirement": "Retain the input specification identity in the context.",
+      "rule_ids": [
+        "return-identity"
+      ],
+      "verification": {
+        "kind": "predicate",
+        "rule_ids": [
+          "return-identity"
+        ]
+      }
+    },
+    {
+      "id": "byte-accounting",
+      "limitation": "The independent encoder must retain the final newline and counter fields; predicate checks do not validate that encoder.",
+      "mandatory": true,
+      "measurement_ids": [
+        "returned-context",
+        "serialized-bytes",
+        "invocation"
+      ],
+      "operation_ids": [
+        "assembly-return"
+      ],
+      "requirement": "Both counters equal independently measured compact JSON UTF-8 bytes and do not exceed the requested budget.",
+      "rule_ids": [
+        "return-bytes"
+      ],
+      "verification": {
+        "kind": "predicate",
+        "rule_ids": [
+          "return-bytes"
+        ]
+      }
+    },
+    {
+      "id": "input-preservation",
+      "limitation": "Boundary equality does not exclude transient writes that are later restored, or prove absence of aliasing.",
+      "mandatory": true,
+      "measurement_ids": [
+        "arguments-before-digest",
+        "arguments-after-digest"
+      ],
+      "operation_ids": [
+        "assembly-return",
+        "assembly-throw"
+      ],
+      "requirement": "Preserve invocation argument values at observed completion boundaries.",
+      "rule_ids": [
+        "return-input-preservation",
+        "throw-input-preservation"
+      ],
+      "verification": {
+        "kind": "predicate",
+        "rule_ids": [
+          "return-input-preservation",
+          "throw-input-preservation"
+        ]
+      }
+    },
+    {
+      "id": "error-precedence",
+      "limitation": "The full specification validator has additional earlier failures outside this profile domain. Outcome mapping must use the observed exception code.",
+      "mandatory": true,
+      "measurement_ids": [
+        "invocation",
+        "exception"
+      ],
+      "operation_ids": [
+        "assembly-throw"
+      ],
+      "requirement": "Within the declared domain, validate required references before budget validity, then resolve selection, then check package capacity.",
+      "rule_ids": [
+        "throw-dependency-code",
+        "throw-budget-invalid-code",
+        "throw-selection-code",
+        "throw-budget-exceeded-code"
+      ],
+      "verification": {
+        "kind": "predicate",
+        "rule_ids": [
+          "throw-dependency-code",
+          "throw-budget-invalid-code",
+          "throw-selection-code",
+          "throw-budget-exceeded-code"
+        ]
+      }
+    },
+    {
+      "id": "budget-failure",
+      "limitation": "Requires independent package construction and structured exception details, both deferred.",
+      "mandatory": true,
+      "measurement_ids": [
+        "invocation",
+        "exception",
+        "reference-required-bytes"
+      ],
+      "operation_ids": [
+        "assembly-throw"
+      ],
+      "requirement": "Reject a non-fitting package with the exact required size; never reject a fitting valid invocation as CONTEXT_BUDGET.",
+      "rule_ids": [
+        "throw-budget-size",
+        "throw-budget-reference"
+      ],
+      "verification": {
+        "check_id": "check-budget-failure",
+        "kind": "independent-check"
+      }
+    },
+    {
+      "id": "external-effects",
+      "limitation": "Excluded from mandatory scoped acceptance. Contract verdicts retain unknown for this opaque obligation.",
+      "mandatory": false,
+      "measurement_ids": [
+        "effects"
+      ],
+      "operation_ids": [
+        "assembly-return",
+        "assembly-throw"
+      ],
+      "requirement": "No external effects occur during candidate invocation.",
+      "rule_ids": [
+        "return-effects",
+        "throw-effects"
+      ],
+      "verification": {
+        "kind": "unresolved",
+        "reason": "No complete effect instrumentation exists."
+      }
+    }
+  ],
+  "schema_version": "0.1.0",
+  "scope": {
+    "exclusions": [
+      "Malformed schemas, stale input identities, invalid expression types, noninteger or nonfinite budgets, and non-JSON arguments remain outside this bounded profile.",
+      "Concurrency, arbitrary external effects, transient writes restored before capture, post-return aliasing, universal refinement, and agent coding advantage are not established."
+    ],
+    "input_domain": [
+      "Portable v0.3 intended or observed invocation specifications with valid structure, identity, types, and references, except that required dependency targets may be absent.",
+      "Selection is a nonempty string containing an operation ID, valid alias, or absent selection. Budgets are safe integers, including values outside 1 through 2097152.",
+      "Single synchronous invocation over in-memory JSON values. Schema work limits and expression limits remain those of v0.3."
+    ],
+    "requirements": [
+      "closure",
+      "ordering",
+      "record-preservation",
+      "decisions",
+      "omissions",
+      "state-selection",
+      "evidence-selection",
+      "identity",
+      "byte-accounting",
+      "input-preservation",
+      "error-precedence",
+      "budget-failure",
+      "external-effects"
+    ]
+  },
+  "specification_id": "specification:e987fb10d13fb6f1b6d25b9a55b4f295593305558c21054d7ced3ad1b020e5e7",
+  "target": {
+    "export": "assembleContext",
+    "module": "src/specification/context.ts"
+  }
+}

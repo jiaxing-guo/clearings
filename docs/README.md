@@ -33,6 +33,9 @@ The original reference order remains available for a systematic review. For a la
 | 12 | [Author and review a specification](04-guides/02-author-and-review.md) | How do I construct a contract and test its meaning? |
 | 13 | [Status and development roadmap](05-development/01-status-and-roadmap.md) | Which capabilities and bootstrap milestones are established? |
 | 14 | [Documentation maintenance](05-development/02-documentation.md) | How do I change this reference and verify it? |
+| 15 | [Executable conformance](02-semantics/04-executable-conformance.md) | How are concrete executions related to scoped requirements? |
+| 16 | [Conformance artifacts](03-reference/05-conformance-artifacts.md) | Which identities, measurements, and obligations must an evaluation record retain? |
+| 17 | [Conformance implementation plan](05-development/03-conformance-plan.md) | How do the four implementation PRs establish the first executable evaluation boundary? |
 
 ## Status and authority
 

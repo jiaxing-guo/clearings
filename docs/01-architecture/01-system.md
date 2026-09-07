@@ -41,6 +41,7 @@ The typed-specification path starts with an authored `SemanticSpecification`. Va
 | Semantic exchange | Source-bound authoring requests, proposal import, recorded replay | [semantic exchange](../../src/semantics/exchange.ts) |
 | Legacy contracts | Function/behavior contracts, inspection, context selection | [contract modules](../../src/contracts) |
 | Typed kernel | Specification validation, expression evaluation, observation checks | [specification modules](../../src/specification) |
+| Conformance metadata | Evaluation scope, obligation coverage, execution-record structure and identities; no runner | [conformance modules](../../src/conformance) |
 | Presentation | Audience plans and deterministic projections | [renderers](../../src/renderers), [presentation plans](../../src/presentation) |
 | CLI | File input/output, option validation, command routing, exit status | [CLI entry](../../src/cli/main.ts) |
 

@@ -47,6 +47,8 @@ An observed specification can be abstract. An intended specification can be deta
 
 `OperationObservation` records supplied inputs, state, an optional outcome, output, and effects. `OperationCheck` and `OperationSequenceCheck` record evaluation results. They are not an implementation IR or proof objects. No separate JSON Schema is exported for sequence results; their public TypeScript type is defined in [sequence.ts](../../src/specification/sequence.ts).
 
+`ConformanceProfile` declares a bounded evaluation domain, measurement procedures, and an obligation ledger against an exact intended specification. `ExecutionRecord` identifies the claimed implementation and evaluation components, invocation arguments, completion class, and observed or unobserved measurements. Their separate v0.1 schemas describe evaluation metadata. Validators check their structure and bindings; no execution recorder, observation adapter, independent evaluator, or acceptance report is implemented by those formats. See [conformance artifacts](../03-reference/05-conformance-artifacts.md).
+
 ## Current transformations
 
 | Transformation | Relationship |
