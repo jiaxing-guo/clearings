@@ -1,6 +1,6 @@
 # Program IR semantics
 
-Program IR is a typed implementation language with explicit computation and structured control flow. A program contains function definitions and names one entry function. Its intended consumer is the reference interpreter. The current implementation validates program artifacts; the interpreter is a subsequent change. The execution rules below define the behaviour that interpreter must implement. No program execution is established by validation.
+Program IR is a typed implementation language with explicit computation and structured control flow. A program contains function definitions and names one entry function. The static validator checks program artifacts, and the reference interpreter executes the entry function under finite resource limits. The execution rules below define its behaviour. Static validation alone establishes no program execution; the [execution reference](../03-reference/07-program-execution.md) defines the runner, result variants, and precise resource accounting.
 
 The v0.3 operation contract continues to describe permitted behaviour. Program IR v0.1 describes an algorithm. These are separate artifact families and abstraction levels. A program's types do not establish that its algorithm satisfies an operation contract. Binding executions to contract observations remains separate work.
 
@@ -14,7 +14,7 @@ This body returns the value of an immutable parameter named `value`:
 ]
 ```
 
-The complete [identity example](../../programs/examples/identity.json) declares its parameter and return type as `string`. The [sum example](../../programs/examples/sum-nonnegative.json) also contains mutable locals, iteration, an IR-defined call, and a typed application failure. Both are authored syntax examples. Their intended results are documented in [the example notes](../../programs/examples/README.md); they are not recorded executions.
+The complete [identity example](../../programs/examples/identity.json) declares its parameter and return type as `string`. The [sum example](../../programs/examples/sum-nonnegative.json) also contains mutable locals, iteration, an IR-defined call, and a typed application failure. Both are authored programs with independent interpreter tests. Their expected results are documented in [the example notes](../../programs/examples/README.md); the JSON artifacts themselves are program bodies, not recorded executions.
 
 ## Types and values
 
@@ -106,6 +106,6 @@ All function bodies are checked, including unused functions. Constant conditions
 
 `validateProgram(value)` accepts an unknown caller value and returns no value when portability, schema, content identity, names, types, completion paths, and call/failure constraints validate. A rejected value produces `INVALID_PROGRAM` with a diagnostic rule and JSON Pointer. The operation preserves the supplied value. Its fixed bundled schema is loaded by the module; validation does not read paths or execute code selected by a program. `sealProgram` returns an owned normalized copy and has the same static requirements. [Artifact interfaces](../03-reference/06-program-artifacts.md) define identity and resource bounds.
 
-The language has no external I/O operation. That restriction does not authenticate a future interpreter's host behaviour or establish complete effect monitoring. Static validity is separate from execution evidence, contract conformance, refinement, and acceptance.
+The language has no external I/O operation. That restriction does not authenticate the interpreter's host behaviour or establish complete effect monitoring. Static validity is separate from execution evidence, contract conformance, refinement, and acceptance.
 
-The reference interpreter must enforce execution-work and storage/value limits, including work inside collection primitives rather than only loop iterations. Its precise accounting and execution-result API will be defined with that implementation. This PR supplies static validation only; it does not export a runner, claim a particular exhaustion threshold, or establish the examples' runtime results.
+The reference interpreter enforces execution-work, cumulative logical allocation, expanded value-size, and evaluation-depth limits. Work includes collection primitives and output copying. Its [execution contract and accounting rules](../03-reference/07-program-execution.md) distinguish preparation rejection, declared application failure, runtime faults, and resource exhaustion. Independent language tests exercise these distinctions; the required-dependency-closure program and its graph-domain evaluation remain subsequent work.

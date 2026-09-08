@@ -1,6 +1,6 @@
 # Program artifacts and validation
 
-Program IR v0.1 is a standalone implementation artifact with `kind: program`. Its [JSON Schema](../../schemas/program.v0.1.json) and [TypeScript interfaces](../../src/program/model.ts) define its portable syntax. The [language reference](../02-semantics/05-program-ir.md) defines typing, evaluation, control flow, calls, and failure propagation. This implementation checks static validity; it does not execute programs.
+Program IR v0.1 is a standalone implementation artifact with `kind: program`. Its [JSON Schema](../../schemas/program.v0.1.json) and [TypeScript interfaces](../../src/program/model.ts) define its portable syntax. The [language reference](../02-semantics/05-program-ir.md) defines typing, evaluation, control flow, calls, and failure propagation. The APIs on this page check static validity. The separate [execution API](07-program-execution.md) invokes the reference interpreter after validation.
 
 ## Validate an authored example
 
@@ -19,7 +19,7 @@ assert.deepEqual(program, original);
 assert.equal('acceptance' in program, false);
 ```
 
-This executes the validator, not the program. No Program IR CLI or reference interpreter is exported yet. Existing `clearings validate` dispatch does not accept this artifact family.
+This example invokes the validator. Use [`executeProgram`](07-program-execution.md#execute-an-authored-program) to execute the program. Program IR CLI commands remain planned; existing `clearings validate` dispatch does not accept this artifact family.
 
 ## Program and function records
 
