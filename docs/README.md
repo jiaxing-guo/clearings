@@ -7,7 +7,7 @@ Clearings represents repository structure and proposed behavior, constructs boun
 | Path | Start here | Use it to |
 | --- | --- | --- |
 | Learn Clearings | [Your first operation contract](00-learn/01-first-contract.md) | Follow one behavior question through a guard, postcondition, and observation check |
-| Guides | [Check a Hono case](04-guides/01-check-a-case.md), [author a specification](04-guides/02-author-and-review.md) | Complete a task with prerequisites, commands, expected results, and troubleshooting |
+| Guides | [Check a Hono case](04-guides/01-check-a-case.md), [author a specification](04-guides/02-author-and-review.md), [run a program](04-guides/05-run-programs.md) | Complete a task with prerequisites, commands, expected results, and troubleshooting |
 | Reference | [Operation contracts](02-semantics/02-operations.md), [API and CLI](03-reference/03-api-and-cli.md) | Look up exact definitions, constraints, and interface behavior |
 | Architecture | [System architecture](01-architecture/01-system.md), [abstraction and refinement](01-architecture/03-abstraction-and-refinement.md) | Understand responsibilities, representation choices, and enforcement boundaries |
 
@@ -43,10 +43,12 @@ The original reference order remains available for a systematic review. For a la
 | 22 | [Program IR implementation plan](05-development/04-program-ir-plan.md) | How will the language and interpreter execute one real Clearings algorithm? |
 | 23 | [Program execution](03-reference/07-program-execution.md) | How do I execute a program and interpret completions, resource limits, and diagnostics? |
 | 24 | [Required dependency closure in Program IR](02-semantics/06-required-dependency-closure.md) | How does Clearings execute and independently evaluate one of its own algorithms in IR? |
+| 25 | [Program CLI and reports](03-reference/08-program-cli.md) | How do I validate, inspect, and execute programs from the command line? |
+| 26 | [Run and inspect a Program IR algorithm](04-guides/05-run-programs.md) | How do I execute the closure example, supply arguments, and read its results? |
 
 ## Status and authority
 
-This reference describes the implemented v0.3.0 contract language, its relationship to the v0.1/v0.2 models, and Program IR v0.1 with its static validator and reference interpreter. Program execution implements the defined language semantics under documented resource limits. Ordered required dependency closure is implemented in IR and evaluated against independent bounded graph-domain expectations. The integrated program CLI and refinement proof procedures remain subsequent work.
+This reference describes the implemented v0.3.0 contract language, its relationship to the v0.1/v0.2 models, and Program IR v0.1 with its static validator and reference interpreter. Program execution implements the defined language semantics under documented resource limits. Ordered required dependency closure is implemented in IR and evaluated against independent bounded graph-domain expectations. The program CLI exposes validation, complete function inspection, fresh execution, and JSON/Markdown reports. Refinement proof procedures remain subsequent work.
 
 Sections on semantics and interfaces specify the current contract. Architecture explanations, examples, and roadmap proposals have different roles. If source, schema, tests, and reference disagree, record a defect and resolve the discrepancy explicitly. Passing schema validation does not override semantic requirements; a prose sentence does not become an executable predicate by appearing beside one.
 

@@ -19,7 +19,7 @@ assert.deepEqual(program, original);
 assert.equal('acceptance' in program, false);
 ```
 
-This example invokes the validator. Use [`executeProgram`](07-program-execution.md#execute-an-authored-program) to execute the program. Program IR CLI commands remain planned; existing `clearings validate` dispatch does not accept this artifact family.
+This example invokes the validator. Use [`executeProgram`](07-program-execution.md#execute-an-authored-program) to execute the program. Use `npm run program -- validate sum` for static validation or `npm run program -- inspect sum` to read its function bodies. The dedicated [program command group](08-program-cli.md) handles this artifact family; the generic `clearings validate` dispatch retains its existing artifact families.
 
 ## Program and function records
 

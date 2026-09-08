@@ -41,7 +41,7 @@ The typed-specification path starts with an authored `SemanticSpecification`. Va
 | Semantic exchange | Source-bound authoring requests, proposal import, recorded replay | [semantic exchange](../../src/semantics/exchange.ts) |
 | Legacy contracts | Function/behavior contracts, inspection, context selection | [contract modules](../../src/contracts) |
 | Typed kernel | Specification validation, expression evaluation, observation checks | [specification modules](../../src/specification) |
-| Program IR | Implementation-language types, static validation, and a reference interpreter with resource limits and diagnostic completions | [program modules](../../src/program) |
+| Program IR | Implementation-language types, static validation, reference interpretation, finite resources, diagnostic completions, and Markdown inspection/results | [program modules](../../src/program) |
 | IR algorithms | Ordered required dependency closure with independent bounded evaluation | [authored programs](../../programs/clearings) |
 | Executable conformance | Bounded recording, observation mapping, independent reference evaluation, scoped acceptance, and replay reports | [conformance modules](../../src/conformance) |
 | Presentation | Audience plans and deterministic projections | [renderers](../../src/renderers), [presentation plans](../../src/presentation) |

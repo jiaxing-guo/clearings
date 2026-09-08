@@ -23,7 +23,7 @@ assert.equal(overflow.completion.kind, 'runtime-fault');
 assert.equal(overflow.completion.code, 'INTEGER_OVERFLOW');
 ```
 
-The outer array supplies positional arguments; the inner array is the sum function's one list argument. The interpreter follows the example's IR-defined loop and `nonnegative` call. This example executes through the library. Program inspection and execution commands remain planned CLI work.
+The outer array supplies positional arguments; the inner array is the sum function's one list argument. The interpreter follows the example's IR-defined loop and `nonnegative` call. This example executes through the library. The [program CLI](08-program-cli.md) exposes the same interpreter through `npm run program -- demo sum` and explicit argument files.
 
 ## Operation contract
 
@@ -172,4 +172,4 @@ Application failures retain the original `fail` statement's diagnostic through a
 
 `npm run test:program` checks static validation and independent execution expectations. The [interpreter tests](../../tests/program-execution.test.mjs) cover scalar and collection semantics, operand order, short-circuiting, lexical scope, loop completion, calls, declared failures, faults, ownership, deterministic resource accounting, and exhaustion within primitives and output copying.
 
-[Required dependency closure](../02-semantics/06-required-dependency-closure.md) is an authored Program IR workload whose traversal, lookup, ordering, and failures execute through this interpreter. Independent graph-domain expectations evaluate the algorithm separately from the language tests. The production context assembler continues to use its TypeScript kernel. Program CLI integration is the next step in the [implementation plan](../05-development/04-program-ir-plan.md); self-hosting and source backends remain subsequent work.
+[Required dependency closure](../02-semantics/06-required-dependency-closure.md) is an authored Program IR workload whose traversal, lookup, ordering, and failures execute through this interpreter. Independent graph-domain expectations evaluate the algorithm separately from the language tests. The production context assembler continues to use its TypeScript kernel. The [program CLI and reports](08-program-cli.md) complete the developer workflow in the [implementation plan](../05-development/04-program-ir-plan.md). Self-hosting and source backends remain subsequent work.

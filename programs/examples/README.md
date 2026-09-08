@@ -9,4 +9,6 @@ These examples exercise the Program IR format, static validator, and reference i
 
 The sum example calls the IR-defined `nonnegative` function. It does not call host code. Its integer addition can also encounter an overflow runtime fault; that is distinct from the declared `NEGATIVE_VALUE` application failure. Static validation does not exclude either condition or prove termination.
 
+Run `npm run program -- demo identity` or `npm run program -- demo sum` from the repository root. These use the adjacent [identity arguments](identity.arguments.json) and [sum arguments](sum-nonnegative.arguments.json). `npm run program -- inspect sum` displays the complete typed implementation. For custom arguments and saved reports, use the [program guide](../../docs/04-guides/05-run-programs.md).
+
 `npm run test:program` validates these artifacts, checks malformed-program diagnostics, and executes independent language tests. The [execution reference](../../docs/03-reference/07-program-execution.md) shows how to run the sum example with `executeProgram` and inspect its result. The separate [Clearings algorithms](../clearings/README.md) directory contains required dependency closure and its independent graph-domain evaluation.
