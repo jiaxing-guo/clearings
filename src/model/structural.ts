@@ -25,7 +25,15 @@ export interface Project {
   selected_files: string[];
   status: 'loaded' | 'failed';
   // Portable JSON options; paths are repository-relative, enum values are names.
-  options: { base_url: string | null; paths: Record<string, string[]>; module: string; module_resolution: string; target: string; jsx: string; types: string[] };
+  options: {
+    base_url: string | null;
+    paths: Record<string, string[]>;
+    module: string;
+    module_resolution: string;
+    target: string;
+    jsx: string;
+    types: string[];
+  };
 }
 
 export interface SourceUnit {
@@ -61,7 +69,18 @@ export interface Declaration {
   file_id: string;
   project_id: string;
   name: string;
-  kind: 'function' | 'variable' | 'parameter' | 'class' | 'method' | 'property' | 'interface' | 'type' | 'enum' | 'namespace' | 'binding';
+  kind:
+    | 'function'
+    | 'variable'
+    | 'parameter'
+    | 'class'
+    | 'method'
+    | 'property'
+    | 'interface'
+    | 'type'
+    | 'enum'
+    | 'namespace'
+    | 'binding';
   evidence_id: string;
 }
 
@@ -100,9 +119,16 @@ export interface ScanCoverage {
 export interface ScanData {
   manifest: InventoryResult;
   adapter: {
-    name: 'typescript'; version: 'm1.1'; compiler_version: string;
-    resolution_mode: 'source-only'; full_typecheck: false; external_types_loaded: false;
-    max_file_bytes: number; max_total_bytes: number; max_source_files: number; max_projects: number;
+    name: 'typescript';
+    version: 'm1.1';
+    compiler_version: string;
+    resolution_mode: 'source-only';
+    full_typecheck: false;
+    external_types_loaded: false;
+    max_file_bytes: number;
+    max_total_bytes: number;
+    max_source_files: number;
+    max_projects: number;
   };
   projects: Project[];
   reads: SourceRead[];

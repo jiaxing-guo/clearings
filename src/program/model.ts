@@ -1,5 +1,6 @@
 /** Closed implementation language. These records contain no host code or imports. */
-export type ProgramValue = null | boolean | number | string | ProgramValue[] | { [key: string]: ProgramValue };
+export type ProgramValue =
+  null | boolean | number | string | ProgramValue[] | { [key: string]: ProgramValue };
 export type ProgramType =
   | { kind: 'null' | 'boolean' | 'integer' | 'string' }
   | { kind: 'list'; element: ProgramType }
@@ -15,7 +16,12 @@ export type ProgramExpression =
   | { kind: 'length' | 'sort'; list: ProgramExpression }
   | { kind: 'append' | 'contains'; list: ProgramExpression; value: ProgramExpression }
   | { kind: 'not'; value: ProgramExpression }
-  | { kind: 'binary'; op: 'add' | 'sub' | 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte' | 'and' | 'or'; left: ProgramExpression; right: ProgramExpression }
+  | {
+      kind: 'binary';
+      op: 'add' | 'sub' | 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte' | 'and' | 'or';
+      left: ProgramExpression;
+      right: ProgramExpression;
+    }
   | { kind: 'call'; function_id: string; arguments: ProgramExpression[] };
 
 export type ProgramStatement =

@@ -83,12 +83,12 @@ The passing check establishes agreement between this observation and the modeled
 
 ## Troubleshooting
 
-| Symptom | Explanation | Action |
-| --- | --- | --- |
-| The command exits with status 1 | A modeled rule failed | Read `checks` and compare the failed predicate with the observation |
-| The command exits with status 3 | At least one required check is unknown | Inspect the reported reason; do not substitute `null` for missing data |
-| `INVALID_OBSERVATION` | A field, type, state ID, or outcome ID is invalid | Compare the JSON with the observation protocol |
-| `INVALID_SELECTION` | The operation ID or alias was not found | Inspect the specification catalog |
-| The local `dist` entrypoint is missing | The library has not been built | Run `npm run build` from the repository root |
+| Symptom                                | Explanation                                       | Action                                                                 |
+| -------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
+| The command exits with status 1        | A modeled rule failed                             | Read `checks` and compare the failed predicate with the observation    |
+| The command exits with status 3        | At least one required check is unknown            | Inspect the reported reason; do not substitute `null` for missing data |
+| `INVALID_OBSERVATION`                  | A field, type, state ID, or outcome ID is invalid | Compare the JSON with the observation protocol                         |
+| `INVALID_SELECTION`                    | The operation ID or alias was not found           | Inspect the specification catalog                                      |
+| The local `dist` entrypoint is missing | The library has not been built                    | Run `npm run build` from the repository root                           |
 
 Continue with [authoring a specification](02-author-and-review.md), or consult the [API and CLI reference](../03-reference/03-api-and-cli.md).

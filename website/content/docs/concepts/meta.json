@@ -1,7 +1,4 @@
 {
   "title": "Concepts",
-  "pages": [
-    "model",
-    "limits"
-  ]
+  "pages": ["model", "limits"]
 }

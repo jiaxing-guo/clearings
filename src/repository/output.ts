@@ -13,18 +13,28 @@ export function assertOutputOutsideRepository(repository: string, destination: s
   const gitDir = gitText(repository, ['rev-parse', '--absolute-git-dir']);
   const commonDir = resolve(repository, gitText(repository, ['rev-parse', '--git-common-dir']));
   const roots = [gitDir, commonDir];
-  if (gitText(repository, ['rev-parse', '--is-bare-repository']) === 'false') roots.push(gitText(repository, ['rev-parse', '--show-toplevel']));
-  if (roots.some((root) => {
-    const rel = relative(physical(root), output);
-    return rel === '' || (!isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`));
-  })) throw new ClearingsError('OUTPUT_IN_TARGET', 'Output must be outside the target working tree and Git object store.');
+  if (gitText(repository, ['rev-parse', '--is-bare-repository']) === 'false')
+    roots.push(gitText(repository, ['rev-parse', '--show-toplevel']));
+  if (
+    roots.some((root) => {
+      const rel = relative(physical(root), output);
+      return rel === '' || (!isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${sep}`));
+    })
+  )
+    throw new ClearingsError(
+      'OUTPUT_IN_TARGET',
+      'Output must be outside the target working tree and Git object store.',
+    );
   return output;
 }
 
 export function writeInventory(repository: string, destination: string, json: string): string {
   const output = assertOutputOutsideRepository(repository, destination);
   mkdirSync(dirname(output), { recursive: true });
-  try { writeFileSync(output, json, { flag: 'wx' }); }
-  catch { throw new ClearingsError('OUTPUT_EXISTS', 'Output must be a new writable file.'); }
+  try {
+    writeFileSync(output, json, { flag: 'wx' });
+  } catch {
+    throw new ClearingsError('OUTPUT_EXISTS', 'Output must be a new writable file.');
+  }
   return output;
 }

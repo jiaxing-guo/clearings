@@ -1,5 +1,6 @@
 /** Portable specification language. No compiler objects or executable source. */
-export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+export type JsonValue =
+  null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 export type ValueType =
   | { kind: 'boolean' | 'string' | 'integer' | 'number' | 'null' }
   | { kind: 'enum'; values: string[] }
@@ -11,7 +12,12 @@ export type Expression =
   | { kind: 'ref'; root: 'input' | 'before' | 'after' | 'output' | 'local'; path: string[] }
   | { kind: 'not' | 'length' | 'unique'; value: Expression }
   | { kind: 'all' | 'any'; terms: Expression[] }
-  | { kind: 'compare'; op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte'; left: Expression; right: Expression }
+  | {
+      kind: 'compare';
+      op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte';
+      left: Expression;
+      right: Expression;
+    }
   | { kind: 'contains' | 'subset'; collection: Expression; value: Expression }
   | { kind: 'reachable'; root: Expression; edges: Expression }
   | { kind: 'every'; collection: Expression; variable: string; predicate: Expression }
@@ -58,7 +64,11 @@ export interface OperationOutcome {
   ensures: Rule[];
   updates: { state_id: string; value: Expression }[];
   effects: { effect_id: string; occurrence: 'required' | 'permitted' }[];
-  transitions: { operation_id: string; handoff: 'invoke' | 'await' | 'continue' | 'propagate'; description: string }[];
+  transitions: {
+    operation_id: string;
+    handoff: 'invoke' | 'await' | 'continue' | 'propagate';
+    description: string;
+  }[];
   evidence_ids: string[];
 }
 export interface SemanticOperation {
@@ -95,7 +105,12 @@ export interface SemanticSpecification {
   artifact_id: string;
   name: string;
   perspective: 'intended' | 'observed';
-  provenance: { author: string; origin: 'user-directed-design' | 'source-interpretation'; review: 'proposed'; notes: string[] };
+  provenance: {
+    author: string;
+    origin: 'user-directed-design' | 'source-interpretation';
+    review: 'proposed';
+    notes: string[];
+  };
   states: StateField[];
   operations: SemanticOperation[];
   sources: SpecificationSource[];
@@ -109,7 +124,12 @@ export interface OperationObservation {
   effects?: string[];
 }
 export type Verdict = 'pass' | 'fail' | 'unknown';
-export interface RuleCheck { id: string; description: string; verdict: Verdict; reason: string | null }
+export interface RuleCheck {
+  id: string;
+  description: string;
+  verdict: Verdict;
+  reason: string | null;
+}
 export interface OperationCheck {
   artifact_id: string;
   operation_id: string;

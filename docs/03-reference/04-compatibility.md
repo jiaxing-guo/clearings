@@ -4,13 +4,13 @@ Clearings retains several versioned artifact families. Choose APIs according to 
 
 ## Supported coexistence
 
-| Family | Current role | Conversion policy |
-| --- | --- | --- |
-| Inventory and scan v0.1 | Immutable source inventory and structural evidence | Retained as the source-analysis foundation |
-| Semantic exchange v0.1 | Historical capability/claim models and replay | Remains readable through existing APIs |
-| Function/behavior contracts v0.2 | Source-linked contract reports and bounded queries | No implicit conversion into typed v0.3 requirements |
-| Presentation v0.1/v0.2 | Audience prose and layout bound to a specific semantic artifact | Rebinding must be explicit |
-| Specification v0.3 | Primary typed contract model for new semantic work | Authored intended and observed artifacts remain distinct |
+| Family                           | Current role                                                    | Conversion policy                                        |
+| -------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------- |
+| Inventory and scan v0.1          | Immutable source inventory and structural evidence              | Retained as the source-analysis foundation               |
+| Semantic exchange v0.1           | Historical capability/claim models and replay                   | Remains readable through existing APIs                   |
+| Function/behavior contracts v0.2 | Source-linked contract reports and bounded queries              | No implicit conversion into typed v0.3 requirements      |
+| Presentation v0.1/v0.2           | Audience prose and layout bound to a specific semantic artifact | Rebinding must be explicit                               |
+| Specification v0.3               | Primary typed contract model for new semantic work              | Authored intended and observed artifacts remain distinct |
 
 The readable legacy adapter resolves English assertions while marking them `legacy-prose-only`. It does not infer a predicate equivalent to that prose. The typed Hono response model is a separately authored interpretation of a narrower slice.
 

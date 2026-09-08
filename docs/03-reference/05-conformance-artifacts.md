@@ -32,35 +32,35 @@ for (const name of ['return', 'throw', 'timeout', 'harness-failure']) {
 
 The [profile schema](../../schemas/conformance-profile.v0.1.json) and [TypeScript interfaces](../../src/conformance/model.ts) define the portable format. The [context-assembly profile](../../specifications/clearings/conformance/profile.json) is the canonical obligation ledger for this slice.
 
-| Field | Contract |
-| --- | --- |
-| `artifact_id` | `conformance-profile:` plus the digest of canonical content excluding this field |
-| `specification_id` | Exact content identity of the associated intended specification |
-| `target` | Repository-relative module and exported API; recorded metadata, never a dynamic import instruction |
-| `scope` | Input-domain assumptions, explicit requirement IDs, and exclusions |
-| `completion_operations` | Distinct specification operation IDs for return and throw |
-| `measurements` | Unique IDs, value types, origins, capture prerequisites, and concrete measurement procedures |
-| `obligations` | One entry for every declared requirement, with operation/rule/measurement references, method, mandatory flag, and limitation |
+| Field                   | Contract                                                                                                                     |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `artifact_id`           | `conformance-profile:` plus the digest of canonical content excluding this field                                             |
+| `specification_id`      | Exact content identity of the associated intended specification                                                              |
+| `target`                | Repository-relative module and exported API; recorded metadata, never a dynamic import instruction                           |
+| `scope`                 | Input-domain assumptions, explicit requirement IDs, and exclusions                                                           |
+| `completion_operations` | Distinct specification operation IDs for return and throw                                                                    |
+| `measurements`          | Unique IDs, value types, origins, capture prerequisites, and concrete measurement procedures                                 |
+| `obligations`           | One entry for every declared requirement, with operation/rule/measurement references, method, mandatory flag, and limitation |
 
 Verification methods are `predicate`, `independent-check`, and `unresolved`. An independent check ID names a required procedure; it is not evidence that the procedure exists or has run. Requirement descriptions can be stronger than predicates, so a profile still requires semantic review even when references validate.
 
 ## Context-assembly obligation ledger
 
-| ID | Requirement | Method | Required evidence |
-| --- | --- | --- | --- |
-| `closure` | Exact least required closure, root inclusion, uniqueness | Predicates | Invocation graph and returned IDs |
-| `ordering` | Stable traversal and sorted record groups | Independent check | Returned sequence and independently computed order |
-| `record-preservation` | Complete selected records and faithful digest projection | Independent check | Raw input/return records and corresponding digests |
-| `decisions` | Retain decisions on selected operations | Predicate | Input decisions and returned decision IDs |
-| `omissions` | Complete, disjoint partition of available operations | Predicates | Available, selected, and omitted IDs |
-| `state-selection` | Exact state selection and preservation | Independent check | Raw state records and independent selection |
-| `evidence-selection` | Exact source selection from declared metadata | Independent check | Raw source records and independent selection |
-| `identity` | Retain the invocation specification identity | Predicate | Original and returned artifact IDs |
-| `byte-accounting` | Correct counters, UTF-8 encoding, and capacity | Predicates | Reported counters and independently measured bytes |
-| `input-preservation` | Equal input values at completion boundaries | Predicates | Before/after canonical argument digests |
-| `error-precedence` | Required-reference, budget, selection, and capacity ordering | Guards and predicates | Original invocation and actual exception code |
-| `budget-failure` | Exact required size and justified capacity failure | Independent check | Exception detail and independently constructed package |
-| `external-effects` | No external effects | Unresolved; not mandatory | Complete effect instrumentation, currently unavailable |
+| ID                    | Requirement                                                  | Method                    | Required evidence                                      |
+| --------------------- | ------------------------------------------------------------ | ------------------------- | ------------------------------------------------------ |
+| `closure`             | Exact least required closure, root inclusion, uniqueness     | Predicates                | Invocation graph and returned IDs                      |
+| `ordering`            | Stable traversal and sorted record groups                    | Independent check         | Returned sequence and independently computed order     |
+| `record-preservation` | Complete selected records and faithful digest projection     | Independent check         | Raw input/return records and corresponding digests     |
+| `decisions`           | Retain decisions on selected operations                      | Predicate                 | Input decisions and returned decision IDs              |
+| `omissions`           | Complete, disjoint partition of available operations         | Predicates                | Available, selected, and omitted IDs                   |
+| `state-selection`     | Exact state selection and preservation                       | Independent check         | Raw state records and independent selection            |
+| `evidence-selection`  | Exact source selection from declared metadata                | Independent check         | Raw source records and independent selection           |
+| `identity`            | Retain the invocation specification identity                 | Predicate                 | Original and returned artifact IDs                     |
+| `byte-accounting`     | Correct counters, UTF-8 encoding, and capacity               | Predicates                | Reported counters and independently measured bytes     |
+| `input-preservation`  | Equal input values at completion boundaries                  | Predicates                | Before/after canonical argument digests                |
+| `error-precedence`    | Required-reference, budget, selection, and capacity ordering | Guards and predicates     | Original invocation and actual exception code          |
+| `budget-failure`      | Exact required size and justified capacity failure           | Independent check         | Exception detail and independently constructed package |
+| `external-effects`    | No external effects                                          | Unresolved; not mandatory | Complete effect instrumentation, currently unavailable |
 
 All other ledger entries are mandatory within the declared scope. Native checks must establish the properties that their associated predicates do not express. In particular, digest membership alone does not establish that a projection contains every returned record. The record-preservation check must compare the complete raw records and validate the projection.
 
@@ -68,13 +68,13 @@ All other ledger entries are mandatory within the declared scope. Native checks 
 
 The [execution-record schema](../../schemas/execution-record.v0.1.json) requires one completion, original invocation arguments, a resulting capture or explicit absence, and every profile measurement marked observed or unobserved. It has no acceptance or verdict field.
 
-| Identity | Recorded binding |
-| --- | --- |
-| Profile and specification | Exact content IDs |
-| Implementation | Repository locator, Git commit/tree, entrypoint, and file digests including the entrypoint |
-| Adapter and evaluator | Named content digests or explicit unavailability; a recorder must bind its adapter, while evaluation may follow capture |
-| Fixture | SHA-256 of the canonical `arguments_before` value, plus a descriptive name |
-| Runtime | Runtime/version/platform/architecture and dependency lockfile digest, or explicit unavailability in authored examples |
+| Identity                  | Recorded binding                                                                                                        |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Profile and specification | Exact content IDs                                                                                                       |
+| Implementation            | Repository locator, Git commit/tree, entrypoint, and file digests including the entrypoint                              |
+| Adapter and evaluator     | Named content digests or explicit unavailability; a recorder must bind its adapter, while evaluation may follow capture |
+| Fixture                   | SHA-256 of the canonical `arguments_before` value, plus a descriptive name                                              |
+| Runtime                   | Runtime/version/platform/architecture and dependency lockfile digest, or explicit unavailability in authored examples   |
 
 `recorded-execution` requires bound adapter and runtime identities. Its evaluator may remain explicitly unavailable when capture precedes independent evaluation. A future evaluation result must bind the evaluator it actually uses and the original record identity. These are structural declarations, not authentication of an execution claim. Source-file digests do not establish that the implementation file list contains the full transitive dependency closure; the recorder must define and capture that closure. Bound component digests identify component manifests or immutable bundles whose dependency scope must be documented.
 
@@ -86,22 +86,22 @@ Measurement origin and capture prerequisites are separate properties. `serialize
 
 ## Library interfaces
 
-| Function | Contract |
-| --- | --- |
-| `conformanceProfileIdentity(profile)` | Compute the profile identity; no validation or acceptance |
-| `sealConformanceProfile(profile, specification)` | Normalize, compute identity, and validate against the exact intended specification |
-| `validateConformanceProfile(value, specification)` | Assert profile schema, identity, rule/measurement references, and declared coverage |
-| `executionRecordIdentity(record)` | Compute the execution-record identity; no execution |
-| `sealExecutionRecord(record, profile, specification)` | Normalize, compute identity, and validate the record and its bindings |
-| `validateExecutionRecord(value, profile, specification)` | Assert record structure, identity, complete measurement accounting, and basic completion consistency |
-| `getContextAssemblyContract()` | Read and validate an owned copy of the bundled context-assembly profile and intended specification |
-| `recordContextAssembly(options)` | Execute the synchronous context-assembly API in a bounded worker and return a sealed `ExecutionRecord` |
-| `mapContextAssemblyObservation(record)` | Validate the built-in contract binding and supported measurement projections; return a typed observation or an explicit mapping failure |
-| `evaluateContextAssembly(record)` | Independently evaluate saved evidence and return scoped acceptance, obligation results, reference measurements, and the original broader contract verdict |
-| `createContextAssemblyEvaluator()` | Bind evaluator files once and return a reusable evaluation function for a run with unchanged evaluator files |
-| `createContextAssemblyCases(suite?)` | Generate the deterministic `smoke` (default) or `full` evaluation inputs without executing an implementation |
-| `contextConformanceReportIdentity(report)` | Compute the content identity of a run report, excluding its own identity field |
-| `renderContextConformanceReport(report)` | Render a generated run report as Markdown with links to its record and evaluation files |
+| Function                                                 | Contract                                                                                                                                                  |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `conformanceProfileIdentity(profile)`                    | Compute the profile identity; no validation or acceptance                                                                                                 |
+| `sealConformanceProfile(profile, specification)`         | Normalize, compute identity, and validate against the exact intended specification                                                                        |
+| `validateConformanceProfile(value, specification)`       | Assert profile schema, identity, rule/measurement references, and declared coverage                                                                       |
+| `executionRecordIdentity(record)`                        | Compute the execution-record identity; no execution                                                                                                       |
+| `sealExecutionRecord(record, profile, specification)`    | Normalize, compute identity, and validate the record and its bindings                                                                                     |
+| `validateExecutionRecord(value, profile, specification)` | Assert record structure, identity, complete measurement accounting, and basic completion consistency                                                      |
+| `getContextAssemblyContract()`                           | Read and validate an owned copy of the bundled context-assembly profile and intended specification                                                        |
+| `recordContextAssembly(options)`                         | Execute the synchronous context-assembly API in a bounded worker and return a sealed `ExecutionRecord`                                                    |
+| `mapContextAssemblyObservation(record)`                  | Validate the built-in contract binding and supported measurement projections; return a typed observation or an explicit mapping failure                   |
+| `evaluateContextAssembly(record)`                        | Independently evaluate saved evidence and return scoped acceptance, obligation results, reference measurements, and the original broader contract verdict |
+| `createContextAssemblyEvaluator()`                       | Bind evaluator files once and return a reusable evaluation function for a run with unchanged evaluator files                                              |
+| `createContextAssemblyCases(suite?)`                     | Generate the deterministic `smoke` (default) or `full` evaluation inputs without executing an implementation                                              |
+| `contextConformanceReportIdentity(report)`               | Compute the content identity of a run report, excluding its own identity field                                                                            |
+| `renderContextConformanceReport(report)`                 | Render a generated run report as Markdown with links to its record and evaluation files                                                                   |
 
 These functions and types are exported from `clearings/conformance`. This entrypoint keeps evaluation metadata separate from the core library exports. JSON Schema subpaths are `clearings/schemas/conformance-profile` and `clearings/schemas/execution-record`. Profile/record errors use `INVALID_CONFORMANCE`; reused portability and specification validation retain their existing errors. Portability limits remain 200,000 visited values and depth 64. Identity functions assume portable caller input; use sealing or validation at an input boundary.
 

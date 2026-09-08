@@ -33,20 +33,20 @@ In a consumer with the package installed from an authorized local checkout, impo
 
 ## Main APIs
 
-| Function | Inputs | Result |
-| --- | --- | --- |
-| `inventory(options)` | Repository, ref, include/exclude paths, optional expected pin | Git inventory and coverage |
-| `scan(options)` | Inventory options, optional project and source limits | Structural records and evidence |
-| `createContractRequest(scan, options)` | Repository, instruction, paths or evidence IDs, byte budget | Bounded v0.2 request |
-| `importContractProposal(request, response, options)` | Scan, repository, replay flag | Source-checked contract model |
-| `inspectSemantic(model, selection?, options?)` | Capability, behavior, or ID; optional source recheck | Catalog and selected direct records |
-| `createContextPack(model, selection, options)` | Required byte budget, optional neighbors and source recheck | Required rules plus permitted neighbors |
-| `serializeContextPack(pack)` | Context pack | Compact JSON plus newline |
-| `createEvidenceReader(scan, repository)` | Scan and pinned repository | Reusable exact evidence reader |
-| `readEvidence(scan, repository, id)` | One source lookup | Exact text |
-| `renderCapability(model, capability, options?)` | Format, audience, reading plan, companion, source notice | HTML or Markdown |
-| `createSemanticWalkthrough(model, options)` | Behavior, optional participating function ID, budget/source recheck | Actual inspection, relationship, and context output |
-| `renderSemanticWalkthrough(model, options)` | Walkthrough options plus format and source notice | HTML or Markdown |
+| Function                                             | Inputs                                                              | Result                                              |
+| ---------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------- |
+| `inventory(options)`                                 | Repository, ref, include/exclude paths, optional expected pin       | Git inventory and coverage                          |
+| `scan(options)`                                      | Inventory options, optional project and source limits               | Structural records and evidence                     |
+| `createContractRequest(scan, options)`               | Repository, instruction, paths or evidence IDs, byte budget         | Bounded v0.2 request                                |
+| `importContractProposal(request, response, options)` | Scan, repository, replay flag                                       | Source-checked contract model                       |
+| `inspectSemantic(model, selection?, options?)`       | Capability, behavior, or ID; optional source recheck                | Catalog and selected direct records                 |
+| `createContextPack(model, selection, options)`       | Required byte budget, optional neighbors and source recheck         | Required rules plus permitted neighbors             |
+| `serializeContextPack(pack)`                         | Context pack                                                        | Compact JSON plus newline                           |
+| `createEvidenceReader(scan, repository)`             | Scan and pinned repository                                          | Reusable exact evidence reader                      |
+| `readEvidence(scan, repository, id)`                 | One source lookup                                                   | Exact text                                          |
+| `renderCapability(model, capability, options?)`      | Format, audience, reading plan, companion, source notice            | HTML or Markdown                                    |
+| `createSemanticWalkthrough(model, options)`          | Behavior, optional participating function ID, budget/source recheck | Actual inspection, relationship, and context output |
+| `renderSemanticWalkthrough(model, options)`          | Walkthrough options plus format and source notice                   | HTML or Markdown                                    |
 
 `selection` accepts `{ capability }`, `{ behavior }`, `{ capability, behavior }`, or `{ id }`. An ID selection must stand alone. Inspection without a selection lists the catalog. Context requires a selection.
 
@@ -66,17 +66,17 @@ Package schema exports are `schemas/inventory`, `schemas/scan`, `schemas/semanti
 
 See [the specification guide](/docs/guides/specifications) for a complete case. These APIs keep intended requirements separate from observed interpretations.
 
-| Function | Result |
-| --- | --- |
-| `sealSpecification(value)` | Assign content identity and validate an authored specification |
-| `validateSpecification(value)` | Check schema, identity, typed expressions, declared state/effects, and references |
-| `assembleContext(spec, operation, { maxBytes })` | Return complete required operation context or a size error |
-| `serializeOperationContext(context)` | Emit compact JSON plus a final newline |
-| `validateOperationContext(context, spec)` | Reconstruct and verify a received package against its exact specification |
-| `checkOperation(spec, operation, observation)` | Return pass, fail, or unknown for the supplied observation |
-| `checkOperationSequence(spec, steps, { stateIds })` | Check each operation and selected shared state across adjacent supplied records |
-| `renderSpecification(spec, operation, options)` | Render the same rules as HTML or Markdown |
-| `createContractBrief(model, selection, options)` | Resolve historical assertion prose in place, without formalizing it |
+| Function                                            | Result                                                                            |
+| --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `sealSpecification(value)`                          | Assign content identity and validate an authored specification                    |
+| `validateSpecification(value)`                      | Check schema, identity, typed expressions, declared state/effects, and references |
+| `assembleContext(spec, operation, { maxBytes })`    | Return complete required operation context or a size error                        |
+| `serializeOperationContext(context)`                | Emit compact JSON plus a final newline                                            |
+| `validateOperationContext(context, spec)`           | Reconstruct and verify a received package against its exact specification         |
+| `checkOperation(spec, operation, observation)`      | Return pass, fail, or unknown for the supplied observation                        |
+| `checkOperationSequence(spec, steps, { stateIds })` | Check each operation and selected shared state across adjacent supplied records   |
+| `renderSpecification(spec, operation, options)`     | Render the same rules as HTML or Markdown                                         |
+| `createContractBrief(model, selection, options)`    | Resolve historical assertion prose in place, without formalizing it               |
 
 `checkOperationSequence` accepts 1–256 records. The caller must select fields that refer to the same storage across the sequence. Missing adjacent values remain unknown. The result retains each operation check and each state comparison. This does not execute source or prove record order.
 

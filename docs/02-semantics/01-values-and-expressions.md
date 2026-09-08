@@ -15,26 +15,26 @@ The following expression checks whether an observed output equals the string `no
 }
 ```
 
-| Environment | Evaluation result | Interpretation |
-| --- | --- | --- |
-| `output: "not-found"` | `{ known: true, value: true }` | The values agree |
-| `output: "context-response"` | `{ known: true, value: false }` | The values differ |
-| No `output` | `{ known: false, reason: ... }` | The observation is insufficient |
+| Environment                  | Evaluation result               | Interpretation                  |
+| ---------------------------- | ------------------------------- | ------------------------------- |
+| `output: "not-found"`        | `{ known: true, value: true }`  | The values agree                |
+| `output: "context-response"` | `{ known: true, value: false }` | The values differ               |
+| No `output`                  | `{ known: false, reason: ... }` | The observation is insufficient |
 
 The expression returns a value or an unknown result. The [operation checker](03-observations-and-sequences.md) converts Boolean predicate results into check verdicts.
 
 ## Value domains
 
-| Type | Accepted values |
-| --- | --- |
-| `boolean` | `true` or `false` |
-| `string` | JSON strings |
-| `integer` | JavaScript safe integers, from `-(2^53 - 1)` through `2^53 - 1` |
-| `number` | Finite JavaScript numbers |
-| `null` | JSON `null` |
-| `enum` | One of the declared string values |
-| `list` | A homogeneous list matching its element type; an empty list is allowed |
-| `record` | Exactly the declared own fields, each matching its type |
+| Type      | Accepted values                                                        |
+| --------- | ---------------------------------------------------------------------- |
+| `boolean` | `true` or `false`                                                      |
+| `string`  | JSON strings                                                           |
+| `integer` | JavaScript safe integers, from `-(2^53 - 1)` through `2^53 - 1`        |
+| `number`  | Finite JavaScript numbers                                              |
+| `null`    | JSON `null`                                                            |
+| `enum`    | One of the declared string values                                      |
+| `list`    | A homogeneous list matching its element type; an empty list is allowed |
+| `record`  | Exactly the declared own fields, each matching its type                |
 
 Records have no implicit optional fields, open extension fields, or nullable union type. Additional properties are invalid. Missing observation fields are handled by the observation protocol; they are not a value of a declared type. `undefined`, `NaN`, infinities, cyclic objects, sparse arrays, accessors, and non-JSON objects are not portable inputs.
 
@@ -48,22 +48,22 @@ Specification validation establishes expression types before operation checking.
 
 ## Operators
 
-| Kind | Semantics |
-| --- | --- |
-| `literal` | Return the supplied JSON value. |
-| `ref` | Resolve a root and record-field path through own properties. An empty path returns the root value. Missing values return unknown; list indexing is not supported. |
-| `not` | Boolean negation; unknown remains unknown. |
-| `all` | Conjunction: a known false dominates unknown; otherwise unknown dominates true. Empty conjunction is true. |
-| `any` | Disjunction: a known true dominates unknown; otherwise unknown dominates false. Empty disjunction is false. |
-| `compare` with `eq`, `ne` | Compare canonical JSON values. Object-key order is irrelevant; array order matters. |
-| `compare` with `lt`, `lte`, `gt`, `gte` | Compare numeric operands. |
-| `length` | List length or JavaScript string length in UTF-16 code units; not UTF-8 byte length. |
-| `unique` | Return whether a list has no duplicate canonical JSON values; it does not return a deduplicated list. |
-| `contains` | Test whether `collection` contains the single `value`, using canonical equality. |
-| `subset` | Test whether every element of the `value` list occurs in `collection`. Order and multiplicity do not affect membership. |
-| `every` | Bind each list element to `local[variable]` and evaluate its Boolean predicate. Empty quantification is true. A false predicate dominates unknown. |
-| `reachable` | Return unique IDs reachable from a string root through explicit `{ from, to }` edges, including the root, sorted in default JavaScript string order. |
-| `opaque` | Return unknown with the supplied reason. The retained text is not evaluated. |
+| Kind                                    | Semantics                                                                                                                                                         |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `literal`                               | Return the supplied JSON value.                                                                                                                                   |
+| `ref`                                   | Resolve a root and record-field path through own properties. An empty path returns the root value. Missing values return unknown; list indexing is not supported. |
+| `not`                                   | Boolean negation; unknown remains unknown.                                                                                                                        |
+| `all`                                   | Conjunction: a known false dominates unknown; otherwise unknown dominates true. Empty conjunction is true.                                                        |
+| `any`                                   | Disjunction: a known true dominates unknown; otherwise unknown dominates false. Empty disjunction is false.                                                       |
+| `compare` with `eq`, `ne`               | Compare canonical JSON values. Object-key order is irrelevant; array order matters.                                                                               |
+| `compare` with `lt`, `lte`, `gt`, `gte` | Compare numeric operands.                                                                                                                                         |
+| `length`                                | List length or JavaScript string length in UTF-16 code units; not UTF-8 byte length.                                                                              |
+| `unique`                                | Return whether a list has no duplicate canonical JSON values; it does not return a deduplicated list.                                                             |
+| `contains`                              | Test whether `collection` contains the single `value`, using canonical equality.                                                                                  |
+| `subset`                                | Test whether every element of the `value` list occurs in `collection`. Order and multiplicity do not affect membership.                                           |
+| `every`                                 | Bind each list element to `local[variable]` and evaluate its Boolean predicate. Empty quantification is true. A false predicate dominates unknown.                |
+| `reachable`                             | Return unique IDs reachable from a string root through explicit `{ from, to }` edges, including the root, sorted in default JavaScript string order.              |
+| `opaque`                                | Return unknown with the supplied reason. The retained text is not evaluated.                                                                                      |
 
 Boolean evaluation processes terms in array order and short-circuits on a decisive value. Resource limits are operational: an otherwise decidable expression can return unknown when evaluation exhausts its budget.
 

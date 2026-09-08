@@ -7,12 +7,12 @@ This is one Clearings algorithm represented and executed in its own implementati
 ## A concrete ordering case
 
 | Record ID | Required targets, in supplied order |
-| --- | --- |
-| `root` | `z`, `a` |
-| `z` | `b` |
-| `a` | `y` |
-| `y` | None |
-| `b` | None |
+| --------- | ----------------------------------- |
+| `root`    | `z`, `a`                            |
+| `z`       | `b`                                 |
+| `a`       | `y`                                 |
+| `y`       | None                                |
+| `b`       | None                                |
 
 Starting from `root`, the result is `["root", "a", "z", "y", "b"]`. Targets are sorted when each record is expanded. The children of `a` therefore precede the children of `z`. The result is neither a global ID sort nor a topological ordering; cycles are valid inputs.
 
@@ -20,10 +20,10 @@ Starting from `root`, the result is `["root", "a", "z", "y", "b"]`. Targets are 
 
 The program's entry function is `required_dependency_closure`. Invoke it through `executeProgram(program, [roots, records])`:
 
-| Parameter | Program IR type | Meaning |
-| --- | --- | --- |
-| `roots` | `list<string>` | Seed IDs in requested order; duplicates and an empty list are permitted |
-| `records` | `list<Record>` | Available records; declaration order does not determine successful traversal order |
+| Parameter | Program IR type | Meaning                                                                            |
+| --------- | --------------- | ---------------------------------------------------------------------------------- |
+| `roots`   | `list<string>`  | Seed IDs in requested order; duplicates and an empty list are permitted            |
+| `records` | `list<Record>`  | Available records; declaration order does not determine successful traversal order |
 
 `Record` and `Dependency` are structural types defined by the program's function signatures:
 
@@ -40,17 +40,17 @@ The list representation requires unique record IDs to provide the single-valued 
 
 Let `R` be the set of supplied roots. For each record, retain only edges whose `required` field is true. When all reached IDs resolve, let `C` be the least set containing `R` and closed under those edges.
 
-| Obligation or decision | Required behaviour |
-| --- | --- |
-| Input guards | Arguments have the exact types above and satisfy interpreter preparation bounds. Record IDs must be unique for traversal to begin. |
+| Obligation or decision   | Required behaviour                                                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Input guards             | Arguments have the exact types above and satisfy interpreter preparation bounds. Record IDs must be unique for traversal to begin.                                                   |
 | Duplicate-record failure | Before traversal, scan all record declarations. At the first repeated ID, produce `DUPLICATE_RECORD_ID` with that string as the failure payload. This also applies with empty roots. |
-| Closure postcondition | On return, the output contains exactly `C`, once per ID. Optional edges alone do not expand the closure. |
-| Root ordering | Return distinct roots in first-occurrence order before newly discovered non-root records. |
-| Expansion ordering | Use breadth-first discovery, with each expanded record's required target IDs in ascending UTF-16 order. |
-| Missing-record failure | When the next unvisited worklist ID has no record, produce `MISSING_REQUIRED_DEPENDENCY` with that ID as the failure payload. No partial closure is returned. |
-| State frame | Preserve supplied roots, records, and all dependency arrays. Returned data has the interpreter's owned value semantics. |
-| Effects | The IR program performs no external I/O or host invocation. Loading the JSON artifact is the caller's responsibility. |
-| Resource decision | The interpreter may interrupt execution with resource exhaustion, distinct from both application failures and return. |
+| Closure postcondition    | On return, the output contains exactly `C`, once per ID. Optional edges alone do not expand the closure.                                                                             |
+| Root ordering            | Return distinct roots in first-occurrence order before newly discovered non-root records.                                                                                            |
+| Expansion ordering       | Use breadth-first discovery, with each expanded record's required target IDs in ascending UTF-16 order.                                                                              |
+| Missing-record failure   | When the next unvisited worklist ID has no record, produce `MISSING_REQUIRED_DEPENDENCY` with that ID as the failure payload. No partial closure is returned.                        |
+| State frame              | Preserve supplied roots, records, and all dependency arrays. Returned data has the interpreter's owned value semantics.                                                              |
+| Effects                  | The IR program performs no external I/O or host invocation. Loading the JSON artifact is the caller's responsibility.                                                                |
+| Resource decision        | The interpreter may interrupt execution with resource exhaustion, distinct from both application failures and return.                                                                |
 
 Duplicate-record validation precedes every lookup. After it succeeds, missing-record failures follow worklist order: supplied roots first, then required dependencies in discovery order. An absent required target in an unreachable record does not fail this kernel invocation. An absent optional target does not enter the worklist.
 
@@ -64,12 +64,12 @@ Every shortest path has a simple representative, so cycles do not require enumer
 
 ## IR function decomposition
 
-| Function | Implementation responsibility | Declared failures |
-| --- | --- | --- |
-| `required_dependency_closure` | Validate record uniqueness, maintain the worklist and visited list, expand records, and return selected IDs | Both failure codes below |
-| `validate_records` | Scan IDs with a local seen list; reject the first duplicate | `DUPLICATE_RECORD_ID: string` |
-| `lookup_record` | Scan record declarations for an exact ID; return the record or fail | `MISSING_REQUIRED_DEPENDENCY: string` |
-| `required_targets` | Filter dependency records by `required`, collect target IDs, and sort the result | None |
+| Function                      | Implementation responsibility                                                                               | Declared failures                     |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `required_dependency_closure` | Validate record uniqueness, maintain the worklist and visited list, expand records, and return selected IDs | Both failure codes below              |
+| `validate_records`            | Scan IDs with a local seen list; reject the first duplicate                                                 | `DUPLICATE_RECORD_ID: string`         |
+| `lookup_record`               | Scan record declarations for an exact ID; return the record or fail                                         | `MISSING_REQUIRED_DEPENDENCY: string` |
+| `required_targets`            | Filter dependency records by `required`, collect target IDs, and sort the result                            | None                                  |
 
 All calls resolve to functions in the same artifact. The call graph is acyclic. Cyclic input graphs are handled by iteration and visited-ID membership.
 

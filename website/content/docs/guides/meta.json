@@ -1,10 +1,4 @@
 {
   "title": "Guides",
-  "pages": [
-    "scan",
-    "exchange",
-    "specifications",
-    "context",
-    "reports"
-  ]
+  "pages": ["scan", "exchange", "specifications", "context", "reports"]
 }

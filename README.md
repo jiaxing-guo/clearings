@@ -53,9 +53,9 @@ The first command returns `["root", "a", "z", "y", "b"]` from an authored graph 
 
 Download [the review package](benchmarks/results/hono-shared/clearings-shared-review.zip), extract it, and open `index.html`. All reports contain their own assets. You can also read the Markdown files on GitHub.
 
-| View | Request dispatch | Middleware composition |
-| --- | --- | --- |
-| Overview | [Purpose and outcomes](benchmarks/results/hono-shared/request-dispatch.overview.md) | [Purpose and outcomes](benchmarks/results/hono-shared/middleware-composition.overview.md) |
+| View     | Request dispatch                                                                     | Middleware composition                                                                     |
+| -------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Overview | [Purpose and outcomes](benchmarks/results/hono-shared/request-dispatch.overview.md)  | [Purpose and outcomes](benchmarks/results/hono-shared/middleware-composition.overview.md)  |
 | Engineer | [Conditions and source](benchmarks/results/hono-shared/request-dispatch.engineer.md) | [Conditions and source](benchmarks/results/hono-shared/middleware-composition.engineer.md) |
 
 [Inspect the typed response decisions](benchmarks/results/hono-shared/internal.md) to compare conditions, state changes, function responsibilities, and source. Agents receive `operation.context.json`; HTML is the human view. The typed slice is bound to checked source from the historical model. The accepted reading guides retain that original model; the [legacy walkthrough](benchmarks/results/hono-shared/internal-legacy.md) remains available.

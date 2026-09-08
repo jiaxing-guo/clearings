@@ -18,14 +18,14 @@ The complete [identity example](../../programs/examples/identity.json) declares 
 
 ## Types and values
 
-| Type | Domain |
-| --- | --- |
-| `null` | JSON `null`; a known value |
-| `boolean` | `true` or `false` |
-| `integer` | Integers from `-(2^53 - 1)` through `2^53 - 1`; negative zero is equivalent to zero |
-| `string` | JSON strings; comparisons use lexicographic UTF-16 code-unit order, without locale or normalization |
-| `list` | Ordered homogeneous values with a declared `element` type |
-| `record` | Exactly the own fields in the declared `fields` map, with their respective types |
+| Type      | Domain                                                                                              |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| `null`    | JSON `null`; a known value                                                                          |
+| `boolean` | `true` or `false`                                                                                   |
+| `integer` | Integers from `-(2^53 - 1)` through `2^53 - 1`; negative zero is equivalent to zero                 |
+| `string`  | JSON strings; comparisons use lexicographic UTF-16 code-unit order, without locale or normalization |
+| `list`    | Ordered homogeneous values with a declared `element` type                                           |
+| `record`  | Exactly the own fields in the declared `fields` map, with their respective types                    |
 
 Type equality is structural. Record-field declaration order is irrelevant; names and field types must match exactly. List element types are invariant. There is no implicit conversion, numeric widening, subtype relation, optional field, or untyped empty list. Every literal declares its full type. A constructed empty list declares its element type explicitly.
 
@@ -37,31 +37,31 @@ An unavailable contract observation is distinct from a program value. Program IR
 
 Expressions are evaluated in the current function's lexical environment. Operand expressions are evaluated once, from left to right in the order below. If an operand completes abruptly, later operands are not evaluated. `and` and `or` additionally short-circuit. Static checking still checks every operand and branch.
 
-| Expression | Evaluation order and result |
-| --- | --- |
-| `literal { type, value }` | Produce the declared value. Static validation checks that it inhabits `type`. |
-| `ref { name }` | Read the current value of the named parameter or local binding. |
-| `record { fields }` | Evaluate each `{ name, value }` entry in array order and construct a record. Names must be unique. Field array order controls evaluation, not record equality. |
-| `field { record, name }` | Evaluate `record`, then read its statically declared own field. Prototype properties are never fields. |
-| `list { element_type, items }` | Evaluate `items` in array order and construct a list of the declared element type. |
-| `index { list, index }` | Evaluate the list, then the integer index. Return the zero-based element; a negative or out-of-range index is a runtime fault. |
-| `length { list }` | Evaluate the list and return its element count as an integer. String length is not supported by this operator. |
-| `append { list, value }` | Evaluate the list, then the element; return a new list with that element at the end. |
-| `contains { list, value }` | Evaluate the list, then the element; return whether an equal element occurs. Membership uses structural value equality. |
-| `sort { list }` | Evaluate an integer or string list; return its elements in ascending order, retaining duplicates. Integers use numeric order; strings use the order above. |
-| `not { value }` | Evaluate and negate a Boolean. |
-| `binary { op, left, right }` | Follow the operator rules below. |
-| `call { function_id, arguments }` | Evaluate arguments in array order, then invoke the named function with those values. |
+| Expression                        | Evaluation order and result                                                                                                                                    |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `literal { type, value }`         | Produce the declared value. Static validation checks that it inhabits `type`.                                                                                  |
+| `ref { name }`                    | Read the current value of the named parameter or local binding.                                                                                                |
+| `record { fields }`               | Evaluate each `{ name, value }` entry in array order and construct a record. Names must be unique. Field array order controls evaluation, not record equality. |
+| `field { record, name }`          | Evaluate `record`, then read its statically declared own field. Prototype properties are never fields.                                                         |
+| `list { element_type, items }`    | Evaluate `items` in array order and construct a list of the declared element type.                                                                             |
+| `index { list, index }`           | Evaluate the list, then the integer index. Return the zero-based element; a negative or out-of-range index is a runtime fault.                                 |
+| `length { list }`                 | Evaluate the list and return its element count as an integer. String length is not supported by this operator.                                                 |
+| `append { list, value }`          | Evaluate the list, then the element; return a new list with that element at the end.                                                                           |
+| `contains { list, value }`        | Evaluate the list, then the element; return whether an equal element occurs. Membership uses structural value equality.                                        |
+| `sort { list }`                   | Evaluate an integer or string list; return its elements in ascending order, retaining duplicates. Integers use numeric order; strings use the order above.     |
+| `not { value }`                   | Evaluate and negate a Boolean.                                                                                                                                 |
+| `binary { op, left, right }`      | Follow the operator rules below.                                                                                                                               |
+| `call { function_id, arguments }` | Evaluate arguments in array order, then invoke the named function with those values.                                                                           |
 
 `binary.op` is one of:
 
-| Operators | Operand types | Result |
-| --- | --- | --- |
-| `add`, `sub` | Two integers | Exact sum or difference within the integer domain; otherwise a runtime fault |
-| `eq`, `ne` | Two values of the same structural type | Structural equality or inequality; list order matters and record-key order does not |
-| `lt`, `lte`, `gt`, `gte` | Two integers or two strings | Boolean comparison under the respective ordering |
-| `and` | Two Booleans | Evaluate left; return false immediately if false, otherwise evaluate right |
-| `or` | Two Booleans | Evaluate left; return true immediately if true, otherwise evaluate right |
+| Operators                | Operand types                          | Result                                                                              |
+| ------------------------ | -------------------------------------- | ----------------------------------------------------------------------------------- |
+| `add`, `sub`             | Two integers                           | Exact sum or difference within the integer domain; otherwise a runtime fault        |
+| `eq`, `ne`               | Two values of the same structural type | Structural equality or inequality; list order matters and record-key order does not |
+| `lt`, `lte`, `gt`, `gte` | Two integers or two strings            | Boolean comparison under the respective ordering                                    |
+| `and`                    | Two Booleans                           | Evaluate left; return false immediately if false, otherwise evaluate right          |
+| `or`                     | Two Booleans                           | Evaluate left; return true immediately if true, otherwise evaluate right            |
 
 All supported operations are general value or control-flow operations. There are no imports, host calls, arbitrary source evaluation, graph traversal primitives, or context-assembly intrinsics. Required dependency closure must be expressed using the language's collections, bindings, loops, and calls.
 
@@ -69,15 +69,15 @@ All supported operations are general value or control-flow operations. There are
 
 A function starts with immutable parameter bindings. Each block introduces a lexical scope. A name becomes visible only after its initializer has completed successfully. Names must be unique among all active bindings; shadowing is rejected. Sibling blocks may reuse a name. A block-local name leaves scope when that block completes, including at the end of each loop iteration.
 
-| Statement | Semantics |
-| --- | --- |
-| `let { name, type, value }` | Evaluate and bind an immutable local value of the declared type. |
-| `var { name, type, value }` | Evaluate and bind a mutable local value of the declared type. |
-| `assign { name, value }` | Evaluate the expression, then replace an existing `var` binding. The binding's type remains invariant. An abrupt expression leaves that binding unchanged. |
+| Statement                      | Semantics                                                                                                                                                                    |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `let { name, type, value }`    | Evaluate and bind an immutable local value of the declared type.                                                                                                             |
+| `var { name, type, value }`    | Evaluate and bind a mutable local value of the declared type.                                                                                                                |
+| `assign { name, value }`       | Evaluate the expression, then replace an existing `var` binding. The binding's type remains invariant. An abrupt expression leaves that binding unchanged.                   |
 | `if { condition, then, else }` | Evaluate a Boolean condition and execute exactly one branch in a nested scope. Both branch arrays are explicit; either may be empty. Assignments to outer variables persist. |
-| `while { condition, body }` | Evaluate the Boolean condition before each iteration. If true, execute the body in a fresh nested scope and repeat. If false, complete normally. |
-| `return { value }` | Evaluate the expression and complete the current function with its value. |
-| `fail { code, details }` | Evaluate the payload and complete with the named application failure. |
+| `while { condition, body }`    | Evaluate the Boolean condition before each iteration. If true, execute the body in a fresh nested scope and repeat. If false, complete normally.                             |
+| `return { value }`             | Evaluate the expression and complete the current function with its value.                                                                                                    |
+| `fail { code, details }`       | Evaluate the payload and complete with the named application failure.                                                                                                        |
 
 Statements execute in array order. A return, application failure, runtime fault, or resource exhaustion immediately leaves the enclosing blocks. A loop's normal completion continues with the next statement. There are no implicit returns, `break`, `continue`, exception handlers, or shared mutable global state in this version.
 

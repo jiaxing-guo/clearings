@@ -17,7 +17,10 @@ test('claim support requires every recorded assessment and both review qualifica
         Object.assign(review, { independent, human_reviewed });
         delete review.provisional_support_gate;
         review.cases[0].assessment = assessment;
-        const expected = independent && human_reviewed && assessment === 'supported-within-cited-source' ? established : pending;
+        const expected =
+          independent && human_reviewed && assessment === 'supported-within-cited-source'
+            ? established
+            : pending;
         assert.equal(checkClaimReview(model, review).support_gate, expected);
         review.provisional_support_gate = expected === established ? pending : established;
         assert.throws(() => checkClaimReview(model, review), /gate disagrees/);
@@ -28,20 +31,43 @@ test('claim support requires every recorded assessment and both review qualifica
 
 test('claim review rejects malformed assessments, flags, coverage, and source bindings', () => {
   const mutations = [
-    review => { review.cases[0].assessment = 'approved'; },
-    review => { review.cases[0].assessment = '__proto__'; },
-    review => { review.independent = 'false'; },
-    review => { delete review.human_reviewed; },
-    review => { review.cases[0].note = ' '; },
-    review => { review.cases[0].evidence_ids = []; },
-    review => { review.cases[0] = review.cases[1]; },
-    review => { review.cases[0] = null; },
-    review => { review.cases.pop(); },
-    review => { review.proposal_id = 'proposal:stale'; },
-    review => { review.provisional_support_gate = 'passed'; },
+    (review) => {
+      review.cases[0].assessment = 'approved';
+    },
+    (review) => {
+      review.cases[0].assessment = '__proto__';
+    },
+    (review) => {
+      review.independent = 'false';
+    },
+    (review) => {
+      delete review.human_reviewed;
+    },
+    (review) => {
+      review.cases[0].note = ' ';
+    },
+    (review) => {
+      review.cases[0].evidence_ids = [];
+    },
+    (review) => {
+      review.cases[0] = review.cases[1];
+    },
+    (review) => {
+      review.cases[0] = null;
+    },
+    (review) => {
+      review.cases.pop();
+    },
+    (review) => {
+      review.proposal_id = 'proposal:stale';
+    },
+    (review) => {
+      review.provisional_support_gate = 'passed';
+    },
   ];
   for (const mutate of mutations) {
-    const review = structuredClone(original); mutate(review);
+    const review = structuredClone(original);
+    mutate(review);
     assert.throws(() => checkClaimReview(model, review));
   }
 });

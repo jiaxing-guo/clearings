@@ -4,33 +4,80 @@ import { anchor, html as escape, type Report } from './report.js';
 import { REPORT_CSS, REPORT_JS } from './assets.js';
 
 export function sequenceSvg(sequence: SequenceExample): string {
-  const width = 780; const spacing = 600 / (sequence.participants.length - 1);
+  const width = 780;
+  const spacing = 600 / (sequence.participants.length - 1);
   const x = new Map(sequence.participants.map((item, i) => [item.key, 90 + i * spacing]));
   const height = 98 + sequence.messages.length * 58;
   return `<svg class="sequence" role="img" aria-labelledby="sequence-title sequence-desc" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
 <title id="sequence-title">${escape(sequence.title)}</title><desc id="sequence-desc">${escape(sequence.assumption.text)} The ordered text version follows this diagram.</desc>
 <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#245e4b"/></marker></defs>
 ${sequence.participants.map((item) => `<rect x="${x.get(item.key)! - 77}" y="10" width="154" height="36" rx="7" fill="#eaf0e7"/><text x="${x.get(item.key)}" y="33" text-anchor="middle" font-size="12" fill="#202f2c">${escape(item.label)}</text><line x1="${x.get(item.key)}" x2="${x.get(item.key)}" y1="50" y2="${height - 15}" stroke="#c7d1c5" stroke-dasharray="4 5"/>`).join('')}
-${sequence.messages.map((msg, index) => { const y = 90 + index * 58; return `<line x1="${x.get(msg.from)}" x2="${x.get(msg.to)}" y1="${y}" y2="${y}" stroke="#245e4b" stroke-width="1.5" ${msg.kind === 'return' ? 'stroke-dasharray="5 4"' : ''} marker-end="url(#arrow)"/><text x="${(x.get(msg.from)! + x.get(msg.to)!) / 2}" y="${y - 10}" text-anchor="middle" font-size="12" fill="#202f2c">${escape(msg.label)}</text>`; }).join('')}</svg>`;
+${sequence.messages
+  .map((msg, index) => {
+    const y = 90 + index * 58;
+    return `<line x1="${x.get(msg.from)}" x2="${x.get(msg.to)}" y1="${y}" y2="${y}" stroke="#245e4b" stroke-width="1.5" ${msg.kind === 'return' ? 'stroke-dasharray="5 4"' : ''} marker-end="url(#arrow)"/><text x="${(x.get(msg.from)! + x.get(msg.to)!) / 2}" y="${y - 10}" text-anchor="middle" font-size="12" fill="#202f2c">${escape(msg.label)}</text>`;
+  })
+  .join('')}</svg>`;
 }
 export function renderHtml(report: Report): string {
-  const { model, plan, concept, claims, flow, claimLabels, steps, unknowns, relations, concepts, evidence, evidenceMap, entries } = report;
+  const {
+    model,
+    plan,
+    concept,
+    claims,
+    flow,
+    claimLabels,
+    steps,
+    unknowns,
+    relations,
+    concepts,
+    evidence,
+    evidenceMap,
+    entries,
+  } = report;
   const { proposal } = model.data;
   const { request } = report;
-  const refs = (ids: string[]) => ids.map((id) => { const item = evidenceMap.get(id)!; return `<a href="#${anchor(id)}">${escape(item.path)}:${item.start_line}</a>`; }).join(' ');
-  const claimRefs = (ids: string[]) => ids.map((id) => `<a href="#${anchor(id)}">${claimLabels.get(id)}</a>`).join(', ');
-  const support = (item: Explanation) => `<span class="support">${report.evidenceFor(item).map((id, i) => `<a href="#${anchor(id)}" aria-label="Open source excerpt ${i + 1}">Source${i ? ` ${i + 1}` : ''}</a>`).join('')}${item.unknown_indices.map((index) => `<a href="#unknown-${index}">Scope note</a>`).join('')}</span>`;
+  const refs = (ids: string[]) =>
+    ids
+      .map((id) => {
+        const item = evidenceMap.get(id)!;
+        return `<a href="#${anchor(id)}">${escape(item.path)}:${item.start_line}</a>`;
+      })
+      .join(' ');
+  const claimRefs = (ids: string[]) =>
+    ids.map((id) => `<a href="#${anchor(id)}">${claimLabels.get(id)}</a>`).join(', ');
+  const support = (item: Explanation) =>
+    `<span class="support">${report
+      .evidenceFor(item)
+      .map(
+        (id, i) =>
+          `<a href="#${anchor(id)}" aria-label="Open source excerpt ${i + 1}">Source${i ? ` ${i + 1}` : ''}</a>`,
+      )
+      .join(
+        '',
+      )}${item.unknown_indices.map((index) => `<a href="#unknown-${index}">Scope note</a>`).join('')}</span>`;
   const paragraph = (item: Explanation) => `<p>${escape(item.text)} ${support(item)}</p>`;
-  const stageHtml = plan.stages.map((stage, index) => `<article class="stage" id="stage-${stage.key}" data-stage="${stage.key}">
+  const stageHtml = plan.stages
+    .map(
+      (stage, index) => `<article class="stage" id="stage-${stage.key}" data-stage="${stage.key}">
 <div class="stage-title"><span class="number">${String(index + 1).padStart(2, '0')}</span><h3>${escape(stage.title)}</h3></div>
 <p class="stage-summary">${escape(stage.summary.text)} ${support(stage.summary)}</p>
 ${stage.cautions.map((item) => `<p class="caution"><strong>Watch for:</strong> ${escape(item.text)} ${support(item)}</p>`).join('')}
 <details><summary>Explain this stage</summary><div class="detail-body">${stage.notes.map(paragraph).join('')}
-<details class="exact"><summary>Exact branches (${stage.step_ids.length})</summary>${stage.step_ids.map((id) => { const step = steps.get(id)!; return `<div class="branch" id="${anchor(id)}"><h4>${escape(step.title)}</h4><p class="support">Claims: ${claimRefs(step.claim_ids)}. ${refs(step.evidence_ids)}</p>${step.next.length ? `<ul>${step.next.map((edge) => `<li>${edge.condition === null ? 'Then' : escape(edge.condition)} → <a href="#${anchor(edge.step_id)}">${escape(steps.get(edge.step_id)!.title)}</a> <span class="support">${refs(edge.evidence_ids)}</span></li>`).join('')}</ul>` : '<p>This branch ends within the recorded flow.</p>'}</div>`; }).join('')}</details>
-<p class="inventory-link">Claims for this stage: ${claimRefs(stage.claim_ids)}</p></div></details></article>`).join('');
+<details class="exact"><summary>Exact branches (${stage.step_ids.length})</summary>${stage.step_ids
+        .map((id) => {
+          const step = steps.get(id)!;
+          return `<div class="branch" id="${anchor(id)}"><h4>${escape(step.title)}</h4><p class="support">Claims: ${claimRefs(step.claim_ids)}. ${refs(step.evidence_ids)}</p>${step.next.length ? `<ul>${step.next.map((edge) => `<li>${edge.condition === null ? 'Then' : escape(edge.condition)} → <a href="#${anchor(edge.step_id)}">${escape(steps.get(edge.step_id)!.title)}</a> <span class="support">${refs(edge.evidence_ids)}</span></li>`).join('')}</ul>` : '<p>This branch ends within the recorded flow.</p>'}</div>`;
+        })
+        .join('')}</details>
+<p class="inventory-link">Claims for this stage: ${claimRefs(stage.claim_ids)}</p></div></details></article>`,
+    )
+    .join('');
   const sequence = plan.sequence;
   const labels = new Map(sequence?.participants.map((item) => [item.key, item.label]));
-  const diagram = sequence ? `<figure class="diagram"><h3>${escape(sequence.title)}</h3><p class="assumption">${escape(sequence.assumption.text)} ${support(sequence.assumption)}</p>${sequenceSvg(sequence)}<figcaption class="muted">Possible sequence under the stated condition. Dashed arrows show returns.</figcaption><details><summary>Read the sequence as text</summary><table class="sequence-table"><thead><tr><th>Order</th><th>From</th><th>To</th><th>Action</th><th>Support</th></tr></thead><tbody>${sequence.messages.map((msg, i) => `<tr><td>${i + 1}</td><td>${escape(labels.get(msg.from)!)}</td><td>${escape(labels.get(msg.to)!)}</td><td>${escape(msg.label)}</td><td>${claimRefs(msg.claim_ids)}</td></tr>`).join('')}</tbody></table></details></figure>` : '';
+  const diagram = sequence
+    ? `<figure class="diagram"><h3>${escape(sequence.title)}</h3><p class="assumption">${escape(sequence.assumption.text)} ${support(sequence.assumption)}</p>${sequenceSvg(sequence)}<figcaption class="muted">Possible sequence under the stated condition. Dashed arrows show returns.</figcaption><details><summary>Read the sequence as text</summary><table class="sequence-table"><thead><tr><th>Order</th><th>From</th><th>To</th><th>Action</th><th>Support</th></tr></thead><tbody>${sequence.messages.map((msg, i) => `<tr><td>${i + 1}</td><td>${escape(labels.get(msg.from)!)}</td><td>${escape(labels.get(msg.to)!)}</td><td>${escape(msg.label)}</td><td>${claimRefs(msg.claim_ids)}</td></tr>`).join('')}</tbody></table></details></figure>`
+    : '';
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${escape(concept.title)} · Clearings</title><style>${REPORT_CSS}</style></head>
 <body><a class="skip" href="#overview">Skip to the report</a><aside class="rail"><a class="brand" href="#overview"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>clearings</a><p class="rail-label">Capability guide</p><nav aria-label="Report sections"><a class="current" href="#overview">Overview</a><a href="#flow">Follow the flow</a><a href="#cases">Explore a case</a><a href="#unknowns">Scope and unknowns</a><a href="#claims">Claim inventory</a><a href="#evidence">Source evidence</a><a href="#report-details">Report details</a></nav><div class="rail-footer">Read at your own depth.<br>Each explanation links<br>back to the source.</div></aside>

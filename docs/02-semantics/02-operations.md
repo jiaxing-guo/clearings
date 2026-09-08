@@ -6,13 +6,13 @@
 
 In the authored Hono model, `outcome:direct-missing` applies when the handler returns a nullish value directly. Its postcondition requires the selected response source to be `not-found`.
 
-| Part of the contract | Example | Responsibility |
-| --- | --- | --- |
-| Input domain | `path: direct`, `value: nullish` | Classify the supplied execution branch and result |
-| Guard | Direct path and nullish value | Determine modeled applicability |
-| Postcondition | Output equals `not-found` | Constrain the supplied result |
-| Initial state | `finalized: true` | Record context state; it does not alter this guard |
-| State and effect boundaries | Both partial | Retain unmodeled behavior explicitly |
+| Part of the contract        | Example                          | Responsibility                                     |
+| --------------------------- | -------------------------------- | -------------------------------------------------- |
+| Input domain                | `path: direct`, `value: nullish` | Classify the supplied execution branch and result  |
+| Guard                       | Direct path and nullish value    | Determine modeled applicability                    |
+| Postcondition               | Output equals `not-found`        | Constrain the supplied result                      |
+| Initial state               | `finalized: true`                | Record context state; it does not alter this guard |
+| State and effect boundaries | Both partial                     | Retain unmodeled behavior explicitly               |
 
 Keeping the input and outcome fixed, `not-found` passes the output rule, `context-response` fails it, and an omitted output makes it unknown. The [first-contract tutorial](../00-learn/01-first-contract.md) develops this example; the [case guide](../04-guides/01-check-a-case.md) reproduces it locally.
 
@@ -24,12 +24,12 @@ Each outcome contains an ID, description, Boolean `when` guard, `ensures` rules,
 
 `guarantees` apply regardless of the selected outcome. An outcome's `ensures`, `updates`, and required/permitted effects apply when that outcome is supplied for checking. Guards classify modeled applicability. The checker does not execute an outcome or synthesize an output from it.
 
-| Declaration | Meaning | Current enforcement |
-| --- | --- | --- |
+| Declaration                 | Meaning                                                                         | Current enforcement                                                                                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `outcome_policy: exclusive` | At most one guard may apply; coverage determines whether a case must be covered | Fail multiple true guards or a true alternative to the supplied outcome, even if the supplied outcome's guard is unknown; unresolved alternatives otherwise yield unknown |
-| `outcome_policy: allowed` | Guards may overlap; the supplied outcome must have an applicable guard | Check the supplied outcome, without requiring other applicable outcomes' postconditions |
-| `coverage: complete` | The model claims to cover the relevant input domain | Fail an observed case with no true or unknown guard; no exhaustive coverage proof |
-| `coverage: partial` | Behavior outside modeled cases is unspecified | Require at least one decision explaining the boundary; an uncovered case yields unknown |
+| `outcome_policy: allowed`   | Guards may overlap; the supplied outcome must have an applicable guard          | Check the supplied outcome, without requiring other applicable outcomes' postconditions                                                                                   |
+| `coverage: complete`        | The model claims to cover the relevant input domain                             | Fail an observed case with no true or unknown guard; no exhaustive coverage proof                                                                                         |
+| `coverage: partial`         | Behavior outside modeled cases is unspecified                                   | Require at least one decision explaining the boundary; an uncovered case yields unknown                                                                                   |
 
 A complete coverage declaration does not imply complete state or effect modeling. Likewise, a complete frame does not imply complete outcome coverage.
 
@@ -49,13 +49,13 @@ A writable field without an update or postcondition remains unconstrained. Decla
 
 The operation-level `allowed` list declares effect IDs. Each outcome may reference these IDs as `required` or `permitted`. The representation records occurrence by ID; it does not model effect payloads, counts, ordering, or a general I/O trace.
 
-| Boundary and observation | Check |
-| --- | --- |
-| Complete boundary, outcome supplied, effects supplied | Every observed ID must be allowed by that outcome; each required ID must occur |
-| Complete boundary, outcome omitted, effects supplied | Every observed ID must be declared at operation level; outcome-specific rules remain unchecked |
-| Complete boundary, outcome supplied, effects omitted | Unknown effect check |
-| Partial boundary, required outcome effect | Require its occurrence; missing effect data yields unknown |
-| Partial boundary without required effects | No exclusion check for additional effects |
+| Boundary and observation                              | Check                                                                                          |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Complete boundary, outcome supplied, effects supplied | Every observed ID must be allowed by that outcome; each required ID must occur                 |
+| Complete boundary, outcome omitted, effects supplied  | Every observed ID must be declared at operation level; outcome-specific rules remain unchecked |
+| Complete boundary, outcome supplied, effects omitted  | Unknown effect check                                                                           |
+| Partial boundary, required outcome effect             | Require its occurrence; missing effect data yields unknown                                     |
+| Partial boundary without required effects             | No exclusion check for additional effects                                                      |
 
 An empty complete effect boundary forbids modeled external effects. An empty partial boundary does not establish absence of effects. Supplied effect IDs remain external observations; the checker does not instrument source execution.
 
@@ -79,17 +79,17 @@ Use the [observation protocol](03-observations-and-sequences.md) for missing-dat
 
 ## Record fields
 
-| Fields | Meaning |
-| --- | --- |
-| `id`, `alias`, `name`, `purpose` | Canonical record identity, selection alias, display name, and local explanation |
-| `inputs`, `output` | Exact input record and output value type |
-| `reads`, `writes`, `frame` | Declared state access and preservation boundary |
-| `effects` | Declared effect IDs and completeness of the effect boundary |
-| `outcome_policy`, `coverage`, `outcomes` | Applicability, permitted alternatives, and modeled behavioral coverage |
-| `guarantees` | Operation-wide predicates, independent of the supplied outcome |
-| `dependencies` | Required or optional related contracts and their roles |
-| `implementations` | Individual implementation responsibilities and optional source links |
-| `decisions` | Unresolved requirements, analysis limits, and implementation choices |
-| `evidence_ids` | References to source, requirement, or design records |
+| Fields                                   | Meaning                                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------------------- |
+| `id`, `alias`, `name`, `purpose`         | Canonical record identity, selection alias, display name, and local explanation |
+| `inputs`, `output`                       | Exact input record and output value type                                        |
+| `reads`, `writes`, `frame`               | Declared state access and preservation boundary                                 |
+| `effects`                                | Declared effect IDs and completeness of the effect boundary                     |
+| `outcome_policy`, `coverage`, `outcomes` | Applicability, permitted alternatives, and modeled behavioral coverage          |
+| `guarantees`                             | Operation-wide predicates, independent of the supplied outcome                  |
+| `dependencies`                           | Required or optional related contracts and their roles                          |
+| `implementations`                        | Individual implementation responsibilities and optional source links            |
+| `decisions`                              | Unresolved requirements, analysis limits, and implementation choices            |
+| `evidence_ids`                           | References to source, requirement, or design records                            |
 
 The full schema is [specification.v0.3.json](../../schemas/specification.v0.3.json). JSON Schema defines record structure; the [semantic validator](../../src/specification/validate.ts) adds cross-reference and type constraints.

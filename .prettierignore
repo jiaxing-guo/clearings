@@ -1,0 +1,35 @@
+# Generated output and local dependencies (also excluded for editor integrations).
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.clearings/
+runs/
+benchmark-checkouts/
+website/.next/
+website/out/
+website/.source/
+website/next-env.d.ts
+website/public/demo/
+website/content/docs/technical/
+website/public/technical-reference.json
+website/public/operation-explorer.json
+
+# Frozen evidence, source-coordinate fixtures, and generator-owned serialization.
+benchmarks/
+tests/fixtures/
+schemas/
+specifications/
+programs/**/*.json
+docs/archive/
+docs/SPECIFICATION_ARCHITECTURE.md
+docs/SEQUENCE_CHECKS.md
+package-lock.json
+website/package-lock.json
+
+# Exact working-source bindings in the preserved bootstrap demonstration.
+# See docs/05-development/05-repository-maintenance.md before changing these bytes.
+src/analysis/budget.ts
+src/analysis/dependencies.ts
+src/specification/context.ts
+src/specification/render.ts
