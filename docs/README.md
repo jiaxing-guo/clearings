@@ -1,6 +1,6 @@
 # Clearings technical documentation
 
-Clearings is developing a compiler and execution runtime for agentic coding. Typed operation contracts express requirements; Program IR expresses implementations; execution and independent evaluation connect programs to observed behavior. This directory is the canonical Markdown reference for the implemented semantics and abstraction boundaries. The [Rust backend plan](05-development/06-rust-backend-plan.md) defines the next proposed compilation step.
+Clearings is developing a compiler and execution runtime for agentic coding. Typed operation contracts express requirements; Program IR expresses implementations; execution and independent evaluation connect programs to observed behavior. This directory is the canonical Markdown reference for the implemented semantics and abstraction boundaries. The [Rust backend plan](05-development/06-rust-backend-plan.md) records the implemented compilation boundary and remaining integration work.
 
 ## Choose a reading path
 
@@ -48,10 +48,11 @@ The original reference order remains available for a systematic review. For a la
 | 27    | [Repository maintenance](05-development/05-repository-maintenance.md)                       | How do I format, clean, and organize maintained files while preserving evidence?                            |
 | 28    | [Rust backend plan](05-development/06-rust-backend-plan.md)                                 | How will deterministic compilation be implemented and checked against reference execution?                  |
 | 29    | [Rust backend artifacts and runtime](03-reference/09-rust-backend.md)                       | How are compiled artifacts bound, and which value and execution primitives does the Rust runtime implement? |
+| 30    | [Rust code generation](03-reference/10-rust-code-generation.md)                             | How are typed programs lowered, executed in native tests, and measured?                                     |
 
 ## Status and authority
 
-The [Rust backend artifacts and runtime](03-reference/09-rust-backend.md) define the implemented compiler preparation boundary, compiled-artifact validators, and primitive Rust runtime. Code generation and native runner integration remain subsequent changes.
+The [Rust backend artifacts and runtime](03-reference/09-rust-backend.md) define the implemented compiler preparation boundary, compiled-artifact validators, and primitive Rust runtime. The [Rust emitter](03-reference/10-rust-code-generation.md) generates executable target modules; native CLI and package integration remain subsequent changes.
 
 This reference describes the implemented v0.3.0 contract language, its relationship to the v0.1/v0.2 models, and Program IR v0.1 with its static validator and reference interpreter. Program execution implements the defined language semantics under documented resource limits. Ordered required dependency closure is implemented in IR and evaluated against independent bounded graph-domain expectations. The program CLI exposes validation, complete function inspection, fresh execution, and JSON/Markdown reports. Refinement proof procedures remain subsequent work.
 

@@ -1,6 +1,6 @@
 # Rust backend artifacts and runtime
 
-The first Rust backend change implements a compiled-artifact contract and a primitive Rust runtime. It does not yet compile Program IR or execute generated native code. The [four-PR plan](../05-development/06-rust-backend-plan.md) separates these capabilities. The existing TypeScript reference interpreter and its public execution results remain unchanged.
+The Rust backend implements compiled-artifact contracts, a primitive runtime, and [deterministic source generation](10-rust-code-generation.md). Generated modules execute in the native test harness; general process transport and CLI integration remain subsequent work. The [four-PR plan](../05-development/06-rust-backend-plan.md) separates these capabilities. The existing TypeScript reference interpreter and its public execution results remain unchanged.
 
 ## Artifact construction and validation
 
@@ -34,7 +34,7 @@ assert.equal(artifact.program_id, program.artifact_id);
 | `options`                     | Exactly `resource_policy: reference-v0.1`; no optimization or unmetered option        |
 | `module`                      | Exactly `path: program.rs`, `source`, and SHA-256 of the source's exact UTF-8 bytes   |
 
-All fields except `artifact_id` contribute to artifact identity. Changing whitespace in target source changes its byte digest and artifact identity. Source text must be well-formed Unicode; IR string values with lone surrogates remain valid and must eventually be emitted through UTF-16 code-unit construction. The artifact interfaces and strict validators are defined in [artifacts.ts](../../src/compiler/artifacts.ts); no separate compiled-artifact JSON Schema is exported in this change.
+All fields except `artifact_id` contribute to artifact identity. Changing whitespace in target source changes its byte digest and artifact identity. Source text must be well-formed Unicode; IR string values with lone surrogates remain valid are emitted through UTF-16 code-unit construction. The artifact interfaces and strict validators are defined in [artifacts.ts](../../src/compiler/artifacts.ts); no separate compiled-artifact JSON Schema is exported in this change.
 
 `rustRuntimeIdentity(files)` takes `{ path, source }` entries. It sorts relative ASCII paths, hashes each file's UTF-8 bytes, and computes `rust-runtime:` plus the canonical inventory digest. Duplicate, absolute, and traversal paths are rejected. The inventory must contain `Cargo.toml` and `src/lib.rs`; callers must supply the complete build-source inventory, including other modules, the lockfile, and toolchain configuration. The helper does not discover omitted dependencies or authenticate their origin. It does not open the supplied paths. The expected inventory is a trusted build input, never selected by an untrusted compiled artifact.
 
@@ -42,7 +42,7 @@ All fields except `artifact_id` contribute to artifact identity. Changing whites
 
 `validateCompilationInput` checks portability and input units before Program IR validation and identity hashing. Limits match execution preparation: 50,000 visited values, depth 64, and 1,000,000 units counting one per value plus string/field-name UTF-16 units. Program IR's additional static type and work bounds also apply.
 
-An artifact module permits at most 8 MiB of UTF-8 source. A runtime inventory permits at most 64 files, 256 characters per relative path, and 8 MiB of total UTF-8 source. These constants are exported as `RUST_ARTIFACT_LIMITS`. Emitter-specific work/output construction limits must be enforced when code generation is implemented; these validators do not bound a process that has already constructed oversized input.
+An artifact module permits at most 8 MiB of UTF-8 source. A runtime inventory permits at most 64 files, 256 characters per relative path, and 8 MiB of total UTF-8 source. These constants are exported as `RUST_ARTIFACT_LIMITS`. The emitter additionally enforces [incremental work/output construction limits](10-rust-code-generation.md#compiler-limits). Artifact validators alone do not bound a process that has already constructed oversized input.
 
 Artifact, compatibility, and preparation failures use `INVALID_COMPILED_PROGRAM`, exit status 2, and `{ path, rule }` diagnostics. Rules include `portability`, `shape`, `compatibility`, `identity`, `source`, `source-limit`, `input-limit`, and `path`. Program syntax/type errors retain `INVALID_PROGRAM`. Validation does not evaluate accessors or read program-supplied paths. Unexpected implementation errors propagate.
 
@@ -87,4 +87,4 @@ The exported `RustExecutionResult` describes the future runner result. It retain
 
 Differential evaluation will compare exact semantic values, completion class, application/fault codes and payloads, runtime-fault messages, logical limits/usage, and diagnostic phase/path/call stack. Backend identity fields necessarily differ. Input-error code/rule/path must correspond; host error text and stack traces are outside the equivalence claim. Generated-source bytes are deterministic artifacts; native-binary reproducibility additionally depends on compiler, linker, target, and environment.
 
-The primitive tests check independent expected values and charges. They do not establish full backend conformance, complete generated-code instrumentation, or compiler correctness. Those checks belong to the emitter and differential-evaluation changes.
+The primitive tests check independent expected values and charges. The [native code-generation tests](10-rust-code-generation.md#native-validation) exercise emitted control flow and instrumentation. These bounded tests do not establish universal compiler correctness; the systematic compiler-conformance gate remains subsequent work.

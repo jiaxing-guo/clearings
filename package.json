@@ -69,12 +69,14 @@
     "docs:check:markdown": "npm run build && node scripts/check-markdown-docs.mjs",
     "test:program": "npm run build && node --test tests/program*.test.mjs",
     "test:rust": "cd runtime/rust && cargo test --locked --offline",
-    "format:rust": "cd runtime/rust && cargo fmt",
-    "check:rust": "cd runtime/rust && cargo fmt -- --check && cargo clippy --locked --offline --all-targets -- -D warnings",
+    "format:rust": "cd runtime/rust && cargo fmt && rustfmt --edition 2021 ../../tests/native/support.rs",
+    "check:rust": "cd runtime/rust && cargo fmt -- --check && cargo clippy --locked --offline --all-targets -- -D warnings && rustfmt --edition 2021 --check ../../tests/native/support.rs",
     "program": "npm run build --silent && node dist/cli/main.js program",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "clean": "node scripts/clean.mjs"
+    "clean": "node scripts/clean.mjs",
+    "test:compiler": "npm run build && node --test tests/program-compiled-artifacts.test.mjs tests/program-rust-codegen.test.mjs tests/native/*.test.mjs",
+    "benchmark:rust": "npm run build --silent && node scripts/measure-rust-closure.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

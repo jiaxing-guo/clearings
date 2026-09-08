@@ -1,4 +1,4 @@
-name: Rust runtime
+name: Rust backend
 
 on:
   pull_request:
@@ -7,6 +7,9 @@ on:
       - 'src/compiler/**'
       - 'src/program/**'
       - 'tests/program-compiled-artifacts.test.mjs'
+      - 'tests/program-rust-codegen.test.mjs'
+      - 'tests/native/**'
+      - 'scripts/measure-rust-closure.mjs'
       - 'package*.json'
       - '.github/workflows/rust.yml'
   push:
@@ -33,4 +36,4 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run check:rust
       - run: npm run test:rust
-      - run: npm run build && node --test tests/program-compiled-artifacts.test.mjs
+      - run: npm run test:compiler

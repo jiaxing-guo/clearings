@@ -57,7 +57,7 @@ export default function Home() {
         </div>
         <p className="home-note">
           The reference describes v0.3.0 operation contracts and Program IR v0.1. The Rust backend
-          has an artifact contract and primitive runtime; code generation is the next step.{' '}
+          generates native-executable modules; compiler conformance and CLI integration are next.{' '}
           <Link href="/docs/technical/development/status-and-roadmap">
             Implementation status and limitations
           </Link>
