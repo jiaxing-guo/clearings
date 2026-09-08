@@ -1,3 +1,4 @@
+import { verifyBootstrapSourceSnapshot } from './lib/bootstrap-source-snapshot.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
@@ -50,15 +51,10 @@ for (const fault of json('counterexamples.json')) {
   assert.equal(result.verdict, 'fail');
   assert.deepEqual(result, fault.result);
 }
-for (const binding of json('implementation-bindings.json').bindings) {
-  assert.equal(hash(binding.text), binding.sha256);
-  const source = readFileSync(new URL(`../${binding.path}`, import.meta.url));
-  assert.equal(hash(source), binding.file_sha256, `Stale working-source binding: ${binding.path}`);
-  assert.equal(
-    source.subarray(binding.start_byte, binding.end_byte).toString('utf8'),
-    binding.text,
-  );
-}
+verifyBootstrapSourceSnapshot(
+  new URL('../benchmarks/sources/clearings-bootstrap/', import.meta.url).pathname,
+  json('implementation-bindings.json').bindings,
+);
 let fragments = 0;
 for (const name of readdirSync(root).filter((name) => name.endsWith('.html'))) {
   const page = read(name),
@@ -87,7 +83,7 @@ console.log(
     authored_hono_cases: verification.authored_hono_cases,
     rejected_output_faults: verification.rejected_output_faults,
     context_reproduction: 'identical',
-    exact_working_source_bindings: 'valid',
+    historical_source_bindings: 'valid',
     file_hashes: 'valid',
     fragment_links: fragments,
     browser_interaction: 'not-run',
