@@ -8,7 +8,7 @@ The objective is a small typed language and reference interpreter that execute o
 | --- | --- | --- | --- |
 | 1 | Define an implementation language with precise semantics | Program types and schema; expression, statement, call, and failure semantics; static validation; authored validation examples | Implemented |
 | 2 | Establish the reference VM | Interpreter, work/storage limits, diagnostic completions, and independent tests of each language construct | Implemented; [execution API and accounting](../03-reference/07-program-execution.md) |
-| 3 | Express a real Clearings algorithm in its own IR | Ordered dependency closure, including worklist, visited values, lookup, ordering, missing references, and IR-defined calls; independent exhaustive three-node tests and targeted cases | Planned |
+| 3 | Express a real Clearings algorithm in its own IR | Ordered dependency closure, including worklist, visited values, lookup, ordering, missing references, and IR-defined calls; independent exhaustive three-node tests and targeted cases | Implemented; [algorithm contract and evaluation](../02-semantics/06-required-dependency-closure.md) |
 | 4 | Make the result reproducible and usable | Concise CLI commands, readable program inspection and execution results, worked documentation, and focused CI | Planned |
 
 Each change includes its own tests and documentation. The final change integrates the developer workflow. The [conformance implementation](03-conformance-plan.md) provides existing independent graph-domain expectations; its historical records and frozen evaluation inputs retain their original meanings.
