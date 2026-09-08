@@ -110,3 +110,13 @@ The compiler gate includes independent/differential conformance, native CLI beha
 If the toolchain is unavailable, check `rustup run 1.85.1 rustc --version` and the host linker. If a build or process fails, the CLI diagnostic retains its stage, exit status or signal, and a bounded error excerpt. If an output directory exists, select a new path or remove the generated directory deliberately. A saved artifact is an integrity-bound build product; it is not authenticated execution evidence or a native-code sandbox.
 
 This completes the initial compilation and execution workflow. Production context assembly still uses its TypeScript kernel. [Production adoption](../05-development/01-status-and-roadmap.md#work-after-the-backend) requires a separate compatibility and evidence migration.
+
+## Prepare once and invoke repeatedly
+
+`prepareRustProgram(program, { cacheDirectory? })` validates and compiles one program, returning an owned handle with `artifact`, `runner`, `native`, `execute(arguments, limits?)`, and `dispose()`. Each execution has fresh arguments, counters, and a new native process. Call `dispose()` when finished. Without a cache, disposal removes the build directory. With an explicit cache, disposal releases the handle and retains reusable build products.
+
+A cache is local to its host and trusted like the installed package. Its identity includes the compiled artifact, driver, pinned toolchain/flags, platform, and architecture. Entries are published by atomic directory rename; concurrent preparation may perform duplicate builds, but never consumes a partial entry. Preparation and every invocation check the manifest and executable digest. Altered or incompatible entries fail explicitly. These checks establish integrity, not source authentication or a security boundary against the local account. Callers must not modify a build concurrently with execution.
+
+A cache hit requires no Rust compiler. A cache miss requires the pinned toolchain and linker. Cache directories must be owned and must not allow group/other writes on Unix. Remove a cache only when its users have stopped. Existing `executeRustProgram` retains fresh compilation and admission-error precedence.
+
+Run `node scripts/measure-native-preparation.mjs` after building to measure preparation and chain workloads. The recorded Linux run prepared closure in approximately 2.32 seconds and reopened its cache in 27 milliseconds; individual 8–256-node chain invocations took 25–86 milliseconds under maximum logical limits. These are single-run feasibility measurements, not throughput, host-memory, or speedup claims. The [measurement record](../../benchmarks/results/native-preparation-20260908/README.md) preserves its domain.

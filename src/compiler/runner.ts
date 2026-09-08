@@ -1,6 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { ClearingsError } from '../model/types.js';
 import { digest } from '../semantics/identity.js';
@@ -11,6 +10,8 @@ import { compileRust } from './rust.js';
 import { rustRuntimeIdentity, RUST_TOOLCHAIN } from './artifacts.js';
 import type { RustCompiledArtifact, RustExecutionResult, RustSourceFile } from './artifacts.js';
 import { decodeResponse, encodeRequest, RUST_PROCESS_LIMITS } from './transport.js';
+import { nativeExecutable, prepareNativeBuild, type NativeBuildIdentity } from './native-build.js';
+import type { Program } from '../program/model.js';
 
 export { RUST_PROCESS_LIMITS } from './transport.js';
 export const RUST_RUNNER_VERSION = '0.1.0';
@@ -164,51 +165,103 @@ function build(directory: string): void {
   }
 }
 
-/** Compile validated IR afresh and execute it in a bounded local process; never accept target source. */
+export interface PreparedRustProgram {
+  readonly artifact: RustCompiledArtifact;
+  readonly runner: RustRunnerIdentity;
+  readonly native: NativeBuildIdentity;
+  execute(arguments_: unknown, options?: ProgramExecutionOptions): RustExecutionResult;
+  dispose(): void;
+}
+
+/** Prepare a validated program once. Optional caches are local, owned build products. */
+export function prepareRustProgram(
+  input: unknown,
+  options: { cacheDirectory?: string } = {},
+): PreparedRustProgram {
+  const packaged = assets();
+  const artifact = compileRust(input, packaged.identity);
+  const program = JSON.parse(JSON.stringify(input)) as Program;
+  const prepared = prepareNativeBuild(
+    {
+      compiled_artifact_id: artifact.artifact_id,
+      runner: packaged.runner,
+      toolchain: artifact.toolchain,
+      rustc_flags: rustFlags,
+    },
+    (directory) => {
+      writeSources(directory, sources(artifact, packaged));
+      build(directory);
+    },
+    options.cacheDirectory,
+  );
+  let disposed = false;
+  return {
+    // Do not expose the objects used internally for execution identity.
+    get artifact() {
+      return structuredClone(artifact);
+    },
+    get runner() {
+      return structuredClone(packaged.runner);
+    },
+    get native() {
+      return structuredClone(prepared.identity);
+    },
+    execute(arguments_, executionOptions = {}) {
+      if (disposed)
+        throw new ClearingsError('RUST_PROGRAM_DISPOSED', 'Prepared program has been disposed.', 1);
+      const { args, limits } = prepareProgramExecution(program, arguments_, executionOptions);
+      const request = encodeRequest(args, limits);
+      prepared.verify();
+      const result = spawnSync(join(prepared.directory, nativeExecutable), [], {
+        cwd: prepared.directory,
+        env: { PATH: '' },
+        input: request,
+        timeout: RUST_PROCESS_LIMITS.execution_timeout_ms,
+        maxBuffer: RUST_PROCESS_LIMITS.output_bytes,
+      });
+      if (result.error || result.status !== 0 || result.stderr.length !== 0)
+        throw new ClearingsError(
+          'RUST_EXECUTION_FAILED',
+          'Native execution failed outside the language completion contract.',
+          1,
+          {
+            stage: 'execution',
+            status: result.status,
+            signal: result.signal,
+            cause: result.error?.message ?? result.stderr.toString('utf8').slice(0, 16_384),
+          },
+        );
+      return {
+        program_id: artifact.program_id,
+        backend: 'rust',
+        compiled_artifact_id: artifact.artifact_id,
+        compiler_version: artifact.compiler_version,
+        runtime: structuredClone(artifact.runtime),
+        execution_semantics_version: artifact.execution_semantics_version,
+        runner: structuredClone(packaged.runner),
+        ...decodeResponse(result.stdout, program, limits),
+      };
+    },
+    dispose() {
+      if (!disposed) {
+        disposed = true;
+        prepared.dispose();
+      }
+    },
+  };
+}
+
+/** Compile validated IR afresh and execute it; admission still precedes native preparation. */
 export function executeRustProgram(
   input: unknown,
   arguments_: unknown,
   options: ProgramExecutionOptions = {},
 ): RustExecutionResult {
-  const { program, args, limits } = prepareProgramExecution(input, arguments_, options);
-  const packaged = assets();
-  const artifact = compileRust(program, packaged.identity);
-  const request = encodeRequest(args, limits);
-  const directory = mkdtempSync(join(tmpdir(), 'clearings-rust-'));
+  prepareProgramExecution(input, arguments_, options);
+  const prepared = prepareRustProgram(input);
   try {
-    writeSources(directory, sources(artifact, packaged));
-    build(directory);
-    const executable = join(directory, process.platform === 'win32' ? 'native.exe' : 'native');
-    const result = spawnSync(executable, [], {
-      cwd: directory,
-      env: { PATH: '' },
-      input: request,
-      timeout: RUST_PROCESS_LIMITS.execution_timeout_ms,
-      maxBuffer: RUST_PROCESS_LIMITS.output_bytes,
-    });
-    if (result.error || result.status !== 0 || result.stderr.length !== 0)
-      throw new ClearingsError(
-        'RUST_EXECUTION_FAILED',
-        'Native execution failed outside the language completion contract.',
-        1,
-        {
-          stage: 'execution',
-          status: result.status,
-          signal: result.signal,
-          cause: result.error?.message ?? result.stderr.toString('utf8').slice(0, 16_384),
-        },
-      );
-    return {
-      program_id: artifact.program_id,
-      backend: 'rust',
-      compiled_artifact_id: artifact.artifact_id,
-      compiler_version: artifact.compiler_version,
-      runtime: artifact.runtime,
-      execution_semantics_version: artifact.execution_semantics_version,
-      runner: packaged.runner,
-      ...decodeResponse(result.stdout, program, limits),
-    };
+    return prepared.execute(arguments_, options);
   } finally {
-    rmSync(directory, { recursive: true, force: true });
+    prepared.dispose();
   }
 }
