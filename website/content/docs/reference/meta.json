@@ -1,7 +1,4 @@
 {
   "title": "Reference",
-  "pages": [
-    "library",
-    "cli"
-  ]
+  "pages": ["library", "cli"]
 }

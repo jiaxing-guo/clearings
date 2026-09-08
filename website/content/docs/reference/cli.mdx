@@ -5,19 +5,19 @@ description: "Commands, output rules, and exit codes."
 
 Run `node dist/cli/main.js --help` for the current command syntax. The installed binary name is `clearings`.
 
-| Command | Purpose | Main inputs |
-| --- | --- | --- |
-| `inventory` | Account for tracked Git entries | Repository, ref or target manifest, scope |
-| `scan` | Extract bounded TypeScript structure | Inventory options; optional project, strict mode |
-| `benchmark-fetch` | Fetch and verify a pinned bare repository | Target manifest; new output directory |
-| `propose` | Export exact evidence and author instructions | Scan, repository, instruction, version, byte budget |
-| `import` | Validate a supplied interpretation | Response, request, scan, repository |
-| `replay` | Import with a recorded-replay label | Same inputs as import |
-| `validate` | Check artifact integrity and optional source | Artifact; scan/request/repository as required |
-| `inspect` | List or select v0.2 records | Model; capability, behavior, or ID |
-| `context` | Export bounded v0.2 context | Model, selection, byte budget |
-| `evidence` | Retrieve exact source text | Scan, repository, evidence ID |
-| `explain` | Render a capability report | Model, scan, repository, capability, optional plan/audience/format |
+| Command           | Purpose                                       | Main inputs                                                        |
+| ----------------- | --------------------------------------------- | ------------------------------------------------------------------ |
+| `inventory`       | Account for tracked Git entries               | Repository, ref or target manifest, scope                          |
+| `scan`            | Extract bounded TypeScript structure          | Inventory options; optional project, strict mode                   |
+| `benchmark-fetch` | Fetch and verify a pinned bare repository     | Target manifest; new output directory                              |
+| `propose`         | Export exact evidence and author instructions | Scan, repository, instruction, version, byte budget                |
+| `import`          | Validate a supplied interpretation            | Response, request, scan, repository                                |
+| `replay`          | Import with a recorded-replay label           | Same inputs as import                                              |
+| `validate`        | Check artifact integrity and optional source  | Artifact; scan/request/repository as required                      |
+| `inspect`         | List or select v0.2 records                   | Model; capability, behavior, or ID                                 |
+| `context`         | Export bounded v0.2 context                   | Model, selection, byte budget                                      |
+| `evidence`        | Retrieve exact source text                    | Scan, repository, evidence ID                                      |
+| `explain`         | Render a capability report                    | Model, scan, repository, capability, optional plan/audience/format |
 
 ## Common options
 
@@ -35,12 +35,12 @@ Legacy `context --format readable-json` expands assertion prose in place. It rem
 
 ## Exit codes
 
-| Code | Meaning |
-| --- | --- |
-| 0 | Success, including a reported partial artifact |
-| 1 | Operational failure |
-| 2 | Invalid input or schema |
-| 3 | Strict scan reports errors or unresolved facts |
+| Code | Meaning                                        |
+| ---- | ---------------------------------------------- |
+| 0    | Success, including a reported partial artifact |
+| 1    | Operational failure                            |
+| 2    | Invalid input or schema                        |
+| 3    | Strict scan reports errors or unresolved facts |
 
 Read artifact status, diagnostics, and coverage even when the exit code is zero.
 

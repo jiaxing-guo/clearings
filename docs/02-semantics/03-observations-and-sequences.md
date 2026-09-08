@@ -6,25 +6,25 @@ The checker evaluates supplied observations against modeled rules. It does not e
 
 For a branch whose postcondition requires `output = "not-found"`, an observed `context-response` is a failure. If the output is omitted, that predicate is unknown. If the output has an invalid type, observation validation raises an error before returning a verdict.
 
-| Situation | Result | What to do next |
-| --- | --- | --- |
-| Every evaluated constraint agrees | `pass` | Review the result's modeled scope and limitations |
-| At least one constraint is false | `fail` | Inspect the failed rule and its supplied values |
+| Situation                                          | Result    | What to do next                                                |
+| -------------------------------------------------- | --------- | -------------------------------------------------------------- |
+| Every evaluated constraint agrees                  | `pass`    | Review the result's modeled scope and limitations              |
+| At least one constraint is false                   | `fail`    | Inspect the failed rule and its supplied values                |
 | No failures, but at least one check lacks a result | `unknown` | Supply the missing observation or review the opaque obligation |
-| Observation shape, domain, or selection is invalid | Exception | Correct the input before interpreting semantics |
+| Observation shape, domain, or selection is invalid | Exception | Correct the input before interpreting semantics                |
 
 A rejected write or propagated error can satisfy a contract that permits it. The verdict describes contract agreement, not whether the application operation succeeded.
 
 ## Observation protocol
 
-| Field | Required? | Meaning |
-| --- | --- | --- |
-| `input` | Yes | Exact record matching all declared inputs |
-| `before` | Yes | Map of observed initial state fields; may omit fields, but supplied fields must be known and correctly typed |
-| `outcome` | No | ID of the observed modeled outcome |
-| `output` | No | Observed result matching the output type |
-| `after` | No | Map of observed resulting state fields |
-| `effects` | No | List of observed effect IDs |
+| Field     | Required? | Meaning                                                                                                      |
+| --------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| `input`   | Yes       | Exact record matching all declared inputs                                                                    |
+| `before`  | Yes       | Map of observed initial state fields; may omit fields, but supplied fields must be known and correctly typed |
+| `outcome` | No        | ID of the observed modeled outcome                                                                           |
+| `output`  | No        | Observed result matching the output type                                                                     |
+| `after`   | No        | Map of observed resulting state fields                                                                       |
+| `effects` | No        | List of observed effect IDs                                                                                  |
 
 Unknown top-level keys, invalid types, unknown state IDs, and unknown outcome IDs are invalid observations. Invalid input throws an error rather than producing a semantic verdict. To represent missing information, omit the optional field or the relevant state entry. JSON `null` is a known value and is valid only in a compatible declared domain. Partial operation inputs are not accepted.
 
@@ -46,11 +46,11 @@ The checker does not infer a missing outcome even when exactly one guard is true
 
 The aggregate is `fail` if any constituent check fails; otherwise `unknown` if any check is unknown; otherwise `pass`.
 
-| Combined with | `pass` | `unknown` | `fail` |
-| --- | --- | --- | --- |
-| `pass` | `pass` | `unknown` | `fail` |
-| `unknown` | `unknown` | `unknown` | `fail` |
-| `fail` | `fail` | `fail` | `fail` |
+| Combined with | `pass`    | `unknown` | `fail` |
+| ------------- | --------- | --------- | ------ |
+| `pass`        | `pass`    | `unknown` | `fail` |
+| `unknown`     | `unknown` | `unknown` | `fail` |
+| `fail`        | `fail`    | `fail`    | `fail` |
 
 A known violation therefore remains a failure even when other observations are missing. A contract can legitimately permit an error result: a rejected write that preserves required state can pass its contract.
 

@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-export function baseOptions(): BaseLayoutProps {
+export function getLayoutOptions(): BaseLayoutProps {
   return {
     nav: { title: 'Clearings' },
     links: [
@@ -8,6 +8,6 @@ export function baseOptions(): BaseLayoutProps {
       { text: 'Reference', url: '/docs/technical' },
       { text: 'Architecture', url: '/docs/technical/architecture/system' },
     ],
-    githubUrl: 'https://github.com/jiaxing-guo/clearings-semantic',
+    githubUrl: 'https://github.com/jiaxing-guo/clearings',
   };
 }

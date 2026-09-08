@@ -15,23 +15,23 @@ The command builds the CLI and executes the 36-case smoke suite against the curr
 
 To choose an explicit path for the examples below, run `npm run conformance -- --out ../clearings-conformance-smoke`. Explicit output directories must also be new. The command prints the scoped result and output path. Open `report.md` to inspect the case table and follow its links to the raw execution records and detailed evaluations.
 
-| File | Contents |
-| --- | --- |
-| `run.json` | Content identity, execution/replay mode, suite coverage, evaluator identity, summary, and record checksums |
-| `report.md` | Human-readable results, failed checks, unresolved obligations, and evidence links |
-| `record-00000.json` | Original/resulting arguments, actual completion, component identities, and measurements for one invocation |
-| `evaluation-00000.json` | Independent reference measurements, obligation results, and the unchanged broader contract verdict |
+| File                    | Contents                                                                                                   |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `run.json`              | Content identity, execution/replay mode, suite coverage, evaluator identity, summary, and record checksums |
+| `report.md`             | Human-readable results, failed checks, unresolved obligations, and evidence links                          |
+| `record-00000.json`     | Original/resulting arguments, actual completion, component identities, and measurements for one invocation |
+| `evaluation-00000.json` | Independent reference measurements, obligation results, and the unchanged broader contract verdict         |
 
 The numeric suffix increases for each case. Records and evaluations are saved as cases complete; `run.json` is written only after the entire requested run completes. If preparation or evaluation is interrupted, existing individual records can still be replayed. A partial directory without a completed manifest is not a completed suite result.
 
 ## Interpret the result
 
-| Scoped result | Meaning | Exit code |
-| --- | --- | --- |
-| `accepted` | Every applicable mandatory obligation and evaluation prerequisite passes for all recorded cases | 0 |
-| `rejected` | At least one captured case violates a checked requirement | 1 |
-| `inconclusive` | No known violation, but required evidence or evaluation is unavailable | 3 |
-| Input/preparation error | The requested evaluation cannot be formed | 2 for invalid input; filesystem or operational failures may use 1 |
+| Scoped result           | Meaning                                                                                         | Exit code                                                         |
+| ----------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `accepted`              | Every applicable mandatory obligation and evaluation prerequisite passes for all recorded cases | 0                                                                 |
+| `rejected`              | At least one captured case violates a checked requirement                                       | 1                                                                 |
+| `inconclusive`          | No known violation, but required evidence or evaluation is unavailable                          | 3                                                                 |
+| Input/preparation error | The requested evaluation cannot be formed                                                       | 2 for invalid input; filesystem or operational failures may use 1 |
 
 A permitted application exception can be accepted. A timeout, incomplete capture, or authored example cannot establish acceptance. A known violation remains rejected even if other evidence is unavailable.
 

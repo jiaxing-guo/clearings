@@ -8,24 +8,24 @@ Executable conformance relates a concrete invocation to an operation specificati
 
 Suppose an implementation returns a context whose `budget.used_bytes` is 980. An independent encoder measures 1,012 UTF-8 bytes for the complete package, including its final newline. The adapter must preserve both values. The byte-accounting predicate then fails their equality comparison. Substituting 1,012 for the reported counter would conceal the implementation defect.
 
-| Evidence | Value | Source |
-| --- | --- | --- |
-| Reported byte count | 980 | Actual returned `budget.used_bytes` |
+| Evidence            | Value | Source                                              |
+| ------------------- | ----- | --------------------------------------------------- |
+| Reported byte count | 980   | Actual returned `budget.used_bytes`                 |
 | Measured byte count | 1,012 | Independent encoding of the entire returned package |
-| Equality check | Fail | Comparison of the two separately captured values |
+| Equality check      | Fail  | Comparison of the two separately captured values    |
 
 This is an illustrative case, not an execution result. The [conformance profile](../../specifications/clearings/conformance/profile.json) defines the measurement procedures and verification obligations.
 
 ## Responsibilities
 
-| Component | Responsibility | Current availability |
-| --- | --- | --- |
-| Operation specification | Define allowed behavior and residual obligations | Two authored v0.3 completion contracts |
-| Conformance profile | Declare input scope, measurements, obligation coverage, and verification methods | Schema, TypeScript types, and cross-reference validation |
-| Recorder | Capture actual arguments, completion, and resulting state | Bounded worker for the synchronous `assembleContext` API |
-| Observation adapter | Map raw evidence to typed observations without replacing missing information | Context-assembly projections and explicit mapping failures |
-| Independent evaluator | Establish reference results and check obligations beyond the predicates | Independent ordering, record/state/evidence preservation, and capacity checks |
-| Report | Present scoped results, unknowns, coverage, and reproduction details | JSON evaluations and run manifests, Markdown reports, and read-only replay |
+| Component               | Responsibility                                                                   | Current availability                                                          |
+| ----------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Operation specification | Define allowed behavior and residual obligations                                 | Two authored v0.3 completion contracts                                        |
+| Conformance profile     | Declare input scope, measurements, obligation coverage, and verification methods | Schema, TypeScript types, and cross-reference validation                      |
+| Recorder                | Capture actual arguments, completion, and resulting state                        | Bounded worker for the synchronous `assembleContext` API                      |
+| Observation adapter     | Map raw evidence to typed observations without replacing missing information     | Context-assembly projections and explicit mapping failures                    |
+| Independent evaluator   | Establish reference results and check obligations beyond the predicates          | Independent ordering, record/state/evidence preservation, and capacity checks |
+| Report                  | Present scoped results, unknowns, coverage, and reproduction details             | JSON evaluations and run manifests, Markdown reports, and read-only replay    |
 
 The profile and record are evaluation metadata. They are not Program IR, a compiler lowering level, or an extension to the v0.3 expression language. The [historical bootstrap demonstration](../../benchmarks/results/clearings-bootstrap/README.md) remains a separate recorded experiment.
 
@@ -45,17 +45,17 @@ When the completion class is known but its value cannot be represented, retain `
 
 The recorder retains original JSON invocation arguments before execution, an available resulting snapshot, and the actual completion. An adapter constructs the following fields from separately identified measurements:
 
-| Contract field | Measurement or raw evidence |
-| --- | --- |
-| Root, available IDs, required edges, budget, artifact ID, decisions | `invocation`; valid aliases resolve against the original specification |
-| Input operation digests | `input-records` |
-| Returned IDs, complete record digests, and reported counters | `returned-context` and `returned-records`, checked against the raw returned value |
-| `output.measured_bytes` | `serialized-bytes`, independently computed |
-| Initial and resulting argument digest state | `arguments-before-digest` and `arguments-after-digest` |
-| Exception code and optional required size | `exception`, derived from the captured thrown value |
-| Required package size used by the independent evaluator | `reference-required-bytes`, never taken from the candidate error |
-| Expected traversal and state/evidence selection | `expected-projection`, independently derived from invocation inputs |
-| Effect occurrences | `effects`, available only with the declared instrumentation coverage |
+| Contract field                                                      | Measurement or raw evidence                                                       |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Root, available IDs, required edges, budget, artifact ID, decisions | `invocation`; valid aliases resolve against the original specification            |
+| Input operation digests                                             | `input-records`                                                                   |
+| Returned IDs, complete record digests, and reported counters        | `returned-context` and `returned-records`, checked against the raw returned value |
+| `output.measured_bytes`                                             | `serialized-bytes`, independently computed                                        |
+| Initial and resulting argument digest state                         | `arguments-before-digest` and `arguments-after-digest`                            |
+| Exception code and optional required size                           | `exception`, derived from the captured thrown value                               |
+| Required package size used by the independent evaluator             | `reference-required-bytes`, never taken from the candidate error                  |
+| Expected traversal and state/evidence selection                     | `expected-projection`, independently derived from invocation inputs               |
+| Effect occurrences                                                  | `effects`, available only with the declared instrumentation coverage              |
 
 Before constructing an observation, the adapter must validate the required measurement types and availability. Partial v0.3 output records are not allowed. If required fields cannot be constructed, preserve the unmapped record and the mapping failure; do not insert plausible defaults. Unknown exception codes remain visible as unsupported or failing behavior. Outcome IDs must be selected from the observed completion and code, never copied from fixture expectations.
 

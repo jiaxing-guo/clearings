@@ -60,13 +60,17 @@
     "bootstrap:demo": "npm run build && node scripts/build-bootstrap-demo.mjs",
     "docs:check:markdown": "npm run build && node scripts/check-markdown-docs.mjs",
     "test:program": "npm run build && node --test tests/program*.test.mjs",
-    "program": "npm run build --silent && node dist/cli/main.js program"
+    "program": "npm run build --silent && node dist/cli/main.js program",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "node scripts/clean.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",
     "typescript": "5.9.3"
   },
   "devDependencies": {
-    "@types/node": "24.13.3"
+    "@types/node": "24.13.3",
+    "prettier": "3.9.6"
   }
 }

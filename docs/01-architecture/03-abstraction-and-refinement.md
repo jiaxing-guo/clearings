@@ -10,13 +10,13 @@ A contract may represent only the distinctions relevant to a particular behavior
 
 This abstraction permits useful local reasoning. It also limits which implementation properties can be inferred. Equality of the modeled state does not imply equality of all concrete program state.
 
-| Concrete behavior | Existing abstract representation | Boundary |
-| --- | --- | --- |
-| A direct result is `null` or `undefined` | `path: direct`, `value: nullish` | Both values belong to one category |
-| A Promise resolves to `0` | `path: promise`, `value: non-nullish-falsy` | Classification occurs outside the checker |
-| Response storage is initialized by the getter | `response-present` changes to `true` | The concrete response object is omitted |
-| A setter successfully assigns `undefined` | Output label `stored`; storage absent; finalized true | `stored` is a model label, not a TypeScript return value |
-| A header merge throws | Output label `propagated-error` | Unmodeled intermediate header mutations remain unconstrained |
+| Concrete behavior                             | Existing abstract representation                      | Boundary                                                     |
+| --------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------ |
+| A direct result is `null` or `undefined`      | `path: direct`, `value: nullish`                      | Both values belong to one category                           |
+| A Promise resolves to `0`                     | `path: promise`, `value: non-nullish-falsy`           | Classification occurs outside the checker                    |
+| Response storage is initialized by the getter | `response-present` changes to `true`                  | The concrete response object is omitted                      |
+| A setter successfully assigns `undefined`     | Output label `stored`; storage absent; finalized true | `stored` is a model label, not a TypeScript return value     |
+| A header merge throws                         | Output label `propagated-error`                       | Unmodeled intermediate header mutations remain unconstrained |
 
 These mappings summarize the [authored Hono slice](../../specifications/hono/response-selection.json). They do not establish source conformance. The `path` field represents a branch already classified by the observer; the specification does not classify arbitrary thenables.
 
@@ -53,11 +53,11 @@ The environment, observable state/effects, exceptional behavior, and termination
 
 ## Abstraction levels and implementation status
 
-| Level | Responsibility | Existing basis |
-| --- | --- | --- |
-| Behavior specification | External capabilities, outcomes, invariants, failure policies | Legacy capability and behavior records |
-| Operation contract IR | Typed interfaces, guards, postconditions, state, effects | Current v0.3 model |
-| Implementation IR | Concrete values, algorithms, calls, and control flow | [Program IR v0.1](../02-semantics/05-program-ir.md) syntax, static validation, and reference interpretation; target lowering remains subsequent work |
+| Level                  | Responsibility                                                | Existing basis                                                                                                                                       |
+| ---------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Behavior specification | External capabilities, outcomes, invariants, failure policies | Legacy capability and behavior records                                                                                                               |
+| Operation contract IR  | Typed interfaces, guards, postconditions, state, effects      | Current v0.3 model                                                                                                                                   |
+| Implementation IR      | Concrete values, algorithms, calls, and control flow          | [Program IR v0.1](../02-semantics/05-program-ir.md) syntax, static validation, and reference interpretation; target lowering remains subsequent work |
 
 Contract-to-implementation conversion is synthesis and refinement: multiple algorithms may satisfy the same contract. Once implementation choices are explicit, a later source-emission step can be deterministic. A report, larger context package, or additional schema version alone does not create a new abstraction level.
 

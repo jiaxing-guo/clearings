@@ -4,12 +4,12 @@ The objective is reproducible, independently checked agreement between one Clear
 
 ## Four pull requests
 
-| Sequence | Change | Completion criterion |
-| --- | --- | --- |
-| 1 | Define the scoped operation contracts, conformance profile, execution-record format, and obligation ledger | Every requirement identifies its measurement source, verification method, and limitation; schemas and authored examples validate |
-| 2 | Implement execution recording and the observation adapter; expose structured budget-error details | Actual returns and exceptions produce faithful records; independent measurements remain separate from reported counters |
-| 3 | Implement the independent evaluator and executable fault tests | Production and an independent conforming implementation pass the scoped checks; predefined non-equivalent faults are detected |
-| 4 | Expose a reproducible command, replay, reports, documentation, and focused regression gates | A clean checkout reproduces results and explains failures without undocumented setup |
+| Sequence | Change                                                                                                     | Completion criterion                                                                                                             |
+| -------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | Define the scoped operation contracts, conformance profile, execution-record format, and obligation ledger | Every requirement identifies its measurement source, verification method, and limitation; schemas and authored examples validate |
+| 2        | Implement execution recording and the observation adapter; expose structured budget-error details          | Actual returns and exceptions produce faithful records; independent measurements remain separate from reported counters          |
+| 3        | Implement the independent evaluator and executable fault tests                                             | Production and an independent conforming implementation pass the scoped checks; predefined non-equivalent faults are detected    |
+| 4        | Expose a reproducible command, replay, reports, documentation, and focused regression gates                | A clean checkout reproduces results and explains failures without undocumented setup                                             |
 
 All four changes are implemented. The final two are combined into one integration change: independent reference evaluation, predefined implementation faults, reproducible CLI execution and replay, JSON/Markdown reports, and a focused CI gate. The initial authored examples remain format illustrations. Use [the recording guide](../04-guides/03-record-context-assembly.md) for raw evidence and [the evaluation guide](../04-guides/04-evaluate-context-conformance.md) for scoped results and reproduction.
 

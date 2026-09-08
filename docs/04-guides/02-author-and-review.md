@@ -8,10 +8,10 @@ This is an original intended specification used for documentation. It is not an 
 
 ## Define the behavior before the record
 
-| Case | Guard | Output | Resulting `value` | Preserved `label` |
-| --- | --- | --- | --- | --- |
-| Accepted write | `reject` is false | Requested `next` | Requested `next` | Unchanged |
-| Rejected write | `reject` is true | Initial `value` | Initial `value` | Unchanged |
+| Case           | Guard             | Output           | Resulting `value` | Preserved `label` |
+| -------------- | ----------------- | ---------------- | ----------------- | ----------------- |
+| Accepted write | `reject` is false | Requested `next` | Requested `next`  | Unchanged         |
+| Rejected write | `reject` is true  | Initial `value`  | Initial `value`   | Unchanged         |
 
 Both outcomes can pass the contract. A rejected write is an allowed behavior, provided its output and state agree with the rejection rules. The complete frame protects `label`, which is outside the write set; the complete empty effect boundary rejects supplied undeclared effects.
 
@@ -122,14 +122,14 @@ The caller asserts that `value` and `label` refer to the same storage across the
 
 ## Interpret the expected results
 
-| Check in the example | Expected result | Semantic distinction |
-| --- | --- | --- |
-| Rejected write preserves the stored value | `pass` | Application rejection can satisfy the contract |
-| Two individually valid records disagree on adjacent state | `fail` for the sequence | Per-operation agreement does not establish continuity |
-| A required resulting state observation is absent | `unknown` | Missing data is not a known violation |
-| The write changes `label` | `fail` | A complete frame constrains modeled fields outside the write set |
-| An undeclared network effect is supplied | `fail` | A complete effect boundary excludes undeclared IDs |
-| An integer equality rule uses literal `1.5` | `SPEC_TYPE` error | Invalid predicates are rejected before observation checking |
+| Check in the example                                      | Expected result         | Semantic distinction                                             |
+| --------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------- |
+| Rejected write preserves the stored value                 | `pass`                  | Application rejection can satisfy the contract                   |
+| Two individually valid records disagree on adjacent state | `fail` for the sequence | Per-operation agreement does not establish continuity            |
+| A required resulting state observation is absent          | `unknown`               | Missing data is not a known violation                            |
+| The write changes `label`                                 | `fail`                  | A complete frame constrains modeled fields outside the write set |
+| An undeclared network effect is supplied                  | `fail`                  | A complete effect boundary excludes undeclared IDs               |
+| An integer equality rule uses literal `1.5`               | `SPEC_TYPE` error       | Invalid predicates are rejected before observation checking      |
 
 The executable block checks these expectations. Inspect the individual rule or continuity entry when an aggregate verdict differs.
 

@@ -28,12 +28,12 @@ Restart after changing the library, specification fixtures, or asset-generation 
 
 ## Page conventions
 
-| Page type | Presentation order | Required distinction |
-| --- | --- | --- |
-| Learning material | Concrete question, small example, progressive explanation, next action | What the learner observes versus what the system establishes |
-| Practical guide | Goal, prerequisites, steps, expected result, troubleshooting | Application outcomes versus check verdicts |
-| Semantics or API reference | Definition, minimal example, exact rules, boundary cases, enforcement limits | Valid input, failed constraints, and unknown results |
-| Architecture explanation | Responsibility, worked path, design rationale, limits, related reference | Implemented behavior versus proposed abstractions |
+| Page type                  | Presentation order                                                           | Required distinction                                         |
+| -------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Learning material          | Concrete question, small example, progressive explanation, next action       | What the learner observes versus what the system establishes |
+| Practical guide            | Goal, prerequisites, steps, expected result, troubleshooting                 | Application outcomes versus check verdicts                   |
+| Semantics or API reference | Definition, minimal example, exact rules, boundary cases, enforcement limits | Valid input, failed constraints, and unknown results         |
+| Architecture explanation   | Responsibility, worked path, design rationale, limits, related reference     | Implemented behavior versus proposed abstractions            |
 
 Use the same example through related pages when it clarifies the concept. Keep tables for exact comparisons, code blocks for inputs and outputs, and prominent prose for semantic requirements and limitations. Supplementary raw records may be expandable; required rules must remain visible.
 

@@ -18,6 +18,7 @@ Use Node.js 24, npm 11, and Git 2.51 or later on Linux or macOS. Linux is the cu
 
 ```bash
 npm ci --ignore-scripts
+npm run format:check
 npm run typecheck
 npm test
 ```
@@ -25,6 +26,12 @@ npm test
 Read `AGENTS.md` before changing code. The package uses TypeScript, ESM, Ajv schemas, and Node's test runner. Source and benchmark code stay separate.
 
 For context-assembly or conformance changes, also run `npm run test:conformance`. This checks the recorder/evaluator/CLI regressions, all 1,554 inputs against production and an independent positive control, and the predefined executable fault suite. `npm run test:conformance:smoke` provides a smaller development run. The [suite manifest](specifications/clearings/conformance/suite.json) fixes input and control hashes; do not regenerate it to conceal a regression. The [evaluation guide](docs/04-guides/04-evaluate-context-conformance.md) explains the acceptance boundary and saved-evidence replay.
+
+## Format and clean
+
+Run `npm run format` before committing. The pinned Prettier configuration applies to maintained library, CLI, documentation, and website files; `npm run format:check` enforces it in CI. Frozen evidence, generator-owned artifacts, intentional fixtures, and four source files with historical byte bindings are excluded. See [Repository maintenance](docs/05-development/05-repository-maintenance.md) for the exact boundaries and renamed benchmark scripts.
+
+Use `npm run clean` to remove generated library and documentation build products. Stop development servers first, then rebuild with `npm run build` or `npm run docs:dev`. Recorded runs and dependencies are retained.
 
 ## Make a focused change
 

@@ -66,7 +66,12 @@ export type InventoryResult = Envelope<InventoryData> & {
 
 export class ClearingsError extends Error {
   declare readonly details?: Readonly<Record<string, string | number | boolean | null>>;
-  constructor(public readonly code: string, message: string, public readonly exitCode: 1 | 2 = 2, details?: Readonly<Record<string, string | number | boolean | null>>) {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly exitCode: 1 | 2 = 2,
+    details?: Readonly<Record<string, string | number | boolean | null>>,
+  ) {
     super(message);
     if (details !== undefined) this.details = details;
   }

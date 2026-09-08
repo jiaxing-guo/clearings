@@ -15,24 +15,57 @@ export { newSemanticId } from './semantics/identity.js';
 export { validateRequest, validateProposal, validateSemanticModel } from './semantics/validate.js';
 export { renderCapability } from './renderers/capability.js';
 export type { RenderCapabilityOptions } from './renderers/capability.js';
-export { createPresentationPlan, validatePresentationPlan, PRESENTATION_INSTRUCTIONS, CONTRACT_PRESENTATION_INSTRUCTIONS } from './presentation/plan.js';
+export {
+  createPresentationPlan,
+  validatePresentationPlan,
+  PRESENTATION_INSTRUCTIONS,
+  CONTRACT_PRESENTATION_INSTRUCTIONS,
+} from './presentation/plan.js';
 export type * from './presentation/plan.js';
 
 export type * from './model/contracts.js';
-export { createContractRequest, importContractProposal, CONTRACT_INSTRUCTIONS } from './contracts/exchange.js';
-export { validateContractRequest, validateContractProposal, validateContractModel } from './contracts/validate.js';
+export {
+  createContractRequest,
+  importContractProposal,
+  CONTRACT_INSTRUCTIONS,
+} from './contracts/exchange.js';
+export {
+  validateContractRequest,
+  validateContractProposal,
+  validateContractModel,
+} from './contracts/validate.js';
 export { inspectSemantic, createContextPack, serializeContextPack } from './contracts/query.js';
-export type { SemanticSelection, Inspection, ContextPack, ContractRecords, EvidenceReference } from './contracts/query.js';
+export type {
+  SemanticSelection,
+  Inspection,
+  ContextPack,
+  ContractRecords,
+  EvidenceReference,
+} from './contracts/query.js';
 export { createSemanticWalkthrough, renderSemanticWalkthrough } from './renderers/walkthrough.js';
 export type { SemanticWalkthrough } from './renderers/walkthrough.js';
 
 export type * from './specification/model.js';
-export { sealSpecification, validateSpecification, specificationIdentity } from './specification/validate.js';
+export {
+  sealSpecification,
+  validateSpecification,
+  specificationIdentity,
+} from './specification/validate.js';
 export { evaluateExpression, formatExpression } from './specification/expressions.js';
 export { checkOperation, resolveOperation } from './specification/check.js';
 export { checkOperationSequence } from './specification/sequence.js';
-export type { SequenceStep, SequenceOptions, ContinuityCheck, OperationSequenceCheck } from './specification/sequence.js';
-export { assembleContext, serializeOperationContext, validateOperationContext, describeOperation } from './specification/context.js';
+export type {
+  SequenceStep,
+  SequenceOptions,
+  ContinuityCheck,
+  OperationSequenceCheck,
+} from './specification/sequence.js';
+export {
+  assembleContext,
+  serializeOperationContext,
+  validateOperationContext,
+  describeOperation,
+} from './specification/context.js';
 export type { OperationContext } from './specification/context.js';
 export { renderSpecification, renderOperationContext } from './specification/render.js';
 export type { SpecificationReportOptions, CheckedScenario } from './specification/render.js';

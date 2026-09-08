@@ -1,5 +1,10 @@
 import { html as h, markdown as md, anchor, type Report } from './report.js';
-import { referenceHtml, referenceMarkdown, supportingHtml, supportingMarkdown } from './reference.js';
+import {
+  referenceHtml,
+  referenceMarkdown,
+  supportingHtml,
+  supportingMarkdown,
+} from './reference.js';
 import { codeFocusHtml, codeFocusMarkdown } from './code.js';
 import { REPORT_CSS, REPORT_JS } from './assets.js';
 import { sequenceSvg } from './html.js';
@@ -13,39 +18,213 @@ const AUDIENCE_CSS = `
 `;
 function header(report: Report): string {
   const current = report.options.audience === 'overview' ? 'overview' : 'engineer';
-  return `<header class="audience-header"><a class="brand" href="#top"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>clearings</a><nav class="view-tabs" aria-label="Reading view">${['overview','engineer'].map((view) => view === current ? `<span class="active" aria-current="page">${view === 'overview' ? 'Overview' : 'Engineer'}</span>` : report.options.companion ? `<a href="${h(report.options.companion)}">${view === 'overview' ? 'Overview' : 'Engineer'}</a>` : '').join('')}</nav></header>`;
+  return `<header class="audience-header"><a class="brand" href="#top"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>clearings</a><nav class="view-tabs" aria-label="Reading view">${['overview', 'engineer'].map((view) => (view === current ? `<span class="active" aria-current="page">${view === 'overview' ? 'Overview' : 'Engineer'}</span>` : report.options.companion ? `<a href="${h(report.options.companion)}">${view === 'overview' ? 'Overview' : 'Engineer'}</a>` : '')).join('')}</nav></header>`;
 }
 function document(report: Report, title: string, content: string): string {
   return `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${h(title)} · Clearings</title><style>${REPORT_CSS}${AUDIENCE_CSS}</style></head><body class="${report.options.audience === 'overview' ? 'overview-report' : 'engineer-report'}"><a class="skip" href="#main">Skip to content</a><div class="audience-shell" id="top">${header(report)}${content}<footer class="audience-footer"><span>Clearings · Source-based explanation</span><a href="#top">Back to top ↑</a></footer></div><script>${REPORT_JS}</script></body></html>\n`;
 }
-const provenance = (report: Report) => `${report.model.data.transport === 'recorded-replay' ? 'Recorded example' : 'Proposed explanation'} · Partial repository view · Needs independent review`;
+const provenance = (report: Report) =>
+  `${report.model.data.transport === 'recorded-replay' ? 'Recorded example' : 'Proposed explanation'} · Partial repository view · Needs independent review`;
 export function renderOverviewHtml(report: Report): string {
   const view = report.plan.overview!;
-  const blocks = [view.purpose,...view.journey.map((step) => step.summary),view.example.description,...view.outcomes.map((outcome) => outcome.description),...view.limits];
-  return document(report, view.title, `<main class="overview-page" id="main"><section class="overview-hero"><span class="eyebrow">The overview</span><h1>${h(view.title)}</h1><p class="lede">${h(view.purpose.text)}</p></section><div class="overview-body"><h2>What happens</h2><ol class="journey">${view.journey.map((step,i) => `<li><span class="number">${i+1}</span><h3>${h(step.title)}</h3><p>${h(step.summary.text)}</p></li>`).join('')}</ol><section class="example-box"><h2>${h(view.example.title)}</h2><p>${h(view.example.description.text)}</p></section><h2>What can happen next</h2><div class="outcomes">${view.outcomes.map((outcome) => `<section class="outcome" data-kind="${outcome.kind}"><h3>${h(outcome.title)}</h3><p>${h(outcome.description.text)}</p></section>`).join('')}</div><section class="limits-note"><h2>What this view cannot tell you</h2>${view.limits.map((item) => `<p>${h(item.text)}</p>`).join('')}</section><p class="review-line">${provenance(report)}</p><details class="proof" id="sources"><summary>Check the source and full details</summary><div class="reference-index"><h3>Sources for this overview</h3>${blocks.map((item) => `<p>${h(item.text)} <span class="support">${supportingHtml(report,item)}</span></p>`).join('')}</div>${referenceHtml(report)}</details></div></main>`);
+  const blocks = [
+    view.purpose,
+    ...view.journey.map((step) => step.summary),
+    view.example.description,
+    ...view.outcomes.map((outcome) => outcome.description),
+    ...view.limits,
+  ];
+  return document(
+    report,
+    view.title,
+    `<main class="overview-page" id="main"><section class="overview-hero"><span class="eyebrow">The overview</span><h1>${h(view.title)}</h1><p class="lede">${h(view.purpose.text)}</p></section><div class="overview-body"><h2>What happens</h2><ol class="journey">${view.journey.map((step, i) => `<li><span class="number">${i + 1}</span><h3>${h(step.title)}</h3><p>${h(step.summary.text)}</p></li>`).join('')}</ol><section class="example-box"><h2>${h(view.example.title)}</h2><p>${h(view.example.description.text)}</p></section><h2>What can happen next</h2><div class="outcomes">${view.outcomes.map((outcome) => `<section class="outcome" data-kind="${outcome.kind}"><h3>${h(outcome.title)}</h3><p>${h(outcome.description.text)}</p></section>`).join('')}</div><section class="limits-note"><h2>What this view cannot tell you</h2>${view.limits.map((item) => `<p>${h(item.text)}</p>`).join('')}</section><p class="review-line">${provenance(report)}</p><details class="proof" id="sources"><summary>Check the source and full details</summary><div class="reference-index"><h3>Sources for this overview</h3>${blocks.map((item) => `<p>${h(item.text)} <span class="support">${supportingHtml(report, item)}</span></p>`).join('')}</div>${referenceHtml(report)}</details></div></main>`,
+  );
 }
 function functionHtml(report: Report): string {
   if (!report.plan.functions?.length) return '';
-  return `<section class="function-section" id="functions"><h2>Functions behind this behavior</h2><p>Each summary links code to the behavior it supports. These are authored summaries for review.</p><details><summary>Open ${report.plan.functions.length} function summaries</summary>${report.plan.functions.map((item) => `<article class="function-ref" id="function-${item.key}"><h3>${h(item.title)}</h3><p>${h(item.purpose.text)} <span class="support">${supportingHtml(report,item.purpose)}</span></p><p class="implementation-note">Behavior: ${item.stage_keys.map((key) => `<a href="#stage-${key}">${h(report.plan.stages.find((stage) => stage.key === key)!.title)}</a>`).join(' · ')}</p><dl>${(['inputs','outputs','effects','failures','limits'] as const).map((key) => `<dt>${({inputs:'Inputs',outputs:'Returns',effects:'State and effects',failures:'Failures',limits:'Limits'})[key]}</dt><dd>${h(item[key].text)}<span class="support">${supportingHtml(report,item[key])}</span></dd>`).join('')}</dl><p class="evidence-id">Source symbols: ${item.symbol_ids.map(h).join(', ')}</p></article>`).join('')}</details></section>`;
+  return `<section class="function-section" id="functions"><h2>Functions behind this behavior</h2><p>Each summary links code to the behavior it supports. These are authored summaries for review.</p><details><summary>Open ${report.plan.functions.length} function summaries</summary>${report.plan.functions.map((item) => `<article class="function-ref" id="function-${item.key}"><h3>${h(item.title)}</h3><p>${h(item.purpose.text)} <span class="support">${supportingHtml(report, item.purpose)}</span></p><p class="implementation-note">Behavior: ${item.stage_keys.map((key) => `<a href="#stage-${key}">${h(report.plan.stages.find((stage) => stage.key === key)!.title)}</a>`).join(' · ')}</p><dl>${(['inputs', 'outputs', 'effects', 'failures', 'limits'] as const).map((key) => `<dt>${{ inputs: 'Inputs', outputs: 'Returns', effects: 'State and effects', failures: 'Failures', limits: 'Limits' }[key]}</dt><dd>${h(item[key].text)}<span class="support">${supportingHtml(report, item[key])}</span></dd>`).join('')}</dl><p class="evidence-id">Source symbols: ${item.symbol_ids.map(h).join(', ')}</p></article>`).join('')}</details></section>`;
 }
 export function renderEngineerHtml(report: Report): string {
   const guide = report.plan.guide!;
-  const sections = guide.sections.map((section) => `<section class="guide-section" id="guide-${section.key}">${section.stage_keys.map((key) => `<span id="stage-${key}"></span>`).join('')}<h2>${h(section.title)}</h2>${section.paragraphs.map((item) => `<p>${h(item.text)}</p>`).join('')}${section.code ? codeFocusHtml(report,section.code) : ''}<p class="section-source">Sources: ${supportingHtml(report,section.paragraphs)}</p><p class="implementation-note">Implementation: ${report.functionLinks.filter((fn) => fn.stage_keys.some((key) => section.stage_keys.includes(key))).map((fn) => `<a href="#${fn.link_id}">${h(fn.title)}</a>`).join(' · ')}</p></section>`).join('');
+  const sections = guide.sections
+    .map(
+      (section) =>
+        `<section class="guide-section" id="guide-${section.key}">${section.stage_keys.map((key) => `<span id="stage-${key}"></span>`).join('')}<h2>${h(section.title)}</h2>${section.paragraphs.map((item) => `<p>${h(item.text)}</p>`).join('')}${section.code ? codeFocusHtml(report, section.code) : ''}<p class="section-source">Sources: ${supportingHtml(report, section.paragraphs)}</p><p class="implementation-note">Implementation: ${report.functionLinks
+          .filter((fn) => fn.stage_keys.some((key) => section.stage_keys.includes(key)))
+          .map((fn) => `<a href="#${fn.link_id}">${h(fn.title)}</a>`)
+          .join(' · ')}</p></section>`,
+    )
+    .join('');
   const sequence = report.plan.sequence;
   const labels = new Map(sequence?.participants.map((item) => [item.key, item.label]));
-  const diagram = sequence ? `<figure class="diagram"><h3>${h(sequence.title)}</h3><p class="assumption">${h(sequence.assumption.text)}</p>${sequenceSvg(sequence)}<figcaption class="muted">Dashed arrows show returns. <span class="support">${supportingHtml(report,sequence.assumption)}</span></figcaption><details><summary>Read the sequence as text</summary><ol>${sequence.messages.map((item) => `<li>${h(labels.get(item.from)!)} → ${h(labels.get(item.to)!)}: ${h(item.label)} (${item.kind}). <span class="support">${item.claim_ids.map((id) => `<a href="#${anchor(id)}">${report.claimLabels.get(id)}</a>`).join(', ')}</span></li>`).join('')}</ol></details></figure>` : '';
-  const questions = report.plan.cases.map((item) => `<details class="case" id="case-${item.key}" data-stages="${item.stage_keys.join(' ')}"><summary>${h(item.question)}</summary><div class="detail-body">${item.answer.map((text) => `<p>${h(text.text)}</p>`).join('')}<p class="support">${supportingHtml(report,item.answer)}</p><div class="case-links">${item.stage_keys.map((key) => `<a href="#stage-${key}">${h(report.plan.stages.find((stage) => stage.key === key)!.title)}</a>`).join('')}</div></div></details>`).join('');
-  return document(report,guide.title, `<div class="guide-grid"><main class="guide-main" id="main"><section class="hero"><span class="eyebrow">The engineer guide</span><h1>${h(guide.title)}</h1><p class="lede">${h(guide.introduction.text)} <span class="support">${supportingHtml(report,guide.introduction)}</span></p><p class="review-line">${provenance(report)}</p></section><section class="example-box" id="example"><h2>${h(guide.example.title)}</h2><p>${h(guide.example.description.text)} <span class="support">${supportingHtml(report,guide.example.description)}</span></p></section>${sections}${diagram}<section class="limits-note guide-limits" id="limits"><h2>Limits of this explanation</h2>${guide.limits.map((item) => `<p>${h(item.text)} <span class="support">${supportingHtml(report,item)}</span></p>`).join('')}</section>${functionHtml(report)}<section class="guide-section" id="questions"><h2>Specific questions</h2><div class="case-list">${questions}</div></section><details class="proof" id="sources"><summary>Check all claims, branches, and source excerpts</summary>${referenceHtml(report)}</details></main><nav class="guide-toc" aria-label="On this page"><strong>On this page</strong><a href="#example">Start with an example</a>${guide.sections.map((section) => `<a href="#guide-${section.key}">${h(section.title)}</a>`).join('')}${report.plan.schema_version === '0.2.0' ? '<a href="#functions">Function contracts</a>' : report.plan.functions?.length ? '<a href="#functions">Function summaries</a>' : ''}<a href="#questions">Specific questions</a><a href="#sources">Source evidence</a></nav></div>`);
+  const diagram = sequence
+    ? `<figure class="diagram"><h3>${h(sequence.title)}</h3><p class="assumption">${h(sequence.assumption.text)}</p>${sequenceSvg(sequence)}<figcaption class="muted">Dashed arrows show returns. <span class="support">${supportingHtml(report, sequence.assumption)}</span></figcaption><details><summary>Read the sequence as text</summary><ol>${sequence.messages.map((item) => `<li>${h(labels.get(item.from)!)} → ${h(labels.get(item.to)!)}: ${h(item.label)} (${item.kind}). <span class="support">${item.claim_ids.map((id) => `<a href="#${anchor(id)}">${report.claimLabels.get(id)}</a>`).join(', ')}</span></li>`).join('')}</ol></details></figure>`
+    : '';
+  const questions = report.plan.cases
+    .map(
+      (item) =>
+        `<details class="case" id="case-${item.key}" data-stages="${item.stage_keys.join(' ')}"><summary>${h(item.question)}</summary><div class="detail-body">${item.answer.map((text) => `<p>${h(text.text)}</p>`).join('')}<p class="support">${supportingHtml(report, item.answer)}</p><div class="case-links">${item.stage_keys.map((key) => `<a href="#stage-${key}">${h(report.plan.stages.find((stage) => stage.key === key)!.title)}</a>`).join('')}</div></div></details>`,
+    )
+    .join('');
+  return document(
+    report,
+    guide.title,
+    `<div class="guide-grid"><main class="guide-main" id="main"><section class="hero"><span class="eyebrow">The engineer guide</span><h1>${h(guide.title)}</h1><p class="lede">${h(guide.introduction.text)} <span class="support">${supportingHtml(report, guide.introduction)}</span></p><p class="review-line">${provenance(report)}</p></section><section class="example-box" id="example"><h2>${h(guide.example.title)}</h2><p>${h(guide.example.description.text)} <span class="support">${supportingHtml(report, guide.example.description)}</span></p></section>${sections}${diagram}<section class="limits-note guide-limits" id="limits"><h2>Limits of this explanation</h2>${guide.limits.map((item) => `<p>${h(item.text)} <span class="support">${supportingHtml(report, item)}</span></p>`).join('')}</section>${functionHtml(report)}<section class="guide-section" id="questions"><h2>Specific questions</h2><div class="case-list">${questions}</div></section><details class="proof" id="sources"><summary>Check all claims, branches, and source excerpts</summary>${referenceHtml(report)}</details></main><nav class="guide-toc" aria-label="On this page"><strong>On this page</strong><a href="#example">Start with an example</a>${guide.sections.map((section) => `<a href="#guide-${section.key}">${h(section.title)}</a>`).join('')}${report.plan.schema_version === '0.2.0' ? '<a href="#functions">Function contracts</a>' : report.plan.functions?.length ? '<a href="#functions">Function summaries</a>' : ''}<a href="#questions">Specific questions</a><a href="#sources">Source evidence</a></nav></div>`,
+  );
 }
 export function renderOverviewMarkdown(report: Report): string {
   const view = report.plan.overview!;
-  const explanations=[view.purpose,...view.journey.map((item)=>item.summary),view.example.description,...view.outcomes.map((item)=>item.description),...view.limits];
-  return [`# ${md(view.title)}`, '', md(view.purpose.text), '', ...(report.options.companion ? [`[Engineer version](${report.options.companion})`, ''] : []), '## What happens', '', ...view.journey.map((item,i)=>`${i+1}. **${md(item.title)}.** ${md(item.summary.text)}`), '', `## ${md(view.example.title)}`, '', md(view.example.description.text), '', '## What can happen next', '', ...view.outcomes.flatMap((item)=>[`### ${md(item.title)}`, '', md(item.description.text), '']), '## What this view cannot tell you', '', ...view.limits.flatMap((item)=>[md(item.text),'']), provenance(report), '', '<a id="sources"></a>', '', '<details>', '<summary>Sources for this overview</summary>', '', ...explanations.flatMap((item)=>[md(item.text), '', supportingMarkdown(report,item), '']), '</details>', '', referenceMarkdown(report)].join('\n');
+  const explanations = [
+    view.purpose,
+    ...view.journey.map((item) => item.summary),
+    view.example.description,
+    ...view.outcomes.map((item) => item.description),
+    ...view.limits,
+  ];
+  return [
+    `# ${md(view.title)}`,
+    '',
+    md(view.purpose.text),
+    '',
+    ...(report.options.companion ? [`[Engineer version](${report.options.companion})`, ''] : []),
+    '## What happens',
+    '',
+    ...view.journey.map((item, i) => `${i + 1}. **${md(item.title)}.** ${md(item.summary.text)}`),
+    '',
+    `## ${md(view.example.title)}`,
+    '',
+    md(view.example.description.text),
+    '',
+    '## What can happen next',
+    '',
+    ...view.outcomes.flatMap((item) => [
+      `### ${md(item.title)}`,
+      '',
+      md(item.description.text),
+      '',
+    ]),
+    '## What this view cannot tell you',
+    '',
+    ...view.limits.flatMap((item) => [md(item.text), '']),
+    provenance(report),
+    '',
+    '<a id="sources"></a>',
+    '',
+    '<details>',
+    '<summary>Sources for this overview</summary>',
+    '',
+    ...explanations.flatMap((item) => [md(item.text), '', supportingMarkdown(report, item), '']),
+    '</details>',
+    '',
+    referenceMarkdown(report),
+  ].join('\n');
 }
 export function renderEngineerMarkdown(report: Report): string {
   const guide = report.plan.guide!;
-  const sources=(item:Explanation)=>supportingMarkdown(report,item);
-  const functions=(report.plan.functions??[]).flatMap((item)=>[`<a id="function-${item.key}"></a>`, '', `### ${md(item.title)}`, '', md(item.purpose.text), '', sources(item.purpose), '', ...(['inputs','outputs','effects','failures','limits'] as const).flatMap((key)=>[`**${({inputs:'Inputs',outputs:'Returns',effects:'State and effects',failures:'Failures',limits:'Limits'})[key]}:** ${md(item[key].text)} ${sources(item[key])}`, '']), `Behavior: ${item.stage_keys.map((key)=>`[${md(report.plan.stages.find((stage)=>stage.key===key)!.title)}](#stage-${key})`).join(', ')}`, '', `Symbols: ${item.symbol_ids.map(md).join(', ')}`, '']);
-  const sequence=report.plan.sequence;const labels=new Map(sequence?.participants.map(item=>[item.key,item.label]));
-  return [`# ${md(guide.title)}`, '', md(guide.introduction.text), '', sources(guide.introduction), '', provenance(report), '', ...(report.options.companion ? [`[Overview version](${report.options.companion})`, ''] : []), '<a id="example"></a>', '', `## ${md(guide.example.title)}`, '', md(guide.example.description.text), '', sources(guide.example.description), '', ...guide.sections.flatMap((section)=>[`<a id="guide-${section.key}"></a>`, ...section.stage_keys.map(key=>`<a id="stage-${key}"></a>`), '', `## ${md(section.title)}`, '', ...section.paragraphs.flatMap(item=>[md(item.text),'']), ...(section.code ? codeFocusMarkdown(report,section.code) : []), `Sources: ${supportingMarkdown(report,section.paragraphs)}`, '', `Implementation: ${report.functionLinks.filter(fn=>fn.stage_keys.some(key=>section.stage_keys.includes(key))).map(fn=>`[${md(fn.title)}](#${fn.link_id})`).join(', ')}`, '']), ...(sequence ? [`## ${md(sequence.title)}`, '', md(sequence.assumption.text), '', '| Order | From | To | Action | Kind | Claims |', '| --- | --- | --- | --- | --- | --- |', ...sequence.messages.map((item,i)=>`| ${i+1} | ${md(labels.get(item.from)!)} | ${md(labels.get(item.to)!)} | ${md(item.label)} | ${item.kind} | ${item.claim_ids.map(id=>`[${report.claimLabels.get(id)}](#${anchor(id)})`).join(', ')} |`), '', sources(sequence.assumption), ''] : []), '## Limits of this explanation', '', ...guide.limits.flatMap(item=>[md(item.text),'',sources(item),'']), ...(report.plan.functions?.length ? ['<a id="functions"></a>', '', '## Functions behind this behavior', '', 'Authored function summaries for review.', '', '<details>', '<summary>Open function summaries</summary>', '', ...functions, '</details>', ''] : []), '<a id="questions"></a>', '', '## Specific questions', '', ...report.plan.cases.flatMap(item=>[`### ${md(item.question)}`, '', ...item.answer.flatMap(text=>[md(text.text),'']), ...item.answer.map(sources),'']), '<a id="sources"></a>', '', referenceMarkdown(report)].join('\n');
+  const sources = (item: Explanation) => supportingMarkdown(report, item);
+  const functions = (report.plan.functions ?? []).flatMap((item) => [
+    `<a id="function-${item.key}"></a>`,
+    '',
+    `### ${md(item.title)}`,
+    '',
+    md(item.purpose.text),
+    '',
+    sources(item.purpose),
+    '',
+    ...(['inputs', 'outputs', 'effects', 'failures', 'limits'] as const).flatMap((key) => [
+      `**${{ inputs: 'Inputs', outputs: 'Returns', effects: 'State and effects', failures: 'Failures', limits: 'Limits' }[key]}:** ${md(item[key].text)} ${sources(item[key])}`,
+      '',
+    ]),
+    `Behavior: ${item.stage_keys.map((key) => `[${md(report.plan.stages.find((stage) => stage.key === key)!.title)}](#stage-${key})`).join(', ')}`,
+    '',
+    `Symbols: ${item.symbol_ids.map(md).join(', ')}`,
+    '',
+  ]);
+  const sequence = report.plan.sequence;
+  const labels = new Map(sequence?.participants.map((item) => [item.key, item.label]));
+  return [
+    `# ${md(guide.title)}`,
+    '',
+    md(guide.introduction.text),
+    '',
+    sources(guide.introduction),
+    '',
+    provenance(report),
+    '',
+    ...(report.options.companion ? [`[Overview version](${report.options.companion})`, ''] : []),
+    '<a id="example"></a>',
+    '',
+    `## ${md(guide.example.title)}`,
+    '',
+    md(guide.example.description.text),
+    '',
+    sources(guide.example.description),
+    '',
+    ...guide.sections.flatMap((section) => [
+      `<a id="guide-${section.key}"></a>`,
+      ...section.stage_keys.map((key) => `<a id="stage-${key}"></a>`),
+      '',
+      `## ${md(section.title)}`,
+      '',
+      ...section.paragraphs.flatMap((item) => [md(item.text), '']),
+      ...(section.code ? codeFocusMarkdown(report, section.code) : []),
+      `Sources: ${supportingMarkdown(report, section.paragraphs)}`,
+      '',
+      `Implementation: ${report.functionLinks
+        .filter((fn) => fn.stage_keys.some((key) => section.stage_keys.includes(key)))
+        .map((fn) => `[${md(fn.title)}](#${fn.link_id})`)
+        .join(', ')}`,
+      '',
+    ]),
+    ...(sequence
+      ? [
+          `## ${md(sequence.title)}`,
+          '',
+          md(sequence.assumption.text),
+          '',
+          '| Order | From | To | Action | Kind | Claims |',
+          '| --- | --- | --- | --- | --- | --- |',
+          ...sequence.messages.map(
+            (item, i) =>
+              `| ${i + 1} | ${md(labels.get(item.from)!)} | ${md(labels.get(item.to)!)} | ${md(item.label)} | ${item.kind} | ${item.claim_ids.map((id) => `[${report.claimLabels.get(id)}](#${anchor(id)})`).join(', ')} |`,
+          ),
+          '',
+          sources(sequence.assumption),
+          '',
+        ]
+      : []),
+    '## Limits of this explanation',
+    '',
+    ...guide.limits.flatMap((item) => [md(item.text), '', sources(item), '']),
+    ...(report.plan.functions?.length
+      ? [
+          '<a id="functions"></a>',
+          '',
+          '## Functions behind this behavior',
+          '',
+          'Authored function summaries for review.',
+          '',
+          '<details>',
+          '<summary>Open function summaries</summary>',
+          '',
+          ...functions,
+          '</details>',
+          '',
+        ]
+      : []),
+    '<a id="questions"></a>',
+    '',
+    '## Specific questions',
+    '',
+    ...report.plan.cases.flatMap((item) => [
+      `### ${md(item.question)}`,
+      '',
+      ...item.answer.flatMap((text) => [md(text.text), '']),
+      ...item.answer.map(sources),
+      '',
+    ]),
+    '<a id="sources"></a>',
+    '',
+    referenceMarkdown(report),
+  ].join('\n');
 }

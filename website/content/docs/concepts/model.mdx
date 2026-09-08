@@ -11,13 +11,13 @@ Intended requirements and observed implementation use separate artifacts. A scen
 
 The following layers describe the historical source model, which remains available for replay and the accepted reading guides.
 
-| Layer | Owns | Example |
-| --- | --- | --- |
-| Source | Git snapshot, declarations, callables, spans, diagnostics | A getter's exact byte range |
+| Layer             | Owns                                                                 | Example                                                   |
+| ----------------- | -------------------------------------------------------------------- | --------------------------------------------------------- |
+| Source            | Git snapshot, declarations, callables, spans, diagnostics            | A getter's exact byte range                               |
 | Function contract | Inputs, outputs, state, effects, failures, dependencies, assumptions | The setter writes response storage and finalization state |
-| Behavior contract | Triggers, functions, state, conditions, outcomes, ordering, unknowns | Response selection across dispatcher and context |
-| Capability | Purpose and responsibility | Handle an incoming request |
-| Presentation | Audience wording and reading order | An overview or engineer article |
+| Behavior contract | Triggers, functions, state, conditions, outcomes, ordering, unknowns | Response selection across dispatcher and context          |
+| Capability        | Purpose and responsibility                                           | Handle an incoming request                                |
+| Presentation      | Audience wording and reading order                                   | An overview or engineer article                           |
 
 ## Conditions carry meaning
 

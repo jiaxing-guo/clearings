@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +19,11 @@ import { snapshotId } from '../dist/repository/inventory.js';
 
 const project = dirname(dirname(fileURLToPath(import.meta.url)));
 const cli = resolve(project, 'dist/cli/main.js');
-const runGit = (cwd, ...args) => execFileSync('git', ['-C', cwd, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+const runGit = (cwd, ...args) =>
+  execFileSync('git', ['-C', cwd, ...args], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim();
 
 function fixture(t, name = 'direct-calls', objectFormat = 'sha1') {
   const dir = mkdtempSync(join(tmpdir(), 'clearings-test-'));
@@ -19,7 +32,18 @@ function fixture(t, name = 'direct-calls', objectFormat = 'sha1') {
   cpSync(join(project, 'tests/fixtures', name), repo, { recursive: true });
   runGit(repo, 'init', '-q', '--template=', `--object-format=${objectFormat}`);
   runGit(repo, 'add', '.');
-  runGit(repo, '-c', 'user.name=Clearings fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'Original fixture');
+  runGit(
+    repo,
+    '-c',
+    'user.name=Clearings fixture',
+    '-c',
+    'user.email=fixture@example.invalid',
+    '-c',
+    'commit.gpgsign=false',
+    'commit',
+    '-qm',
+    'Original fixture',
+  );
   return { dir, repo };
 }
 
@@ -28,16 +52,20 @@ function invoke(...args) {
 }
 
 test('cross-file and dynamic-dispatch fixtures are inventoried without semantic claims', async (t) => {
-  for (const name of ['direct-calls', 'dynamic-dispatch']) await t.test(name, (t) => {
-    const { repo } = fixture(t, name);
-    const result = inventory({ repository: repo });
-    validateInventory(result);
-    assert.equal(result.coverage.inventoried_files, name === 'direct-calls' ? 5 : 3);
-    assert.equal(result.coverage.parsed_files, 0);
-    assert.equal(result.coverage.semantic_analysis, 'not-run');
-    assert.equal(result.data.snapshot.commit_sha, runGit(repo, 'rev-parse', 'HEAD'));
-    assert.equal(result.data.files.find((file) => file.path === 'index.ts').object_id, runGit(repo, 'rev-parse', 'HEAD:index.ts'));
-  });
+  for (const name of ['direct-calls', 'dynamic-dispatch'])
+    await t.test(name, (t) => {
+      const { repo } = fixture(t, name);
+      const result = inventory({ repository: repo });
+      validateInventory(result);
+      assert.equal(result.coverage.inventoried_files, name === 'direct-calls' ? 5 : 3);
+      assert.equal(result.coverage.parsed_files, 0);
+      assert.equal(result.coverage.semantic_analysis, 'not-run');
+      assert.equal(result.data.snapshot.commit_sha, runGit(repo, 'rev-parse', 'HEAD'));
+      assert.equal(
+        result.data.files.find((file) => file.path === 'index.ts').object_id,
+        runGit(repo, 'rev-parse', 'HEAD:index.ts'),
+      );
+    });
 });
 
 test('immutable reads ignore dirty, staged, untracked, and replacement objects; target stays unchanged', (t) => {
@@ -67,32 +95,70 @@ test('immutable reads ignore dirty, staged, untracked, and replacement objects; 
 test('all entries remain in coverage; unusual names, symlinks, and submodules are explicit', (t) => {
   const { repo } = fixture(t);
   mkdirSync(join(repo, 'nested'));
-  for (const name of ['space name.ts', 'tab\tname.ts', 'line\nname.ts']) writeFileSync(join(repo, 'nested', name), 'export const x = 1;\n');
+  for (const name of ['space name.ts', 'tab\tname.ts', 'line\nname.ts'])
+    writeFileSync(join(repo, 'nested', name), 'export const x = 1;\n');
   symlinkSync('/outside/not-readable', join(repo, 'escape.ts'));
   runGit(repo, 'add', '.');
-  runGit(repo, 'update-index', '--add', '--cacheinfo', `160000,${runGit(repo, 'rev-parse', 'HEAD')},submodule`);
-  runGit(repo, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'Special entries');
-  const result = inventory({ repository: repo, include: ['nested/', 'nested'], exclude: ['nested/space name.ts'] });
+  runGit(
+    repo,
+    'update-index',
+    '--add',
+    '--cacheinfo',
+    `160000,${runGit(repo, 'rev-parse', 'HEAD')},submodule`,
+  );
+  runGit(
+    repo,
+    '-c',
+    'user.name=Fixture',
+    '-c',
+    'user.email=fixture@example.invalid',
+    '-c',
+    'commit.gpgsign=false',
+    'commit',
+    '-qm',
+    'Special entries',
+  );
+  const result = inventory({
+    repository: repo,
+    include: ['nested/', 'nested'],
+    exclude: ['nested/space name.ts'],
+  });
   validateInventory(result);
   assert.equal(result.coverage.tracked_entries, 10);
   assert.equal(result.coverage.inventoried_files, 2);
   assert.equal(result.coverage.excluded_entries, 8);
   assert.equal(result.data.files.find((file) => file.path === 'escape.ts').reason, 'symlink');
   assert.equal(result.data.files.find((file) => file.path === 'submodule').reason, 'submodule');
-  assert.equal(result.data.files.find((file) => file.path === 'nested/space name.ts').reason, 'explicit-exclusion');
+  assert.equal(
+    result.data.files.find((file) => file.path === 'nested/space name.ts').reason,
+    'explicit-exclusion',
+  );
   assert(result.data.files.some((file) => file.path === 'nested/line\nname.ts'));
 });
 
 test('refs normalize, pins are enforced, and invalid scope is rejected', (t) => {
   const { repo } = fixture(t);
   runGit(repo, 'tag', 'fixture-v1');
-  assert.deepEqual(inventory({ repository: repo, ref: 'fixture-v1' }), inventory({ repository: repo }));
-  assert.throws(() => inventory({ repository: repo, expectedTree: '0'.repeat(40) }), { code: 'PIN_MISMATCH' });
-  assert.throws(() => inventory({ repository: repo, include: ['../escape'] }), { code: 'INVALID_SCOPE' });
-  assert.throws(() => inventory({ repository: repo, include: ['missing'] }), { code: 'MISSING_SCOPE' });
+  assert.deepEqual(
+    inventory({ repository: repo, ref: 'fixture-v1' }),
+    inventory({ repository: repo }),
+  );
+  assert.throws(() => inventory({ repository: repo, expectedTree: '0'.repeat(40) }), {
+    code: 'PIN_MISMATCH',
+  });
+  assert.throws(() => inventory({ repository: repo, include: ['../escape'] }), {
+    code: 'INVALID_SCOPE',
+  });
+  assert.throws(() => inventory({ repository: repo, include: ['missing'] }), {
+    code: 'MISSING_SCOPE',
+  });
   assert.throws(() => inventory({ repository: repo, include: [] }), { code: 'EMPTY_SCOPE' });
-  assert.throws(() => inventory({ repository: repo, ref: '--output=owned' }), { code: 'INVALID_REF' });
-  assert.throws(() => inventory({ repository: repo, ref: 'HEAD;touch owned' }), { code: 'GIT_FAILED' });
+  assert.throws(() => inventory({ repository: repo, ref: '--output=owned' }), {
+    code: 'INVALID_REF',
+  });
+  assert.throws(() => inventory({ repository: repo, ref: 'HEAD;touch owned' }), {
+    code: 'GIT_FAILED',
+  });
   assert.equal(existsSync(join(repo, 'owned')), false);
 });
 
@@ -103,7 +169,18 @@ test('SHA-256 object stores and empty commits are supported', (t) => {
   assert.equal(result.data.snapshot.object_format, 'sha256');
   assert.equal(result.data.snapshot.commit_sha.length, 64);
   runGit(repo, 'rm', '-r', '.');
-  runGit(repo, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'Empty tree');
+  runGit(
+    repo,
+    '-c',
+    'user.name=Fixture',
+    '-c',
+    'user.email=fixture@example.invalid',
+    '-c',
+    'commit.gpgsign=false',
+    'commit',
+    '-qm',
+    'Empty tree',
+  );
   const empty = inventory({ repository: repo });
   validateInventory(empty);
   assert.equal(empty.coverage.tracked_entries, 0);
@@ -113,17 +190,25 @@ test('validation rejects tampering, inconsistent coverage, and invalid modes des
   const { repo } = fixture(t);
   const result = inventory({ repository: repo });
   const mutated = () => structuredClone(result);
-  let value = mutated(); value.data.files[0].size_bytes += 1;
+  let value = mutated();
+  value.data.files[0].size_bytes += 1;
   assert.throws(() => validateInventory(value), { code: 'INVALID_INVENTORY' });
-  value = mutated(); value.coverage.parsed_files = 1;
+  value = mutated();
+  value.coverage.parsed_files = 1;
   assert.throws(() => validateInventory(value), { code: 'INVALID_SCHEMA' });
-  value = mutated(); value.coverage.inventoried_files += 1;
+  value = mutated();
+  value.coverage.inventoried_files += 1;
   assert.throws(() => validateInventory(value), { code: 'INVALID_INVENTORY' });
-  value = mutated(); value.data.files.reverse(); value.snapshot_id = snapshotId(value.data);
+  value = mutated();
+  value.data.files.reverse();
+  value.snapshot_id = snapshotId(value.data);
   assert.throws(() => validateInventory(value), { code: 'INVALID_INVENTORY' });
-  value = mutated(); value.data.files[0].mode = '120000'; value.snapshot_id = snapshotId(value.data);
+  value = mutated();
+  value.data.files[0].mode = '120000';
+  value.snapshot_id = snapshotId(value.data);
   assert.throws(() => validateInventory(value), { code: 'INVALID_INVENTORY' });
-  value = mutated(); value.data.surprise = true;
+  value = mutated();
+  value.data.surprise = true;
   assert.throws(() => validateInventory(value), { code: 'INVALID_SCHEMA' });
 });
 
@@ -150,7 +235,12 @@ test('CLI emits stable JSON, validates artifacts, and does not overwrite or writ
 
 test('CLI errors use documented envelopes and exit codes', (t) => {
   const { repo, dir } = fixture(t);
-  for (const args of [['unknown'], ['inventory', repo, '--scope', 'deep'], ['inventory', repo, '--surprise'], ['inventory', repo, '--ref']]) {
+  for (const args of [
+    ['unknown'],
+    ['inventory', repo, '--scope', 'deep'],
+    ['inventory', repo, '--surprise'],
+    ['inventory', repo, '--ref'],
+  ]) {
     const result = invoke(...args);
     assert.equal(result.status, 2, result.stderr);
     assert.equal(JSON.parse(result.stdout).status, 'failed');
@@ -161,10 +251,11 @@ test('CLI errors use documented envelopes and exit codes', (t) => {
   assert.match(invoke('--version').stdout, /^0\.0\.1\n$/);
 });
 
-test('legacy inventory and scan validation accept valid JSON files above 64 MiB', t => {
+test('legacy inventory and scan validation accept valid JSON files above 64 MiB', (t) => {
   const { repo, dir } = fixture(t);
   const artifacts = [inventory({ repository: repo }), scan({ repository: repo })];
-  validateInventory(artifacts[0]); validateScan(artifacts[1]);
+  validateInventory(artifacts[0]);
+  validateScan(artifacts[1]);
   for (const artifact of artifacts) {
     const path = join(dir, `${artifact.command}.json`);
     writeFileSync(path, JSON.stringify(artifact) + ' '.repeat(64 * 1024 * 1024));
@@ -180,9 +271,16 @@ test('target reader strips evaluation metadata and CLI enforces manifest scope',
   const path = join(dir, 'target.json');
   const input = {
     schema_version: '0.1.0',
-    target_id: 'fixture', repository: 'https://example.invalid/fixture.git',
-    commit: runGit(repo, 'rev-parse', 'HEAD'), tree_sha: runGit(repo, 'rev-parse', 'HEAD^{tree}'),
-    scope: { inventory_roots: ['.'], deep_source_files: ['index.ts'], supporting_context: ['package.json'], excluded_roots: [] },
+    target_id: 'fixture',
+    repository: 'https://example.invalid/fixture.git',
+    commit: runGit(repo, 'rev-parse', 'HEAD'),
+    tree_sha: runGit(repo, 'rev-parse', 'HEAD^{tree}'),
+    scope: {
+      inventory_roots: ['.'],
+      deep_source_files: ['index.ts'],
+      supporting_context: ['package.json'],
+      excluded_roots: [],
+    },
     evaluation: { secret_answer: 'must not enter inventory' },
   };
   writeFileSync(path, JSON.stringify(input));

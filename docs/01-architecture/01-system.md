@@ -6,12 +6,12 @@ Clearings is a TypeScript library and CLI for source-backed repository comprehen
 
 For the Hono response-selection example, an author has already produced a typed specification. Clearings validates that artifact, selects the operation and its required dependencies, and can evaluate a supplied observation. A report presents the same records to a reader.
 
-| Input | Processing step | Output |
-| --- | --- | --- |
-| Authored specification | Validate types, references, and identity | Validated artifact or an error |
-| Validated specification and operation selection | Assemble required context | Bounded operation context |
-| Specification and supplied observation | Evaluate guards and rules | Check result with verdicts and limitations |
-| Specification or validated context | Render a human projection | Markdown or HTML |
+| Input                                           | Processing step                          | Output                                     |
+| ----------------------------------------------- | ---------------------------------------- | ------------------------------------------ |
+| Authored specification                          | Validate types, references, and identity | Validated artifact or an error             |
+| Validated specification and operation selection | Assemble required context                | Bounded operation context                  |
+| Specification and supplied observation          | Evaluate guards and rules                | Check result with verdicts and limitations |
+| Specification or validated context              | Render a human projection                | Markdown or HTML                           |
 
 The specification owns the operation semantics. Context selection preserves the selected records; rendering changes their presentation. Observation checking evaluates supplied data. These responsibilities remain separate even when one command combines several steps.
 
@@ -34,29 +34,29 @@ The typed-specification path starts with an authored `SemanticSpecification`. Va
 
 ## Component responsibilities
 
-| Component | Responsibility | Implementation |
-| --- | --- | --- |
-| Repository access | Immutable Git objects, inventory, content hashing, protected output paths | [repository modules](../../src/repository) |
-| Structural analysis | TypeScript syntax/symbol observations and unresolved boundaries | [analysis modules](../../src/analysis) |
-| Semantic exchange | Source-bound authoring requests, proposal import, recorded replay | [semantic exchange](../../src/semantics/exchange.ts) |
-| Legacy contracts | Function/behavior contracts, inspection, context selection | [contract modules](../../src/contracts) |
-| Typed kernel | Specification validation, expression evaluation, observation checks | [specification modules](../../src/specification) |
-| Program IR | Implementation-language types, static validation, reference interpretation, finite resources, diagnostic completions, and Markdown inspection/results | [program modules](../../src/program) |
-| IR algorithms | Ordered required dependency closure with independent bounded evaluation | [authored programs](../../programs/clearings) |
-| Executable conformance | Bounded recording, observation mapping, independent reference evaluation, scoped acceptance, and replay reports | [conformance modules](../../src/conformance) |
-| Presentation | Audience plans and deterministic projections | [renderers](../../src/renderers), [presentation plans](../../src/presentation) |
-| CLI | File input/output, option validation, command routing, exit status | [CLI entry](../../src/cli/main.ts) |
+| Component              | Responsibility                                                                                                                                        | Implementation                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Repository access      | Immutable Git objects, inventory, content hashing, protected output paths                                                                             | [repository modules](../../src/repository)                                     |
+| Structural analysis    | TypeScript syntax/symbol observations and unresolved boundaries                                                                                       | [analysis modules](../../src/analysis)                                         |
+| Semantic exchange      | Source-bound authoring requests, proposal import, recorded replay                                                                                     | [semantic exchange](../../src/semantics/exchange.ts)                           |
+| Legacy contracts       | Function/behavior contracts, inspection, context selection                                                                                            | [contract modules](../../src/contracts)                                        |
+| Typed kernel           | Specification validation, expression evaluation, observation checks                                                                                   | [specification modules](../../src/specification)                               |
+| Program IR             | Implementation-language types, static validation, reference interpretation, finite resources, diagnostic completions, and Markdown inspection/results | [program modules](../../src/program)                                           |
+| IR algorithms          | Ordered required dependency closure with independent bounded evaluation                                                                               | [authored programs](../../programs/clearings)                                  |
+| Executable conformance | Bounded recording, observation mapping, independent reference evaluation, scoped acceptance, and replay reports                                       | [conformance modules](../../src/conformance)                                   |
+| Presentation           | Audience plans and deterministic projections                                                                                                          | [renderers](../../src/renderers), [presentation plans](../../src/presentation) |
+| CLI                    | File input/output, option validation, command routing, exit status                                                                                    | [CLI entry](../../src/cli/main.ts)                                             |
 
 ## Trust and evidence boundaries
 
-| Boundary | Established by current checks | Not established |
-| --- | --- | --- |
-| Source bytes → structural facts | Snapshot binding, exact spans, bounded syntax/symbol observations | Complete runtime call targets or whole-program behavior |
-| Evidence → semantic interpretation | Known citations, consistent references and provenance | That English assertions follow from the cited source |
-| Authored specification → validated specification | Schema, identity, references, expression typing, declared boundaries | Requirement acceptance or global satisfiability |
-| Concrete execution → observation | Captured context-assembly arguments/completions and checked measurement projections; external adapters for other APIs | General adapter fidelity, complete dependency authentication, or complete effect capture |
-| Observation → verdict | Evaluation of modeled predicates over supplied values | Source conformance for all executions |
-| Specification → agent implementation | Recorded development evidence when an experiment is performed | A built-in compiler or general code-generation guarantee |
+| Boundary                                         | Established by current checks                                                                                         | Not established                                                                          |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Source bytes → structural facts                  | Snapshot binding, exact spans, bounded syntax/symbol observations                                                     | Complete runtime call targets or whole-program behavior                                  |
+| Evidence → semantic interpretation               | Known citations, consistent references and provenance                                                                 | That English assertions follow from the cited source                                     |
+| Authored specification → validated specification | Schema, identity, references, expression typing, declared boundaries                                                  | Requirement acceptance or global satisfiability                                          |
+| Concrete execution → observation                 | Captured context-assembly arguments/completions and checked measurement projections; external adapters for other APIs | General adapter fidelity, complete dependency authentication, or complete effect capture |
+| Observation → verdict                            | Evaluation of modeled predicates over supplied values                                                                 | Source conformance for all executions                                                    |
+| Specification → agent implementation             | Recorded development evidence when an experiment is performed                                                         | A built-in compiler or general code-generation guarantee                                 |
 
 Scans do not execute target scripts, install target dependencies, or mutate the target repository. Semantic strings and source excerpts remain data. The closed predicate interpreter does not execute JavaScript from records.
 

@@ -16,12 +16,12 @@ This is an interpretation recorded in the specification. Checking a supplied cas
 
 The contract records distinctions needed for response selection:
 
-| Concrete fact | Observation field | Abstract value |
-| --- | --- | --- |
-| The handler returns directly | `input.path` | `direct` |
-| The result is `undefined` | `input.value` | `nullish` |
-| The context is already finalized | `before.finalized` | `true` |
-| The selected response source is the not-found handler | `output` | `not-found` |
+| Concrete fact                                         | Observation field  | Abstract value |
+| ----------------------------------------------------- | ------------------ | -------------- |
+| The handler returns directly                          | `input.path`       | `direct`       |
+| The result is `undefined`                             | `input.value`      | `nullish`      |
+| The context is already finalized                      | `before.finalized` | `true`         |
+| The selected response source is the not-found handler | `output`           | `not-found`    |
 
 The label `nullish` includes both `null` and `undefined`. The output label identifies a response source; it is not an HTTP response object. These choices form part of the [abstraction mapping](../01-architecture/03-abstraction-and-refinement.md).
 
@@ -57,11 +57,11 @@ The observation explicitly names the outcome. A true guard does not cause the ch
 
 Keep the input, initial state, and outcome fixed. Change only the output field:
 
-| Supplied output | Guard | Output postcondition | Aggregate verdict |
-| --- | --- | --- | --- |
-| `not-found` | True | True | `pass` |
-| `context-response` | True | False | `fail` |
-| Omitted | True | Unknown | `unknown` |
+| Supplied output    | Guard | Output postcondition | Aggregate verdict |
+| ------------------ | ----- | -------------------- | ----------------- |
+| `not-found`        | True  | True                 | `pass`            |
+| `context-response` | True  | False                | `fail`            |
+| Omitted            | True  | Unknown              | `unknown`         |
 
 The differing output is a known violation. The omitted output is insufficient evidence. Substituting JSON `null` would instead violate this operation's output type and raise an input error.
 

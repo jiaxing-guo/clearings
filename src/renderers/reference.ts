@@ -6,19 +6,39 @@ function supportingIds(report: Report, text: Explanation | Explanation[]): strin
   return [...new Set((Array.isArray(text) ? text : [text]).flatMap(report.evidenceFor))];
 }
 function supportingUnknowns(text: Explanation | Explanation[]): number[] {
-  return [...new Set((Array.isArray(text) ? text : [text]).flatMap((item) => item.unknown_indices))];
+  return [
+    ...new Set((Array.isArray(text) ? text : [text]).flatMap((item) => item.unknown_indices)),
+  ];
 }
 export function supportingHtml(report: Report, text: Explanation | Explanation[]): string {
-  return [...supportingIds(report, text).map((id) => `<a href="#${anchor(id)}">${h(report.evidenceMap.get(id)!.path)}:${report.evidenceMap.get(id)!.start_line}</a>`),
-    ...supportingUnknowns(text).map((index) => `<a href="#unknown-${index}">Scope note ${index + 1}</a>`)].join(' · ');
+  return [
+    ...supportingIds(report, text).map(
+      (id) =>
+        `<a href="#${anchor(id)}">${h(report.evidenceMap.get(id)!.path)}:${report.evidenceMap.get(id)!.start_line}</a>`,
+    ),
+    ...supportingUnknowns(text).map(
+      (index) => `<a href="#unknown-${index}">Scope note ${index + 1}</a>`,
+    ),
+  ].join(' · ');
 }
 export function supportingMarkdown(report: Report, text: Explanation | Explanation[]): string {
-  return [...supportingIds(report, text).map((id) => `[${md(report.evidenceMap.get(id)!.path)}:${report.evidenceMap.get(id)!.start_line}](#${anchor(id)})`),
-    ...supportingUnknowns(text).map((index) => `[Scope note ${index + 1}](#unknown-${index})`)].join(' · ');
+  return [
+    ...supportingIds(report, text).map(
+      (id) =>
+        `[${md(report.evidenceMap.get(id)!.path)}:${report.evidenceMap.get(id)!.start_line}](#${anchor(id)})`,
+    ),
+    ...supportingUnknowns(text).map((index) => `[Scope note ${index + 1}](#unknown-${index})`),
+  ].join(' · ');
 }
 export function referenceHtml(report: Report): string {
   const { model, claims, claimLabels, flow, steps, unknowns, evidence, evidenceMap } = report;
-  const refs = (ids: string[]) => ids.map((id) => `<a href="#${anchor(id)}">${h(evidenceMap.get(id)!.path)}:${evidenceMap.get(id)!.start_line}</a>`).join(' · ');
+  const refs = (ids: string[]) =>
+    ids
+      .map(
+        (id) =>
+          `<a href="#${anchor(id)}">${h(evidenceMap.get(id)!.path)}:${evidenceMap.get(id)!.start_line}</a>`,
+      )
+      .join(' · ');
   return `<div class="reference-body"><p>Source-based explanation. Claim support and the new explanations need independent review.</p>
 ${contractsHtml(report)}<h3>Scope and unknowns</h3><ul>${unknowns.map((item) => `<li id="unknown-${item.index}">${'id' in item ? `<span id="${anchor(item.id)}"></span><code>${h(item.id)}</code> · ` : ''}${h(item.question)} <span class="support">${refs(item.evidence_ids)}</span></li>`).join('')}</ul>
 <details class="audit"><summary>All ${claims.length} claims</summary>${claims.map((claim) => `<article class="claim" id="${anchor(claim.id)}"><h4>${claimLabels.get(claim.id)} · ${h(claim.category)}</h4><p>${h(claim.text)}</p><span class="support">${refs(claim.evidence_ids)}</span></article>`).join('')}</details>
@@ -29,20 +49,103 @@ ${report.options.sourceNotice ? `<details class="metadata"><summary>Source licen
 }
 export function referenceMarkdown(report: Report): string {
   const { model, claims, claimLabels, flow, steps, unknowns, evidence, evidenceMap } = report;
-  const refs = (ids: string[]) => ids.map((id) => `[${md(evidenceMap.get(id)!.path)}:${evidenceMap.get(id)!.start_line}](#${anchor(id)})`).join(', ');
-  return ['<details>', '<summary>Claims, exact flow, and source evidence</summary>', '',
-    'Source-based explanation. Claim support and the new explanations need independent review.', '',
-    ...(report.contractFunctions.length ? [contractsMarkdown(report)] : []), '### Scope and unknowns', '', ...unknowns.flatMap((item) => [`<a id="unknown-${item.index}"></a>`, '', ...('id' in item ? [`<a id="${anchor(item.id)}"></a>`, '', `ID: \`${item.id}\`.`, ''] : []), `${md(item.question)} ${refs(item.evidence_ids)}`, '']),
-    '### Claims', '', ...claims.flatMap((item) => [`<a id="${anchor(item.id)}"></a>`, '', `**${claimLabels.get(item.id)} · ${md(item.category)}:** ${md(item.text)} ${refs(item.evidence_ids)}`, '']),
-    '### Exact control flow', '', ...flow.steps.flatMap((step) => [`<a id="${anchor(step.id)}"></a>`, '', `**${md(step.title)}**`, '', ...step.next.map((edge) => `- ${md(edge.condition ?? 'Then')} → [${md(steps.get(edge.step_id)!.title)}](#${anchor(edge.step_id)}) ${refs(edge.evidence_ids)}`), `Claims: ${step.claim_ids.map((id) => `[${claimLabels.get(id)}](#${anchor(id)})`).join(', ')}. ${refs(step.evidence_ids)}`, '']),
-    '### Evidence', '', ...evidence.flatMap((item) => [`<a id="${anchor(item.id)}"></a>`, '', `#### ${md(item.path)}:${item.start_line}–${item.end_line}`, '', `Evidence: \`${item.id}\`. Blob: \`${item.blob_sha}\`. UTF-8 bytes [${item.start_byte}, ${item.end_byte}).`, '', codeFence(item.text), '']),
-    '### Analysis details', '', `Entry points: ${report.entries.map((item) => `${md(item.name)} in ${md(item.path)}`).join(', ')}.`, '', `Flow entries: ${flow.entry_step_ids.map((id) => `[${md(steps.get(id)!.title)}](#${anchor(id)})`).join(', ')}.`, '', `Transport: ${model.data.transport}. Producer: ${md(model.data.proposal.producer.name)}. Model: ${md(model.data.proposal.producer.model ?? 'not recorded')}.`, '',
-    `Semantic artifact: \`${model.artifact_id}\`. Snapshot: \`${model.snapshot_id}\`.`, '',
-    `Structural scan: \`${report.request.data.scan_artifact_id}\`.`, '',
-    `Claim support: unreviewed. Acceptance: proposed. Presentation: ${report.plan.origin}, unreviewed.`, '',
-    `Scope: ${report.request.data.scope.paths.map(md).join(', ')}. ${report.request.coverage.evidence_records} excerpts; ${report.request.coverage.omitted_scope_evidence} other structural evidence records omitted.`, '',
-    `Source scan: ${report.request.data.scan_coverage.parsed_source_files}/${report.request.data.scan_coverage.selected_source_files} selected files parsed; ${report.request.data.scan_coverage.failed_source_files} failed; ${report.request.data.scan_coverage.support_source_files} support files.`, '',
-    '### Related state and components', '', ...report.relations.map((item) => `- ${md(report.concepts.get(item.from_id)!.title)} — ${item.kind} → ${md(report.concepts.get(item.to_id)!.title)} ${refs(item.evidence_ids)}`), '',
-    '### Source diagnostics', '', ...(model.diagnostics.length ? model.diagnostics.map((item) => `- ${md(item.code)}: ${md(item.message)}`) : ['No source errors or warnings were recorded.']), '',
-    ...(report.options.sourceNotice ? ['### Source license', '', codeFence(report.options.sourceNotice).replace('typescript\n','text\n'), ''] : []), '</details>', ''].join('\n');
+  const refs = (ids: string[]) =>
+    ids
+      .map(
+        (id) =>
+          `[${md(evidenceMap.get(id)!.path)}:${evidenceMap.get(id)!.start_line}](#${anchor(id)})`,
+      )
+      .join(', ');
+  return [
+    '<details>',
+    '<summary>Claims, exact flow, and source evidence</summary>',
+    '',
+    'Source-based explanation. Claim support and the new explanations need independent review.',
+    '',
+    ...(report.contractFunctions.length ? [contractsMarkdown(report)] : []),
+    '### Scope and unknowns',
+    '',
+    ...unknowns.flatMap((item) => [
+      `<a id="unknown-${item.index}"></a>`,
+      '',
+      ...('id' in item ? [`<a id="${anchor(item.id)}"></a>`, '', `ID: \`${item.id}\`.`, ''] : []),
+      `${md(item.question)} ${refs(item.evidence_ids)}`,
+      '',
+    ]),
+    '### Claims',
+    '',
+    ...claims.flatMap((item) => [
+      `<a id="${anchor(item.id)}"></a>`,
+      '',
+      `**${claimLabels.get(item.id)} · ${md(item.category)}:** ${md(item.text)} ${refs(item.evidence_ids)}`,
+      '',
+    ]),
+    '### Exact control flow',
+    '',
+    ...flow.steps.flatMap((step) => [
+      `<a id="${anchor(step.id)}"></a>`,
+      '',
+      `**${md(step.title)}**`,
+      '',
+      ...step.next.map(
+        (edge) =>
+          `- ${md(edge.condition ?? 'Then')} → [${md(steps.get(edge.step_id)!.title)}](#${anchor(edge.step_id)}) ${refs(edge.evidence_ids)}`,
+      ),
+      `Claims: ${step.claim_ids.map((id) => `[${claimLabels.get(id)}](#${anchor(id)})`).join(', ')}. ${refs(step.evidence_ids)}`,
+      '',
+    ]),
+    '### Evidence',
+    '',
+    ...evidence.flatMap((item) => [
+      `<a id="${anchor(item.id)}"></a>`,
+      '',
+      `#### ${md(item.path)}:${item.start_line}–${item.end_line}`,
+      '',
+      `Evidence: \`${item.id}\`. Blob: \`${item.blob_sha}\`. UTF-8 bytes [${item.start_byte}, ${item.end_byte}).`,
+      '',
+      codeFence(item.text),
+      '',
+    ]),
+    '### Analysis details',
+    '',
+    `Entry points: ${report.entries.map((item) => `${md(item.name)} in ${md(item.path)}`).join(', ')}.`,
+    '',
+    `Flow entries: ${flow.entry_step_ids.map((id) => `[${md(steps.get(id)!.title)}](#${anchor(id)})`).join(', ')}.`,
+    '',
+    `Transport: ${model.data.transport}. Producer: ${md(model.data.proposal.producer.name)}. Model: ${md(model.data.proposal.producer.model ?? 'not recorded')}.`,
+    '',
+    `Semantic artifact: \`${model.artifact_id}\`. Snapshot: \`${model.snapshot_id}\`.`,
+    '',
+    `Structural scan: \`${report.request.data.scan_artifact_id}\`.`,
+    '',
+    `Claim support: unreviewed. Acceptance: proposed. Presentation: ${report.plan.origin}, unreviewed.`,
+    '',
+    `Scope: ${report.request.data.scope.paths.map(md).join(', ')}. ${report.request.coverage.evidence_records} excerpts; ${report.request.coverage.omitted_scope_evidence} other structural evidence records omitted.`,
+    '',
+    `Source scan: ${report.request.data.scan_coverage.parsed_source_files}/${report.request.data.scan_coverage.selected_source_files} selected files parsed; ${report.request.data.scan_coverage.failed_source_files} failed; ${report.request.data.scan_coverage.support_source_files} support files.`,
+    '',
+    '### Related state and components',
+    '',
+    ...report.relations.map(
+      (item) =>
+        `- ${md(report.concepts.get(item.from_id)!.title)} — ${item.kind} → ${md(report.concepts.get(item.to_id)!.title)} ${refs(item.evidence_ids)}`,
+    ),
+    '',
+    '### Source diagnostics',
+    '',
+    ...(model.diagnostics.length
+      ? model.diagnostics.map((item) => `- ${md(item.code)}: ${md(item.message)}`)
+      : ['No source errors or warnings were recorded.']),
+    '',
+    ...(report.options.sourceNotice
+      ? [
+          '### Source license',
+          '',
+          codeFence(report.options.sourceNotice).replace('typescript\n', 'text\n'),
+          '',
+        ]
+      : []),
+    '</details>',
+    '',
+  ].join('\n');
 }

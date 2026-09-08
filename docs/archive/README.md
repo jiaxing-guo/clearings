@@ -4,6 +4,8 @@ The [current technical reference](../README.md) supersedes the organizational ro
 
 The `2026-09-07` directory records the pre-reorganization documentation. Relative Markdown links were rebased and an archive notice was added. Frozen experiment source tarballs and manifests were not changed; use those snapshots for exact experiment reproduction.
 
+Some script names in historical commands have since changed. The [maintenance reference](../05-development/05-repository-maintenance.md#descriptive-filenames) maps them to current entrypoints; the original repository-creation script is available in Git history.
+
 ## Archived files
 
 | Original filename | Historical document | Current entrypoint |
