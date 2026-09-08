@@ -41,16 +41,18 @@ test(
           );
           warm.verify();
           warm.dispose();
-          chmodSync(executable, 0o775);
-          assert.throws(() => prepared.verify(), { code: 'RUST_BUILD_INVALID' });
-          assert.throws(() => prepareNativeBuild('permission-test', build, cacheDirectory), {
-            code: 'RUST_BUILD_INVALID',
-          });
-          assert.equal(
-            statSync(executable).mode & 0o777,
-            0o775,
-            'Existing cache is not silently repaired',
-          );
+          for (const mode of [0o775, 0o600, 0o610]) {
+            chmodSync(executable, mode);
+            assert.throws(() => prepared.verify(), { code: 'RUST_BUILD_INVALID' });
+            assert.throws(() => prepareNativeBuild('permission-test', build, cacheDirectory), {
+              code: 'RUST_BUILD_INVALID',
+            });
+            assert.equal(
+              statSync(executable).mode & 0o777,
+              mode,
+              'Existing cache is not silently repaired',
+            );
+          }
         }
         prepared.dispose();
         assert.equal(existsSync(prepared.directory), cacheDirectory !== undefined);
