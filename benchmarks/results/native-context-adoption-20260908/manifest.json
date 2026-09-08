@@ -1,0 +1,14 @@
+{
+  "schema_version": "0.1.0",
+  "kind": "native-context-adoption-evidence",
+  "record_id": "execution-record:6912f17976d5a9045b0678805d633a6cc5eaf11acc4b5b5b353b26630703bb0e",
+  "evaluation_id": "context-assembly-evaluation:f708fc524fc5d4871b8cc720a935a57e8b0bbdddae6310e38c246a4954862b96",
+  "files": {
+    "record.json": "a7a5b6b09171605c6fc8c55b2d006be1840c8f6626f093acfdd7f7c6b1d63fa9",
+    "evaluation.json": "bd21824e767c2b8fda7507dcbf1f875b1bbad12d3ba4741a6db55355691363b1"
+  },
+  "baseline_commit": "c5561a9076d62b4756b185cb5d16db99f64f08eb",
+  "baseline_tree": "d7225417859ed9bb157e154e67a32338127e3ec5",
+  "source_scope": "Captured working-file digests, including uncommitted adoption-gate changes, are authoritative for this execution; the commit identifies the PR 3 baseline.",
+  "acceptance": "accepted"
+}

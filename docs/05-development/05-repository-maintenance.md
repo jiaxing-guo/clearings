@@ -52,7 +52,7 @@ Stop a running documentation development server before cleaning:
 npm run clean
 ```
 
-The command removes `dist/`, `coverage/`, `compiled/` source exports, Next.js build/export and generated type files, generated Fumadocs source metadata, copied demo assets, and generated technical documentation pages/indexes. It resolves paths relative to the repository, so it also works from another working directory. It retains source, npm dependencies, specifications, authored programs, benchmark checkouts, and recorded runs. Missing generated paths are harmless.
+The command removes the default native cache for this package path, `dist/`, `coverage/`, `compiled/` source exports, Next.js build/export and generated type files, generated Fumadocs source metadata, copied demo assets, and generated technical documentation pages/indexes. It resolves paths relative to the repository, so it also works from another working directory. It retains source, npm dependencies, specifications, authored programs, benchmark checkouts, and recorded runs. Missing generated paths are harmless.
 
 Rebuild with `npm run build` or `npm run docs:build`; use `npm run docs:dev` for local documentation development. Clean builds prevent removed or renamed source files from leaving stale JavaScript in `dist/`. The [script index](../../scripts/README.md) lists the supported maintenance and benchmark commands.
 
@@ -71,4 +71,4 @@ Archived commands retain the filenames used by their recorded revision; use the 
 
 ## Compiled source ownership
 
-Use `program compile closure --out compiled/closure` for disposable generated source. The conventional `compiled/` directory is ignored by Git and removed by `npm run clean`. Exports to other user-selected directories are retained; remove those directories explicitly after review. Source exports reject existing destinations. Native execution uses temporary directories and removes its build products automatically, including on process failure. Authored Program IR and historical compilation measurements remain source and evidence, respectively.
+Use `program compile closure --out compiled/closure` for disposable generated source. The conventional `compiled/` directory is ignored by Git and removed by `npm run clean`. Exports to other user-selected directories are retained; remove those directories explicitly after review. Source exports reject existing destinations. One-shot native execution uses temporary directories and removes its build products automatically, including on process failure. Prepared context execution reuses the package-specific cache. `npm run clean` removes its default cache; explicit `CLEARINGS_NATIVE_CACHE` directories are user-managed and retained. Rebuild before invoking new workers after cleanup. Authored Program IR and historical compilation measurements remain source and evidence, respectively.

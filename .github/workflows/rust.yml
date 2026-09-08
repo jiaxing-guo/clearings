@@ -5,6 +5,10 @@ on:
     paths:
       - 'runtime/rust/**'
       - 'src/compiler/**'
+      - 'src/specification/**'
+      - 'src/conformance/**'
+      - 'tests/native-context.test.mjs'
+      - 'scripts/prepare-context-native.mjs'
       - 'src/program/**'
       - 'src/cli/**'
       - 'programs/**'

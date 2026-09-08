@@ -121,6 +121,8 @@ export function prepareNativeBuild(
     };
   } catch (error) {
     if (temporary) rmSync(temporary, { recursive: true, force: true });
+    if (cacheDirectory === undefined && directory)
+      rmSync(directory, { recursive: true, force: true });
     if (error instanceof ClearingsError) throw error;
     throw new ClearingsError(
       'RUST_BUILD_INVALID',

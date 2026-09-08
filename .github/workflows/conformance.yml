@@ -4,6 +4,12 @@ on:
   pull_request:
     paths:
       - 'src/**'
+      - 'runtime/rust/**'
+      - 'programs/**'
+      - 'scripts/prepare-context-native.mjs'
+      - 'scripts/check-bootstrap-demo.mjs'
+      - 'scripts/lib/bootstrap-source-snapshot.mjs'
+      - 'benchmarks/sources/**'
       - 'schemas/**'
       - 'specifications/clearings/conformance/**'
       - 'tests/**'
@@ -33,6 +39,11 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+      - run: rustup show active-toolchain
+        working-directory: runtime/rust
       - run: npm ci --ignore-scripts
+      - run: npm run native:prepare
       - run: npm run test:conformance
       - run: npm run docs:check:markdown
+      - run: npm test
+      - run: node scripts/check-bootstrap-demo.mjs
