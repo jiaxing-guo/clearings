@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { createContextAssemblyCases, getContextAssemblyContract, recordContextAssembly, evaluateContextAssembly } from '../dist/conformance/index.js';
+import { createContextAssemblyCases, getContextAssemblyContract, recordContextAssembly, createContextAssemblyEvaluator } from '../dist/conformance/index.js';
 import { canonical } from '../dist/repository/inventory.js';
 import { candidateCheckout, controlSource, faults, faultSource } from '../tests/helpers/conformance.mjs';
 
@@ -21,6 +21,7 @@ if (process.argv.length === 3 && process.argv[2] === '--freeze') {
   assert(process.argv.length <= 3 && (!process.argv[2] || process.argv[2] === '--smoke'), 'Use --smoke, --freeze, or no argument for the full suite.');
   assert.deepEqual(manifest, JSON.parse(readFileSync(manifestPath, 'utf8')), 'Suite inputs and control sources must match the frozen manifest.');
   const cases = process.argv[2] === '--smoke' ? smoke : full;
+  const evaluateContextAssembly = createContextAssemblyEvaluator();
   const control = candidateCheckout(controlSource);
   let executions = 0;
   try {

@@ -8,13 +8,12 @@ Use Node.js 24, npm 11, and a Git checkout with its history. From the repository
 
 ```bash
 npm ci --ignore-scripts
-npm run build
-node dist/cli/main.js conformance run --suite smoke --out ../clearings-conformance-smoke
+npm run conformance
 ```
 
-The smoke suite executes 36 cases against the current built checkout. The output directory must be new and outside both the recorder and candidate repositories and their Git object stores. Use a different directory name for another run. Candidate code must be trusted local code; workers provide time and memory limits, not a security sandbox.
+The command builds the CLI and executes the 36-case smoke suite against the current checkout. Each invocation creates a unique directory under `../clearings-conformance-runs`, relative to the Clearings checkout. The output directory must be new and outside both the recorder and candidate repositories and their Git object stores. Candidate code must be trusted local code; workers provide time and memory limits, not a security sandbox.
 
-The command prints the scoped result and output path. Open `report.md` to inspect the case table and follow its links to the raw execution records and detailed evaluations.
+To choose an explicit path for the examples below, run `npm run conformance -- --out ../clearings-conformance-smoke`. Explicit output directories must also be new. The command prints the scoped result and output path. Open `report.md` to inspect the case table and follow its links to the raw execution records and detailed evaluations.
 
 | File | Contents |
 | --- | --- |
@@ -41,26 +40,26 @@ A permitted application exception can be accepted. A timeout, incomplete capture
 ## Replay saved evidence
 
 ```bash
-node dist/cli/main.js conformance replay ../clearings-conformance-smoke --out ../clearings-conformance-replay
+npm run conformance -- replay ../clearings-conformance-smoke
 ```
 
-Replay validates the run identity, record checksums, contract bindings, and exact named-suite inputs. It recomputes results using the current evaluator. It does not import candidate code, resolve implementation repository locators, or trust saved evaluation results. The candidate checkout may be absent. The replay report identifies the source run and the evaluator that performed the new evaluation.
+Replay validates the run identity and suite coverage, then reads, validates, and evaluates each record before loading the next. Each record is limited to 64 MiB; completed record payloads are released instead of accumulating across the suite. Record validation checks checksums, contract bindings, and exact named-suite inputs. If a later record is invalid, completed record/evaluation files remain available, but no completed `run.json` is written. It recomputes results using the current evaluator. It does not import candidate code, resolve implementation repository locators, or trust saved evaluation results. The candidate checkout may be absent. The replay report identifies the source run and the evaluator that performed the new evaluation.
 
 For one record:
 
 ```bash
-node dist/cli/main.js conformance replay ../clearings-conformance-smoke/record-00000.json --out ../clearings-single-replay
+npm run conformance -- replay ../clearings-conformance-smoke/record-00000.json
 ```
 
-Replay output must be outside its input evidence directory. Input files are preserved. If the evaluator changes, new evaluation identities can differ while the original record identity remains the same. A stale profile or suite binding is rejected explicitly.
+Replay selects a unique output directory by default; `--out` overrides it. Output must be outside the input run directory or, for a single record, outside the directory containing that record. This restriction also applies through symbolic links. Input files are preserved. If the evaluator changes, new evaluation identities can differ while the original record identity remains the same. A stale profile or suite binding is rejected explicitly.
 
 ## Evaluate a specific invocation or implementation
 
 The input file contains `{ specification, selection, options: { maxBytes } }`, using a complete v0.3 invocation specification. The [recording guide](03-record-context-assembly.md) shows how to construct that value.
 
 ```bash
-node dist/cli/main.js conformance run invocation.json --out ../clearings-single-run
-node dist/cli/main.js conformance run --suite smoke --implementation-root ../candidate-checkout --timeout-ms 10000 --out ../clearings-candidate-run
+npm run conformance -- run invocation.json
+npm run conformance -- --implementation-root ../candidate-checkout --timeout-ms 10000
 ```
 
 The target must be a built Git checkout with the fixed `src/specification/context.ts` and `dist/specification/context.js` entrypoints, package metadata, and an exported synchronous `assembleContext`. No candidate-selected module path is read from an artifact. The recorder binds working-file digests as well as the Git baseline; concurrent file changes are outside the protocol.
@@ -68,7 +67,7 @@ The target must be a built Git checkout with the fixed `src/specification/contex
 ## Run the exhaustive domain and controls
 
 ```bash
-node dist/cli/main.js conformance run --suite full --out ../clearings-conformance-full
+npm run conformance -- --suite full
 npm run test:conformance
 ```
 
@@ -77,6 +76,10 @@ The full suite contains 1,554 cases: all 1,536 graph/root combinations from 512 
 The regression command checks production and an independently authored conforming implementation on all 1,554 cases each, then executes 26 predefined source faults. Twenty-five faults must be rejected by their designated checks; a nontermination fault must time out and remain inconclusive. The control is separate from the reference evaluator. The [suite manifest](../../specifications/clearings/conformance/suite.json) binds generated inputs, control source, and fault definitions before execution. The [control documentation](../../tests/fixtures/conformance/README.md) describes the independence boundary. Exhaustive execution takes several minutes; `npm run test:conformance:smoke` runs the smaller domain with the same fault set.
 
 The [focused CI workflow](../../.github/workflows/conformance.yml) installs declared dependencies, runs the exhaustive regression command, and checks executable Markdown examples. It grants read-only repository permissions and does not publish artifacts or packages.
+
+## Use the CLI directly
+
+The npm command builds before each invocation. After building, `node dist/cli/main.js conformance` runs the same defaults directly. For repeated local use, run `npm link` once from the checkout to expose the existing `clearings` executable on your shell path. You can then use `clearings conformance`, `clearings conformance --suite full`, and `clearings conformance replay <run-directory>`. Rebuild after source changes. This links the local source checkout; it does not publish a package.
 
 ## Use the evaluator as a library
 
@@ -93,3 +96,5 @@ assert.equal(evaluation.obligations.find(item => item.id === 'external-effects')
 ```
 
 This example records an actual capacity exception. The evaluator independently confirms its required byte count and retains the unresolved effect boundary. It does not modify the execution record.
+
+For multiple records, call `createContextAssemblyEvaluator()` once and reuse the returned function. It binds the evaluator file-set digest once per run and returns an owned identity in each result. Evaluator files must remain unchanged for that run. A new factory call or standalone `evaluateContextAssembly(record)` computes a fresh binding.

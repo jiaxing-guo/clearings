@@ -35,10 +35,10 @@ Clearings also has a proposed specification for its own context assembler. [Revi
 Record and independently evaluate the current context assembler:
 
 ```bash
-node dist/cli/main.js conformance run --suite smoke --out ../clearings-conformance-smoke
+npm run conformance
 ```
 
-The command writes raw evidence, JSON evaluations, and `report.md` for 36 cases. Scoped acceptance remains separate from the broader contract's unknown obligations. [Evaluate and replay conformance](docs/04-guides/04-evaluate-context-conformance.md) explains the full domain, independent controls, saved-evidence replay, and failure reports.
+The command builds the CLI and writes raw evidence, JSON evaluations, and `report.md` for 36 cases to a unique directory under `../clearings-conformance-runs`. It prints the output path. Scoped acceptance remains separate from the broader contract's unknown obligations. [Evaluate and replay conformance](docs/04-guides/04-evaluate-context-conformance.md) explains the full domain, independent controls, saved-evidence replay, and failure reports.
 
 ## Explore the three demos
 

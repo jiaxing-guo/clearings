@@ -13,8 +13,9 @@ clearings inspect <specification.json> [--operation alias] [--format json|markdo
 clearings context <specification.json> --operation alias --max-bytes n [--format json|markdown]
 clearings check <specification.json> --operation alias --observation case.json
 clearings explain <specification.json> --operation alias [--format markdown|html]
-clearings conformance run [invocation.json] --out new-directory [--suite smoke|full] [--implementation-root checkout] [--timeout-ms n]
-clearings conformance replay <record.json|run-directory> --out new-directory
+clearings conformance [--suite smoke|full] [--out new-directory]
+clearings conformance run [invocation.json] [--out new-directory] [--suite smoke|full] [--implementation-root checkout] [--timeout-ms n]
+clearings conformance replay <record.json|run-directory> [--out new-directory]
 clearings inventory <repository> [--ref HEAD] [--include path] [--exclude path] [--out file]
 clearings inventory <repository> --target manifest.json [--scope inventory|deep] [--out file]
 clearings scan <repository> [inventory options] [--project tsconfig.json] [--mode source-only] [--strict]
@@ -37,6 +38,8 @@ Use propose --schema-version 0.2.0 to request contracts. The default remains 0.1
 Typed specifications use version 0.3.0 and select operations by --operation.
 Check evaluates supplied observations; exit 1 means a failed rule, and 3 means unknown.
 Conformance writes execution records, evaluations, run.json, and report.md to a new directory.
+It defaults to run, the smoke suite, and a unique directory under ../clearings-conformance-runs relative to this checkout.
+From a source checkout, npm run conformance builds and runs these defaults.
 Its exit codes are 0 scoped acceptance, 1 rejection, 2 invalid input, and 3 inconclusive.
 Replay re-evaluates saved conformance evidence without executing the candidate.
 For legacy context use --format readable-json to resolve prose assertions in place.

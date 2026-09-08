@@ -28,6 +28,16 @@ const combine = (checks: ConformanceCheck[]): ConformanceCheckStatus => checks.s
 
 /** Re-evaluate evidence without loading any implementation or locator in the record. */
 export function evaluateContextAssembly(record: ExecutionRecord): ContextAssemblyEvaluation {
+  return createContextAssemblyEvaluator()(record);
+}
+
+/** Bind evaluator files once for a run. Those files must remain unchanged during the run. */
+export function createContextAssemblyEvaluator(): (record: ExecutionRecord) => ContextAssemblyEvaluation {
+  const identity = { name: 'Clearings independent context evaluator; project file-set manifest', sha256: componentDigest(fileURLToPath(new URL('../../', import.meta.url))) };
+  return record => evaluate(record, identity);
+}
+
+function evaluate(record: ExecutionRecord, identity: ContentIdentity): ContextAssemblyEvaluation {
   const { profile, specification } = getContextAssemblyContract();
   const mapping = mapContextAssemblyObservation(record); // Includes record/binding validation.
   validateContextInvocation(record.arguments_before);
@@ -95,7 +105,7 @@ export function evaluateContextAssembly(record: ExecutionRecord): ContextAssembl
   const status = combine([...checks, ...obligations.filter(obligation => obligation.mandatory)]);
   const body = { schema_version: '0.1.0' as const, kind: 'context-assembly-evaluation' as const, record_id: record.artifact_id, profile_id: record.profile_id,
     specification_id: record.specification_id, case_id: record.case_id,
-    evaluator: { name: 'Clearings independent context evaluator; project file-set manifest', sha256: componentDigest(fileURLToPath(new URL('../../', import.meta.url))) },
+    evaluator: { ...identity },
     acceptance: status === 'pass' ? 'accepted' as const : status === 'fail' ? 'rejected' as const : 'inconclusive' as const,
     contract, checks, obligations, reference_measurements,
     limitations: [...record.limitations, 'Scoped acceptance concerns this captured invocation and the current profile. It is not universal refinement or execution authentication.',

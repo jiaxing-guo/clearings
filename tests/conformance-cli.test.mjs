@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync, symlinkSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { createContextAssemblyCases, contextConformanceReportIdentity, sealExecutionRecord, getContextAssemblyContract } from 'clearings/conformance';
@@ -33,6 +33,19 @@ test('CLI records and replays saved evidence after candidate removal', t => {
   assert.equal(report.cases[0].evaluation_id, original.cases[0].evaluation_id);
   assert.equal(readFileSync(join(replay, 'record-00000.json'), 'utf8'), recordBytes);
   assert.equal(invoke('replay', join(run, 'record-00000.json'), '--out', join(root, 'single')).status, 0);
+  const linkedRecord = join(root, 'record-link.json'), linkedDirectory = join(root, 'run-link');
+  symlinkSync(join(run, 'record-00000.json'), linkedRecord); symlinkSync(run, linkedDirectory, 'dir');
+  for (const [source, output] of [
+    [join(run, 'record-00000.json'), join(run, 'sibling-output')],
+    [join(run, 'record-00000.json'), join(run, 'nested', 'output')],
+    [linkedRecord, join(run, 'linked-source-output')],
+    [join(run, 'record-00000.json'), join(linkedDirectory, 'linked-output')],
+  ]) {
+    const protectedResult = invoke('replay', source, '--out', output);
+    assert.equal(protectedResult.status, 2, protectedResult.stderr);
+    assert.match(protectedResult.stderr, /outside its input evidence directory/); assert(!existsSync(output));
+  }
+  assert.equal(readFileSync(join(run, 'record-00000.json'), 'utf8'), recordBytes);
 });
 
 test('CLI distinguishes rejected executions from inconclusive authored replay', t => {
@@ -44,8 +57,8 @@ test('CLI distinguishes rejected executions from inconclusive authored replay', 
   record.arguments_after = { status: 'unavailable', reason: 'Edited checker fixture.' };
   record.completion = { kind: 'timeout', limit_ms: 10000 };
   record.measurements = record.measurements.map(item => ({ id: item.id, status: 'unobserved', reason: 'Edited checker fixture.' }));
-  const contract = getContextAssemblyContract(); write(join(root, 'authored.json'), sealExecutionRecord(record, contract.profile, contract.specification));
-  const replay = invoke('replay', join(root, 'authored.json'), '--out', join(root, 'inconclusive'));
+  const contract = getContextAssemblyContract(); write(join(run, 'authored.json'), sealExecutionRecord(record, contract.profile, contract.specification));
+  const replay = invoke('replay', join(run, 'authored.json'), '--out', join(root, 'inconclusive'));
   assert.equal(replay.status, 3, replay.stderr);
 });
 
@@ -90,10 +103,36 @@ test('named-suite replay binds every recorded input to its frozen case position'
   assert.equal(report.suite.covered_cases, 36); assert.equal(report.summary.accepted, 36);
   assert.equal(invoke('replay', run, '--out', join(root, 'valid-replay')).status, 0);
   const first = readFileSync(join(run, 'record-00000.json')), second = readFileSync(join(run, 'record-00001.json'));
+  writeFileSync(join(run, 'record-00001.json'), second.toString() + ' ');
+  const partial = join(root, 'partial-replay'), interrupted = invoke('replay', run, '--out', partial);
+  assert.equal(interrupted.status, 2, interrupted.stderr); assert.match(interrupted.stderr, /checksum/);
+  assert.equal(readFileSync(join(partial, 'record-00000.json'), 'utf8'), first.toString());
+  assert(existsSync(join(partial, 'evaluation-00000.json')), 'Replay evaluates and persists each record before loading the next');
+  assert(!existsSync(join(partial, 'record-00001.json'))); assert(!existsSync(join(partial, 'run.json')));
   writeFileSync(join(run, 'record-00000.json'), second); writeFileSync(join(run, 'record-00001.json'), first);
   [report.cases[0], report.cases[1]] = [report.cases[1], report.cases[0]];
   report.cases[0].record_file = 'record-00000.json'; report.cases[1].record_file = 'record-00001.json';
   report.artifact_id = contextConformanceReportIdentity(report); write(join(run, 'run.json'), report);
   const replay = invoke('replay', run, '--out', join(root, 'invalid-replay'));
   assert.equal(replay.status, 2, replay.stderr); assert.match(replay.stderr, /frozen suite case/);
+});
+
+test('CLI defaults to smoke and allocates distinct output directories for runs and replay', t => {
+  const outputs = [];
+  t.after(() => outputs.forEach(path => rmSync(path, { recursive: true, force: true })));
+  const invokeDefault = (...args) => {
+    const result = invoke(...args);
+    assert.equal(result.status, 0, result.stderr);
+    const output = JSON.parse(result.stdout).output_directory; outputs.push(output);
+    assert.equal(dirname(output), resolve('..', 'clearings-conformance-runs'));
+    assert(existsSync(join(output, 'report.md'))); return output;
+  };
+  const first = invokeDefault(), report = read(join(first, 'run.json'));
+  assert.equal(report.mode, 'execution'); assert.equal(report.suite.name, 'smoke'); assert.equal(report.summary.accepted, 36);
+  const root = workspace(t), input = join(root, 'input.json'); write(input, cases[0].invocation);
+  const second = invokeDefault('run', input);
+  assert.equal(read(join(second, 'run.json')).suite.name, 'single');
+  const replay = invokeDefault('replay', second);
+  assert.equal(read(join(replay, 'run.json')).mode, 'replay');
+  assert.equal(new Set(outputs).size, 3);
 });

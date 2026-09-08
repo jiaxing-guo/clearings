@@ -1,11 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { createContextAssemblyCases, getContextAssemblyContract, recordContextAssembly, evaluateContextAssembly, sealExecutionRecord } from 'clearings/conformance';
+import fs, { readFileSync } from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+import { createContextAssemblyCases, createContextAssemblyEvaluator, getContextAssemblyContract, recordContextAssembly, evaluateContextAssembly, sealExecutionRecord } from 'clearings/conformance';
 
 const cases = createContextAssemblyCases(), contract = getContextAssemblyContract();
 const input = id => cases.find(item => item.case_id === id);
 const reseal = record => sealExecutionRecord(record, contract.profile, contract.specification);
+
+test('a run binds evaluator files once and owns its identity independently of returned results', async () => {
+  const record = await recordContextAssembly(input('optional-edges'));
+  const originalRead = fs.readFileSync;
+  let reads = 0, changed = false;
+  fs.readFileSync = function (path, ...args) {
+    const bytes = originalRead.call(this, path, ...args);
+    if (!String(path).endsWith('/src/conformance/context-evaluator.ts')) return bytes;
+    reads++;
+    return changed ? Buffer.concat([bytes, Buffer.from('\n// Simulated later checkout change.\n')]) : bytes;
+  };
+  syncBuiltinESMExports();
+  try {
+    const evaluate = createContextAssemblyEvaluator(), first = evaluate(record);
+    const expected = structuredClone(first);
+    changed = true;
+    first.evaluator.sha256 = '0'.repeat(64); first.evaluator.name = 'Caller mutation';
+    assert.deepEqual(evaluate(record), expected);
+    assert.equal(reads, 1, 'One file-set scan serves the entire run');
+    const later = evaluateContextAssembly(record);
+    assert.equal(reads, 2, 'A later standalone evaluation binds files afresh');
+    assert.notEqual(later.evaluator.sha256, expected.evaluator.sha256);
+  } finally { fs.readFileSync = originalRead; syncBuiltinESMExports(); }
+});
 
 test('independent evaluation grants scoped acceptance without changing evidence or residual contract unknowns', async () => {
   const record = await recordContextAssembly(input('partial-frame-evidence')), original = structuredClone(record);
