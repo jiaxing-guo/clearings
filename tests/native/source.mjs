@@ -2,6 +2,9 @@ import { PROGRAM_EXECUTION_DEFAULT_LIMITS, PROGRAM_EXECUTION_MAX_LIMITS } from '
 
 // Keep test-input encoding independent of the compiler's literal emitter.
 function rustCodeUnits(text) {
+  // Large preparation-boundary fixtures need compact source, preserving code units exactly.
+  if (text.length >= 64 && text === text[0].repeat(text.length))
+    return `vec![${text.charCodeAt(0)};${text.length}]`;
   return `vec![${Array.from({ length: text.length }, (_, index) => text.charCodeAt(index)).join(',')}]`;
 }
 
@@ -17,6 +20,8 @@ function rustOwnedValue(value) {
     case 'string':
       return `OwnedValue::String(${rustCodeUnits(value)})`;
     default:
+      if (Array.isArray(value) && value.length >= 64 && value.every((item) => item === value[0]))
+        return `OwnedValue::List(vec![${rustOwnedValue(value[0])};${value.length}])`;
       if (Array.isArray(value))
         return `OwnedValue::List(vec![${value.map(rustOwnedValue).join(',')}])`;
       return `OwnedValue::Record(vec![${Object.entries(value)

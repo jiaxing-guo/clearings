@@ -75,7 +75,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "node scripts/clean.mjs",
-    "test:compiler": "npm run build && node --test tests/program-compiled-artifacts.test.mjs tests/program-rust-codegen.test.mjs tests/native/*.test.mjs",
+    "test:compiler": "npm run build && node --test --test-concurrency=1 tests/compiler-conformance.test.mjs tests/program-compiled-artifacts.test.mjs tests/program-rust-codegen.test.mjs tests/native/*.test.mjs",
     "benchmark:rust": "npm run build --silent && node scripts/measure-rust-closure.mjs"
   },
   "dependencies": {

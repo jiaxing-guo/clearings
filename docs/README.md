@@ -50,6 +50,7 @@ The original reference order remains available for a systematic review. For a la
 | 29    | [Rust backend artifacts and runtime](03-reference/09-rust-backend.md)                       | How are compiled artifacts bound, and which value and execution primitives does the Rust runtime implement?   |
 | 30    | [Rust code generation](03-reference/10-rust-code-generation.md)                             | How are typed programs lowered, executed in native tests, and measured?                                       |
 | 31    | [Compiler code style review](05-development/07-code-style-review.md)                        | Which structural refactors improve the compiler workflow, and which semantic constraints limit style changes? |
+| 32    | [Compiler conformance evaluation](03-reference/11-compiler-conformance.md)                  | Which semantic-preservation obligations are evaluated, over which domain, and with what independent controls? |
 
 ## Status and authority
 
