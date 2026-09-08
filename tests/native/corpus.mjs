@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { sealProgram } from 'clearings/program';
+import { sealProgram, PROGRAM_EXECUTION_MAX_LIMITS } from 'clearings/program';
 import { referenceRequiredClosure } from '../helpers/program-closure-reference.mjs';
 
 const integer = { kind: 'integer' },
@@ -317,5 +317,21 @@ export function corpus() {
     ])
       cases.push({ name: 'resource-boundary', program: index, args, limits });
   }
+  cases.push(
+    {
+      name: 'maximum-limits',
+      program: 0,
+      args: ['bounded'],
+      limits: PROGRAM_EXECUTION_MAX_LIMITS,
+      expected: 'bounded',
+    },
+    {
+      name: 'minimum-limits',
+      program: 0,
+      args: ['bounded'],
+      limits: Object.fromEntries(Object.keys(PROGRAM_EXECUTION_MAX_LIMITS).map((key) => [key, 1])),
+      exhausted: 'work',
+    },
+  );
   return { programs, cases };
 }

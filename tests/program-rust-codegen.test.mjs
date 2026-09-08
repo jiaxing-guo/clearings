@@ -2,9 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { compileRust, RUST_COMPILATION_LIMITS, validateRustArtifact } from 'clearings/compiler';
-import { sealProgram } from 'clearings/program';
-import { runtimeIdentity } from './native/harness.mjs';
+import {
+  compileRust,
+  RUST_COMPILATION_LIMITS,
+  validateCompilationInput,
+  validateRustArtifact,
+} from 'clearings/compiler';
+import { sealProgram, PROGRAM_EXECUTION_MAX_LIMITS } from 'clearings/program';
+import { nativeBatch, runtimeIdentity } from './native/harness.mjs';
 
 const identity = JSON.parse(readFileSync('programs/examples/identity.json', 'utf8'));
 const closure = JSON.parse(
@@ -110,4 +115,69 @@ test('a valid large literal fails at the incremental compiler work bound', () =>
     () => compileRust(oversized, runtimeIdentity),
     (e) => e.code === 'INVALID_COMPILED_PROGRAM' && e.details.rule === 'input-limit',
   );
+});
+
+test('a valid source-heavy program reaches the emitter byte bound before its work bound', () => {
+  const integer = { kind: 'integer' },
+    name = 'x'.repeat(42);
+  // Deep blocks lengthen diagnostic paths; many references expand small IR nodes
+  // into Rust helpers. Preparation still fits its node, depth, and input-unit bounds.
+  let body = [
+    {
+      kind: 'let',
+      name: 'xs',
+      type: { kind: 'list', element: integer },
+      value: {
+        kind: 'list',
+        element_type: integer,
+        items: Array.from({ length: 16_500 }, () => ({ kind: 'ref', name })),
+      },
+    },
+  ];
+  for (let i = 0; i < 26; i++)
+    body = [
+      {
+        kind: 'while',
+        condition: { kind: 'literal', type: { kind: 'boolean' }, value: false },
+        body,
+      },
+    ];
+  const program = sealProgram({
+    schema_version: '0.1.0',
+    kind: 'program',
+    name: 'Source size boundary',
+    entry_function: 'main',
+    functions: [
+      {
+        id: 'main',
+        parameters: [{ name, type: integer }],
+        returns: integer,
+        failures: [],
+        body: [...body, { kind: 'return', value: { kind: 'literal', type: integer, value: 0 } }],
+      },
+    ],
+  });
+  validateCompilationInput(program);
+  assert.throws(
+    () => compileRust(program, runtimeIdentity),
+    (e) =>
+      e.code === 'INVALID_COMPILED_PROGRAM' &&
+      e.exitCode === 2 &&
+      e.details.path === '/module/source' &&
+      e.details.rule === 'source-limit' &&
+      // Distinguish the incremental emitter rejection from the later artifact validator.
+      e.message === 'Generated Rust exceeds its source byte limit.',
+  );
+});
+
+test('native test limits reject zero and above-ceiling values before invoking Rust', () => {
+  for (const [resource, maximum] of Object.entries(PROGRAM_EXECUTION_MAX_LIMITS)) {
+    for (const value of [0, maximum + 1]) {
+      assert.throws(
+        () => nativeBatch([identity], [{ args: ['text'], limits: { [resource]: value } }]),
+        { message: 'Invalid test limits.' },
+        `${resource}=${value}`,
+      );
+    }
+  }
 });

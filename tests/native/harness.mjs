@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { compileRust, rustRuntimeIdentity, RUST_TOOLCHAIN } from 'clearings/compiler';
-import { PROGRAM_EXECUTION_DEFAULT_LIMITS } from 'clearings/program';
+import { PROGRAM_EXECUTION_DEFAULT_LIMITS, PROGRAM_EXECUTION_MAX_LIMITS } from 'clearings/program';
 
 const runtimeRoot = new URL('../../runtime/rust/', import.meta.url);
 export const runtimeFiles = [
@@ -65,7 +65,9 @@ export function nativeBatch(programs, cases, { repeat = 1, rebuild = false } = {
     const resolved = { ...PROGRAM_EXECUTION_DEFAULT_LIMITS, ...limits };
     if (
       Object.keys(resolved).length !== 4 ||
-      Object.values(resolved).some((n) => !Number.isSafeInteger(n) || n < 0)
+      Object.entries(resolved).some(
+        ([key, n]) => !Number.isSafeInteger(n) || n < 1 || n > PROGRAM_EXECUTION_MAX_LIMITS[key],
+      )
     )
       throw new Error('Invalid test limits.');
     source += `fn case_${i}() -> (String, u128) {\nlet args = vec![${args.map(owned).join(',')}];\nlet limits = Limits { ${Object.entries(
