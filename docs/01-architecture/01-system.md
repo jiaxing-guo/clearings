@@ -1,6 +1,6 @@
 # System architecture
 
-Clearings is a TypeScript library and CLI for source-backed repository comprehension and specification-guided development. Its semantic artifacts are portable JSON. Compiler objects, provider SDK types, and executable source are excluded from the interchange language.
+Clearings is a TypeScript library and CLI for source-backed repository comprehension and specification-guided development. Its semantic artifacts are portable JSON. Compiler objects, provider SDK types, and host-language source are excluded from the interchange language. Program IR represents algorithms as typed data with defined execution semantics; its static validator is implemented and its reference interpreter is planned.
 
 ## Follow one specification through the system
 
@@ -41,6 +41,7 @@ The typed-specification path starts with an authored `SemanticSpecification`. Va
 | Semantic exchange | Source-bound authoring requests, proposal import, recorded replay | [semantic exchange](../../src/semantics/exchange.ts) |
 | Legacy contracts | Function/behavior contracts, inspection, context selection | [contract modules](../../src/contracts) |
 | Typed kernel | Specification validation, expression evaluation, observation checks | [specification modules](../../src/specification) |
+| Program IR | Implementation-language types, static validation, and defined execution semantics; no interpreter yet | [program modules](../../src/program) |
 | Executable conformance | Bounded recording, observation mapping, independent reference evaluation, scoped acceptance, and replay reports | [conformance modules](../../src/conformance) |
 | Presentation | Audience plans and deterministic projections | [renderers](../../src/renderers), [presentation plans](../../src/presentation) |
 | CLI | File input/output, option validation, command routing, exit status | [CLI entry](../../src/cli/main.ts) |
@@ -60,7 +61,7 @@ Scans do not execute target scripts, install target dependencies, or mutate the 
 
 ## Architectural constraints
 
-The v0.3 operation contract is the primary representation for new semantic work. Historical source models remain readable and independently bound. Graphs, human reports, and agent packages are views over records; they do not own an alternative definition of operation behavior.
+The v0.3 operation contract is the primary requirements representation. [Program IR](../02-semantics/05-program-ir.md) separately represents implementation algorithms; static validity does not establish contract agreement. Historical source models remain readable and independently bound. Graphs, human reports, and agent packages are views over records; they do not own an alternative definition of operation behavior.
 
 The system supports cycles in declared dependency graphs. It does not require a DAG, infer unconditional execution order from dependency edges, or model general concurrent execution.
 

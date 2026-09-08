@@ -51,14 +51,14 @@ The environment, observable state/effects, exceptional behavior, and termination
 
 `checkOperation(S, operation, observation)` evaluates one supplied observation. A passing result is evidence about that observation and those predicates. It does not establish universal refinement. An observation copied from candidate verdicts can test result aggregation while leaving the truth of those verdicts unchecked.
 
-## Proposed abstraction levels
+## Abstraction levels and implementation status
 
-| Proposed level | Responsibility | Existing basis |
+| Level | Responsibility | Existing basis |
 | --- | --- | --- |
 | Behavior specification | External capabilities, outcomes, invariants, failure policies | Legacy capability and behavior records |
 | Operation contract IR | Typed interfaces, guards, postconditions, state, effects | Current v0.3 model |
-| Implementation IR | Concrete representations, algorithms, calls, control flow, target bindings | Not defined |
+| Implementation IR | Concrete values, algorithms, calls, and control flow | [Program IR v0.1](../02-semantics/05-program-ir.md) syntax and static validation; interpreter and target lowering remain subsequent work |
 
 Contract-to-implementation conversion is synthesis and refinement: multiple algorithms may satisfy the same contract. Once implementation choices are explicit, a later source-emission step can be deterministic. A report, larger context package, or additional schema version alone does not create a new abstraction level.
 
-Introduce an implementation IR only with a concrete consumer, defined operations and invariants, a transformation contract, and independent validation of the transformation. Do not treat prose-linked historical models as automatically formalized lower or higher levels.
+Program IR is being introduced for a reference interpreter and the concrete workload of ordered required dependency closure. Its first change defines operations, invariants, and static checks; execution and independent algorithm evaluation follow in the [implementation plan](../05-development/04-program-ir-plan.md). A later lowering pass must define and independently validate its transformation contract. Do not treat prose-linked historical models as automatically formalized lower or higher levels.

@@ -38,10 +38,13 @@ The original reference order remains available for a systematic review. For a la
 | 17 | [Conformance implementation plan](05-development/03-conformance-plan.md) | How do the four implementation PRs establish the first executable evaluation boundary? |
 | 18 | [Record a context-assembly invocation](04-guides/03-record-context-assembly.md) | How do I capture actual execution evidence and inspect its observation mapping? |
 | 19 | [Evaluate and replay context conformance](04-guides/04-evaluate-context-conformance.md) | How do I reproduce scoped acceptance, inspect failures, and replay saved evidence? |
+| 20 | [Program IR semantics](02-semantics/05-program-ir.md) | How do typed implementations express computation, control flow, calls, and failure? |
+| 21 | [Program artifacts and validation](03-reference/06-program-artifacts.md) | How do I validate a program and interpret its static diagnostics? |
+| 22 | [Program IR implementation plan](05-development/04-program-ir-plan.md) | How will the language and interpreter execute one real Clearings algorithm? |
 
 ## Status and authority
 
-This reference describes the implemented v0.3.0 contract language and its relationship to the v0.1/v0.2 models. It does not introduce a schema revision or a new runtime abstraction. References to future implementation IRs and refinement checks are explicitly identified as proposals.
+This reference describes the implemented v0.3.0 contract language, its relationship to the v0.1/v0.2 models, and the new Program IR v0.1 syntax and static validator. Program execution semantics are defined for the planned reference interpreter; no program runner is implemented yet. Refinement proof procedures remain proposals.
 
 Sections on semantics and interfaces specify the current contract. Architecture explanations, examples, and roadmap proposals have different roles. If source, schema, tests, and reference disagree, record a defect and resolve the discrepancy explicitly. Passing schema validation does not override semantic requirements; a prose sentence does not become an executable predicate by appearing beside one.
 

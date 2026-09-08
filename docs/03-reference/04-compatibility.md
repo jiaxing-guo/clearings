@@ -33,3 +33,7 @@ The current [bootstrap demonstration](../../benchmarks/results/clearings-bootstr
 ## Validation compatibility
 
 Legacy `validate` accepts inventory and scan files larger than 64 MiB. Artifact detection does not impose the specification reader's size limit on legacy validation. Specification validation retains its 64 MiB file limit. These compatibility fixes do not change schema versions or rewrite historical artifacts.
+
+## Program IR v0.1
+
+Program IR introduces the independent `program` artifact family and `clearings/program` entrypoint. Its v0.1 version identifies its own serialization contract, not a rollback or migration of the v0.3 operation contract. Program expressions have executable value/control-flow semantics and do not reuse the contract expression interpreter's unknown-observation rules. Existing root exports, schemas, validators, and conformance artifacts retain their current interfaces. No automatic conversion from contracts to programs is defined. See [program artifacts](06-program-artifacts.md).

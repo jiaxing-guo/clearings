@@ -1,0 +1,632 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://clearings.dev/schemas/program.v0.1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "artifact_id",
+    "name",
+    "entry_function",
+    "functions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "kind": {
+      "const": "program"
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^program:[a-f0-9]{64}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entry_function": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "functions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ProgramFunction"
+      },
+      "minItems": 1,
+      "maxItems": 128
+    }
+  },
+  "definitions": {
+    "ProgramValue": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "boolean",
+            "string"
+          ]
+        },
+        {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProgramValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ProgramValue"
+          }
+        }
+      ]
+    },
+    "ProgramType": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "null",
+                "boolean",
+                "integer",
+                "string"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "element"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "list"
+              ]
+            },
+            "element": {
+              "$ref": "#/definitions/ProgramType"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "fields"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "record"
+              ]
+            },
+            "fields": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "additionalProperties": {
+                "$ref": "#/definitions/ProgramType"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ProgramExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "type",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "literal"
+              ]
+            },
+            "type": {
+              "$ref": "#/definitions/ProgramType"
+            },
+            "value": {
+              "$ref": "#/definitions/ProgramValue"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "ref"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "fields"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "record"
+              ]
+            },
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "value"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+                  },
+                  "value": {
+                    "$ref": "#/definitions/ProgramExpression"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "record",
+            "name"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "field"
+              ]
+            },
+            "record": {
+              "$ref": "#/definitions/ProgramExpression"
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "element_type",
+            "items"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "list"
+              ]
+            },
+            "element_type": {
+              "$ref": "#/definitions/ProgramType"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ProgramExpression"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "list",
+            "index"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "index"
+              ]
+            },
+            "list": {
+              "$ref": "#/definitions/ProgramExpression"
+            },
+            "index": {
+              "$ref": "#/definitions/ProgramExpression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "list"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "length",
+                "sort"
+              ]
+            },
+            "list": {
+              "$ref": "#/definitions/ProgramExpression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "list",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "append",
+                "contains"
+              ]
+            },
+            "list": {
+              "$ref": "#/definitions/ProgramExpression"
+            },
+            "value": {
+              "$ref": "#/definitions/ProgramExpression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "not"
+              ]
+            },
+            "value": {
+              "$ref": "#/definitions/ProgramExpression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "op",
+            "left",
+            "right"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "binary"
+              ]
+            },
+            "op": {
+              "enum": [
+                "add",
+                "sub",
+                "eq",
+                "ne",
+                "lt",
+                "lte",
+                "gt",
+                "gte",
+                "and",
+                "or"
+              ]
+            },
+            "left": {
+              "$ref": "#/definitions/ProgramExpression"
+            },
+            "right": {
+              "$ref": "#/definitions/ProgramExpression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "function_id",
+            "arguments"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "call"
+              ]
+            },
+            "function_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "arguments": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ProgramExpression"
+              },
+              "maxItems": 64
+            }
+          }
+        }
+      ]
+    },
+    "ProgramStatement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name",
+            "type",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "let",
+                "var"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "type": {
+              "$ref": "#/definitions/ProgramType"
+            },
+            "value": {
+              "$ref": "#/definitions/ProgramExpression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "name",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "assign"
+              ]
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "value": {
+              "$ref": "#/definitions/ProgramExpression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "condition",
+            "then",
+            "else"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "if"
+              ]
+            },
+            "condition": {
+              "$ref": "#/definitions/ProgramExpression"
+            },
+            "then": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ProgramStatement"
+              }
+            },
+            "else": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ProgramStatement"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "condition",
+            "body"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "while"
+              ]
+            },
+            "condition": {
+              "$ref": "#/definitions/ProgramExpression"
+            },
+            "body": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ProgramStatement"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "return"
+              ]
+            },
+            "value": {
+              "$ref": "#/definitions/ProgramExpression"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "code",
+            "details"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "fail"
+              ]
+            },
+            "code": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+            },
+            "details": {
+              "$ref": "#/definitions/ProgramExpression"
+            }
+          }
+        }
+      ]
+    },
+    "ProgramFunction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "parameters",
+        "returns",
+        "failures",
+        "body"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "type"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "type": {
+                "$ref": "#/definitions/ProgramType"
+              }
+            }
+          },
+          "maxItems": 64
+        },
+        "returns": {
+          "$ref": "#/definitions/ProgramType"
+        },
+        "failures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "details"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "details": {
+                "$ref": "#/definitions/ProgramType"
+              }
+            }
+          },
+          "maxItems": 64
+        },
+        "body": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProgramStatement"
+          },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}
