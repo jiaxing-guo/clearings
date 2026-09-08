@@ -35,12 +35,15 @@
     "schemas",
     "specifications/clearings/conformance/profile.json",
     "specifications/clearings/conformance/specification.json",
+    "specifications/clearings/conformance/suite.json",
     "README.md"
   ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.mjs",
+    "test:conformance": "npm run build && node --test tests/conformance.test.mjs tests/context-recording.test.mjs tests/context-evaluation.test.mjs tests/conformance-cli.test.mjs && node scripts/check-context-conformance.mjs",
+    "test:conformance:smoke": "npm run build && node scripts/check-context-conformance.mjs --smoke",
     "benchmark:fetch": "node dist/cli/main.js benchmark-fetch --target benchmarks/targets/hono.json --out benchmark-checkouts/hono.git",
     "demo:build": "npm run build && node scripts/build-shared-demo.mjs",
     "docs:dev": "node scripts/dev-docs.mjs",

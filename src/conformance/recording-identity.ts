@@ -24,7 +24,7 @@ export function componentFiles(root: string): { path: string; sha256: string }[]
   }
   for (const directory of ['src', 'dist', 'schemas']) walk(directory);
   if (['specifications', 'specifications/clearings', 'specifications/clearings/conformance'].every(checkDirectory)) {
-    for (const name of ['profile', 'specification']) {
+    for (const name of ['profile', 'specification', 'suite']) {
       const path = `specifications/clearings/conformance/${name}.json`;
       if (lstatSync(join(root, path), { throwIfNoEntry: false })) paths.push(path);
     }

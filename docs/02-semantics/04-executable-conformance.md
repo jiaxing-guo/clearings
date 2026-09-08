@@ -2,7 +2,7 @@
 
 Executable conformance relates a concrete invocation to an operation specification through an explicit observation mapping and independently defined checks. The scope is a stated set of inputs, completion classes, and observable properties.
 
-**Implementation status:** Clearings validates conformance artifacts, records actual context-assembly executions, and maps captured evidence to operation observations. The contracts, obligation ledger, and four initial protocol examples remain authored artifacts. Independent reference evaluation, acceptance reports, and the replay command are subsequent work. Artifact generation and validation do not execute an implementation; execution requires an explicit recorder call.
+**Implementation status:** Clearings validates conformance artifacts, records actual context-assembly executions, maps captured evidence to operation observations, and evaluates the scoped obligations against an independent reference. The CLI records suites, writes acceptance reports, and replays saved evidence. The contracts, obligation ledger, and four initial protocol examples remain authored artifacts. Artifact generation, validation, and replay do not execute an implementation; execution requires an explicit recorder call or conformance run command.
 
 ## One byte-accounting obligation
 
@@ -24,8 +24,8 @@ This is an illustrative case, not an execution result. The [conformance profile]
 | Conformance profile | Declare input scope, measurements, obligation coverage, and verification methods | Schema, TypeScript types, and cross-reference validation |
 | Recorder | Capture actual arguments, completion, and resulting state | Bounded worker for the synchronous `assembleContext` API |
 | Observation adapter | Map raw evidence to typed observations without replacing missing information | Context-assembly projections and explicit mapping failures |
-| Independent evaluator | Establish reference results and check obligations beyond the predicates | Named checks defined; implementation planned |
-| Report | Present scoped results, unknowns, coverage, and reproduction details | Planned |
+| Independent evaluator | Establish reference results and check obligations beyond the predicates | Independent ordering, record/state/evidence preservation, and capacity checks |
+| Report | Present scoped results, unknowns, coverage, and reproduction details | JSON evaluations and run manifests, Markdown reports, and read-only replay |
 
 The profile and record are evaluation metadata. They are not Program IR, a compiler lowering level, or an extension to the v0.3 expression language. The [historical bootstrap demonstration](../../benchmarks/results/clearings-bootstrap/README.md) remains a separate recorded experiment.
 
@@ -61,7 +61,7 @@ Before constructing an observation, the adapter must validate the required measu
 
 The artifact validator checks declared measurement types, explicit capture prerequisites, and completion consistency. Measurement origin does not determine every prerequisite: independently encoding a returned package still requires a captured return, while independently constructing a reference package requires only the original arguments. The separate context-assembly adapter recomputes its implemented measurements from captures and rejects conflicting observed values before mapping. It preserves unobserved measurements and never fills them from recomputation. Independent reference measurements and effect claims are not verified or consumed by this mapping.
 
-The adapter derives eight measurements. `reference-required-bytes`, `expected-projection`, and `effects` remain unobserved in newly recorded cases. Thus measured serialization size is available, while an independent construction of the required package and complete effect instrumentation remain separate obligations.
+The adapter derives eight measurements. `reference-required-bytes`, `expected-projection`, and `effects` remain unobserved in newly recorded cases. The separate evaluator computes the first two in its evaluation artifact when package construction is applicable. It preserves the original record and checks any existing reference claims against fresh computation. External effects remain unobserved.
 
 ## Scope and error precedence
 
@@ -74,7 +74,7 @@ Within that domain, exception guards encode this order:
 3. Reject an absent operation selection.
 4. Reject a complete package that does not fit the requested budget.
 
-The first three conditions are expressible in the contract. Determining whether a valid invocation should return or raise `CONTEXT_BUDGET` also requires an independently constructed complete package. The corresponding residual predicate stays opaque until that independent check is supplied.
+The first three conditions are expressible in the contract. Determining whether a valid invocation should return or raise `CONTEXT_BUDGET` also requires an independently constructed complete package. The independent evaluator now supplies this check while retaining the original opaque predicate in the broader contract result.
 
 Input preservation compares canonical argument content at invocation boundaries. It does not establish absence of transient writes that are later restored or of aliases retained after return. General effect freedom is explicitly unresolved; an empty recorded trace cannot establish it without an adequate monitor.
 
@@ -84,8 +84,14 @@ The profile has 13 obligations: seven predicate-verifiable declarations, five in
 
 Every declared requirement must have exactly one ledger entry. Every guarantee and postcondition in the mapped completion contracts must appear in the ledger. Guards define applicability and error precedence; their evaluation is required alongside the associated predicates. Predicate verification must cover every referenced rule and cannot include an opaque expression. A mandatory obligation cannot be classified as unresolved.
 
-Future scoped acceptance requires passing checks for every applicable mandatory obligation. It must retain unresolved requirements and distinguish an inapplicable obligation from an unknown one. Timeout, harness failure, mapping failure, or missing required evidence cannot count as conformance. The acceptance report is not implemented in this PR.
+Scoped acceptance requires a recorded-execution origin, a faithful complete observation mapping, agreement with independently computed completion behavior, and passing checks for every applicable mandatory obligation. Results distinguish `not-applicable` from `unknown`. Timeout, harness failure, mapping failure, missing required evidence, and authored examples cannot establish acceptance. Known contradictions produce `rejected`; otherwise missing prerequisites produce `inconclusive`.
 
-Even an otherwise correct supplied case currently has an overall typed verdict of `unknown`, because independent checks and external effects remain opaque. Passing schema validation or the repository tests does not change that verdict. A future report may establish scoped acceptance while still displaying the broader contract's unresolved obligations; it must not relabel the broad contract as proved.
+An otherwise correct supplied case retains an overall typed verdict of `unknown`, because independent-check predicates and external effects remain opaque in that contract. The evaluation ledger discharges only the opaque rules assigned to implemented independent procedures; unknown concrete predicates remain unknown. Scoped acceptance does not rewrite the broader contract result or authenticate the recorded execution.
+
+## Independent reference and controls
+
+The reference module has no runtime imports. It derives stable breadth-first order from shortest, lexicographically least paths using relation relaxation, selects state and source records from declared metadata, and solves the byte-counter equation by decimal width. It does not call production dependency selection, byte accounting, or context revalidation. Complete package comparison also covers selection, links, omissions metadata, provenance, and accounting metadata beyond the profile's ID predicates.
+
+The frozen suite covers all 1,536 three-node graph/root combinations plus 18 targeted cases. Production and a separately authored conforming implementation are evaluated on the same inputs. The predefined source-fault set exercises 25 application defects and one nontermination defect. Edited-record tests separately check the evaluator's treatment of conflicting measurements and missing evidence. See [the reproducible commands and interpretation](../04-guides/04-evaluate-context-conformance.md).
 
 See [artifact interfaces and the obligation ledger](../03-reference/05-conformance-artifacts.md), [abstraction and refinement](../01-architecture/03-abstraction-and-refinement.md), and [the implementation sequence](../05-development/03-conformance-plan.md).

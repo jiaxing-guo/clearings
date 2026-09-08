@@ -24,6 +24,8 @@ npm test
 
 Read `AGENTS.md` before changing code. The package uses TypeScript, ESM, Ajv schemas, and Node's test runner. Source and benchmark code stay separate.
 
+For context-assembly or conformance changes, also run `npm run test:conformance`. This checks the recorder/evaluator/CLI regressions, all 1,554 inputs against production and an independent positive control, and the predefined executable fault suite. `npm run test:conformance:smoke` provides a smaller development run. The [suite manifest](specifications/clearings/conformance/suite.json) fixes input and control hashes; do not regenerate it to conceal a regression. The [evaluation guide](docs/04-guides/04-evaluate-context-conformance.md) explains the acceptance boundary and saved-evidence replay.
+
 ## Make a focused change
 
 - Keep source observations, semantic interpretation, and presentation separate.
