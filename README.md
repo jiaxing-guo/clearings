@@ -40,7 +40,14 @@ npm run conformance
 
 The command builds the CLI and writes raw evidence, JSON evaluations, and `report.md` for 36 cases to a unique directory under `../clearings-conformance-runs`. It prints the output path. Scoped acceptance remains separate from the broader contract's unknown obligations. [Evaluate and replay conformance](docs/04-guides/04-evaluate-context-conformance.md) explains the full domain, independent controls, saved-evidence replay, and failure reports.
 
-Program IR v0.1 defines typed implementation bodies with static validation and a reference interpreter through `clearings/program`. It supports collections, bindings, branching, iteration, IR-defined calls, and typed application failures. `executeProgram` executes the declared entry function with finite resource limits and distinct return, application-failure, runtime-fault, and exhaustion results. Clearings now expresses [ordered required dependency closure](docs/02-semantics/06-required-dependency-closure.md) in IR and checks it against independent graph-domain expectations. `npm run test:program` checks validation, execution semantics, and the closure algorithm. See [Program IR semantics](docs/02-semantics/05-program-ir.md), [artifact interfaces](docs/03-reference/06-program-artifacts.md), and [program execution](docs/03-reference/07-program-execution.md). The integrated program CLI remains planned.
+Program IR v0.1 defines typed implementation bodies with static validation and a reference interpreter through `clearings/program`. It supports collections, bindings, branching, iteration, IR-defined calls, and typed application failures. `executeProgram` executes the declared entry function with finite resource limits and distinct return, application-failure, runtime-fault, and exhaustion results. Clearings now expresses [ordered required dependency closure](docs/02-semantics/06-required-dependency-closure.md) in IR and checks it against independent graph-domain expectations. `npm run test:program` checks validation, execution semantics, the closure algorithm, CLI behavior, and packaged examples. See [Program IR semantics](docs/02-semantics/05-program-ir.md), [artifact interfaces](docs/03-reference/06-program-artifacts.md), and [program execution](docs/03-reference/07-program-execution.md). Run and inspect the algorithm with concise commands:
+
+```bash
+npm run program -- demo
+npm run program -- inspect closure
+```
+
+The first command returns `["root", "a", "z", "y", "b"]` from an authored graph example. The second displays every function as typed pseudocode. [Run and inspect a program](docs/04-guides/05-run-programs.md) explains custom arguments, failures, resource limits, saved reports, and the installed `clearings program` commands.
 
 ## Explore the three demos
 

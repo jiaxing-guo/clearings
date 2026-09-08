@@ -41,6 +41,8 @@
     "specifications/clearings/conformance/profile.json",
     "specifications/clearings/conformance/specification.json",
     "specifications/clearings/conformance/suite.json",
+    "programs/examples/*.json",
+    "programs/clearings/*.json",
     "README.md"
   ],
   "scripts": {
@@ -57,7 +59,8 @@
     "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs",
     "bootstrap:demo": "npm run build && node scripts/build-bootstrap-demo.mjs",
     "docs:check:markdown": "npm run build && node scripts/check-markdown-docs.mjs",
-    "test:program": "npm run build && node --test tests/program*.test.mjs"
+    "test:program": "npm run build && node --test tests/program*.test.mjs",
+    "program": "npm run build --silent && node dist/cli/main.js program"
   },
   "dependencies": {
     "ajv": "8.20.0",

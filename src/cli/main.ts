@@ -5,10 +5,12 @@ import { ClearingsError, SCHEMA_VERSION, TOOL_VERSION } from '../model/types.js'
 import { inventory } from '../repository/inventory.js';
 import { fetchTarget, readTarget } from '../repository/target.js';
 import { writeInventory } from '../repository/output.js';
+import { terminalText } from './output.js';
 import { validateInventory } from '../model/validate.js';
 
 const help = `Clearings ${TOOL_VERSION} — repository structure and semantic proposal exchange
 
+clearings program <list|validate|inspect|run|demo> [arguments] [--format markdown|json]
 clearings inspect <specification.json> [--operation alias] [--format json|markdown|html]
 clearings context <specification.json> --operation alias --max-bytes n [--format json|markdown]
 clearings check <specification.json> --operation alias --observation case.json
@@ -42,6 +44,7 @@ It defaults to run, the smoke suite, and a unique directory under ../clearings-c
 From a source checkout, npm run conformance builds and runs these defaults.
 Its exit codes are 0 scoped acceptance, 1 rejection, 2 invalid input, and 3 inconclusive.
 Replay re-evaluates saved conformance evidence without executing the candidate.
+Program commands default to Markdown; use program --help for formats, limits, and exit statuses.
 For legacy context use --format readable-json to resolve prose assertions in place.
 Legacy inspect/context use 0.2.0 models. Only --scan with --repository revalidates their source.
 Their --out option requires --repository for output protection; this alone does not recheck source.
@@ -59,10 +62,14 @@ let command = process.argv[2] ?? 'help';
 try {
   const { values, positionals } = parseArgs({
     args: process.argv.slice(2), allowPositionals: true, strict: true,
-    options: { help: { type: 'boolean' }, version: { type: 'boolean' }, ref: { type: 'string' }, target: { type: 'string' }, scope: { type: 'string' }, include: { type: 'string', multiple: true }, exclude: { type: 'string', multiple: true }, out: { type: 'string' }, project: { type: 'string' }, mode: { type: 'string' }, strict: { type: 'boolean' }, repository: { type: 'string' }, instruction: { type: 'string' }, evidence: { type: 'string', multiple: true }, 'max-bytes': { type: 'string' }, id: { type: 'string' }, request: { type: 'string' }, scan: { type: 'string' }, capability: { type: 'string' }, format: { type: 'string' }, audience: { type: 'string' }, companion: { type: 'string' }, presentation: { type: 'string' }, 'schema-version': { type: 'string' }, behavior: { type: 'string' }, operation: { type: 'string' }, observation: { type: 'string' }, 'no-neighbors': { type: 'boolean' }, suite: { type: 'string' }, 'implementation-root': { type: 'string' }, 'timeout-ms': { type: 'string' } },
+    options: { help: { type: 'boolean' }, version: { type: 'boolean' }, ref: { type: 'string' }, target: { type: 'string' }, scope: { type: 'string' }, include: { type: 'string', multiple: true }, exclude: { type: 'string', multiple: true }, out: { type: 'string' }, project: { type: 'string' }, mode: { type: 'string' }, strict: { type: 'boolean' }, repository: { type: 'string' }, instruction: { type: 'string' }, evidence: { type: 'string', multiple: true }, 'max-bytes': { type: 'string' }, id: { type: 'string' }, request: { type: 'string' }, scan: { type: 'string' }, capability: { type: 'string' }, format: { type: 'string' }, audience: { type: 'string' }, companion: { type: 'string' }, presentation: { type: 'string' }, 'schema-version': { type: 'string' }, behavior: { type: 'string' }, operation: { type: 'string' }, observation: { type: 'string' }, 'no-neighbors': { type: 'boolean' }, suite: { type: 'string' }, 'implementation-root': { type: 'string' }, 'timeout-ms': { type: 'string' }, work: { type: 'string' }, 'allocation-units': { type: 'string' }, 'value-units': { type: 'string' }, 'evaluation-depth': { type: 'string' } },
   });
   command = positionals[0] ?? 'help';
   if (values.version) process.stdout.write(`${TOOL_VERSION}\n`);
+  else if (command === 'program') {
+    const { programCommand } = await import('./program.js');
+    programCommand(positionals, values);
+  }
   else if (values.help || command === 'help') process.stdout.write(help);
   else if (command === 'conformance') {
     const { conformanceCommand } = await import('./conformance.js');
@@ -163,7 +170,10 @@ try {
   const argumentError = error instanceof TypeError && 'code' in error && String(error.code).startsWith('ERR_PARSE_ARGS');
   const code = known ? error.code : argumentError ? 'INVALID_ARGUMENTS' : 'OPERATION_FAILED';
   const message = known ? error.message : argumentError ? 'Invalid arguments; use --help.' : 'Operation failed. Check input paths and filesystem permissions.';
-  process.stderr.write(`${code}: ${message}\n`);
-  process.stdout.write(`${JSON.stringify({ schema_version: SCHEMA_VERSION, command, status: 'failed', snapshot_id: null, data: null, diagnostics: [{ code, message }], coverage: null }, null, 2)}\n`);
+  const diagnostic = { code, message, ...(command === 'program' && known && error.details ? { details: error.details } : {}) };
+  const stderr = `${code}: ${message}\n`;
+  process.stderr.write(command === 'program' && process.stderr.isTTY ? terminalText(stderr) : stderr);
+  const stdout = `${JSON.stringify({ schema_version: SCHEMA_VERSION, command, status: 'failed', snapshot_id: null, data: null, diagnostics: [diagnostic], coverage: null }, null, 2)}\n`;
+  process.stdout.write(command === 'program' && process.stdout.isTTY ? terminalText(stdout) : stdout);
   process.exitCode = known ? error.exitCode : argumentError ? 2 : 1;
 }
