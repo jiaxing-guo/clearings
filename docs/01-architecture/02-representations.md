@@ -11,6 +11,7 @@ An intermediate representation records information for a defined consumer or tra
 | Which outcomes and constraints does a typed operation declare? | Operation specification and predicate expressions |
 | Which records should an agent receive for this task? | Derived operation context |
 | Does a supplied case satisfy the modeled rules? | Observation and check result |
+| Which algorithm does an implementation express? | Program IR; static validation implemented, execution planned |
 
 The operation specification is the primary contract representation for new semantic work. The inventory below records each family's producer, consumer, and meaning. Schema versions identify serialization contracts; they do not rank abstraction levels.
 
@@ -24,10 +25,11 @@ The operation specification is the primary contract representation for new seman
 | Function and behavior contracts | `ContractModel`; [semantic.v0.2](../../schemas/semantic.v0.2.json) | Callable bindings, assertion references, state access, dependencies, failure boundaries, behavior outcomes | External author plus contract importer; consumed by reports and context export |
 | Typed operation specification | `SemanticSpecification`; [specification.v0.3](../../schemas/specification.v0.3.json) | Typed guards, postconditions, state updates, frames, effects, dependencies, decisions | Specification author; consumed by validation, checking, context assembly, and rendering |
 | Predicate expressions | `Expression`, inside v0.3 | A typed expression AST with bounded evaluation and explicit unknown results | Specification author; consumed by the expression interpreter |
+| Program IR | `Program`; [program.v0.1](../../schemas/program.v0.1.json) | Typed values, local bindings, structured control flow, IR-defined calls, and application failures | Program author; consumed by static validation; reference interpreter planned |
 
 The [structural types](../../src/model/structural.ts), [semantic types](../../src/model/semantic.ts), [contract types](../../src/model/contracts.ts), and [specification types](../../src/specification/model.ts) define the corresponding TypeScript interfaces.
 
-The structural model is a partial source analysis. It is not a complete AST, CFG, SSA form, or executable implementation IR. The v0.3 specification is a declarative contract IR. Its expression AST evaluates predicates and values; it does not provide general program bodies.
+The structural model is a partial source analysis. It is not a complete AST, CFG, SSA form, or executable implementation IR. The v0.3 specification is a declarative contract IR. Its expression AST evaluates predicates and values; it does not provide general program bodies. The separate [Program IR](../02-semantics/05-program-ir.md) supplies implementation bodies with defined execution semantics. The current consumer checks well-formedness; no program is executed by this change.
 
 ## Orthogonal dimensions
 
@@ -59,6 +61,7 @@ An observed specification can be abstract. An intended specification can be deta
 | Specification → operation context | Deterministic selection and projection |
 | Model/context → report | Presentation, without new formal meaning |
 | Specification + observation → check | Predicate evaluation |
+| Program artifact → static validation | Syntax, identity, scope, types, completion paths, and call/failure declarations |
 | Contract + external agent → source implementation | Specification-guided synthesis, demonstrated only by bounded experiments |
 
 There is no automatic v0.2-to-v0.3 formalization and no implicit observed-to-intended conversion. See [compatibility](../03-reference/04-compatibility.md).

@@ -1,0 +1,211 @@
+{
+  "artifact_id": "program:df59677de92867a92380698a725bac2ae0aecd32a4cc9da9d4b4d8dd4c2dc06a",
+  "entry_function": "sum",
+  "functions": [
+    {
+      "body": [
+        {
+          "kind": "var",
+          "name": "cursor",
+          "type": {
+            "kind": "integer"
+          },
+          "value": {
+            "kind": "literal",
+            "type": {
+              "kind": "integer"
+            },
+            "value": 0
+          }
+        },
+        {
+          "kind": "var",
+          "name": "total",
+          "type": {
+            "kind": "integer"
+          },
+          "value": {
+            "kind": "literal",
+            "type": {
+              "kind": "integer"
+            },
+            "value": 0
+          }
+        },
+        {
+          "body": [
+            {
+              "kind": "let",
+              "name": "item",
+              "type": {
+                "kind": "integer"
+              },
+              "value": {
+                "index": {
+                  "kind": "ref",
+                  "name": "cursor"
+                },
+                "kind": "index",
+                "list": {
+                  "kind": "ref",
+                  "name": "values"
+                }
+              }
+            },
+            {
+              "kind": "assign",
+              "name": "total",
+              "value": {
+                "kind": "binary",
+                "left": {
+                  "kind": "ref",
+                  "name": "total"
+                },
+                "op": "add",
+                "right": {
+                  "arguments": [
+                    {
+                      "kind": "ref",
+                      "name": "item"
+                    }
+                  ],
+                  "function_id": "nonnegative",
+                  "kind": "call"
+                }
+              }
+            },
+            {
+              "kind": "assign",
+              "name": "cursor",
+              "value": {
+                "kind": "binary",
+                "left": {
+                  "kind": "ref",
+                  "name": "cursor"
+                },
+                "op": "add",
+                "right": {
+                  "kind": "literal",
+                  "type": {
+                    "kind": "integer"
+                  },
+                  "value": 1
+                }
+              }
+            }
+          ],
+          "condition": {
+            "kind": "binary",
+            "left": {
+              "kind": "ref",
+              "name": "cursor"
+            },
+            "op": "lt",
+            "right": {
+              "kind": "length",
+              "list": {
+                "kind": "ref",
+                "name": "values"
+              }
+            }
+          },
+          "kind": "while"
+        },
+        {
+          "kind": "return",
+          "value": {
+            "kind": "ref",
+            "name": "total"
+          }
+        }
+      ],
+      "failures": [
+        {
+          "code": "NEGATIVE_VALUE",
+          "details": {
+            "kind": "integer"
+          }
+        }
+      ],
+      "id": "sum",
+      "parameters": [
+        {
+          "name": "values",
+          "type": {
+            "element": {
+              "kind": "integer"
+            },
+            "kind": "list"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "integer"
+      }
+    },
+    {
+      "body": [
+        {
+          "condition": {
+            "kind": "binary",
+            "left": {
+              "kind": "ref",
+              "name": "value"
+            },
+            "op": "lt",
+            "right": {
+              "kind": "literal",
+              "type": {
+                "kind": "integer"
+              },
+              "value": 0
+            }
+          },
+          "else": [
+            {
+              "kind": "return",
+              "value": {
+                "kind": "ref",
+                "name": "value"
+              }
+            }
+          ],
+          "kind": "if",
+          "then": [
+            {
+              "code": "NEGATIVE_VALUE",
+              "details": {
+                "kind": "ref",
+                "name": "value"
+              },
+              "kind": "fail"
+            }
+          ]
+        }
+      ],
+      "failures": [
+        {
+          "code": "NEGATIVE_VALUE",
+          "details": {
+            "kind": "integer"
+          }
+        }
+      ],
+      "id": "nonnegative",
+      "parameters": [
+        {
+          "name": "value",
+          "type": {
+            "kind": "integer"
+          }
+        }
+      ],
+      "returns": {
+        "kind": "integer"
+      }
+    }
+  ],
+  "kind": "program",
+  "name": "Sum nonnegative integers with an IR-defined checked call",
+  "schema_version": "0.1.0"
+}

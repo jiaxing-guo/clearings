@@ -28,7 +28,12 @@
     "./schemas/contract-presentation": "./schemas/presentation.v0.2.json",
     "./schemas/specification": "./schemas/specification.v0.3.json",
     "./schemas/conformance-profile": "./schemas/conformance-profile.v0.1.json",
-    "./schemas/execution-record": "./schemas/execution-record.v0.1.json"
+    "./schemas/execution-record": "./schemas/execution-record.v0.1.json",
+    "./program": {
+      "types": "./dist/program/index.d.ts",
+      "import": "./dist/program/index.js"
+    },
+    "./schemas/program": "./schemas/program.v0.1.json"
   },
   "files": [
     "dist",
@@ -51,7 +56,8 @@
     "docs:build": "npm run build && node scripts/prepare-docs.mjs && npm --prefix website run build",
     "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs",
     "bootstrap:demo": "npm run build && node scripts/build-bootstrap-demo.mjs",
-    "docs:check:markdown": "npm run build && node scripts/check-markdown-docs.mjs"
+    "docs:check:markdown": "npm run build && node scripts/check-markdown-docs.mjs",
+    "test:program": "npm run build && node --test tests/program.test.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

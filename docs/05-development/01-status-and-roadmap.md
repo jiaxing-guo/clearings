@@ -1,6 +1,6 @@
 # Status and development roadmap
 
-This status describes the v0.3 implementation, documentation integration, conformance artifacts, and the complete bounded context-assembly evaluation path. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
+This status describes the v0.3 implementation, documentation integration, conformance artifacts, the complete bounded context-assembly evaluation path, and the definition stage of Program IR. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
 
 ## Read the evidence at the correct scope
 
@@ -15,6 +15,7 @@ These results support specification-guided development. They do not establish a 
 | Source analysis | Immutable inventory, bounded TypeScript structure, exact evidence | Dynamic calls and unmodeled source remain unresolved |
 | Semantic exchange | Externally authored v0.1/v0.2 proposals, validation, replay | No built-in model endpoint or automatic claim acceptance |
 | Typed contracts | v0.3 types, predicates, state/effects, outcomes, decisions | Partial and opaque obligations remain explicit |
+| Program IR | v0.1 syntax, types, defined execution semantics, static validator, and authored examples | Reference interpreter, actual program execution, and contract-to-program synthesis remain unimplemented |
 | Context | Deterministic required closure, byte accounting, revalidation | No token-efficiency result or unrestricted retrieval planner |
 | Observation checks | Single-operation predicates and adjacent selected-state continuity | No source execution, transition legality, concurrency model, or universal proof |
 | Executable conformance | Artifact validation, bounded recording, observation mapping, independent reference evaluation, scoped acceptance, CLI execution/replay, JSON/Markdown reports, and exhaustive three-node regression gates | External effects, complete dependency authentication, universal refinement, and agent coding advantage remain unestablished; initial examples remain authored |
@@ -37,9 +38,13 @@ The appropriate current description is **specification-guided self-development w
 
 ## Current documentation scope
 
-Standardize the implemented semantics, identify abstraction boundaries, organize current reference material, preserve historical evidence, and verify executable examples and links. The documentation and site integration introduce no implementation IR, schema migration, compiler backend, or runtime semantics change.
+Standardize the implemented semantics, identify abstraction boundaries, organize current reference material, preserve historical evidence, and verify executable examples and links. The original documentation and site integration introduced no implementation IR or runtime change. The current reference additionally records Program IR syntax and static validation, distinguishing defined execution semantics from the planned interpreter.
 
 The Fumadocs build now renders the numbered reference from ordinary Markdown. Generated pages preserve its reading order and link to the source revision. The documentation build checks source digests, links, and static search alongside the existing recorded demonstrations.
+
+## Current implementation-language work
+
+The [four-PR Program IR plan](04-program-ir-plan.md) introduces a small typed implementation language and reference interpreter for ordered required dependency closure. Its first change defines the language, schema, static validator, and authored examples. Calls, iteration, and typed application failures are represented explicitly. Interpreter execution, the dependency-closure program, and the integrated CLI/evaluation workflow remain planned.
 
 ## Subsequent development candidates
 
@@ -49,7 +54,7 @@ The [four-PR implementation plan](03-conformance-plan.md) is implemented, with t
 | --- | --- | --- |
 | 1 | Repeat a bounded self-development task | Frozen specification and the independent evaluator; improved Clearings version used as an input |
 | 2 | Run a matched prose-only comparison | Same task, equivalent available requirements/source, frozen scoring, recorded access |
-| 3 | Evaluate a proposed implementation IR | Distinct consumer, operation semantics, refinement obligations, and checked transformation |
+| 3 | Evaluate a deterministic source backend | Defined lowering semantics and comparison with the Program IR reference interpreter |
 | 4 | Extend conformance to another operation | Explicit input domain, faithful observations, independent checks, and executable controls |
 
 The earlier review fixes preserve missing state observations, reject incompatible nested literal types and inconsistent exclusive outcomes, restrict context evidence selection to declared metadata, and restore [legacy validation compatibility](../03-reference/04-compatibility.md). A focused conformance CI workflow is now defined. Broader repositories/languages, provider transport, general inference, solvers, concurrency verification, package publication, and public hosting remain separate scope decisions. Historical task instructions do not override the current user request.
