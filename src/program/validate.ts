@@ -26,9 +26,9 @@ const checkSchema = new Ajv({
   allowUnionTypes: true,
   ownProperties: true,
 }).compile(schema);
-const invalid = (path: string, rule: string, message: string): never => {
+function invalid(path: string, rule: string, message: string): never {
   throw new ClearingsError('INVALID_PROGRAM', `${path || '/'}: ${message}`, 2, { path, rule });
-};
+}
 const pointer = (key: string): string => key.replace(/~/g, '~0').replace(/\//g, '~1');
 function portable(value: unknown): void {
   try {
@@ -199,7 +199,7 @@ export function validateProgram(value: unknown): asserts value is Program {
       const list = (child: ProgramExpression): Extract<ProgramType, { kind: 'list' }> => {
         const result = sub(child, 'list');
         if (result.kind !== 'list') invalid(`${path}/list`, 'type', 'Expected a list.');
-        return result as Extract<ProgramType, { kind: 'list' }>;
+        return result;
       };
       switch (expr.kind) {
         case 'literal':
@@ -208,8 +208,7 @@ export function validateProgram(value: unknown): asserts value is Program {
           return expr.type;
         case 'ref': {
           const binding = environment.get(expr.name);
-          if (!binding)
-            return invalid(`${path}/name`, 'scope', `Binding is not in scope: ${expr.name}.`);
+          if (!binding) invalid(`${path}/name`, 'scope', `Binding is not in scope: ${expr.name}.`);
           return binding.type;
         }
         case 'record': {
@@ -228,7 +227,7 @@ export function validateProgram(value: unknown): asserts value is Program {
         case 'field': {
           const record = sub(expr.record, 'record');
           if (record.kind !== 'record' || !Object.hasOwn(record.fields, expr.name))
-            return invalid(`${path}/name`, 'field', `No declared record field: ${expr.name}.`);
+            invalid(`${path}/name`, 'field', `No declared record field: ${expr.name}.`);
           return record.fields[expr.name]!;
         }
         case 'list':
@@ -281,7 +280,7 @@ export function validateProgram(value: unknown): asserts value is Program {
         case 'call': {
           const callee = functions.get(expr.function_id);
           if (!callee)
-            return invalid(
+            invalid(
               `${path}/function_id`,
               'reference',
               `Function is not defined by this program: ${expr.function_id}.`,
@@ -308,7 +307,7 @@ export function validateProgram(value: unknown): asserts value is Program {
                 'failure-propagation',
                 `Caller must declare propagated failure: ${code}.`,
               );
-            requireType(details, declared!, path);
+            requireType(details, declared, path);
           }
           return callee.fn.returns;
         }
@@ -346,9 +345,9 @@ export function validateProgram(value: unknown): asserts value is Program {
             const binding = environment.get(statement.name);
             if (!binding)
               invalid(`${at}/name`, 'scope', `Binding is not in scope: ${statement.name}.`);
-            if (!binding!.mutable)
+            if (!binding.mutable)
               invalid(`${at}/name`, 'immutable', 'Only var bindings can be assigned.');
-            requireType(expr(statement.value, 'value'), binding!.type, `${at}/value`);
+            requireType(expr(statement.value, 'value'), binding.type, `${at}/value`);
             break;
           }
           case 'if': {
@@ -370,7 +369,7 @@ export function validateProgram(value: unknown): asserts value is Program {
             const details = failures.get(statement.code);
             if (!details)
               invalid(`${at}/code`, 'failure', `Function must declare failure: ${statement.code}.`);
-            requireType(expr(statement.details, 'details'), details!, `${at}/details`);
+            requireType(expr(statement.details, 'details'), details, `${at}/details`);
             fallsThrough = false;
             break;
           }

@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { compileRust, rustRuntimeIdentity, RUST_TOOLCHAIN } from 'clearings/compiler';
-import { PROGRAM_EXECUTION_DEFAULT_LIMITS, PROGRAM_EXECUTION_MAX_LIMITS } from 'clearings/program';
+import { nativeTestSource } from './source.mjs';
 
 const runtimeRoot = new URL('../../runtime/rust/', import.meta.url);
 export const runtimeFiles = [
@@ -19,25 +19,10 @@ export const runtimeFiles = [
   'Cargo.lock',
   'rust-toolchain.toml',
   ...readdirSync(new URL('src/', runtimeRoot))
-    .filter((p) => p.endsWith('.rs'))
-    .map((p) => `src/${p}`),
+    .filter((path) => path.endsWith('.rs'))
+    .map((path) => `src/${path}`),
 ].map((path) => ({ path, source: readFileSync(new URL(path, runtimeRoot), 'utf8') }));
 export const runtimeIdentity = rustRuntimeIdentity(runtimeFiles);
-const units = (text) =>
-  `vec![${Array.from({ length: text.length }, (_, i) => text.charCodeAt(i)).join(',')}]`;
-function owned(value) {
-  if (value === null) return 'OwnedValue::Null';
-  if (typeof value === 'boolean') return `OwnedValue::Boolean(${value})`;
-  if (typeof value === 'number') {
-    if (!Number.isSafeInteger(value)) throw new Error('Test arguments require portable integers.');
-    return `OwnedValue::Integer(${value})`;
-  }
-  if (typeof value === 'string') return `OwnedValue::String(${units(value)})`;
-  if (Array.isArray(value)) return `OwnedValue::List(vec![${value.map(owned).join(',')}])`;
-  return `OwnedValue::Record(vec![${Object.entries(value)
-    .map(([key, v]) => `(${units(key)},${owned(v)})`)
-    .join(',')}])`;
-}
 
 /** Test-only: compile freshly emitted IR in an isolated directory, with authored fixed inputs.
  * The native process has no interpreter, production closure, AST, JSON parser, or Node dependency.
@@ -55,37 +40,12 @@ export function nativeBatch(programs, cases, { repeat = 1, rebuild = false } = {
   )
     throw new Error('Native test batch exceeds its bounds.');
   const artifacts = programs.map((program) => compileRust(program, runtimeIdentity));
-  if (artifacts.reduce((sum, a) => sum + Buffer.byteLength(a.module.source), 0) > 32 * 1024 * 1024)
+  if (
+    artifacts.reduce((bytes, artifact) => bytes + Buffer.byteLength(artifact.module.source), 0) >
+    32 * 1024 * 1024
+  )
     throw new Error('Native test modules exceed 32 MiB.');
-  let source = 'use clearings_runtime::*;\nmod support;\n';
-  artifacts.forEach((_, i) => (source += `mod program_${i};\n`));
-  cases.forEach(({ program = 0, args, limits = {} }, i) => {
-    if (!Number.isInteger(program) || !artifacts[program])
-      throw new Error('Invalid test program index.');
-    const resolved = { ...PROGRAM_EXECUTION_DEFAULT_LIMITS, ...limits };
-    if (
-      Object.keys(resolved).length !== 4 ||
-      Object.entries(resolved).some(
-        ([key, n]) => !Number.isSafeInteger(n) || n < 1 || n > PROGRAM_EXECUTION_MAX_LIMITS[key],
-      )
-    )
-      throw new Error('Invalid test limits.');
-    source += `fn case_${i}() -> (String, u128) {\nlet args = vec![${args.map(owned).join(',')}];\nlet limits = Limits { ${Object.entries(
-      resolved,
-    )
-      .map(([k, v]) => `${k}: ${v}`)
-      .join(
-        ',',
-      )} };\nlet start = std::time::Instant::now();\nlet result = program_${program}::execute(&args, limits);\nlet nanos = start.elapsed().as_nanos();\nlet output = match result {\nOk(result) => support::execution(result.limits, result.usage, &result.completion),\nErr(program_${program}::ExecutionError::Input(error)) => support::input_error(&error),\nErr(error) => panic!("Host failure: {error:?}"),\n};\n(output, nanos)\n}\n`;
-    if (Buffer.byteLength(source) > 8 * 1024 * 1024)
-      throw new Error('Native test harness exceeds 8 MiB.');
-  });
-  source += `fn main() {\nlet mut nanos = 0u128;\nfor iteration in 0..${repeat} {\n`;
-  cases.forEach(
-    (_, i) =>
-      (source += `let (output, elapsed) = case_${i}();\nnanos += elapsed;\nif iteration == 0 { println!("{output}"); }\n`),
-  );
-  source += '}\neprintln!("{nanos}");\n}\n';
+  const source = nativeTestSource(artifacts.length, cases, repeat);
   const directory = mkdtempSync(join(tmpdir(), 'clearings-native-'));
   const run = (command, args) =>
     execFileSync(command, args, {
