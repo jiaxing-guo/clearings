@@ -1,4 +1,8 @@
-import { verifyBootstrapSourceSnapshot } from './lib/bootstrap-source-snapshot.mjs';
+import {
+  verifyBootstrapSourceSnapshot,
+  verifyBootstrapWorkingSource,
+} from './lib/bootstrap-source-snapshot.mjs';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
@@ -51,10 +55,20 @@ for (const fault of json('counterexamples.json')) {
   assert.equal(result.verdict, 'fail');
   assert.deepEqual(result, fault.result);
 }
-verifyBootstrapSourceSnapshot(
-  new URL('../benchmarks/sources/clearings-bootstrap/', import.meta.url).pathname,
-  json('implementation-bindings.json').bindings,
-);
+const bindingDocument = json('implementation-bindings.json');
+const historical = bindingDocument.source_scope === undefined;
+if (historical) {
+  verifyBootstrapSourceSnapshot(
+    fileURLToPath(new URL('../benchmarks/sources/clearings-bootstrap/', import.meta.url)),
+    bindingDocument.bindings,
+  );
+} else {
+  assert.equal(bindingDocument.source_scope, 'working-tree');
+  verifyBootstrapWorkingSource(
+    fileURLToPath(new URL('../', import.meta.url)),
+    bindingDocument.bindings,
+  );
+}
 let fragments = 0;
 for (const name of readdirSync(root).filter((name) => name.endsWith('.html'))) {
   const page = read(name),
@@ -83,7 +97,9 @@ console.log(
     authored_hono_cases: verification.authored_hono_cases,
     rejected_output_faults: verification.rejected_output_faults,
     context_reproduction: 'identical',
-    historical_source_bindings: 'valid',
+    ...(historical
+      ? { historical_source_bindings: 'valid' }
+      : { working_source_bindings: 'valid' }),
     file_hashes: 'valid',
     fragment_links: fragments,
     browser_interaction: 'not-run',

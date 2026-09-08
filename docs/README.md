@@ -52,8 +52,7 @@ The original reference order remains available for a systematic review. For a la
 | 31    | [Compiler code style review](05-development/07-code-style-review.md)                        | Which structural refactors improve the compiler workflow, and which semantic constraints limit style changes? |
 | 32    | [Compiler conformance evaluation](03-reference/11-compiler-conformance.md)                  | Which semantic-preservation obligations are evaluated, over which domain, and with what independent controls? |
 | 33    | [Compile and run with Rust](04-guides/06-compile-and-run-rust.md)                           | How do I export, execute, inspect, and package compiled programs?                                             |
-
-| 34 | [Production adoption](05-development/08-production-adoption.md) | How does context assembly reuse compiled IR while preserving evidence and defining compatibility? |
+| 34    | [Production adoption](05-development/08-production-adoption.md)                             | How does context assembly reuse compiled IR while preserving evidence and defining compatibility?             |
 
 ## Status and authority
 
