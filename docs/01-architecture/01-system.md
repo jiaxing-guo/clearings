@@ -1,6 +1,33 @@
 # System architecture
 
-Clearings is a TypeScript library and CLI for source-backed repository comprehension and specification-guided development. Its semantic artifacts are portable JSON. Compiler objects, provider SDK types, and host-language source are excluded from the interchange language. Program IR represents algorithms as typed data; its static validator and reference interpreter implement defined typing and execution semantics.
+Clearings is developing a compiler and execution runtime for agentic coding. The intended workflow lets an agent construct or revise a typed implementation against explicit operation contracts, then uses deterministic tooling to validate, compile, execute, and independently evaluate that implementation. Bootstrapping progressively brings Clearings algorithms into this workflow.
+
+The current implementation is one TypeScript library and CLI. Its semantic artifacts are portable JSON; compiler API objects and provider SDK types remain outside the interchange model. Program IR represents algorithms as typed data, with a static validator and reference interpreter. A compiler backend is the [next proposed step](../05-development/06-javascript-backend-plan.md).
+
+## Compiler architecture and current boundaries
+
+| Responsibility          | Current implementation                                                              | Next boundary                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Requirements            | v0.3 operation contracts and bounded predicate evaluation                           | Link a candidate Program IR implementation to a contract through an explicit observation adapter and evaluation domain |
+| Implementation language | Program IR v0.1, static typing, structured control flow, closed calls, and failures | Compile validated programs to JavaScript while preserving defined behavior                                             |
+| Execution               | Reference interpreter with finite resource limits and diagnostic completions        | Generated code with a versioned runtime interface and compatible resource accounting                                   |
+| Evaluation              | Independent context-assembly conformance and independent IR closure expectations    | Differential backend testing plus independent language and algorithm expectations                                      |
+| Agent development       | External authoring and recorded specification-guided source changes                 | An evaluated agent change expressed in Program IR and used by Clearings                                                |
+
+The requirements-to-implementation relation is a synthesis and conformance problem: a contract can admit multiple algorithms. It is not an existing deterministic lowering pass. Program IR-to-JavaScript compilation is a separate transformation with a defined semantic-preservation obligation. Test agreement supplies bounded evidence for that obligation; it is not a proof for every valid program.
+
+The reference interpreter supplies the current execution semantics. A bytecode VM, optimization IR, and self-hosting compiler are not implemented. Add another implementation IR only when a concrete analysis, optimization, or target needs a distinct representation and a specified transformation.
+
+## Codebase priorities
+
+| Role                                 | Existing modules and artifacts                                                                                | Development priority                                                                      |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Language and execution core          | `src/specification/`, `src/program/`, `schemas/`, `specifications/`, `programs/`                              | Explicit requirements, program semantics, validation, and the next compiler backend       |
+| Evaluation infrastructure            | `src/conformance/`, independent tests, and frozen benchmark evidence                                          | Reproducible execution evidence and independently checked behavior                        |
+| Source and context adapters          | `src/repository/`, `src/adapters/`, `src/analysis/`, `src/semantics/`, `src/contracts/`, and context assembly | Connect repository evidence and selected requirements to the development workflow         |
+| Developer interfaces and projections | `src/cli/`, `src/renderers/`, `src/presentation/`, `docs/`, `website/`                                        | Make artifacts, executions, and diagnostics usable without defining alternative semantics |
+
+These are responsibility boundaries within the existing package, not a directory migration. Context assembly currently lives with specification processing; legacy report and source-analysis APIs remain supported. Production context assembly still calls the TypeScript dependency-closure kernel. The authored IR closure is an independently exercised workload, with a different input interface and bounded execution contract; production adoption requires an explicit compatibility migration.
 
 ## Follow one specification through the system
 

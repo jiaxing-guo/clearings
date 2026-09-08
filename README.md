@@ -1,14 +1,18 @@
 # Clearings
 
-**Internal representation for AI coding.**
+**A compiler and execution runtime for agentic coding, under development.**
 
-Clearings connects repository code to behavior. It keeps the conditions, state changes, failure paths, and source evidence behind an explanation in linked semantic records. People read those records through reports. Coding agents receive a bounded selection for a specific question.
+Clearings aims to let coding agents construct and revise typed programs against explicit behavioral contracts. The system should validate those programs, compile them deterministically, execute them under defined semantics, and evaluate their behavior against independently specified requirements. Bootstrapping starts by representing Clearings algorithms in its own Program IR and progressively using the resulting implementations in Clearings itself.
 
-- **Overview reports** explain purpose, main actions, outcomes, and limits.
-- **Engineer guides** explain mechanisms with exact code and canonical function contracts.
-- **Typed operation records** keep conditions, outcomes, state, effects, and open decisions together for inspection and context export.
+The current foundation has three parts:
 
-This is a private, unpublished review prototype. The included Hono example covers request dispatch and middleware composition. Independent claim-support review is pending.
+- **Operation contracts** express intended inputs, outcomes, state changes, effects, and unresolved obligations.
+- **Program IR and a reference interpreter** represent and execute typed algorithms. Ordered required dependency closure is implemented in IR and checked against an independent graph oracle.
+- **Executable conformance** captures actual context-assembly executions and evaluates them against a bounded domain, with controls and saved-evidence replay.
+
+The next proposed step is a [deterministic JavaScript backend](docs/05-development/06-javascript-backend-plan.md). Compilation and automatic contract-to-program synthesis are not yet implemented; production context assembly still uses the TypeScript kernel. Repository analysis, agent context, and human reports provide supporting evidence and projections. See the [architecture](docs/01-architecture/01-system.md) and [status and roadmap](docs/05-development/01-status-and-roadmap.md).
+
+This is a private, unpublished prototype. Historical Hono demonstrations cover request dispatch and middleware composition; independent claim-support review remains pending.
 
 ## Try it
 
@@ -17,6 +21,15 @@ Use Node.js 24, npm 11, and Git 2.51 or later. Run these commands from an author
 ```bash
 npm ci --ignore-scripts
 npm run build
+npm run program -- demo
+npm run program -- inspect closure
+```
+
+The demo executes ordered required dependency closure from Program IR and returns `["root", "a", "z", "y", "b"]`. Inspection displays every IR function as typed pseudocode. [Run and inspect a program](docs/04-guides/05-run-programs.md) covers custom arguments, application failures, resource limits, and the installed CLI.
+
+Inspect an existing operation contract:
+
+```bash
 node dist/cli/main.js inspect specifications/hono/response-selection.json --operation response-selection
 ```
 
@@ -40,14 +53,7 @@ npm run conformance
 
 The command builds the CLI and writes raw evidence, JSON evaluations, and `report.md` for 36 cases to a unique directory under `../clearings-conformance-runs`. It prints the output path. Scoped acceptance remains separate from the broader contract's unknown obligations. [Evaluate and replay conformance](docs/04-guides/04-evaluate-context-conformance.md) explains the full domain, independent controls, saved-evidence replay, and failure reports.
 
-Program IR v0.1 defines typed implementation bodies with static validation and a reference interpreter through `clearings/program`. It supports collections, bindings, branching, iteration, IR-defined calls, and typed application failures. `executeProgram` executes the declared entry function with finite resource limits and distinct return, application-failure, runtime-fault, and exhaustion results. Clearings now expresses [ordered required dependency closure](docs/02-semantics/06-required-dependency-closure.md) in IR and checks it against independent graph-domain expectations. `npm run test:program` checks validation, execution semantics, the closure algorithm, CLI behavior, and packaged examples. See [Program IR semantics](docs/02-semantics/05-program-ir.md), [artifact interfaces](docs/03-reference/06-program-artifacts.md), and [program execution](docs/03-reference/07-program-execution.md). Run and inspect the algorithm with concise commands:
-
-```bash
-npm run program -- demo
-npm run program -- inspect closure
-```
-
-The first command returns `["root", "a", "z", "y", "b"]` from an authored graph example. The second displays every function as typed pseudocode. [Run and inspect a program](docs/04-guides/05-run-programs.md) explains custom arguments, failures, resource limits, saved reports, and the installed `clearings program` commands.
+The `clearings/program` library subpath exposes Program IR validation and reference execution. `npm run test:program` checks validation, execution semantics, the closure algorithm, CLI behavior, and packaged examples. See [Program IR semantics](docs/02-semantics/05-program-ir.md), [artifact interfaces](docs/03-reference/06-program-artifacts.md), and [program execution](docs/03-reference/07-program-execution.md).
 
 ## Explore the three demos
 

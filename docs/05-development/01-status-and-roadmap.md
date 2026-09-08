@@ -2,6 +2,18 @@
 
 This status describes the v0.3 implementation, documentation integration, conformance artifacts, the complete bounded context-assembly evaluation path, and Program IR with its reference interpreter. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
 
+## Ultimate goal and milestone sequence
+
+The goal is a compiler and execution runtime for agentic coding: agents construct and revise explicit typed implementations against behavioral contracts, while deterministic tools validate, compile, execute, and independently evaluate those implementations. Bootstrapping progressively moves Clearings algorithms into that pipeline and uses the resulting implementations in Clearings itself.
+
+| Milestone                               | Purpose                                                                                                                                 | Status                                                               |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 1: Executable conformance               | Capture actual context-assembly executions and evaluate them against independent bounded requirements, with controls and replay         | Complete; [conformance plan](03-conformance-plan.md)                 |
+| 2: Program IR and reference interpreter | Define and execute a typed implementation language and represent one real Clearings algorithm in it                                     | Complete; [Program IR plan](04-program-ir-plan.md)                   |
+| 3: Deterministic JavaScript backend     | Compile Program IR to executable JavaScript and evaluate semantic preservation against reference execution and independent expectations | Proposed next; [four-PR backend plan](06-javascript-backend-plan.md) |
+
+Source analysis, context assembly, reports, and documentation support this pipeline. The next implementation priority is the compiler backend. Broader repository demonstrations and agent-efficiency experiments do not determine the compiler's immediate architecture.
+
 ## Read the evidence at the correct scope
 
 Current demonstrations include one fresh-agent feature integrated after frozen tests and source review, and ordered required dependency closure represented and executed in Program IR against independent bounded graph expectations. The system also checks supplied observations and assembles its own intended specification into agent context.
@@ -35,7 +47,7 @@ The sequence experiment's baseline regression run passed 78 existing tests plus 
 
 The coding agents received prose and source as well as generated context. There is no matched prose-only comparison, repeated-trial performance result, independently authenticated reviewer, or formal source-refinement proof. Frozen tests were authored separately from the coding agent, but shared-filesystem isolation was by protocol.
 
-The appropriate current description is **specification-guided self-development and execution of one algorithm represented in Program IR**. A self-hosting compiler would require a substantially more complete specification-to-implementation pipeline and evidence that the resulting system can reconstruct its own implementation. Neither is established.
+The appropriate current description is **specification-guided self-development and execution of one algorithm represented in Program IR**. A self-hosting compiler would require the compiler implementation to be expressed in a language it compiles and a reproducible bootstrap procedure that builds that compiler. Neither is established. Automatic synthesis from contracts is a separate capability and is also unimplemented.
 
 ## Current documentation scope
 
@@ -47,15 +59,23 @@ The Fumadocs build now renders the numbered reference from ordinary Markdown. Ge
 
 The [four-PR Program IR plan](04-program-ir-plan.md) introduces a small typed implementation language and reference interpreter for ordered required dependency closure. The language, schema, static validator, reference interpreter, independent language tests, and dependency-closure program are implemented. The program's graph traversal, lookup, sorting, and failures execute in IR and agree with independent bounded expectations. The [CLI workflow](../04-guides/05-run-programs.md) adds concise commands, complete function inspection, authored examples, explicit arguments, and readable or machine-readable execution results. The [focused CI workflow](../../.github/workflows/program.yml) runs language, algorithm, CLI, packaging, and runnable-documentation checks. This completes the defined implementation-language milestone: one real Clearings algorithm is represented, executed, independently evaluated, and exposed through a reproducible developer workflow.
 
-## Subsequent development candidates
+## Next implementation priority
 
 The [four-PR implementation plan](03-conformance-plan.md) is implemented, with the final two changes integrated together. The regression command evaluates production and an independent positive control over 1,554 cases each, then checks 26 predefined executable faults. CLI reports distinguish scoped acceptance from the broader contract verdict and replay saved evidence without candidate execution. This establishes a reproducible evaluation boundary for the declared cases. Historical bootstrap evidence retains its original scope.
 
-| Priority | Candidate                               | Evidence needed before broader claims                                                           |
-| -------- | --------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| 1        | Repeat a bounded self-development task  | Frozen specification and the independent evaluator; improved Clearings version used as an input |
-| 2        | Run a matched prose-only comparison     | Same task, equivalent available requirements/source, frozen scoring, recorded access            |
-| 3        | Evaluate a deterministic source backend | Defined lowering semantics and comparison with the Program IR reference interpreter             |
-| 4        | Extend conformance to another operation | Explicit input domain, faithful observations, independent checks, and executable controls       |
+The [JavaScript backend plan](06-javascript-backend-plan.md) has four dependent PRs: compiled-artifact and runtime contracts, deterministic code generation, independent and differential validation, and CLI/package integration. It targets all of Program IR v0.1 and executes the required dependency-closure algorithm from generated code. The reference interpreter remains the semantic baseline.
+
+The initial backend preserves the current abstract resource-accounting behavior. It therefore prioritizes reproducibility and semantic compatibility; speedup is not a completion criterion. No additional lowering IR, bytecode instruction set, or optimization pipeline is needed for the current structured language.
+
+## Work after the backend
+
+| Order                   | Work                                                               | Required evidence or prerequisite                                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1                       | Adopt a compiled algorithm in Clearings production code            | Preserve caller-visible API, ordering, failures, validation scope, and resource behavior; migrate historical source bindings to verified immutable snapshots         |
+| 2                       | Evaluate an agent-authored Program IR change in Clearings          | Frozen requirements and independent tests, recorded candidate IR, generated code, execution results, and use of the resulting Clearings version in a subsequent task |
+| 3                       | Extend language or conformance coverage for another real algorithm | Concrete missing constructs, an explicit domain, and independent behavioral expectations                                                                             |
+| Separate research track | Measure agent coding benefit against equivalent prose              | Matched inputs and access, repeated trials, frozen scoring, and recorded cost/correctness results                                                                    |
+
+This sequence advances from authored IR, to compiled IR, to production self-use, and then evaluated agent changes. Compiler self-hosting remains a longer-term objective. Additional targets, optimization IRs, and a bytecode VM require a concrete workload and transformation contract.
 
 The earlier review fixes preserve missing state observations, reject incompatible nested literal types and inconsistent exclusive outcomes, restrict context evidence selection to declared metadata, and restore [legacy validation compatibility](../03-reference/04-compatibility.md). Focused conformance and Program IR CI workflows are defined. Broader repositories/languages, provider transport, general inference, solvers, concurrency verification, package publication, and public hosting remain separate scope decisions. Historical task instructions do not override the current user request.
