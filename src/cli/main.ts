@@ -8,9 +8,9 @@ import { writeInventory } from '../repository/output.js';
 import { terminalText } from './output.js';
 import { validateInventory } from '../model/validate.js';
 
-const help = `Clearings ${TOOL_VERSION} — repository structure and semantic proposal exchange
+const help = `Clearings ${TOOL_VERSION} — typed programs, compilation, and semantic contracts
 
-clearings program <list|validate|inspect|run|demo> [arguments] [--format markdown|json]
+clearings program <list|validate|inspect|compile|run|demo> [arguments] [--format markdown|json]
 clearings inspect <specification.json> [--operation alias] [--format json|markdown|html]
 clearings context <specification.json> --operation alias --max-bytes n [--format json|markdown]
 clearings check <specification.json> --operation alias --observation case.json
@@ -85,6 +85,7 @@ try {
       scan: { type: 'string' },
       capability: { type: 'string' },
       format: { type: 'string' },
+      backend: { type: 'string' },
       audience: { type: 'string' },
       companion: { type: 'string' },
       presentation: { type: 'string' },

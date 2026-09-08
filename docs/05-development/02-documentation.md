@@ -60,6 +60,8 @@ npm run docs:check:markdown
 
 This command builds the library, checks local inline Markdown link targets and document fragments in `docs/`, README, CONTRIBUTING, and AGENTS, and executes trusted `js runnable` blocks in the current numbered reference. Archived documents and compatibility records are checked for links but never executed. The checker does not fetch external URLs, evaluate ordinary code fences, or compile proposal/source strings as documentation.
 
+Native examples use `js runnable-rust` and run with `npm run docs:check:rust` in the Rust workflow. That command additionally requires rustup, Rust 1.85.1, and a working host linker. Ordinary `docs:check:markdown` checks and executes the reference examples without Rust.
+
 The link checker supports the documentation's inline links, ATX heading fragments, and explicit HTML IDs. It does not claim to implement a full Markdown parser or verify external sources. Use that supported syntax for navigation in this directory. Executable examples test behavior through the exported library, without modifying analyzed target source.
 
 Build and check the rendered reference as well:

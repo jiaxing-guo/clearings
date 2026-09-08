@@ -4,6 +4,11 @@ import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+const options = process.argv.slice(2);
+if (options.length && (options.length !== 1 || options[0] !== '--rust'))
+  throw new Error('Usage: check-markdown-docs.mjs [--rust]');
+const includeRust = options[0] === '--rust';
+
 const root = fileURLToPath(new URL('../', import.meta.url));
 const walk = (directory) =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -43,7 +48,9 @@ function parse(path) {
       fence = opening[1];
       body = [];
       start = index + 2;
-      executable = opening[2].trim() === 'js runnable';
+      executable =
+        opening[2].trim() === 'js runnable' ||
+        (includeRust && opening[2].trim() === 'js runnable-rust');
       prose.push('');
     } else prose.push(line);
   }
@@ -123,6 +130,7 @@ if (errors.length) {
   process.stdout.write(
     JSON.stringify({
       markdown_files: files.length,
+      rust_examples_enabled: includeRust,
       local_links: links,
       executable_examples: examples,
       status: 'pass',

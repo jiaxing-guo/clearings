@@ -6,6 +6,7 @@ on:
       - 'runtime/rust/**'
       - 'src/compiler/**'
       - 'src/program/**'
+      - 'src/cli/**'
       - 'programs/**'
       - 'schemas/program.v0.1.json'
       - 'tests/helpers/program-closure-reference.mjs'
@@ -13,7 +14,11 @@ on:
       - 'tests/program-compiled-artifacts.test.mjs'
       - 'tests/program-rust-codegen.test.mjs'
       - 'tests/native/**'
+      - 'tests/compiled/**'
+      - 'tests/compiler-runner.test.mjs'
+      - 'docs/**'
       - 'scripts/measure-rust-closure.mjs'
+      - 'scripts/check-markdown-docs.mjs'
       - 'package*.json'
       - '.github/workflows/rust.yml'
   push:
@@ -41,3 +46,4 @@ jobs:
       - run: npm run check:rust
       - run: npm run test:rust
       - run: npm run test:compiler
+      - run: npm run docs:check:rust

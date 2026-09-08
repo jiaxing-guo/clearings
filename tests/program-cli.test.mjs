@@ -209,6 +209,11 @@ test('each CLI resource limit maps to the interpreter and exhaustion exits with 
 test('unsupported actions, incompatible options, and malformed limits fail before execution', () => {
   for (const args of [
     ['replay'],
+    ['demo', '--backend', 'javascript'],
+    ['inspect', 'closure', '--backend', 'rust'],
+    ['compile', 'closure'],
+    ['compile', 'closure', '--backend', 'interpreter', '--out', 'unused'],
+    ['compile', 'closure', '--out', 'unused', '--work', '1'],
     ['list', 'extra'],
     ['inspect'],
     ['validate', 'identity', 'extra'],

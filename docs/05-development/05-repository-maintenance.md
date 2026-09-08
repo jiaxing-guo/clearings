@@ -4,17 +4,17 @@ Clearings uses one TypeScript library and CLI, a Fumadocs presentation of the ca
 
 ## Directory responsibilities
 
-| Directory                     | Responsibility                                                                    |
-| ----------------------------- | --------------------------------------------------------------------------------- |
-| `src/`                        | Maintained library and CLI implementation                                         |
-| `programs/`                   | Authored executable Program IR and example arguments                              |
-| `runtime/rust/`               | Unpublished primitive Rust runtime, pinned toolchain, and independent tests       |
-| `schemas/`, `specifications/` | Versioned interchange schemas and contract artifacts                              |
-| `tests/`                      | Regression tests, independent expectations, and intentional source fixtures       |
-| `docs/`                       | Canonical technical Markdown; historical material under `archive/`                |
-| `website/`                    | Fumadocs application, authored legacy pages, and generated site assets            |
-| `scripts/`                    | Development commands, generators, benchmark tools, and evidence verification      |
-| `benchmarks/`                 | Pinned inputs, authored proposals, recorded results, and frozen agent experiments |
+| Directory                     | Responsibility                                                                      |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| `src/`                        | Maintained library and CLI implementation                                           |
+| `programs/`                   | Authored executable Program IR and example arguments                                |
+| `runtime/rust/`               | Primitive runtime, fixed native driver under `runner/`, pinned toolchain, and tests |
+| `schemas/`, `specifications/` | Versioned interchange schemas and contract artifacts                                |
+| `tests/`                      | Regression tests, independent expectations, and intentional source fixtures         |
+| `docs/`                       | Canonical technical Markdown; historical material under `archive/`                  |
+| `website/`                    | Fumadocs application, authored legacy pages, and generated site assets              |
+| `scripts/`                    | Development commands, generators, benchmark tools, and evidence verification        |
+| `benchmarks/`                 | Pinned inputs, authored proposals, recorded results, and frozen agent experiments   |
 
 Large benchmark archives and reports remain required evidence. File age or size alone does not make a record disposable. Review references, manifests, source bindings, and reproduction procedures before deleting or moving a file. Public exports, schema paths, and existing CLI commands are compatibility boundaries.
 
@@ -53,7 +53,7 @@ Stop a running documentation development server before cleaning:
 npm run clean
 ```
 
-The command removes `dist/`, `coverage/`, Next.js build/export and generated type files, generated Fumadocs source metadata, copied demo assets, and generated technical documentation pages/indexes. It resolves paths relative to the repository, so it also works from another working directory. It retains source, npm dependencies, specifications, authored programs, benchmark checkouts, and recorded runs. Missing generated paths are harmless.
+The command removes `dist/`, `coverage/`, `compiled/` source exports, Next.js build/export and generated type files, generated Fumadocs source metadata, copied demo assets, and generated technical documentation pages/indexes. It resolves paths relative to the repository, so it also works from another working directory. It retains source, npm dependencies, specifications, authored programs, benchmark checkouts, and recorded runs. Missing generated paths are harmless.
 
 Rebuild with `npm run build` or `npm run docs:build`; use `npm run docs:dev` for local documentation development. Clean builds prevent removed or renamed source files from leaving stale JavaScript in `dist/`. The [script index](../../scripts/README.md) lists the supported maintenance and benchmark commands.
 
@@ -69,3 +69,7 @@ Rebuild with `npm run build` or `npm run docs:build`; use `npm run docs:dev` for
 | `website/components/provider.tsx` | [documentation-provider.tsx](../../website/components/documentation-provider.tsx) |
 
 Archived commands retain the filenames used by their recorded revision; use the current paths above for new runs. The original `scripts/create-private-repo.sh` served only initial repository creation and has been removed. Its source remains in Git history. The active repository URL is `https://github.com/jiaxing-guo/clearings`. Frozen records and their reproduction script retain the repository URL captured at their original revision.
+
+## Compiled source ownership
+
+Use `program compile closure --out compiled/closure` for disposable generated source. The conventional `compiled/` directory is ignored by Git and removed by `npm run clean`. Exports to other user-selected directories are retained; remove those directories explicitly after review. Source exports reject existing destinations. Native execution uses temporary directories and removes its build products automatically, including on process failure. Authored Program IR and historical compilation measurements remain source and evidence, respectively.

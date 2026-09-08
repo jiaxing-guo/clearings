@@ -1,6 +1,6 @@
 # Rust backend artifacts and runtime
 
-The Rust backend implements compiled-artifact contracts, a primitive runtime, and [deterministic source generation](10-rust-code-generation.md). Generated modules execute in the native test harness; general process transport and CLI integration remain subsequent work. The [four-PR plan](../05-development/06-rust-backend-plan.md) separates these capabilities. The existing TypeScript reference interpreter and its public execution results remain unchanged.
+The Rust backend implements compiled-artifact contracts, a primitive runtime, and [deterministic source generation](10-rust-code-generation.md). Generated modules execute through the packaged library runner, CLI, and independent native test harness. The [worked guide](../04-guides/06-compile-and-run-rust.md) covers source export and native execution. The [four-PR plan](../05-development/06-rust-backend-plan.md) separates these capabilities. The existing TypeScript reference interpreter and its public execution results remain unchanged.
 
 ## Artifact construction and validation
 
@@ -61,7 +61,7 @@ The unpublished [Rust crate](../../runtime/rust) contains no external dependenci
 | `Eval<T>`    | Result that returns `T` or propagates an explicit interruption/ABI defect           |
 | `Completion` | Owned return, application failure, runtime fault, or resource exhaustion            |
 
-`prepare_arguments` first checks the complete input's portability bounds, then input units, arity, and exact types. It returns an owned copy with record fields sorted into canonical order. Invalid arguments produce `InputError { path, rule }` before metered execution. The argument type declarations are trusted compiler output. Boundary strings use `Vec<u16>`; neither conversion through lossy UTF-8 nor replacement of lone surrogates is permitted. JSON decoding and process transport are future runner responsibilities.
+`prepare_arguments` first checks the complete input's portability bounds, then input units, arity, and exact types. It returns an owned copy with record fields sorted into canonical order. Invalid arguments produce `InputError { path, rule }` before metered execution. The argument type declarations are trusted compiler output. Boundary strings use `Vec<u16>`; neither conversion through lossy UTF-8 nor replacement of lone surrogates is permitted. The CLI decodes JSON, the shared frontend admits positional arguments, and the native driver decodes a bounded binary value request while preserving UTF-16 units.
 
 `Runtime::import` imports prepared arguments and canonical literals under the meter. Runtime-created records preserve the IR constructor's field-array order. `Runtime::export` reserves the expanded result before copying every occurrence. Shared storage cannot change value semantics or logical allocation charges. Use `Runtime::equal` for language equality; derived Rust equality on runtime structs is not the Program IR operation.
 
@@ -85,8 +85,42 @@ Work is charged before depth checks. Construction work precedes value-size and a
 
 ## Backend result and comparison contract
 
-The exported `RustExecutionResult` describes the future runner result. It retains `program_id`, `limits`, `usage`, and `completion`, replacing `interpreter_version` with `backend`, `compiled_artifact_id`, `compiler_version`, `runtime`, and `execution_semantics_version`. No function currently produces this result from generated code.
+The exported `RustExecutionResult` is returned by `executeRustProgram`. It retains `program_id`, `limits`, `usage`, and `completion`, replacing `interpreter_version` with `backend`, `compiled_artifact_id`, `compiler_version`, `runtime`, and `execution_semantics_version`. It additionally contains `runner: { version: "0.1.0", source_id }`, identifying the exact packaged native driver inventory. The driver identity is independent of the primitive-runtime identity; adding transport does not change the existing generated module bytes or runtime ABI.
 
 Differential evaluation compares exact semantic values, completion class, application/fault codes and payloads, runtime-fault messages, logical limits/usage, and diagnostic phase/path/call stack. Backend identity fields necessarily differ. Input-error code/rule/path must correspond; host error text and stack traces are outside the equivalence claim. Generated-source bytes are deterministic artifacts; native-binary reproducibility additionally depends on compiler, linker, target, and environment.
 
 The primitive tests check independent expected values and charges. The [native code-generation tests](10-rust-code-generation.md#native-validation) exercise emitted control flow and instrumentation. The [systematic compiler-conformance gate](11-compiler-conformance.md) extends this evidence with independent graph and language expectations, accounting boundaries, and fault controls. These bounded tests do not establish universal compiler correctness.
+
+## Packaged library workflow
+
+The `clearings/compiler` subpath also exports these synchronous interfaces:
+
+| Function                                                                | Behavior                                                                                                                       |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `compileRustProgram(program): RustCompiledArtifact`                     | Generate source using the packaged runtime inventory; no native process                                                        |
+| `writeRustProgram(program, directory): RustCompiledArtifact`            | Generate and export source, runtime, driver, artifact, and build metadata to a new directory                                   |
+| `executeRustProgram(program, arguments, options?): RustExecutionResult` | Admit arguments, compile fresh source with the pinned toolchain, execute it, validate the response, and remove temporary files |
+
+The existing pure `compileRust(program, runtime)` interface remains available for callers that supply their own trusted runtime identity. The execution interface takes Program IR only. It does not execute saved artifacts or caller-supplied Rust source. A source bundle contains `program.rs`, `artifact.json`, `build.json`, the three driver files, and `runtime/`. The build manifest binds source-file digests, the runner source identity, toolchain, and Rust compiler flags. It contains no timestamp, working directory, native binary, or invocation arguments. Source and metadata are reproducible; native binary reproducibility additionally depends on the host toolchain and linker.
+
+Admission is shared with reference execution: limits, bounded program preparation and validation, complete argument portability, input units, arity, canonical ownership, and exact entry types. These checks evaluate no program statements or expressions. The primitive Rust runtime independently checks admitted arguments again before metered import. Native input-interface errors after successful frontend admission indicate an implementation failure; they are not ordinary application failures.
+
+The runner copies the exact packaged primitive-runtime and driver sources into a private temporary directory and invokes `rustup run 1.85.1 rustc` directly, with Rust 2021, optimization level 1, no debug information, and warnings denied. It does not invoke Cargo, build scripts, a shell, or network dependency resolution. The locally installed toolchain and host linker are trusted prerequisites. The executable receives an empty `PATH`, no IR AST, and no interpreter dependency. Every call rebuilds; no persistent binary cache is implemented.
+
+## Process bounds and failures
+
+`RUST_PROCESS_LIMITS` defines a 4 MiB binary request bound, a 16 MiB response/captured-output bound, 60 seconds per rustc invocation, and 60 seconds for native execution. Two rustc invocations compile the primitive runtime and executable. These host-process bounds are separate from logical work, allocation, value-size, and depth limits. Temporary build products are removed on success and failure. Physical memory and hostile filesystem races are outside this process-isolation claim.
+
+The private `CLR1` protocol frames little-endian integer limits and tagged null, Boolean, safe-integer, UTF-16 string, list, and record values. Lengths, structural depth, node count, version, truncation, and trailing bytes are checked. Input contains data only. It is an internal driver interface, not an additional IR or supported external binary protocol. The driver emits bounded JSON with escaped UTF-16 units; the host checks UTF-8, exact field structure, effective limits, counter bounds, completion classes, declared result/failure types, and diagnostic structure before attaching compilation identities. This is interface validation, not a new independent semantic evaluation.
+
+| Error code                                     | Meaning                                                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `INVALID_PROGRAM`, `INVALID_PROGRAM_EXECUTION` | Static or execution-admission failure, with the established path/rule diagnostics; exit 2                  |
+| `INVALID_COMPILED_PROGRAM`                     | Compiler preparation, source bounds, or artifact compatibility failure; exit 2                             |
+| `INVALID_OUTPUT`                               | Source export or report destination cannot be created without replacement; exit 2                          |
+| `RUST_ASSETS_UNAVAILABLE`                      | Installed runtime or driver source inventory cannot be loaded; exit 1                                      |
+| `RUST_TOOLCHAIN_UNAVAILABLE`                   | `rustup` is not available on `PATH`; exit 1                                                                |
+| `RUST_BUILD_FAILED`                            | Missing pinned channel/linker, compiler rejection, build timeout, or captured-output failure; exit 1       |
+| `RUST_EXECUTION_FAILED`                        | Native panic, abnormal exit, timeout, output-limit failure, unexpected stderr, or invalid response; exit 1 |
+
+Build/process diagnostics retain the stage, exit status or signal, and at most 16,384 characters of error context. Logical application failure and runtime fault remain completion results with exit 1; logical resource exhaustion remains a completion with exit 3. Host failures never become language exhaustion or trigger interpreter fallback. Hashes bind source bytes but do not authenticate the installed package or sandbox native code.

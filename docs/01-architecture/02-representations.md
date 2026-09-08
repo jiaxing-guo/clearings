@@ -62,7 +62,7 @@ An observed specification can be abstract. An intended specification can be deta
 | Model/context → report                            | Presentation, without new formal meaning                                                         |
 | Specification + observation → check               | Predicate evaluation                                                                             |
 | Program artifact → static validation              | Syntax, identity, scope, types, completion paths, and call/failure declarations                  |
-| Program + positional arguments → execution result | Reference interpretation under declared finite resource limits                                   |
+| Program + positional arguments → execution result | Reference interpretation or compiled native execution under declared finite resource limits      |
 | Validated Program IR → Rust module                | Deterministic source generation through a versioned primitive runtime; bounded native evaluation |
 | Program or execution result → Markdown report     | Deterministic presentation without execution, evidence authentication, or a new IR               |
 | Contract + external agent → source implementation | Specification-guided synthesis, demonstrated only by bounded experiments                         |
