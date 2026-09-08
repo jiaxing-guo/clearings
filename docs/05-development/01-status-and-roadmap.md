@@ -6,11 +6,11 @@ This status describes the v0.3 implementation, documentation integration, confor
 
 The goal is a compiler and execution runtime for agentic coding: agents construct and revise explicit typed implementations against behavioral contracts, while deterministic tools validate, compile, execute, and independently evaluate those implementations. Bootstrapping progressively moves Clearings algorithms into that pipeline and uses the resulting implementations in Clearings itself.
 
-| Milestone                               | Purpose                                                                                                                                 | Status                                                               |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| 1: Executable conformance               | Capture actual context-assembly executions and evaluate them against independent bounded requirements, with controls and replay         | Complete; [conformance plan](03-conformance-plan.md)                 |
-| 2: Program IR and reference interpreter | Define and execute a typed implementation language and represent one real Clearings algorithm in it                                     | Complete; [Program IR plan](04-program-ir-plan.md)                   |
-| 3: Deterministic JavaScript backend     | Compile Program IR to executable JavaScript and evaluate semantic preservation against reference execution and independent expectations | Proposed next; [four-PR backend plan](06-javascript-backend-plan.md) |
+| Milestone                               | Purpose                                                                                                                                    | Status                                                                                               |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| 1: Executable conformance               | Capture actual context-assembly executions and evaluate them against independent bounded requirements, with controls and replay            | Complete; [conformance plan](03-conformance-plan.md)                                                 |
+| 2: Program IR and reference interpreter | Define and execute a typed implementation language and represent one real Clearings algorithm in it                                        | Complete; [Program IR plan](04-program-ir-plan.md)                                                   |
+| 3: Deterministic Rust backend           | Compile Program IR to native code through Rust and evaluate semantic preservation against reference execution and independent expectations | Artifact contract and primitive runtime implemented; [four-PR backend plan](06-rust-backend-plan.md) |
 
 Source analysis, context assembly, reports, and documentation support this pipeline. The next implementation priority is the compiler backend. Broader repository demonstrations and agent-efficiency experiments do not determine the compiler's immediate architecture.
 
@@ -63,9 +63,11 @@ The [four-PR Program IR plan](04-program-ir-plan.md) introduces a small typed im
 
 The [four-PR implementation plan](03-conformance-plan.md) is implemented, with the final two changes integrated together. The regression command evaluates production and an independent positive control over 1,554 cases each, then checks 26 predefined executable faults. CLI reports distinguish scoped acceptance from the broader contract verdict and replay saved evidence without candidate execution. This establishes a reproducible evaluation boundary for the declared cases. Historical bootstrap evidence retains its original scope.
 
-The [JavaScript backend plan](06-javascript-backend-plan.md) has four dependent PRs: compiled-artifact and runtime contracts, deterministic code generation, independent and differential validation, and CLI/package integration. It targets all of Program IR v0.1 and executes the required dependency-closure algorithm from generated code. The reference interpreter remains the semantic baseline.
+The [Rust backend plan](06-rust-backend-plan.md) has four dependent PRs: compiled-artifact and runtime contracts, deterministic code generation, independent and differential validation, and CLI/package integration. It targets all of Program IR v0.1 and executes the required dependency-closure algorithm from generated code. The reference interpreter remains the semantic baseline.
 
 The initial backend preserves the current abstract resource-accounting behavior. It therefore prioritizes reproducibility and semantic compatibility; speedup is not a completion criterion. No additional lowering IR, bytecode instruction set, or optimization pipeline is needed for the current structured language.
+
+The first backend PR implements `clearings/compiler` artifact construction, integrity and compatibility checks, and a dependency-free Rust runtime for values, argument preparation, primitives, diagnostics, completions, and reference-compatible resource accounting. These are tested through authored primitive calls. No emitter or native program runner is implemented yet. See the [backend contract](../03-reference/09-rust-backend.md).
 
 ## Work after the backend
 

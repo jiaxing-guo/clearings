@@ -27,6 +27,8 @@ Read `AGENTS.md` before changing code. The package uses TypeScript, ESM, Ajv sch
 
 For context-assembly or conformance changes, also run `npm run test:conformance`. This checks the recorder/evaluator/CLI regressions, all 1,554 inputs against production and an independent positive control, and the predefined executable fault suite. `npm run test:conformance:smoke` provides a smaller development run. The [suite manifest](specifications/clearings/conformance/suite.json) fixes input and control hashes; do not regenerate it to conceal a regression. The [evaluation guide](docs/04-guides/04-evaluate-context-conformance.md) explains the acceptance boundary and saved-evidence replay.
 
+For the Rust backend, install [rustup](https://rust-lang.org/tools/install/) and read the [backend contract](docs/03-reference/09-rust-backend.md). Run `npm run test:rust` and `npm run check:rust`; these select the toolchain pinned under `runtime/rust/` and test the dependency-free crate offline after toolchain installation. Use `npm run format:rust` for Rust formatting. The compiler frontend and reference interpreter remain TypeScript, and ordinary library use does not require Rust.
+
 ## Format and clean
 
 Run `npm run format` before committing. The pinned Prettier configuration applies to maintained library, CLI, documentation, and website files; `npm run format:check` enforces it in CI. Frozen evidence, generator-owned artifacts, intentional fixtures, and four source files with historical byte bindings are excluded. See [Repository maintenance](docs/05-development/05-repository-maintenance.md) for the exact boundaries and renamed benchmark scripts.

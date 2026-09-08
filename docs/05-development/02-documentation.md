@@ -74,6 +74,8 @@ The build runs [the technical documentation generator](../../scripts/prepare-tec
 
 The generated `technical-reference.json` records source paths, content digests, and routes. The static checker verifies those digests, rendered page titles, local links and fragments, assets, and search results. This detects stale generated documentation as well as broken navigation.
 
+Production builds clear Next.js output and Fumadocs macro output before exporting. This prevents added or renamed reference pages from retaining an earlier route inventory.
+
 The default production base path is `/clearings`; local development defaults to the root path. Set `DOCS_BASE_PATH=''` for a root deployment, and use the same value for `docs:build` and `docs:check`.
 
 For a runtime semantics change, also run relevant library tests and typecheck.

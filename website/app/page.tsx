@@ -56,8 +56,8 @@ export default function Home() {
           <Link href="/docs/technical/guides/run-programs">Run the closure program →</Link>
         </div>
         <p className="home-note">
-          The reference describes v0.3.0 operation contracts and Program IR v0.1. A JavaScript
-          compiler backend is proposed next.{' '}
+          The reference describes v0.3.0 operation contracts and Program IR v0.1. The Rust backend
+          has an artifact contract and primitive runtime; code generation is the next step.{' '}
           <Link href="/docs/technical/development/status-and-roadmap">
             Implementation status and limitations
           </Link>

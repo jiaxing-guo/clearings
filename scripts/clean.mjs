@@ -4,6 +4,7 @@ import { rmSync } from 'node:fs';
 const generatedPaths = [
   'dist',
   'coverage',
+  'runtime/rust/target',
   'website/.next',
   'website/out',
   'website/.source',

@@ -1,0 +1,13 @@
+[package]
+name = "clearings-runtime"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+publish = false
+description = "Value and execution primitives for compiled Clearings Program IR"
+
+[lib]
+path = "src/lib.rs"
+
+[lints.rust]
+unsafe_code = "forbid"

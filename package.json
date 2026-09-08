@@ -33,6 +33,10 @@
       "types": "./dist/program/index.d.ts",
       "import": "./dist/program/index.js"
     },
+    "./compiler": {
+      "types": "./dist/compiler/index.d.ts",
+      "import": "./dist/compiler/index.js"
+    },
     "./schemas/program": "./schemas/program.v0.1.json"
   },
   "files": [
@@ -43,6 +47,10 @@
     "specifications/clearings/conformance/suite.json",
     "programs/examples/*.json",
     "programs/clearings/*.json",
+    "runtime/rust/Cargo.toml",
+    "runtime/rust/Cargo.lock",
+    "runtime/rust/rust-toolchain.toml",
+    "runtime/rust/src/*.rs",
     "README.md"
   ],
   "scripts": {
@@ -60,6 +68,9 @@
     "bootstrap:demo": "npm run build && node scripts/build-bootstrap-demo.mjs",
     "docs:check:markdown": "npm run build && node scripts/check-markdown-docs.mjs",
     "test:program": "npm run build && node --test tests/program*.test.mjs",
+    "test:rust": "cd runtime/rust && cargo test --locked --offline",
+    "format:rust": "cd runtime/rust && cargo fmt",
+    "check:rust": "cd runtime/rust && cargo fmt -- --check && cargo clippy --locked --offline --all-targets -- -D warnings",
     "program": "npm run build --silent && node dist/cli/main.js program",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

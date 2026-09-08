@@ -10,7 +10,7 @@ The current foundation has three parts:
 - **Program IR and a reference interpreter** represent and execute typed algorithms. Ordered required dependency closure is implemented in IR and checked against an independent graph oracle.
 - **Executable conformance** captures actual context-assembly executions and evaluates them against a bounded domain, with controls and saved-evidence replay.
 
-The next proposed step is a [deterministic JavaScript backend](docs/05-development/06-javascript-backend-plan.md). Compilation and automatic contract-to-program synthesis are not yet implemented; production context assembly still uses the TypeScript kernel. Repository analysis, agent context, and human reports provide supporting evidence and projections. See the [architecture](docs/01-architecture/01-system.md) and [status and roadmap](docs/05-development/01-status-and-roadmap.md).
+The approved next step is a [deterministic Rust backend](docs/05-development/06-rust-backend-plan.md). Its [artifact contract and primitive runtime](docs/03-reference/09-rust-backend.md) are implemented; code generation and native execution remain subsequent work. Automatic contract-to-program synthesis is not implemented, and production context assembly still uses the TypeScript kernel. Repository analysis, agent context, and human reports provide supporting evidence and projections. See the [architecture](docs/01-architecture/01-system.md) and [status and roadmap](docs/05-development/01-status-and-roadmap.md).
 
 This is a private, unpublished prototype. Historical Hono demonstrations cover request dispatch and middleware composition; independent claim-support review remains pending.
 
@@ -116,6 +116,8 @@ npm test
 ```
 
 Use `npm run format` to apply the pinned Prettier style and `npm run clean` to remove generated builds. [Repository maintenance](docs/05-development/05-repository-maintenance.md) records the formatting exclusions, cleanup scope, and descriptive script names.
+
+For Rust runtime work, install [rustup](https://rust-lang.org/tools/install/) and run `npm run test:rust` and `npm run check:rust`. These commands select the pinned toolchain. Use `npm run format:rust` to apply rustfmt. The existing TypeScript library and interpreter do not require Rust to run.
 
 The archive tests require Python 3.9 or newer under the `python3` command.
 

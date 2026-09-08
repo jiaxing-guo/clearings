@@ -9,6 +9,8 @@ Use the root npm commands for normal development. Scripts run against the Cleari
 | Build or type-check the library            | `npm run build`, `npm run typecheck`                                           |
 | Run Program IR examples                    | `npm run program -- demo`                                                      |
 | Test Program IR and its CLI                | `npm run test:program`                                                         |
+| Test Rust runtime primitives               | `npm run test:rust`                                                            |
+| Format and check the Rust runtime          | `npm run format:rust`, `npm run check:rust`                                    |
 | Record and evaluate context assembly       | `npm run conformance`                                                          |
 | Run the complete conformance gate          | `npm run test:conformance`                                                     |
 | Develop, build, or verify documentation    | `npm run docs:dev`, `npm run docs:build`, `npm run docs:check`                 |

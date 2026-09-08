@@ -1,26 +1,26 @@
-# JavaScript backend implementation plan
+# Rust backend implementation plan
 
-Status: proposed; implementation has not started. This is Milestone 3, following completed executable conformance and Program IR/reference execution. It defines four dependent implementation PRs. Milestone and PR numbers are planning labels; commit messages and PR titles should describe the delivered behavior.
+Status: approved Rust backend. PR 1 implements the artifact contract and primitive runtime; code generation and native execution remain subsequent work. This is Milestone 3, following completed executable conformance and Program IR/reference execution. It defines four dependent implementation PRs. Milestone and PR numbers are planning labels; commit messages and PR titles should describe the delivered behavior.
 
 ## Goal and observable outcome
 
-Compile a validated Program IR v0.1 artifact into deterministic JavaScript that executes the represented algorithm through a versioned runtime interface. Evaluate the generated implementation against both the reference interpreter and independent expectations. Ordered required dependency closure is the principal Clearings workload.
+Compile a validated Program IR v0.1 artifact into deterministic Rust that executes the represented algorithm through a versioned runtime interface. Evaluate the generated implementation against both the reference interpreter and independent expectations. Ordered required dependency closure is the principal Clearings workload.
 
 At completion, a developer can compile, inspect, and execute the closure program through the CLI and library, with explicit source-program and backend identities. Generated control flow, calls, and collection operations perform the algorithm. Calling the reference interpreter or the existing TypeScript closure from an emitted wrapper does not meet this goal.
 
-This provides the first compiler backend in the bootstrap sequence. The compiler and runtime are initially implemented in TypeScript. Compiling one Clearings algorithm establishes a useful compilation boundary; production adoption and compiler self-hosting require subsequent work.
+This provides the first compiler backend in the bootstrap sequence. The compiler frontend and reference interpreter remain in TypeScript; the generated-code runtime is implemented in Rust. Compiling one Clearings algorithm establishes a useful compilation boundary; production adoption and compiler self-hosting require subsequent work.
 
 ## Scope and design decisions
 
-| Decision          | Proposed boundary                                                                              | Rationale                                                                                                      |
-| ----------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| Target            | JavaScript ES modules on the repository's supported Node.js version                            | Reuses the current host and package without introducing another toolchain                                      |
-| Source language   | All statically valid Program IR v0.1 constructs within declared compiler input limits          | The backend implements a language, rather than recognizing one algorithm                                       |
-| Lowering          | Direct compilation from the existing structured IR                                             | The workload does not yet require CFG, SSA, bytecode, or another public IR                                     |
-| Runtime           | A versioned application binary interface (ABI) between generated modules and primitive helpers | Safe integers, structural values, completions, diagnostics, and resource accounting require explicit semantics |
-| Resources         | Preserve the reference interpreter's current abstract accounting contract                      | Exhaustion and usage are observable behavior, including the first rejected charge                              |
-| Program authority | Authored IR remains the source; generated files are derived build products                     | Reproduction and review need a single implementation source                                                    |
-| Validation        | Differential execution plus independent language and graph expectations                        | Agreement between two implementations can conceal a shared defect                                              |
+| Decision          | Proposed boundary                                                                     | Rationale                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Target            | Rust 2021 source, built with the pinned Rust toolchain                                | Establishes a statically checked native target and an independent runtime implementation                       |
+| Source language   | All statically valid Program IR v0.1 constructs within declared compiler input limits | The backend implements a language, rather than recognizing one algorithm                                       |
+| Lowering          | Direct compilation from the existing structured IR                                    | The workload does not yet require CFG, SSA, bytecode, or another public IR                                     |
+| Runtime           | A versioned Rust source interface between generated modules and primitive helpers     | Safe integers, structural values, completions, diagnostics, and resource accounting require explicit semantics |
+| Resources         | Preserve the reference interpreter's current abstract accounting contract             | Exhaustion and usage are observable behavior, including the first rejected charge                              |
+| Program authority | Authored IR remains the source; generated files are derived build products            | Reproduction and review need a single implementation source                                                    |
+| Validation        | Differential execution plus independent language and graph expectations               | Agreement between two implementations can conceal a shared defect                                              |
 
 No optimization or speedup claim is required. The generated program must compute the algorithm directly, even if compatibility instrumentation adds overhead. Future optimized backends may define a different resource policy explicitly; this milestone must not silently weaken the current one.
 
@@ -44,6 +44,8 @@ Tests support this obligation over their stated domain. They do not constitute a
 
 ### PR 1: Compiled artifacts and runtime interface
 
+Implemented: [backend contract](../03-reference/09-rust-backend.md), `clearings/compiler` artifact APIs, and the primitive `clearings-runtime` Rust crate. The artifact constructor seals caller-supplied source; it does not generate code. Runtime tests use authored primitive calls, not compiled Program IR.
+
 Larger goal: make the execution contract precise enough to implement and review a backend.
 
 Define compiled-artifact and execution metadata, compiler options, validation errors, and the runtime ABI. Bind the source program identity, compiler version, runtime ABI version, execution-semantics version, target/options, and exact generated module bytes. Specify deterministic serialization, hashing, and compatibility checks without circular identities.
@@ -52,21 +54,21 @@ Implement the primitive runtime services needed for Program IR values, faults, d
 
 Completion criteria: artifact validation rejects incompatible or altered inputs; runtime primitives pass independent edge-case tests; the existing interpreter regression suite passes unchanged. Documentation records the observable comparison and all compilation/preparation limits.
 
-### PR 2: Deterministic JavaScript code generation
+### PR 2: Deterministic Rust code generation
 
 Larger goal: turn Program IR algorithms into executable target programs.
 
-Implement complete lowering of expressions, statements, function parameters, closed calls, returns, and declared failures. Emit structured JavaScript control flow and runtime calls for primitive semantics. Assign generated identifiers deterministically, preserve source evaluation order, and retain IR locations for diagnostics. Treat data strings and record keys as data, including Unicode, lone surrogates, and prototype-looking names; source identifiers must never become unchecked JavaScript syntax.
+Start with required dependency closure as an end-to-end compilation experiment, recording compilation latency, executable size, execution cost, and integration constraints. Then implement complete lowering of expressions, statements, function parameters, closed calls, returns, and declared failures. Emit structured Rust control flow and runtime calls for primitive semantics. Assign generated identifiers deterministically, preserve source evaluation order, and retain IR locations for diagnostics. Treat data strings and record keys as data, including Unicode, lone surrogates, and prototype-looking names; source identifiers must never become unchecked Rust syntax.
 
-Produce the same bytes for the same validated artifact, compiler/runtime versions, target, and options. Exclude timestamps, absolute paths, locale-dependent ordering, and environment-dependent names. Compilation must not execute the program or load code from program-supplied paths. Define bounded compilation failure for inputs that exceed the documented compiler limits.
+Generated source must be deterministic; reproducible native binaries additionally require a controlled compiler, linker, target, and environment. Produce the same source bytes for the same validated artifact, compiler/runtime versions, target, and options. Exclude timestamps, absolute paths, locale-dependent ordering, and environment-dependent names. Compilation must not execute the program or load code from program-supplied paths. Define bounded compilation failure for inputs that exceed the documented compiler limits.
 
-Completion criteria: every Program IR construct compiles; emitted modules execute identity, sum, and closure through the runtime; repeated compilation is byte-identical. Execution must succeed with interpreter entry points and the production closure unavailable, establishing that generated computation is actually used.
+Completion criteria: every Program IR construct compiles; compiled native modules execute identity, sum, and closure through the runtime; repeated generated source is byte-identical. Execution must succeed with interpreter entry points and the production closure unavailable, establishing that generated computation is actually used.
 
 ### PR 3: Semantic-preservation evaluation
 
 Larger goal: make compiler defects observable through reproducible, independently grounded tests.
 
-Build a differential harness that executes the same program and arguments through the interpreter and generated JavaScript, comparing the PR 1 result contract. Cover operand order, scope, abrupt completion, ownership, arithmetic boundaries, structural equality, sorting, and resource exhaustion during argument preparation, execution, and result copying. Include small-limit tests that distinguish the first rejected charge and diagnostic location.
+Build a differential harness that executes the same program and arguments through the interpreter and compiled Rust, comparing the PR 1 result contract. Cover operand order, scope, abrupt completion, ownership, arithmetic boundaries, structural equality, sorting, and resource exhaustion during argument preparation, execution, and result copying. Include small-limit tests that distinguish the first rejected charge and diagnostic location.
 
 Evaluate compiled dependency closure against the existing independent path-enumeration oracle over all 1,536 directed three-node graph/root cases and the targeted multiple-root, duplicate, missing-reference, cycle, ordering, and failure cases. Use predefined faulty programs or backend mutations to demonstrate that incorrect ordering, lost failures, or skipped computation are detected. Add a fixed-seed, bounded program corpus for combinations of supported constructs; do not rely solely on generated snapshots or interpreter agreement.
 
@@ -78,9 +80,9 @@ Completion criteria: no unexplained differential mismatches, independent expecta
 
 Larger goal: make compilation a usable, reproducible development workflow.
 
-Add concise compile and backend-selection commands while preserving the current interpreter default. The proposed command forms are `clearings program compile closure --out <directory>` and `clearings program run closure <arguments.json> --backend javascript`; these commands do not exist yet. Final option and output contracts belong in the implemented CLI reference.
+Add concise compile and backend-selection commands while preserving the current interpreter default. The proposed command forms are `clearings program compile closure --backend rust --out <directory>` and `clearings program run closure <arguments.json> --backend rust`; these commands do not exist yet. Final option and output contracts belong in the implemented CLI reference.
 
-Expose compilation and compiled execution through a documented library subpath. Emit inspectable JavaScript and metadata with protected output creation. Include backend identities and semantic results in JSON and readable reports, and retain the current completion-to-exit-status distinctions. CLI execution should compile validated IR through the pinned local compiler/runtime; do not add an arbitrary JavaScript-file execution command. Artifact hashes establish integrity, not a sandbox or authorization to execute untrusted JavaScript.
+Expose compilation and compiled execution through a documented library subpath. Emit inspectable Rust and metadata with protected output creation. Include backend identities and semantic results in JSON and readable reports, and retain the current completion-to-exit-status distinctions. CLI execution should compile validated IR through the pinned local compiler/runtime; do not add an arbitrary source-file execution command. Artifact hashes establish integrity, not a sandbox or authorization to execute untrusted native code.
 
 Extend clean-package tests, focused CI, and the runnable documentation to exercise generated code from the packaged distribution without relying on the source checkout. Document generated-file ownership and removal through the maintenance workflow.
 
