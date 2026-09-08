@@ -42,6 +42,7 @@ The typed-specification path starts with an authored `SemanticSpecification`. Va
 | Legacy contracts | Function/behavior contracts, inspection, context selection | [contract modules](../../src/contracts) |
 | Typed kernel | Specification validation, expression evaluation, observation checks | [specification modules](../../src/specification) |
 | Program IR | Implementation-language types, static validation, and a reference interpreter with resource limits and diagnostic completions | [program modules](../../src/program) |
+| IR algorithms | Ordered required dependency closure with independent bounded evaluation | [authored programs](../../programs/clearings) |
 | Executable conformance | Bounded recording, observation mapping, independent reference evaluation, scoped acceptance, and replay reports | [conformance modules](../../src/conformance) |
 | Presentation | Audience plans and deterministic projections | [renderers](../../src/renderers), [presentation plans](../../src/presentation) |
 | CLI | File input/output, option validation, command routing, exit status | [CLI entry](../../src/cli/main.ts) |

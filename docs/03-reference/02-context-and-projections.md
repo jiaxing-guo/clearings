@@ -21,6 +21,8 @@ State and evidence records follow the inclusion rules below. If the complete req
 
 Starting from the root, it computes the least set closed under required dependency edges. Optional edges do not expand the selection. Traversal is breadth-first, with required target IDs sorted at each expansion. Each operation appears once; the root appears first. Cycles terminate through visited-ID tracking.
 
+The same ordered closure kernel now has an [implementation in Program IR](../02-semantics/06-required-dependency-closure.md), evaluated independently on bounded graph inputs. That program operates on explicit roots and record/dependency values. It does not perform whole-specification validation, alias resolution, state/evidence projection, or byte accounting. The production assembler retains the TypeScript kernel in this version.
+
 Each selected operation is retained in full, including every outcome, rule, implementation responsibility, and decision. State selection includes all declared reads/writes; if any selected operation has a complete frame, all modeled state fields are included. State and source records are sorted by ID. All evidence referenced by selected operations and state records is attached.
 
 Evidence references come from the schema-defined `evidence_ids` fields on operations, guarantees, outcomes, postconditions, implementation responsibilities, decisions, and selected state records. Keys named `evidence_ids` inside expression literals are ordinary JSON data and do not select source records.

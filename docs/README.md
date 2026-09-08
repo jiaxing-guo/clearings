@@ -42,10 +42,11 @@ The original reference order remains available for a systematic review. For a la
 | 21 | [Program artifacts and validation](03-reference/06-program-artifacts.md) | How do I validate a program and interpret its static diagnostics? |
 | 22 | [Program IR implementation plan](05-development/04-program-ir-plan.md) | How will the language and interpreter execute one real Clearings algorithm? |
 | 23 | [Program execution](03-reference/07-program-execution.md) | How do I execute a program and interpret completions, resource limits, and diagnostics? |
+| 24 | [Required dependency closure in Program IR](02-semantics/06-required-dependency-closure.md) | How does Clearings execute and independently evaluate one of its own algorithms in IR? |
 
 ## Status and authority
 
-This reference describes the implemented v0.3.0 contract language, its relationship to the v0.1/v0.2 models, and Program IR v0.1 with its static validator and reference interpreter. Program execution implements the defined language semantics under documented resource limits. The dependency-closure program, integrated program CLI, and refinement proof procedures remain subsequent work.
+This reference describes the implemented v0.3.0 contract language, its relationship to the v0.1/v0.2 models, and Program IR v0.1 with its static validator and reference interpreter. Program execution implements the defined language semantics under documented resource limits. Ordered required dependency closure is implemented in IR and evaluated against independent bounded graph-domain expectations. The integrated program CLI and refinement proof procedures remain subsequent work.
 
 Sections on semantics and interfaces specify the current contract. Architecture explanations, examples, and roadmap proposals have different roles. If source, schema, tests, and reference disagree, record a defect and resolve the discrepancy explicitly. Passing schema validation does not override semantic requirements; a prose sentence does not become an executable predicate by appearing beside one.
 
