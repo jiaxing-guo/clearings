@@ -112,7 +112,7 @@ function status(result: ProgramExecutionResult): number {
   }
 }
 
-export function programCommand(positionals: string[], values: Values): void {
+export function programCommand(positionals: readonly string[], values: Values): void {
   const action = positionals[1] ?? 'help';
   if (values.help || action === 'help') {
     if (
@@ -123,23 +123,21 @@ export function programCommand(positionals: string[], values: Values): void {
     process.stdout.write(programHelp);
     return;
   }
+  const positionalCounts: Readonly<Record<string, readonly number[]>> = {
+    list: [2],
+    validate: [3],
+    inspect: [3],
+    run: [4],
+    demo: [2, 3],
+  };
   const execute = action === 'run' || action === 'demo';
   const allowed = ['format', 'out', ...(execute ? Object.keys(limitOptions) : [])];
   if (
-    !['list', 'validate', 'inspect', 'run', 'demo'].includes(action) ||
+    !Object.hasOwn(positionalCounts, action) ||
     Object.keys(values).some((key) => !allowed.includes(key))
   )
     invalid('Unknown program action or unsupported option; use program --help.');
-  const length = positionals.length;
-  if (
-    action === 'list'
-      ? length !== 2
-      : action === 'run'
-        ? length !== 4
-        : action === 'demo'
-          ? length < 2 || length > 3
-          : length !== 3
-  )
+  if (!positionalCounts[action]?.includes(positionals.length))
     invalid('Incorrect program arguments; use program --help.');
   const format = values.format ?? 'markdown';
   if (format !== 'markdown' && format !== 'json')
@@ -151,14 +149,10 @@ export function programCommand(positionals: string[], values: Values): void {
     const value = values[flag];
     if (value === undefined) continue;
     const maximum = PROGRAM_EXECUTION_MAX_LIMITS[resource];
-    if (
-      typeof value !== 'string' ||
-      !/^[1-9][0-9]*$/.test(value) ||
-      !Number.isSafeInteger(Number(value)) ||
-      Number(value) > maximum
-    )
+    const limit = typeof value === 'string' && /^[1-9][0-9]*$/.test(value) ? Number(value) : NaN;
+    if (!Number.isSafeInteger(limit) || limit > maximum)
       invalid(`--${flag} must be a positive decimal integer no greater than ${maximum}.`);
-    options[resource] = Number(value);
+    options[resource] = limit;
   }
   let output: string;
   let exitCode = 0;
@@ -182,7 +176,8 @@ export function programCommand(positionals: string[], values: Values): void {
           '\nRun an authored example with `clearings program demo <name>`.\n';
   } else {
     const source = positionals[2] ?? 'closure';
-    if (action === 'demo' && !example(source))
+    const selectedExample = example(source);
+    if (action === 'demo' && !selectedExample)
       invalid('Demo requires a bundled name: closure, identity, or sum.');
     const program = loadProgram(source);
     if (action === 'validate') {
@@ -194,9 +189,12 @@ export function programCommand(positionals: string[], values: Values): void {
     } else if (action === 'inspect') {
       output = format === 'json' ? JSON.stringify(program, null, 2) + '\n' : renderProgram(program);
     } else {
-      const arguments_ = readJson(
-        action === 'demo' ? asset(`${example(source)!.path}.arguments`) : positionals[3]!,
-      );
+      const argumentsPath =
+        action === 'demo' && selectedExample
+          ? asset(`${selectedExample.path}.arguments`)
+          : positionals[3];
+      if (argumentsPath === undefined) invalid('Incorrect program arguments; use program --help.');
+      const arguments_ = readJson(argumentsPath);
       const result = executeProgram(program, arguments_, options);
       output =
         format === 'json' ? JSON.stringify(result, null, 2) + '\n' : renderProgramExecution(result);

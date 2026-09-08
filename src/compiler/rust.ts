@@ -2,6 +2,7 @@ import { ClearingsError } from '../model/types.js';
 import type {
   Program,
   ProgramExpression,
+  ProgramFunction,
   ProgramStatement,
   ProgramType,
   ProgramValue,
@@ -16,7 +17,7 @@ export const RUST_COMPILATION_LIMITS = Object.freeze({
 });
 
 /** Incremental bounds apply before retaining generated text, including literal expansion. */
-class Source {
+class RustSourceBuffer {
   private parts: string[] = [];
   private bytes = 0;
   private work = 0;
@@ -58,14 +59,21 @@ interface Scope {
 const quoted = (text: string): string => JSON.stringify(text);
 
 class Emitter {
-  private source = new Source();
-  private next = 0;
-  private functions: Map<string, number>;
-  constructor(private program: Program) {
-    this.functions = new Map(program.functions.map((fn, index) => [fn.id, index]));
+  private readonly source = new RustSourceBuffer();
+  private nextIdentifier = 0;
+  private readonly functionTargets: Map<string, { index: number; definition: ProgramFunction }>;
+  constructor(private readonly program: Program) {
+    this.functionTargets = new Map(
+      program.functions.map((definition, index) => [definition.id, { index, definition }]),
+    );
+  }
+  private functionTarget(id: string): { index: number; definition: ProgramFunction } {
+    const target = this.functionTargets.get(id);
+    if (!target) throw new Error('Validated function is missing during Rust emission.');
+    return target;
   }
   private fresh(prefix: string): string {
-    return `${prefix}_${this.next++}`;
+    return `${prefix}_${this.nextIdentifier++}`;
   }
   private write(text: string): void {
     this.source.write(text);
@@ -133,13 +141,13 @@ class Emitter {
         this.write('])');
     }
   }
-  private lookup(scope: Scope, name: string): Binding {
+  private lookupBinding(scope: Scope, name: string): Binding {
     const binding = scope.bindings.get(name);
     if (!binding) throw new Error('Validated binding is missing during Rust emission.');
     return binding;
   }
   private load(scope: Scope, name: string): string {
-    const binding = this.lookup(scope, name);
+    const binding = this.lookupBinding(scope, name);
     return (
       `rt.lookup(${quoted(name)}, ${scope.depth - binding.depth + 1})?;\n` +
       `Ok(locals[${binding.slot}].as_ref().ok_or(RuntimeError::InvalidAbi("Uninitialized generated local."))?.clone())`
@@ -147,127 +155,135 @@ class Emitter {
   }
   private expression(expr: ProgramExpression, scope: Scope, path: string): string {
     const name = this.fresh('e');
-    const children = new Map<string, string>();
-    const child = (value: ProgramExpression, key: string) =>
-      children.set(key, this.expression(value, scope, `${path}/${key}`));
-    switch (expr.kind) {
-      case 'record':
-        expr.fields.forEach((field, i) => child(field.value, `fields/${i}/value`));
-        break;
-      case 'field':
-        child(expr.record, 'record');
-        break;
-      case 'list':
-        expr.items.forEach((item, i) => child(item, `items/${i}`));
-        break;
-      case 'index':
-        child(expr.list, 'list');
-        child(expr.index, 'index');
-        break;
-      case 'length':
-      case 'sort':
-        child(expr.list, 'list');
-        break;
-      case 'append':
-      case 'contains':
-        child(expr.list, 'list');
-        child(expr.value, 'value');
-        break;
-      case 'not':
-        child(expr.value, 'value');
-        break;
-      case 'binary':
-        child(expr.left, 'left');
-        child(expr.right, 'right');
-        break;
-      case 'call':
-        expr.arguments.forEach((arg, i) => child(arg, `arguments/${i}`));
-        break;
-    }
-    const call = (key: string): string => `${children.get(key)!}(rt, locals)?`;
+    // Emit each operand before its parent helper, retaining the original traversal order.
+    const writeBody = this.prepareExpressionBody(expr, scope, path);
     this.write(
       `fn ${name}(rt: &mut Runtime, locals: &mut [Option<Value>]) -> Eval<Value> {\nrt.enter(${quoted(path)}, |rt| {\n`,
     );
-    switch (expr.kind) {
-      case 'literal':
-        this.write('let value = ');
-        this.owned(expr.value);
-        this.write(`;\nrt.import(&value, ${quoted(`${path}/value`)})`);
-        break;
-      case 'ref':
-        this.write(this.load(scope, expr.name));
-        break;
-      case 'record':
-        this.write('let mut fields = Vec::new();\n');
-        expr.fields.forEach((field, i) => {
-          this.write(`let value = ${call(`fields/${i}/value`)};\nfields.push((`);
-          this.units(field.name);
-          this.write(', value));\n');
-        });
-        this.write('rt.record(fields)');
-        break;
-      case 'list':
-        this.write('let mut items = Vec::new();\n');
-        expr.items.forEach((_, i) => this.write(`items.push(${call(`items/${i}`)});\n`));
-        this.write('rt.list(items)');
-        break;
-      case 'field':
-        this.write(`let record = ${call('record')};\nrt.field(&record, &`);
-        this.units(expr.name);
-        this.write(')');
-        break;
-      case 'index':
-        this.write(
-          `let list = ${call('list')};\nlet index = ${call('index')};\nrt.index(&list, &index)`,
-        );
-        break;
-      case 'length':
-      case 'sort':
-        this.write(`let list = ${call('list')};\nrt.${expr.kind}(&list)`);
-        break;
-      case 'append':
-      case 'contains':
-        this.write(
-          `let list = ${call('list')};\nlet value = ${call('value')};\nrt.${expr.kind}(&list, &value)`,
-        );
-        break;
-      case 'not':
-        this.write(`let value = ${call('value')};\nrt.not(&value)`);
-        break;
-      case 'binary':
-        this.write(`let left = ${call('left')};\n`);
-        if (expr.op === 'and' || expr.op === 'or') {
-          this.write(
-            `if left.boolean()? == ${expr.op === 'or'} { return Ok(left); }\nOk(${call('right')})`,
-          );
-        } else {
-          this.write(`let right = ${call('right')};\n`);
-          if (expr.op === 'add' || expr.op === 'sub')
-            this.write(`rt.arithmetic(&left, &right, ${expr.op === 'sub'})`);
-          else if (expr.op === 'eq' || expr.op === 'ne')
-            this.write(
-              `let equal = rt.equal(&left, &right)?;\nrt.boolean(${expr.op === 'ne' ? '!' : ''}equal)`,
-            );
-          else {
-            const comparison = {
-              lt: '== Ordering::Less',
-              lte: '!= Ordering::Greater',
-              gt: '== Ordering::Greater',
-              gte: '!= Ordering::Less',
-            }[expr.op];
-            this.write(`let order = rt.compare(&left, &right)?;\nrt.boolean(order ${comparison})`);
-          }
-        }
-        break;
-      case 'call':
-        this.write('let mut args = Vec::new();\n');
-        expr.arguments.forEach((_, i) => this.write(`args.push(${call(`arguments/${i}`)});\n`));
-        this.write(`f_${this.functions.get(expr.function_id)!}(rt, &args, ${quoted(path)})`);
-    }
+    writeBody();
     this.write('\n})\n}\n');
     return name;
   }
-  private block(statements: ProgramStatement[], parent: Scope, path: string): string {
+  private prepareExpressionBody(expr: ProgramExpression, scope: Scope, path: string): () => void {
+    const operand = (value: ProgramExpression, key: string): string =>
+      `${this.expression(value, scope, `${path}/${key}`)}(rt, locals)?`;
+    switch (expr.kind) {
+      case 'literal':
+        return () => {
+          this.write('let value = ');
+          this.owned(expr.value);
+          this.write(`;\nrt.import(&value, ${quoted(`${path}/value`)})`);
+        };
+      case 'ref':
+        return () => this.write(this.load(scope, expr.name));
+      case 'record': {
+        const fields = expr.fields.map((field, index) => ({
+          name: field.name,
+          value: operand(field.value, `fields/${index}/value`),
+        }));
+        return () => {
+          this.write('let mut fields = Vec::new();\n');
+          fields.forEach(({ name, value }) => {
+            this.write(`let value = ${value};\nfields.push((`);
+            this.units(name);
+            this.write(', value));\n');
+          });
+          this.write('rt.record(fields)');
+        };
+      }
+      case 'list': {
+        const items = expr.items.map((item, index) => operand(item, `items/${index}`));
+        return () => {
+          this.write('let mut items = Vec::new();\n');
+          items.forEach((item) => this.write(`items.push(${item});\n`));
+          this.write('rt.list(items)');
+        };
+      }
+      case 'field': {
+        const record = operand(expr.record, 'record');
+        return () => {
+          this.write(`let record = ${record};\nrt.field(&record, &`);
+          this.units(expr.name);
+          this.write(')');
+        };
+      }
+      case 'index': {
+        const list = operand(expr.list, 'list');
+        const index = operand(expr.index, 'index');
+        return () =>
+          this.write(`let list = ${list};\nlet index = ${index};\nrt.index(&list, &index)`);
+      }
+      case 'length':
+      case 'sort': {
+        const list = operand(expr.list, 'list');
+        return () => this.write(`let list = ${list};\nrt.${expr.kind}(&list)`);
+      }
+      case 'append':
+      case 'contains': {
+        const list = operand(expr.list, 'list');
+        const value = operand(expr.value, 'value');
+        return () =>
+          this.write(`let list = ${list};\nlet value = ${value};\nrt.${expr.kind}(&list, &value)`);
+      }
+      case 'not': {
+        const value = operand(expr.value, 'value');
+        return () => this.write(`let value = ${value};\nrt.not(&value)`);
+      }
+      case 'binary': {
+        const left = operand(expr.left, 'left');
+        const right = operand(expr.right, 'right');
+        return () => this.writeBinary(expr.op, left, right);
+      }
+      case 'call': {
+        const args = expr.arguments.map((argument, index) =>
+          operand(argument, `arguments/${index}`),
+        );
+        const { index } = this.functionTarget(expr.function_id);
+        return () => {
+          this.write('let mut args = Vec::new();\n');
+          args.forEach((argument) => this.write(`args.push(${argument});\n`));
+          this.write(`f_${index}(rt, &args, ${quoted(path)})`);
+        };
+      }
+    }
+  }
+  private writeBinary(
+    op: Extract<ProgramExpression, { kind: 'binary' }>['op'],
+    left: string,
+    right: string,
+  ): void {
+    this.write(`let left = ${left};\n`);
+    switch (op) {
+      case 'and':
+      case 'or':
+        this.write(`if left.boolean()? == ${op === 'or'} { return Ok(left); }\nOk(${right})`);
+        return;
+      default:
+        this.write(`let right = ${right};\n`);
+    }
+    switch (op) {
+      case 'add':
+      case 'sub':
+        this.write(`rt.arithmetic(&left, &right, ${op === 'sub'})`);
+        return;
+      case 'eq':
+      case 'ne':
+        this.write(
+          `let equal = rt.equal(&left, &right)?;\nrt.boolean(${op === 'ne' ? '!' : ''}equal)`,
+        );
+        return;
+      default: {
+        const comparison = {
+          lt: '== Ordering::Less',
+          lte: '!= Ordering::Greater',
+          gt: '== Ordering::Greater',
+          gte: '!= Ordering::Less',
+        }[op];
+        this.write(`let order = rt.compare(&left, &right)?;\nrt.boolean(order ${comparison})`);
+      }
+    }
+  }
+  private block(statements: readonly ProgramStatement[], parent: Scope, path: string): string {
     const name = this.fresh('b');
     const scope: Scope = {
       bindings: new Map(parent.bindings),
@@ -293,7 +309,7 @@ class Emitter {
         }
         case 'assign': {
           const value = expr(statement.value, 'value');
-          const binding = this.lookup(scope, statement.name);
+          const binding = this.lookupBinding(scope, statement.name);
           body = `let value = ${value};\nrt.lookup(${quoted(statement.name)}, ${scope.depth - binding.depth + 1})?;\nlocals[${binding.slot}] = Some(value);\nOk(None)`;
           break;
         }
@@ -362,11 +378,13 @@ class Emitter {
         `${body}(rt, &mut locals)?.ok_or(RuntimeError::InvalidAbi("Generated function did not return or fail."))\n})\n}\n`,
       );
     }
-    const entryIndex = this.functions.get(this.program.entry_function)!;
+    const { index: entryIndex, definition: entry } = this.functionTarget(
+      this.program.entry_function,
+    );
     this.write(
       'pub fn execute(arguments: &[OwnedValue], limits: Limits) -> Result<Execution, ExecutionError> {\nlet mut rt = Runtime::new(limits).map_err(ExecutionError::Limits)?;\nlet types = vec![',
     );
-    for (const parameter of this.program.functions[entryIndex]!.parameters) {
+    for (const parameter of entry.parameters) {
       this.type(parameter.type);
       this.write(',');
     }
