@@ -93,6 +93,7 @@ test('rehashing cannot make unsupported ABI, semantics, target, or options compa
   const changes = [
     (v) => (v.backend = 'javascript'),
     (v) => (v.compiler_version = '9.0.0'),
+    (v) => (v.compiler_version = '0.1.0'),
     (v) => (v.runtime.abi_version = '2.0.0'),
     (v) => (v.execution_semantics_version = '2.0.0'),
     (v) => (v.toolchain.channel = 'nightly'),

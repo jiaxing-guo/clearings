@@ -22,17 +22,19 @@ assert.equal(artifact.backend, 'rust');
 assert.equal(artifact.program_id, program.artifact_id);
 ```
 
-| Field                         | Contract                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| `schema_version`, `kind`      | `0.1.0`, `compiled-program`                                                           |
-| `artifact_id`                 | `compiled-program:` plus SHA-256 of canonical artifact content excluding this field   |
-| `program_id`                  | Exact validated source Program IR identity                                            |
-| `backend`, `compiler_version` | `rust`, `0.1.0`; the backend contract version, not evidence that compilation occurred |
-| `execution_semantics_version` | `0.1.0`, corresponding to the existing reference execution/accounting contract        |
-| `runtime`                     | Exact `abi_version: 0.1.0` and `source_id`                                            |
-| `toolchain`                   | `channel: 1.85.1`, `edition: 2021`                                                    |
-| `options`                     | Exactly `resource_policy: reference-v0.1`; no optimization or unmetered option        |
-| `module`                      | Exactly `path: program.rs`, `source`, and SHA-256 of the source's exact UTF-8 bytes   |
+| Field                         | Contract                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| `schema_version`, `kind`      | `0.1.0`, `compiled-program`                                                         |
+| `artifact_id`                 | `compiled-program:` plus SHA-256 of canonical artifact content excluding this field |
+| `program_id`                  | Exact validated source Program IR identity                                          |
+| `backend`, `compiler_version` | `rust`, `0.1.1`; compiler/backend version, not evidence that compilation occurred   |
+| `execution_semantics_version` | `0.1.0`, corresponding to the existing reference execution/accounting contract      |
+| `runtime`                     | Exact `abi_version: 0.1.0` and `source_id`                                          |
+| `toolchain`                   | `channel: 1.85.1`, `edition: 2021`                                                  |
+| `options`                     | Exactly `resource_policy: reference-v0.1`; no optimization or unmetered option      |
+| `module`                      | Exactly `path: program.rs`, `source`, and SHA-256 of the source's exact UTF-8 bytes |
+
+The current validator accepts compiler version `0.1.1`; artifacts from `0.1.0` must be regenerated. The change fixes compilation of deep acyclic calls without changing runtime ABI or execution-semantics version `0.1.0`. See [compiler conformance](11-compiler-conformance.md#deep-call-regression).
 
 All fields except `artifact_id` contribute to artifact identity. Changing whitespace in target source changes its byte digest and artifact identity. Source text must be well-formed Unicode; IR string values with lone surrogates remain valid and are emitted through UTF-16 code-unit construction. The artifact interfaces and strict validators are defined in [artifacts.ts](../../src/compiler/artifacts.ts); no separate compiled-artifact JSON Schema is exported in this change.
 
@@ -85,6 +87,6 @@ Work is charged before depth checks. Construction work precedes value-size and a
 
 The exported `RustExecutionResult` describes the future runner result. It retains `program_id`, `limits`, `usage`, and `completion`, replacing `interpreter_version` with `backend`, `compiled_artifact_id`, `compiler_version`, `runtime`, and `execution_semantics_version`. No function currently produces this result from generated code.
 
-Differential evaluation will compare exact semantic values, completion class, application/fault codes and payloads, runtime-fault messages, logical limits/usage, and diagnostic phase/path/call stack. Backend identity fields necessarily differ. Input-error code/rule/path must correspond; host error text and stack traces are outside the equivalence claim. Generated-source bytes are deterministic artifacts; native-binary reproducibility additionally depends on compiler, linker, target, and environment.
+Differential evaluation compares exact semantic values, completion class, application/fault codes and payloads, runtime-fault messages, logical limits/usage, and diagnostic phase/path/call stack. Backend identity fields necessarily differ. Input-error code/rule/path must correspond; host error text and stack traces are outside the equivalence claim. Generated-source bytes are deterministic artifacts; native-binary reproducibility additionally depends on compiler, linker, target, and environment.
 
-The primitive tests check independent expected values and charges. The [native code-generation tests](10-rust-code-generation.md#native-validation) exercise emitted control flow and instrumentation. These bounded tests do not establish universal compiler correctness; the systematic compiler-conformance gate remains subsequent work.
+The primitive tests check independent expected values and charges. The [native code-generation tests](10-rust-code-generation.md#native-validation) exercise emitted control flow and instrumentation. The [systematic compiler-conformance gate](11-compiler-conformance.md) extends this evidence with independent graph and language expectations, accounting boundaries, and fault controls. These bounded tests do not establish universal compiler correctness.

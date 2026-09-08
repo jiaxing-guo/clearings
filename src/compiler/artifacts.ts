@@ -6,7 +6,7 @@ import { validateProgram } from '../program/validate.js';
 import type { Program } from '../program/model.js';
 import type { ProgramExecutionResult } from '../program/execution.js';
 
-export const RUST_BACKEND_VERSION = '0.1.0';
+export const RUST_BACKEND_VERSION = '0.1.1';
 export const RUST_RUNTIME_ABI_VERSION = '0.1.0';
 export const PROGRAM_EXECUTION_SEMANTICS_VERSION = '0.1.0';
 export const RUST_TOOLCHAIN = '1.85.1';

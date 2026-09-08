@@ -158,10 +158,10 @@ class Emitter {
     // Emit each operand before its parent helper, retaining the original traversal order.
     const writeBody = this.prepareExpressionBody(expr, scope, path);
     this.write(
-      `fn ${name}(rt: &mut Runtime, locals: &mut [Option<Value>]) -> Eval<Value> {\nrt.enter(${quoted(path)}, |rt| {\n`,
+      `fn ${name}(rt: &mut Runtime, locals: &mut [Option<Value>]) -> Eval<Value> {\nenter_value(rt, ${quoted(path)}, locals, ${name}_body)\n}\nfn ${name}_body(rt: &mut Runtime, locals: &mut [Option<Value>]) -> Eval<Value> {\n`,
     );
     writeBody();
-    this.write('\n})\n}\n');
+    this.write('\n}\n');
     return name;
   }
   private prepareExpressionBody(expr: ProgramExpression, scope: Scope, path: string): () => void {
@@ -332,17 +332,23 @@ class Emitter {
         case 'fail':
           body = `let details = ${expr(statement.details, 'details')};\nrt.fail(${quoted(statement.code)}, details)`;
       }
+      const statementName = `${name}_statement_${index}`;
+      this.write(
+        `fn ${statementName}(rt: &mut Runtime, locals: &mut [Option<Value>]) -> Eval<Option<Value>> {\n${body}\n}\n`,
+      );
       bodies.push(
         this.source.reserve(
-          `if let Some(value) = rt.at(${quoted(at)}, |rt| {\nrt.work(1)?;\n${body}\n})? { return Ok(Some(value)); }\n`,
+          `if let Some(value) = at_statement(rt, ${quoted(at)}, locals, ${statementName})? { return Ok(Some(value)); }\n`,
         ),
       );
     }
     this.write(
-      `fn ${name}(rt: &mut Runtime, locals: &mut [Option<Value>]) -> Eval<Option<Value>> {\nlet result = rt.enter(${quoted(path)}, |rt| {\n`,
+      `fn ${name}_body(rt: &mut Runtime, locals: &mut [Option<Value>]) -> Eval<Option<Value>> {\n`,
     );
     for (const body of bodies) this.source.appendReserved(body);
-    this.write('Ok(None)\n});\n');
+    this.write(
+      `Ok(None)\n}\nfn ${name}(rt: &mut Runtime, locals: &mut [Option<Value>]) -> Eval<Option<Value>> {\nlet result = enter_block(rt, ${quoted(path)}, locals, ${name}_body);\n`,
+    );
     for (const slot of declarations) this.write(`locals[${slot}] = None;\n`);
     this.write('result\n}\n');
     return name;
@@ -360,6 +366,20 @@ class Emitter {
     this.write(
       '#[derive(Debug)]\npub struct Execution { pub limits: Limits, pub usage: Usage, pub completion: Completion }\n',
     );
+    // Function pointers avoid one closure type (and FnOnce shim) per IR node. The four frame
+    // adapters have fixed callback types, so deep IR calls do not exhaust Rust monomorphization.
+    this.write(
+      [
+        'type ValueBody = fn(&mut Runtime, &mut [Option<Value>]) -> Eval<Value>;',
+        'type BlockBody = fn(&mut Runtime, &mut [Option<Value>]) -> Eval<Option<Value>>;',
+        'type FunctionBody = fn(&mut Runtime, &[Value]) -> Eval<Value>;',
+        'fn enter_value(rt: &mut Runtime, path: &str, locals: &mut [Option<Value>], action: ValueBody) -> Eval<Value> { rt.enter(path, |rt| action(rt, locals)) }',
+        'fn enter_block(rt: &mut Runtime, path: &str, locals: &mut [Option<Value>], action: BlockBody) -> Eval<Option<Value>> { rt.enter(path, |rt| action(rt, locals)) }',
+        'fn at_statement(rt: &mut Runtime, path: &str, locals: &mut [Option<Value>], action: BlockBody) -> Eval<Option<Value>> { rt.at(path, |rt| { rt.work(1)?; action(rt, locals) }) }',
+        'fn call_function(rt: &mut Runtime, id: &str, call_path: &str, path: &str, args: &[Value], action: FunctionBody) -> Eval<Value> { rt.call(id, call_path, path, |rt| action(rt, args)) }',
+        '',
+      ].join('\n'),
+    );
     for (const [index, fn] of this.program.functions.entries()) {
       const scope: Scope = { bindings: new Map(), depth: 0, slots: { next: 0 } };
       fn.parameters.forEach((parameter) =>
@@ -367,7 +387,7 @@ class Emitter {
       );
       const body = this.block(fn.body, scope, `/functions/${index}/body`);
       this.write(
-        `fn f_${index}(rt: &mut Runtime, args: &[Value], call_path: &str) -> Eval<Value> {\nrt.call(${quoted(fn.id)}, call_path, "/functions/${index}", |rt| {\nlet mut locals = vec![None; ${scope.slots.next}];\n`,
+        `fn f_${index}(rt: &mut Runtime, args: &[Value], call_path: &str) -> Eval<Value> {\ncall_function(rt, ${quoted(fn.id)}, call_path, "/functions/${index}", args, f_${index}_body)\n}\nfn f_${index}_body(rt: &mut Runtime, args: &[Value]) -> Eval<Value> {\nlet mut locals = vec![None; ${scope.slots.next}];\n`,
       );
       fn.parameters.forEach((parameter, i) =>
         this.write(
@@ -375,7 +395,7 @@ class Emitter {
         ),
       );
       this.write(
-        `${body}(rt, &mut locals)?.ok_or(RuntimeError::InvalidAbi("Generated function did not return or fail."))\n})\n}\n`,
+        `${body}(rt, &mut locals)?.ok_or(RuntimeError::InvalidAbi("Generated function did not return or fail."))\n}\n`,
       );
     }
     const { index: entryIndex, definition: entry } = this.functionTarget(
