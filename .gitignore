@@ -10,6 +10,7 @@ coverage/
 runs/
 benchmark-checkouts/
 benchmarks/results/local/
+runtime/rust/target/
 
 # Local documentation build
 website/.next/

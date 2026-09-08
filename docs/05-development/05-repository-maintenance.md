@@ -8,6 +8,7 @@ Clearings uses one TypeScript library and CLI, a Fumadocs presentation of the ca
 | ----------------------------- | --------------------------------------------------------------------------------- |
 | `src/`                        | Maintained library and CLI implementation                                         |
 | `programs/`                   | Authored executable Program IR and example arguments                              |
+| `runtime/rust/`               | Unpublished primitive Rust runtime, pinned toolchain, and independent tests       |
 | `schemas/`, `specifications/` | Versioned interchange schemas and contract artifacts                              |
 | `tests/`                      | Regression tests, independent expectations, and intentional source fixtures       |
 | `docs/`                       | Canonical technical Markdown; historical material under `archive/`                |
@@ -39,6 +40,8 @@ The [ignore file](../../.prettierignore) excludes:
 Those four source exclusions are an existing evidence dependency, not an alternative formatting convention. The [bootstrap verifier](../../scripts/check-bootstrap-demo.mjs) checks their whole-file hashes and byte ranges against the recorded bindings. Removing that coupling requires an explicit evidence migration to immutable source snapshots; formatting must not silently replace the historical bindings or weaken their checks. For a new generator-owned artifact, preserve its serialization procedure and add the appropriate exclusion.
 
 ## Formatting history
+
+Rust uses rustfmt through `npm run format:rust`; `npm run check:rust` checks formatting and Clippy, and `npm run test:rust` runs independent runtime tests. These commands enter `runtime/rust/` so rustup selects its pinned toolchain. The dependency-free crate can be tested offline after toolchain installation. `npm run clean` also removes `runtime/rust/target/`. Cargo.lock and authored Rust sources remain tracked; Cargo build output is ignored.
 
 The initial formatting pass was a separate commit during review and was squash-merged with repository maintenance in PR #14. The final merged commit is recorded in [the blame ignore file](../../.git-blame-ignore-revs). For local Git, enable it with `git config blame.ignoreRevsFile .git-blame-ignore-revs`. Future entries must use commits present in maintained history, rather than temporary PR hashes. The initial entry includes the accompanying maintenance changes as well as formatting because squash merging combined them.
 
