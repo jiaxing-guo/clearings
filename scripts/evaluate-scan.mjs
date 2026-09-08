@@ -4,7 +4,7 @@ import { validateScan } from '../dist/index.js';
 
 const [artifact, repository] = process.argv.slice(2);
 if (!artifact || !repository)
-  throw new Error('Usage: node scripts/evaluate-m1.mjs <scan.json> <pinned-repository>');
+  throw new Error('Usage: node scripts/evaluate-scan.mjs <scan.json> <pinned-repository>');
 const result = JSON.parse(readFileSync(artifact, 'utf8'));
 validateScan(result, { repository });
 const expected = JSON.parse(

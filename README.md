@@ -104,9 +104,12 @@ Output is written to `website/out`. Production builds default to `/clearings`; l
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, focused changes, documentation work, and source-backed reviews.
 
 ```bash
+npm run format:check
 npm run typecheck
 npm test
 ```
+
+Use `npm run format` to apply the pinned Prettier style and `npm run clean` to remove generated builds. [Repository maintenance](docs/05-development/05-repository-maintenance.md) records the formatting exclusions, cleanup scope, and descriptive script names.
 
 The archive tests require Python 3.9 or newer under the `python3` command.
 

@@ -62,7 +62,8 @@
     "test:program": "npm run build && node --test tests/program*.test.mjs",
     "program": "npm run build --silent && node dist/cli/main.js program",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "clean": "node scripts/clean.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

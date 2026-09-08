@@ -19,7 +19,7 @@ const destination = resolve(root, 'website/content/docs/technical');
 const sourceRef =
   process.env.DOCS_SOURCE_REF ??
   execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
-const repository = `https://github.com/jiaxing-guo/clearings-semantic`;
+const repository = `https://github.com/jiaxing-guo/clearings`;
 const slug = (name) => name.replace(/^\d+-/, '').replace(/\.md$/, '');
 const sections = readdirSync(docs, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && /^\d+-/.test(entry.name))

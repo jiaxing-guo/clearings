@@ -18,6 +18,7 @@ The numbered Markdown reference defines current semantics and abstraction bounda
 - Do not publish packages, make the repository public, or change unrelated repositories as part of prototype development.
 - Report completed work, verification actually run, and remaining limitations separately.
 
+- Use the pinned Prettier configuration for maintained files. Run `npm run format` and `npm run format:check`; respect `.prettierignore` for frozen evidence and generator-owned data. Use `npm run clean` for generated build products. See docs/05-development/05-repository-maintenance.md for exclusions and repository organization.
 - Use Conventional Commits. PR titles, descriptions, and commit messages describe behavior and must not include internal milestone labels.
 
 ## Technical prose

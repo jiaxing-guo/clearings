@@ -152,7 +152,7 @@ export async function recordContextAssembly(
       implementationRoot,
       options.repository ??
         (implementationRoot === realpathSync(recorderRoot)
-          ? 'https://github.com/jiaxing-guo/clearings-semantic'
+          ? 'https://github.com/jiaxing-guo/clearings'
           : pathToFileURL(implementationRoot).href),
     );
     adapterDigest = componentDigest(recorderRoot);

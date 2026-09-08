@@ -8,7 +8,9 @@ import { inventory, readTarget, validateInventory } from '../dist/index.js';
 
 const [repositoryArg, destinationArg, mode] = process.argv.slice(2);
 if (!repositoryArg || !destinationArg)
-  throw new Error('Usage: node scripts/measure-m0.mjs <pinned-bare-repo> <new-output-directory>');
+  throw new Error(
+    'Usage: node scripts/measure-inventory.mjs <pinned-bare-repo> <new-output-directory>',
+  );
 const repository = resolve(repositoryArg);
 const output = resolve(destinationArg);
 const root = dirname(dirname(fileURLToPath(import.meta.url)));

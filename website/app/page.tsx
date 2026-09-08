@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
-import { baseOptions } from '@/lib/layout.shared';
+import { getLayoutOptions } from '@/lib/layout-options';
 const paths = [
   [
     'Learn Clearings',
@@ -25,7 +25,7 @@ const paths = [
 ];
 export default function Home() {
   return (
-    <HomeLayout {...baseOptions()}>
+    <HomeLayout {...getLayoutOptions()}>
       <main className="home-intro">
         <p className="eyebrow">Technical documentation</p>
         <h1>Understand and check operation contracts.</h1>

@@ -45,6 +45,7 @@ The original reference order remains available for a systematic review. For a la
 | 24    | [Required dependency closure in Program IR](02-semantics/06-required-dependency-closure.md) | How does Clearings execute and independently evaluate one of its own algorithms in IR?  |
 | 25    | [Program CLI and reports](03-reference/08-program-cli.md)                                   | How do I validate, inspect, and execute programs from the command line?                 |
 | 26    | [Run and inspect a Program IR algorithm](04-guides/05-run-programs.md)                      | How do I execute the closure example, supply arguments, and read its results?           |
+| 27    | [Repository maintenance](05-development/05-repository-maintenance.md)                       | How do I format, clean, and organize maintained files while preserving evidence?        |
 
 ## Status and authority
 

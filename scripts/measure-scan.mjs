@@ -10,7 +10,7 @@ import { scan, readTarget, validateScan } from '../dist/index.js';
 const [repositoryArg, outputArg, child] = process.argv.slice(2);
 if (!repositoryArg || !outputArg)
   throw new Error(
-    'Usage: node scripts/measure-m1.mjs <pinned-bare-repository> <new-output-directory>',
+    'Usage: node scripts/measure-scan.mjs <pinned-bare-repository> <new-output-directory>',
   );
 const repository = realpathSync(repositoryArg);
 const output = resolve(outputArg);

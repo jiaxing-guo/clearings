@@ -1,5 +1,5 @@
 import './global.css';
-import { Provider } from '@/components/provider';
+import { DocumentationProvider } from '@/components/documentation-provider';
 export const metadata = {
   title: { default: 'Clearings', template: '%s · Clearings' },
   description:
@@ -9,7 +9,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
-        <Provider>{children}</Provider>
+        <DocumentationProvider>{children}</DocumentationProvider>
       </body>
     </html>
   );

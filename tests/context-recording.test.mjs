@@ -156,6 +156,10 @@ test('recorder captures an actual return, owned arguments, measured bytes, and c
     measurement(record, 'serialized-bytes').value,
     Buffer.byteLength(JSON.stringify(record.completion.result.value) + '\n'),
   );
+  assert.equal(
+    record.identities.implementation.repository,
+    'https://github.com/jiaxing-guo/clearings',
+  );
   assert.equal(record.identities.fixture.sha256, hash(canonical(original)));
   for (const path of [
     'src/specification/context.ts',
