@@ -40,7 +40,7 @@ npm run conformance
 
 The command builds the CLI and writes raw evidence, JSON evaluations, and `report.md` for 36 cases to a unique directory under `../clearings-conformance-runs`. It prints the output path. Scoped acceptance remains separate from the broader contract's unknown obligations. [Evaluate and replay conformance](docs/04-guides/04-evaluate-context-conformance.md) explains the full domain, independent controls, saved-evidence replay, and failure reports.
 
-Program IR v0.1 now defines typed implementation bodies and static validation through `clearings/program`. It supports collections, bindings, branching, iteration, IR-defined calls, and typed application failures. `npm run test:program` checks the validator and authored examples. The reference interpreter is planned; these checks do not execute Program IR. See [Program IR semantics](docs/02-semantics/05-program-ir.md) and [artifact interfaces](docs/03-reference/06-program-artifacts.md).
+Program IR v0.1 defines typed implementation bodies with static validation and a reference interpreter through `clearings/program`. It supports collections, bindings, branching, iteration, IR-defined calls, and typed application failures. `executeProgram` executes the declared entry function with finite resource limits and distinct return, application-failure, runtime-fault, and exhaustion results. `npm run test:program` checks validation and execution semantics. See [Program IR semantics](docs/02-semantics/05-program-ir.md), [artifact interfaces](docs/03-reference/06-program-artifacts.md), and [program execution](docs/03-reference/07-program-execution.md). The dependency-closure program and integrated program CLI remain planned.
 
 ## Explore the three demos
 

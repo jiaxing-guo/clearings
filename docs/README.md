@@ -41,10 +41,11 @@ The original reference order remains available for a systematic review. For a la
 | 20 | [Program IR semantics](02-semantics/05-program-ir.md) | How do typed implementations express computation, control flow, calls, and failure? |
 | 21 | [Program artifacts and validation](03-reference/06-program-artifacts.md) | How do I validate a program and interpret its static diagnostics? |
 | 22 | [Program IR implementation plan](05-development/04-program-ir-plan.md) | How will the language and interpreter execute one real Clearings algorithm? |
+| 23 | [Program execution](03-reference/07-program-execution.md) | How do I execute a program and interpret completions, resource limits, and diagnostics? |
 
 ## Status and authority
 
-This reference describes the implemented v0.3.0 contract language, its relationship to the v0.1/v0.2 models, and the new Program IR v0.1 syntax and static validator. Program execution semantics are defined for the planned reference interpreter; no program runner is implemented yet. Refinement proof procedures remain proposals.
+This reference describes the implemented v0.3.0 contract language, its relationship to the v0.1/v0.2 models, and Program IR v0.1 with its static validator and reference interpreter. Program execution implements the defined language semantics under documented resource limits. The dependency-closure program, integrated program CLI, and refinement proof procedures remain subsequent work.
 
 Sections on semantics and interfaces specify the current contract. Architecture explanations, examples, and roadmap proposals have different roles. If source, schema, tests, and reference disagree, record a defect and resolve the discrepancy explicitly. Passing schema validation does not override semantic requirements; a prose sentence does not become an executable predicate by appearing beside one.
 

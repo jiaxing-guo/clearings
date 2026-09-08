@@ -6,8 +6,8 @@ The objective is a small typed language and reference interpreter that execute o
 
 | Sequence | Larger purpose | Concrete scope | Status |
 | --- | --- | --- | --- |
-| 1 | Define an implementation language with precise semantics | Program types and schema; expression, statement, call, and failure semantics; static validation; authored validation examples | Implemented in this change; no execution |
-| 2 | Establish the reference VM | Interpreter, work/storage limits, diagnostic completions, and independent tests of each language construct | Planned |
+| 1 | Define an implementation language with precise semantics | Program types and schema; expression, statement, call, and failure semantics; static validation; authored validation examples | Implemented |
+| 2 | Establish the reference VM | Interpreter, work/storage limits, diagnostic completions, and independent tests of each language construct | Implemented; [execution API and accounting](../03-reference/07-program-execution.md) |
 | 3 | Express a real Clearings algorithm in its own IR | Ordered dependency closure, including worklist, visited values, lookup, ordering, missing references, and IR-defined calls; independent exhaustive three-node tests and targeted cases | Planned |
 | 4 | Make the result reproducible and usable | Concise CLI commands, readable program inspection and execution results, worked documentation, and focused CI | Planned |
 
