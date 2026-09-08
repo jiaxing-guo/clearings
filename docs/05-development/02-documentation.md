@@ -12,7 +12,7 @@ Use relative repository links, Markdown tables for exact mappings, and fenced co
 
 ## Run the documentation locally
 
-Use Node.js 24, npm 11, and Python 3.9 or newer available as `python3`. From the repository root:
+Use Node.js 24, npm 11, and Python 3.9 or newer available as `python3`. Preparing validated context assets also requires Rust 1.85.1 through rustup and a host linker on a native cache miss. From the repository root:
 
 ```bash
 npm ci --ignore-scripts

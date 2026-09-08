@@ -1,3 +1,4 @@
+import { prepareContextRuntime } from '../specification/native-closure.js';
 import {
   existsSync,
   lstatSync,
@@ -192,6 +193,9 @@ export async function conformanceCommand(
     contextSuiteIdentity(suite);
     cases = createContextAssemblyCases(suite);
   }
+  // Prepare only this package's implementation, before any bounded worker or output.
+  // Replay and explicitly selected candidates never trigger preparation here.
+  if (action === 'run' && values['implementation-root'] === undefined) prepareContextRuntime();
   // Validate the first input before creating output, then retain only the current record.
   const iterator = records[Symbol.iterator]();
   let current = iterator.next();

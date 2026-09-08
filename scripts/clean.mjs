@@ -1,4 +1,8 @@
 import { rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Explicit build products only. Source, dependencies, and recorded runs are retained.
 const generatedPaths = [
@@ -26,4 +30,14 @@ for (const path of generatedPaths) {
     retryDelay: 100,
   });
 }
-console.log('Removed library, compiled-source, and documentation build products.');
+// Match the default package-local cache namespace in specification/native-closure.ts.
+// Explicit CLEARINGS_NATIVE_CACHE locations are user-managed and retained.
+const packageRoot = fileURLToPath(new URL('../', import.meta.url));
+const namespace = createHash('sha256').update(packageRoot).digest('hex').slice(0, 24);
+rmSync(join(tmpdir(), `clearings-native-${process.getuid?.() ?? 'user'}`, namespace), {
+  recursive: true,
+  force: true,
+});
+console.log(
+  'Removed library, compiled-source, default native cache, and documentation build products.',
+);

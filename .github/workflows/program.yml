@@ -4,8 +4,13 @@ on:
   pull_request:
     paths:
       - 'src/**'
-      - 'schemas/**'
+      - 'runtime/rust/**'
       - 'programs/**'
+      - 'scripts/prepare-context-native.mjs'
+      - 'scripts/check-bootstrap-demo.mjs'
+      - 'scripts/lib/bootstrap-source-snapshot.mjs'
+      - 'benchmarks/sources/**'
+      - 'schemas/**'
       - 'tests/program*.test.mjs'
       - 'tests/helpers/program-closure-reference.mjs'
       - 'scripts/generate-program-schema.py'

@@ -1,3 +1,4 @@
+import { checkInstalledContext } from './context-consumer.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -124,6 +125,7 @@ console.log(JSON.stringify(executeRustProgram(program, ['consumer\\ud800']).comp
       ),
       { kind: 'return', value: 'consumer\ud800' },
     );
+    checkInstalledContext(installed, dir);
     // A driver panic is an operational failure, never an interpreter fallback or language failure.
     writeFileSync(
       join(installed, 'runtime/rust/runner/main.rs'),

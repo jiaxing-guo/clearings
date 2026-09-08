@@ -20,6 +20,17 @@ Production integration uses an owned cache outside package source, with an expli
 
 Fresh recording must include Program IR and Rust source inventories, plus observed native program/artifact/build identities and logical usage. These identities establish content bindings and reported execution context, not authentication against a malicious candidate. They must not change semantic context bytes. Historical records remain readable without native metadata.
 
-The final gate retains the full context-conformance domain, independent expectations, fault controls, native compiler tests, installed-package checks, source snapshot verification, and runnable documentation. Production adoption is complete only when the ordinary caller uses the compiled algorithm and these gates have recorded results.
+The final gate retains the full context-conformance domain, independent expectations, fault controls, native compiler tests, installed-package checks, source snapshot verification, and runnable documentation. The ordinary caller now uses the compiled algorithm, and the local adoption gates have recorded passing results. Hosted CI and PR review remain integration gates; the implementation does not establish universal refinement or self-hosting.
 
 Agent-authored IR changes, new language effects, optimization, additional targets, and self-hosting follow this milestone.
+
+## Review and integration order
+
+| PR                                                     | Purpose                                    | Review boundary                                                                                      |
+| ------------------------------------------------------ | ------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| [21](https://github.com/jiaxing-guo/clearings/pull/21) | Preserve exact historical source evidence  | Snapshot integrity and source-binding reproduction                                                   |
+| [22](https://github.com/jiaxing-guo/clearings/pull/22) | Prepare reusable native executables        | Cache identity, lifetime, fresh per-invocation state, and measured preparation cost                  |
+| [23](https://github.com/jiaxing-guo/clearings/pull/23) | Adopt compiled closure in context assembly | Caller compatibility, explicit resource policy, and v0.2 execution records                           |
+| Final adoption gate                                    | Validate the ordinary installed workflow   | Independent context conformance, IR mutation control, native failure controls, CI, and documentation |
+
+The PRs are dependent and remain subject to review. Merge in this order, then retarget or restack the remaining branches. The [fresh adoption observation](../../benchmarks/results/native-context-adoption-20260908/README.md) preserves one recorded production invocation and explains how to reproduce the full gates.
