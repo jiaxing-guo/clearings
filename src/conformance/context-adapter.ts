@@ -1,3 +1,4 @@
+import { isNativeInterruption } from './native-interruption.js';
 import { canonical } from '../repository/inventory.js';
 import { sha256 } from '../repository/source.js';
 import { matchesType } from '../specification/expressions.js';
@@ -178,6 +179,8 @@ export function mapContextAssemblyObservation(record: ExecutionRecord): ContextA
     )
       return unmapped(`Measurement differs from its captured evidence: ${actual.id}`);
   }
+  if (isNativeInterruption(record))
+    return unmapped('Native execution was interrupted before an application result was available.');
   const isReturn = record.completion.kind === 'return';
   const required = [
     'invocation',

@@ -353,7 +353,14 @@ try {
   const diagnostic = {
     code,
     message,
-    ...(command === 'program' && known && error.details ? { details: error.details } : {}),
+    ...(known &&
+    error.details &&
+    (command === 'program' ||
+      code === 'CONTEXT_RESOURCE' ||
+      code === 'CONTEXT_NATIVE_FAILED' ||
+      code.startsWith('RUST_'))
+      ? { details: error.details }
+      : {}),
   };
   const stderr = `${code}: ${message}\n`;
   process.stderr.write(

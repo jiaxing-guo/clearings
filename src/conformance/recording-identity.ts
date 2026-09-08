@@ -21,10 +21,11 @@ export function componentFiles(root: string): { path: string; sha256: string }[]
       if (entry.isSymbolicLink())
         throw new Error(`Component manifests require regular files: ${child}`);
       if (entry.isDirectory()) walk(child);
-      else if (/\.(?:ts|js|json)$/.test(child) && !child.endsWith('.d.ts')) paths.push(child);
+      else if (/\.(?:ts|js|json|rs|toml|lock)$/.test(child) && !child.endsWith('.d.ts'))
+        paths.push(child);
     }
   }
-  for (const directory of ['src', 'dist', 'schemas']) walk(directory);
+  for (const directory of ['src', 'dist', 'schemas', 'programs']) walk(directory);
   if (
     ['specifications', 'specifications/clearings', 'specifications/clearings/conformance'].every(
       checkDirectory,
@@ -34,6 +35,15 @@ export function componentFiles(root: string): { path: string; sha256: string }[]
       const path = `specifications/clearings/conformance/${name}.json`;
       if (lstatSync(join(root, path), { throwIfNoEntry: false })) paths.push(path);
     }
+  }
+  if (['runtime', 'runtime/rust'].every(checkDirectory)) {
+    for (const path of ['runtime/rust/src', 'runtime/rust/runner']) walk(path);
+    for (const path of [
+      'runtime/rust/Cargo.toml',
+      'runtime/rust/Cargo.lock',
+      'runtime/rust/rust-toolchain.toml',
+    ])
+      if (lstatSync(join(root, path), { throwIfNoEntry: false })) paths.push(path);
   }
   for (const path of ['src/specification/context.ts', 'dist/specification/context.js'])
     if (!paths.includes(path)) throw new Error(`Missing context-assembly component file: ${path}`);

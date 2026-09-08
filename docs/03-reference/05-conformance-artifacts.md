@@ -1,6 +1,6 @@
 # Conformance artifacts
 
-Conformance artifacts describe evaluation scope and captured evidence. They have their own `0.1.0` schema versions and do not revise the v0.3 operation specification. Validation checks well-formedness, content identity, references, and declarations; it does not execute an implementation or establish observation fidelity.
+Conformance artifacts describe evaluation scope and captured evidence. Profiles retain schema version `0.1.0`; new execution records use `0.2.0` and historical `0.1.0` records remain valid and do not revise the v0.3 operation specification. Validation checks well-formedness, content identity, references, and declarations; it does not execute an implementation or establish observation fidelity.
 
 ## Read an authored example
 
@@ -83,6 +83,14 @@ The record digest uses the existing canonical serializer and includes all record
 An observed measurement must match its profile value type and satisfy every entry in its definition's `capture_requirements`. The permitted prerequisites are `arguments-before`, `arguments-after`, `return`, and `exception`; an empty list declares no capture prerequisite. Original arguments are always present in a valid record. The other prerequisites require a captured resulting snapshot, return value, or exception respectively. A direct capture source must appear in its measurement's prerequisites.
 
 Measurement origin and capture prerequisites are separate properties. `serialized-bytes` has `source: "independent"` and `capture_requirements: ["return"]`: independent computation still requires the candidate's captured return. `reference-required-bytes` and `expected-projection` require only `arguments-before` and may be observed without a candidate return. Missing prerequisites require an unobserved measurement. Validation checks these declarations; their semantic completeness, measurement fidelity, timing, and independent computation remain outside structural validation.
+
+## Native execution records
+
+The [v0.2 execution-record schema](../../schemas/execution-record.v0.2.json), exported as `clearings/schemas/execution-record-v2`, adds required `native_execution`. The original `clearings/schemas/execution-record` export and closed v0.1 schema remain unchanged. New record identities include this field; historical records do not acquire new execution claims.
+
+An observed native invocation records the policy, Program IR and compiled-artifact IDs, compiler and execution-semantics versions, runtime and runner source identities, native build and executable hashes, platform, architecture, limits, usage, and completion kind. Pre-native validation failures and candidates without instrumentation record explicit unavailability. The recorder captures the first message on `clearings.context.native.v1`; the implementation manifest also inventories Program IR and Rust sources and pinned build inputs. This is instrumentation of trusted local candidates, not proof of the dynamically loaded code or authentication against a candidate that forges instrumentation.
+
+Resource exhaustion and native infrastructure interruptions leave evaluation inconclusive when no completed application result is available. Captured argument mutation and inconsistent measurement claims still fail independently. An unexpected compiled language failure is evaluated as a mismatching application completion. Successful native traversal can precede an ordinary `CONTEXT_BUDGET` exception; its native completion remains `return`.
 
 ## Library interfaces
 

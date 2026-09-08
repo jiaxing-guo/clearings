@@ -10,7 +10,7 @@ The current foundation has three parts:
 - **Program IR and a reference interpreter** represent and execute typed algorithms. Ordered required dependency closure is implemented in IR and checked against an independent graph oracle.
 - **Executable conformance** captures actual context-assembly executions and evaluates them against a bounded domain, with controls and saved-evidence replay.
 
-The [Rust backend](docs/05-development/06-rust-backend-plan.md) now compiles Program IR into deterministic Rust source. Generated identity, sum, and dependency-closure programs execute natively through the [primitive runtime](docs/03-reference/09-rust-backend.md). See [code generation](docs/03-reference/10-rust-code-generation.md) for the library API and native test commands. Bounded compiler conformance, source export, and native CLI/package execution are implemented. [Compile and run with Rust](docs/04-guides/06-compile-and-run-rust.md) describes the complete workflow. Automatic contract-to-program synthesis is not implemented, and production context assembly still uses the TypeScript kernel. Repository analysis, agent context, and human reports provide supporting evidence and projections. See the [architecture](docs/01-architecture/01-system.md) and [status and roadmap](docs/05-development/01-status-and-roadmap.md).
+The [Rust backend](docs/05-development/06-rust-backend-plan.md) now compiles Program IR into deterministic Rust source. Generated identity, sum, and dependency-closure programs execute natively through the [primitive runtime](docs/03-reference/09-rust-backend.md). See [code generation](docs/03-reference/10-rust-code-generation.md) for the library API and native test commands. Bounded compiler conformance, source export, and native CLI/package execution are implemented. [Compile and run with Rust](docs/04-guides/06-compile-and-run-rust.md) describes the complete workflow. Production context assembly now executes the compiled closure under an explicit [native execution policy](docs/05-development/08-production-adoption.md). Automatic contract-to-program synthesis is not implemented. Repository analysis, agent context, and human reports provide supporting evidence and projections. See the [architecture](docs/01-architecture/01-system.md) and [status and roadmap](docs/05-development/01-status-and-roadmap.md).
 
 This is a private, unpublished prototype. Historical Hono demonstrations cover request dispatch and middleware composition; independent claim-support review remains pending.
 
@@ -49,6 +49,8 @@ Export the rules for an agent:
 ```bash
 node dist/cli/main.js context specifications/hono/response-selection.json --operation response-selection --max-bytes 131072
 ```
+
+Context assembly requires Rust 1.85.1 and a host linker on a cache miss. Run `npm run native:prepare` once before recording or running the context workflow. Warm execution reuses a verified local executable. See the [context execution contract](docs/03-reference/02-context-and-projections.md#native-execution).
 
 The pack retains each required operation, its conditions, decisions, and source. Its byte count covers exact compact JSON plus its final newline. Read [the typed specification guide](docs/04-guides/01-check-a-case.md) to check a concrete case or use the API.
 

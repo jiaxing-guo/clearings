@@ -490,7 +490,11 @@ test('schema and authored artifact generation reproduce committed files', (t) =>
   );
   cpSync('schemas/specification.v0.3.json', join(directory, 'schemas/specification.v0.3.json'));
   execFileSync('python3', [join(directory, 'scripts/generate-conformance-schemas.py')]);
-  for (const file of ['conformance-profile.v0.1.json', 'execution-record.v0.1.json'])
+  for (const file of [
+    'conformance-profile.v0.1.json',
+    'execution-record.v0.1.json',
+    'execution-record.v0.2.json',
+  ])
     assert.deepEqual(
       readFileSync(join(directory, 'schemas', file)),
       readFileSync(join('schemas', file)),

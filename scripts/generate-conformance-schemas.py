@@ -84,3 +84,26 @@ for name, schema in [('conformance-profile', profile), ('execution-record', reco
     document = {'$schema': 'http://json-schema.org/draft-07/schema#',
                 '$id': f'https://clearings.dev/schemas/{name}.v0.1.json', **schema, 'definitions': definitions}
     (ROOT / f'schemas/{name}.v0.1.json').write_text(json.dumps(document, indent=2) + '\n')
+
+# Native observations use a new record schema; keep the historical closed v0.1 schema unchanged.
+import copy
+native_record = copy.deepcopy(json.loads((ROOT / 'schemas/execution-record.v0.1.json').read_text()))
+native_record['$id'] = 'https://clearings.dev/schemas/execution-record.v0.2.json'
+native_record['properties']['schema_version'] = enum('0.2.0')
+units = obj({name: {'type': 'integer', 'minimum': 0, 'maximum': 9007199254740991} for name in ['work','allocation_units','value_units','evaluation_depth']})
+limits = copy.deepcopy(units)
+for value in limits['properties'].values(): value['minimum'] = 1
+native = obj({
+    'status': enum('observed'), 'policy': enum('context-native-v1'),
+    'program_id': {'type':'string','pattern':'^program:[a-f0-9]{64}$'},
+    'compiled_artifact_id': {'type':'string','pattern':'^compiled-program:[a-f0-9]{64}$'},
+    'compiler_version': TEXT, 'execution_semantics_version': TEXT,
+    'runtime': obj({'abi_version':TEXT,'source_id':{'type':'string','pattern':'^rust-runtime:[a-f0-9]{64}$'}}),
+    'runner': obj({'version':TEXT,'source_id':{'type':'string','pattern':'^rust-runner:[a-f0-9]{64}$'}}),
+    'native': obj({'build_id':{'type':'string','pattern':'^native-build:[a-f0-9]{64}$'},'executable_sha256':HASH,'platform':TEXT,'architecture':TEXT}),
+    'limits': limits, 'usage':units,
+    'completion':enum('return','application-failure','runtime-fault','resource-exhaustion'),
+})
+native_record['properties']['native_execution'] = {'oneOf':[native,unavailable]}
+native_record['required'].append('native_execution')
+(ROOT / 'schemas/execution-record.v0.2.json').write_text(json.dumps(native_record,indent=2)+'\n')

@@ -2,7 +2,7 @@
 
 The [required-dependency-closure program](../../programs/clearings/required-dependency-closure.json) implements the ordered graph-closure kernel used by Clearings context assembly. Its worklist, visited values, record lookup, required-edge filtering, sorting, and failures are executable Program IR. The [reference interpreter](../03-reference/07-program-execution.md) supplies only general language operations.
 
-This is one Clearings algorithm represented and executed in its own implementation language. The [production context assembler](../../src/specification/context.ts) continues to use its TypeScript implementation. Production integration and whole-assembler conformance are separate from the bounded algorithm agreement established here.
+This is one Clearings algorithm represented and executed in its own implementation language. The [production context assembler](../../src/specification/context.ts) now invokes its compiled Rust implementation. The [production adoption contract](../05-development/08-production-adoption.md) defines adapter behavior, finite execution limits, and separate whole-assembler validation.
 
 ## A concrete ordering case
 

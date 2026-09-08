@@ -29,7 +29,7 @@ The [backend artifact contract and primitive Rust runtime](../03-reference/09-ru
 | Source and context adapters          | `src/repository/`, `src/adapters/`, `src/analysis/`, `src/semantics/`, `src/contracts/`, and context assembly      | Connect repository evidence and selected requirements to the development workflow         |
 | Developer interfaces and projections | `src/cli/`, `src/renderers/`, `src/presentation/`, `docs/`, `website/`                                             | Make artifacts, executions, and diagnostics usable without defining alternative semantics |
 
-These are responsibility boundaries within the existing package, not a directory migration. Context assembly currently lives with specification processing; legacy report and source-analysis APIs remain supported. Production context assembly still calls the TypeScript dependency-closure kernel. The authored IR closure is an independently exercised workload, with a different input interface and bounded execution contract; production adoption requires an explicit compatibility migration.
+These are responsibility boundaries within the existing package, not a directory migration. Context assembly currently lives with specification processing; legacy report and source-analysis APIs remain supported. Production context assembly converts operation records to portable graph values and invokes the compiled Program IR closure. Whole-specification validation and context projection remain in TypeScript. The [adoption contract](../05-development/08-production-adoption.md) defines the explicit compatibility migration, native setup, and finite execution limits.
 
 ## Follow one specification through the system
 

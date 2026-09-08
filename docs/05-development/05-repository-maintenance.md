@@ -35,9 +35,8 @@ The [ignore file](../../.prettierignore) excludes:
 - Frozen benchmark evidence, test fixtures with intentional source coordinates or malformed syntax, and archived documentation.
 - Generator-owned schemas, contract/program JSON, and npm lockfiles.
 - The historical bootstrap design and compatibility document.
-- Four implementation files whose exact bytes remain bound by the preserved bootstrap demonstration: `src/analysis/budget.ts`, `src/analysis/dependencies.ts`, `src/specification/context.ts`, and `src/specification/render.ts`.
 
-Those four source exclusions temporarily retain the existing layout during production migration. Historical verification now reads the [immutable source snapshot](../../benchmarks/sources/clearings-bootstrap/README.md), checking the original whole-file hashes and byte ranges independently of the working tree. The snapshot's manifest records the matching repository revision without changing the historical execution claims. Current context reproduction is checked separately. Production files can now evolve; remove their formatting exclusions when they are next maintained.
+Historical verification reads the [immutable source snapshot](../../benchmarks/sources/clearings-bootstrap/README.md), checking the original whole-file hashes and byte ranges independently of the working tree. Its manifest records the matching repository revision without changing historical execution claims. Current context reproduction is checked separately. The four production files now follow Prettier; only the snapshot preserves their original bytes.
 
 ## Formatting history
 

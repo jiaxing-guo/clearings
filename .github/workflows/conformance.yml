@@ -33,6 +33,9 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+      - run: rustup show active-toolchain
+        working-directory: runtime/rust
       - run: npm ci --ignore-scripts
+      - run: npm run native:prepare
       - run: npm run test:conformance
       - run: npm run docs:check:markdown
