@@ -9,8 +9,8 @@ const paths = [
   ],
   [
     'Guides',
-    'Check a Hono case or author and review a specification.',
-    '/docs/technical/guides/check-a-case',
+    'Execute a Program IR algorithm or author and review a specification.',
+    '/docs/technical/guides/run-programs',
   ],
   [
     'Reference',
@@ -28,10 +28,10 @@ export default function Home() {
     <HomeLayout {...getLayoutOptions()}>
       <main className="home-intro">
         <p className="eyebrow">Technical documentation</p>
-        <h1>Understand and check operation contracts.</h1>
+        <h1>Specify behavior. Execute typed programs.</h1>
         <p>
-          Clearings represents repository structure and proposed behavior, assembles bounded agent
-          context, and checks supplied observations against typed contracts.
+          Clearings is developing a compiler and execution runtime for agentic coding. Explore
+          operation contracts, Program IR, reference execution, and independent conformance checks.
         </p>
         <div className="reading-paths">
           {paths.map(([title, description, href]) => (
@@ -47,17 +47,17 @@ export default function Home() {
         <div className="home-example">
           <div>
             <p className="eyebrow">Start with an example</p>
-            <h2>Why does an observation pass?</h2>
+            <h2>Run a Clearings algorithm from IR.</h2>
             <p>
-              Compare a matching output, a conflicting output, and a missing output for the same
-              Hono operation.
+              Inspect and execute required dependency closure, then read its result, resource usage,
+              and diagnostic completions.
             </p>
           </div>
-          <Link href="/docs/technical/semantics/operations">Explore operation checks →</Link>
+          <Link href="/docs/technical/guides/run-programs">Run the closure program →</Link>
         </div>
         <p className="home-note">
-          The reference describes v0.3.0 contracts and their relationship to the earlier source
-          models.{' '}
+          The reference describes v0.3.0 operation contracts and Program IR v0.1. A JavaScript
+          compiler backend is proposed next.{' '}
           <Link href="/docs/technical/development/status-and-roadmap">
             Implementation status and limitations
           </Link>

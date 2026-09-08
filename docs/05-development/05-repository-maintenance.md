@@ -40,7 +40,7 @@ Those four source exclusions are an existing evidence dependency, not an alterna
 
 ## Formatting history
 
-The initial formatting pass is a separate commit for review. This repository uses squash merging, so a temporary PR commit hash will not identify the final merged change. After merging, add the final commit hash to [the blame ignore file](../../.git-blame-ignore-revs). For local Git, enable it with `git config blame.ignoreRevsFile .git-blame-ignore-revs`. Record only commits that are present in the maintained history.
+The initial formatting pass was a separate commit during review and was squash-merged with repository maintenance in PR #14. The final merged commit is recorded in [the blame ignore file](../../.git-blame-ignore-revs). For local Git, enable it with `git config blame.ignoreRevsFile .git-blame-ignore-revs`. Future entries must use commits present in maintained history, rather than temporary PR hashes. The initial entry includes the accompanying maintenance changes as well as formatting because squash merging combined them.
 
 ## Remove generated files
 
