@@ -21,7 +21,7 @@ export interface NativeBuildIdentity {
 }
 export const nativeExecutable = process.platform === 'win32' ? 'native.exe' : 'native';
 
-function regular(path: string, directory = false): void {
+function regular(path: string, directory = false) {
   const stat = lstatSync(path);
   if (
     (directory ? !stat.isDirectory() : !stat.isFile()) ||
@@ -30,6 +30,7 @@ function regular(path: string, directory = false): void {
     throw new Error('Expected an owned path without group or other write permission.');
   if (!directory && stat.size > 64 * 1024 * 1024)
     throw new Error('Native build file exceeds 64 MiB.');
+  return stat;
 }
 
 /** A local build cache is trusted like the user's installed package, not authenticated native code. */
@@ -43,7 +44,9 @@ export function prepareNativeBuild(
   const read = (directory: string): NativeBuildIdentity => {
     regular(directory, true);
     regular(join(directory, 'native.json'));
-    regular(join(directory, nativeExecutable));
+    const executable = regular(join(directory, nativeExecutable));
+    if (process.platform !== 'win32' && (executable.mode & 0o100) === 0)
+      throw new Error('Native executable requires owner execute permission.');
     const value = JSON.parse(
       readFileSync(join(directory, 'native.json'), 'utf8'),
     ) as NativeBuildIdentity;
