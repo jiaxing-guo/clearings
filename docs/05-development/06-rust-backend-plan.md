@@ -1,6 +1,6 @@
 # Rust backend implementation plan
 
-Status: approved Rust backend. PRs 1–3 implement the artifact contract, primitive runtime, deterministic code generation, and bounded semantic-preservation evaluation. CLI/package integration remains subsequent work. This is Milestone 3, following completed executable conformance and Program IR/reference execution. It defines four dependent implementation PRs. Milestone and PR numbers are planning labels; commit messages and PR titles should describe the delivered behavior.
+Status: implemented. The four PRs provide the artifact contract, primitive runtime, deterministic code generation, bounded semantic-preservation evaluation, and library/CLI/package integration. Production adoption remains subsequent work. This is Milestone 3, following completed executable conformance and Program IR/reference execution. It defines four dependent implementation PRs. Milestone and PR numbers are planning labels; commit messages and PR titles should describe the delivered behavior.
 
 ## Goal and observable outcome
 
@@ -82,9 +82,11 @@ Completion criteria: no unexplained differential mismatches, independent expecta
 
 ### PR 4: Compiler CLI, packaging, and worked example
 
+Implemented: [native execution and source export](../04-guides/06-compile-and-run-rust.md), packaged runtime/driver assets, backend-aware JSON and Markdown, completion exit statuses, and installed-package tests. The public execution entrypoint compiles validated Program IR afresh and checks a bounded process response.
+
 Larger goal: make compilation a usable, reproducible development workflow.
 
-Add concise compile and backend-selection commands while preserving the current interpreter default. The proposed command forms are `clearings program compile closure --backend rust --out <directory>` and `clearings program run closure <arguments.json> --backend rust`; these commands do not exist yet. Final option and output contracts belong in the implemented CLI reference.
+Add concise compile and backend-selection commands while preserving the current interpreter default. The proposed command forms are `clearings program compile closure --backend rust --out <directory>` and `clearings program run closure <arguments.json> --backend rust`; these commands are implemented, with Rust as the default for `compile` and the interpreter as the default for `run`/`demo`. Exact options and output contracts are recorded in the [CLI reference](../03-reference/08-program-cli.md).
 
 Expose compilation and compiled execution through a documented library subpath. Emit inspectable Rust and metadata with protected output creation. Include backend identities and semantic results in JSON and readable reports, and retain the current completion-to-exit-status distinctions. CLI execution should compile validated IR through the pinned local compiler/runtime; do not add an arbitrary source-file execution command. Artifact hashes establish integrity, not a sandbox or authorization to execute untrusted native code.
 

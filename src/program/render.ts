@@ -1,5 +1,6 @@
 import type { Program, ProgramExpression, ProgramStatement, ProgramType } from './model.js';
 import type { ProgramExecutionResult } from './execution.js';
+import type { RustExecutionResult } from '../compiler/artifacts.js';
 import { validateProgram } from './validate.js';
 
 // A fence longer than any data backticks keeps authored strings inside the block.
@@ -129,8 +130,10 @@ export function renderProgram(program: Program): string {
   );
 }
 
-/** Format a fresh interpreter result. This does not validate saved execution evidence. */
-export function renderProgramExecution(result: ProgramExecutionResult): string {
+/** Format a fresh execution result. This does not validate saved execution evidence. */
+export function renderProgramExecution(
+  result: ProgramExecutionResult | RustExecutionResult,
+): string {
   const completion = result.completion;
   let output = `# Program execution\n\nCompletion: **${completion.kind}**.\n\n`;
   switch (completion.kind) {
@@ -156,7 +159,19 @@ export function renderProgramExecution(result: ProgramExecutionResult): string {
       json(completion.diagnostic);
   output +=
     '\nExecution identity:\n\n' +
-    json({ program_id: result.program_id, interpreter_version: result.interpreter_version });
+    json(
+      'backend' in result
+        ? {
+            program_id: result.program_id,
+            backend: result.backend,
+            compiled_artifact_id: result.compiled_artifact_id,
+            compiler_version: result.compiler_version,
+            execution_semantics_version: result.execution_semantics_version,
+            runtime: result.runtime,
+            runner: result.runner,
+          }
+        : { program_id: result.program_id, interpreter_version: result.interpreter_version },
+    );
   output += '\n| Resource | Measurement | Used | Limit |\n| --- | --- | ---: | ---: |\n';
   for (const resource of ['work', 'allocation_units', 'value_units', 'evaluation_depth'] as const) {
     output += `| ${resource} | ${resource === 'work' || resource === 'allocation_units' ? 'Cumulative' : 'Peak admitted'} | ${result.usage[resource]} | ${result.limits[resource]} |\n`;

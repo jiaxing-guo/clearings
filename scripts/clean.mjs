@@ -4,6 +4,7 @@ import { rmSync } from 'node:fs';
 const generatedPaths = [
   'dist',
   'coverage',
+  'compiled',
   'runtime/rust/target',
   'website/.next',
   'website/out',
@@ -25,4 +26,4 @@ for (const path of generatedPaths) {
     retryDelay: 100,
   });
 }
-console.log('Removed library and documentation build products.');
+console.log('Removed library, compiled-source, and documentation build products.');

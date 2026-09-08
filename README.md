@@ -10,7 +10,7 @@ The current foundation has three parts:
 - **Program IR and a reference interpreter** represent and execute typed algorithms. Ordered required dependency closure is implemented in IR and checked against an independent graph oracle.
 - **Executable conformance** captures actual context-assembly executions and evaluates them against a bounded domain, with controls and saved-evidence replay.
 
-The [Rust backend](docs/05-development/06-rust-backend-plan.md) now compiles Program IR into deterministic Rust source. Generated identity, sum, and dependency-closure programs execute natively through the [primitive runtime](docs/03-reference/09-rust-backend.md). See [code generation](docs/03-reference/10-rust-code-generation.md) for the library API and native test commands. Comprehensive compiler conformance and CLI/package integration are the next steps. Automatic contract-to-program synthesis is not implemented, and production context assembly still uses the TypeScript kernel. Repository analysis, agent context, and human reports provide supporting evidence and projections. See the [architecture](docs/01-architecture/01-system.md) and [status and roadmap](docs/05-development/01-status-and-roadmap.md).
+The [Rust backend](docs/05-development/06-rust-backend-plan.md) now compiles Program IR into deterministic Rust source. Generated identity, sum, and dependency-closure programs execute natively through the [primitive runtime](docs/03-reference/09-rust-backend.md). See [code generation](docs/03-reference/10-rust-code-generation.md) for the library API and native test commands. Bounded compiler conformance, source export, and native CLI/package execution are implemented. [Compile and run with Rust](docs/04-guides/06-compile-and-run-rust.md) describes the complete workflow. Automatic contract-to-program synthesis is not implemented, and production context assembly still uses the TypeScript kernel. Repository analysis, agent context, and human reports provide supporting evidence and projections. See the [architecture](docs/01-architecture/01-system.md) and [status and roadmap](docs/05-development/01-status-and-roadmap.md).
 
 This is a private, unpublished prototype. Historical Hono demonstrations cover request dispatch and middleware composition; independent claim-support review remains pending.
 
@@ -26,6 +26,15 @@ npm run program -- inspect closure
 ```
 
 The demo executes ordered required dependency closure from Program IR and returns `["root", "a", "z", "y", "b"]`. Inspection displays every IR function as typed pseudocode. [Run and inspect a program](docs/04-guides/05-run-programs.md) covers custom arguments, application failures, resource limits, and the installed CLI.
+
+To execute generated native code, install Rust 1.85.1 with rustup and use:
+
+```bash
+npm run program -- demo --backend rust
+npm run program -- compile closure --out compiled/closure
+```
+
+Source export requires no Rust installation. Native execution uses the pinned toolchain and a host linker. The interpreter remains the default backend.
 
 Inspect an existing operation contract:
 

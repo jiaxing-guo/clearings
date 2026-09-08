@@ -10,6 +10,7 @@ import {
 import { dirname } from 'node:path';
 import { ClearingsError } from '../model/types.js';
 import { executeProgram } from '../program/interpreter.js';
+import { executeRustProgram, writeRustProgram } from '../compiler/runner.js';
 import { PROGRAM_EXECUTION_MAX_LIMITS } from '../program/execution.js';
 import type { ProgramExecutionOptions, ProgramExecutionResult } from '../program/execution.js';
 import type { Program } from '../program/model.js';
@@ -22,15 +23,19 @@ export const programHelp = `Clearings Program IR
 clearings program list
 clearings program validate <name|program.json>
 clearings program inspect <name|program.json>
-clearings program run <name|program.json> <arguments.json>
-clearings program demo [name]
+clearings program compile <name|program.json> --out new-directory [--backend rust]
+clearings program run <name|program.json> <arguments.json> [--backend interpreter|rust]
+clearings program demo [name] [--backend interpreter|rust]
 
 Names: closure, identity, sum. Demo defaults to closure and executes authored example arguments.
 Run requires a JSON array of entry-function arguments, including [] for a zero-parameter entry.
-All commands accept --format markdown|json (default markdown) and --out new-file.
+All commands accept --format markdown|json (default markdown).
+Compile requires --out new-directory and exports Rust source and metadata without native execution.
+Other commands accept --out new-file to save the displayed result.
 Run/demo accept --work n, --allocation-units n, --value-units n, --evaluation-depth n.
 Inspect validates and displays every function without execution.
-Run/demo JSON is the reference interpreter's ProgramExecutionResult.
+Run/demo default to the interpreter. Rust execution requires rustup, Rust 1.85.1, and a host linker.
+Run/demo JSON identifies the selected backend and retains completions, diagnostics, limits, and usage.
 Exit codes: 0 success/return, 1 application failure/runtime fault, 2 invalid input/output, 3 resource exhaustion.
 From a source checkout: npm run program -- demo
 `;
@@ -100,7 +105,7 @@ function loadProgram(source: string): Program {
   validateProgram(value);
   return value;
 }
-function status(result: ProgramExecutionResult): number {
+function status(result: Pick<ProgramExecutionResult, 'completion'>): number {
   switch (result.completion.kind) {
     case 'return':
       return 0;
@@ -127,11 +132,17 @@ export function programCommand(positionals: readonly string[], values: Values): 
     list: [2],
     validate: [3],
     inspect: [3],
+    compile: [3],
     run: [4],
     demo: [2, 3],
   };
   const execute = action === 'run' || action === 'demo';
-  const allowed = ['format', 'out', ...(execute ? Object.keys(limitOptions) : [])];
+  const allowed = [
+    'format',
+    'out',
+    ...(execute || action === 'compile' ? ['backend'] : []),
+    ...(execute ? Object.keys(limitOptions) : []),
+  ];
   if (
     !Object.hasOwn(positionalCounts, action) ||
     Object.keys(values).some((key) => !allowed.includes(key))
@@ -143,7 +154,12 @@ export function programCommand(positionals: readonly string[], values: Values): 
   if (format !== 'markdown' && format !== 'json')
     invalid('Program output format must be markdown or json.');
   if (values.out !== undefined && (typeof values.out !== 'string' || !values.out))
-    invalid('--out requires a new file path.');
+    invalid('--out requires a nonempty destination path.');
+  const backend = values.backend ?? (action === 'compile' ? 'rust' : 'interpreter');
+  if (backend !== 'interpreter' && backend !== 'rust')
+    invalid('--backend must be interpreter or rust.');
+  if (action === 'compile' && (backend !== 'rust' || typeof values.out !== 'string' || !values.out))
+    invalid('Compile requires --backend rust and --out new-directory.');
   const options: ProgramExecutionOptions = {};
   for (const [flag, resource] of Object.entries(limitOptions)) {
     const value = values[flag];
@@ -186,6 +202,12 @@ export function programCommand(positionals: readonly string[], values: Values): 
         format === 'json'
           ? JSON.stringify(validation, null, 2) + '\n'
           : `# Program validation\n\nStatic validation passed. Program: \`${program.artifact_id}\`.\n\nThe program was not executed.\n`;
+    } else if (action === 'compile') {
+      const artifact = writeRustProgram(program, values.out as string);
+      output =
+        format === 'json'
+          ? JSON.stringify(artifact, null, 2) + '\n'
+          : `# Rust compilation\n\nGenerated source and metadata were written to the requested directory.\n\nProgram: \`${artifact.program_id}\`.\n\nCompiled artifact: \`${artifact.artifact_id}\`.\n\nCompiler: \`${artifact.compiler_version}\`. Runtime: \`${artifact.runtime.source_id}\`.\n\nInspect \`program.rs\`, \`artifact.json\`, and \`build.json\`. Native compilation and execution have not run.\n`;
     } else if (action === 'inspect') {
       output = format === 'json' ? JSON.stringify(program, null, 2) + '\n' : renderProgram(program);
     } else {
@@ -195,18 +217,21 @@ export function programCommand(positionals: readonly string[], values: Values): 
           : positionals[3];
       if (argumentsPath === undefined) invalid('Incorrect program arguments; use program --help.');
       const arguments_ = readJson(argumentsPath);
-      const result = executeProgram(program, arguments_, options);
+      const result =
+        backend === 'rust'
+          ? executeRustProgram(program, arguments_, options)
+          : executeProgram(program, arguments_, options);
       output =
         format === 'json' ? JSON.stringify(result, null, 2) + '\n' : renderProgramExecution(result);
       if (action === 'demo') {
-        const label = `Authored example: ${source}; arguments are bundled example data. This is a fresh interpreter execution.`;
+        const label = `Authored example: ${source}; arguments are bundled example data. This is a fresh ${backend === 'rust' ? 'compiled Rust' : 'interpreter'} execution.`;
         if (format === 'markdown') output = label + '\n\n' + output;
         else process.stderr.write(label + '\n');
       }
       exitCode = status(result);
     }
   }
-  if (typeof values.out === 'string') {
+  if (typeof values.out === 'string' && action !== 'compile') {
     try {
       mkdirSync(dirname(values.out), { recursive: true });
       writeFileSync(values.out, output, { flag: 'wx', encoding: 'utf8' });

@@ -36,6 +36,8 @@ npm run program -- demo sum
 
 The identity example returns `"Clearings"`. The sum example returns `5` for its bundled list `[2, 0, 3]`. Each invocation performs fresh interpretation.
 
+To execute the same algorithm as compiled native code, follow [Compile and run a program with Rust](06-compile-and-run-rust.md).
+
 ## Read the implementation
 
 ```bash

@@ -35,13 +35,14 @@ export interface RustCompiledArtifact {
   options: { resource_policy: 'reference-v0.1' };
   module: { path: 'program.rs'; source: string; sha256: string };
 }
-/** Describes the future runner's result; this change does not execute Rust modules. */
+/** Fresh native execution with compiler, primitive runtime, and process-driver identities. */
 export interface RustExecutionResult extends Omit<ProgramExecutionResult, 'interpreter_version'> {
   compiled_artifact_id: string;
   backend: 'rust';
   compiler_version: typeof RUST_BACKEND_VERSION;
   execution_semantics_version: typeof PROGRAM_EXECUTION_SEMANTICS_VERSION;
   runtime: RustRuntimeIdentity;
+  runner: { version: '0.1.0'; source_id: string };
 }
 export interface RustSourceFile {
   path: string;
