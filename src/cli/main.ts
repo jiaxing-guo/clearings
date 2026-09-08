@@ -13,6 +13,9 @@ clearings inspect <specification.json> [--operation alias] [--format json|markdo
 clearings context <specification.json> --operation alias --max-bytes n [--format json|markdown]
 clearings check <specification.json> --operation alias --observation case.json
 clearings explain <specification.json> --operation alias [--format markdown|html]
+clearings conformance [--suite smoke|full] [--out new-directory]
+clearings conformance run [invocation.json] [--out new-directory] [--suite smoke|full] [--implementation-root checkout] [--timeout-ms n]
+clearings conformance replay <record.json|run-directory> [--out new-directory]
 clearings inventory <repository> [--ref HEAD] [--include path] [--exclude path] [--out file]
 clearings inventory <repository> --target manifest.json [--scope inventory|deep] [--out file]
 clearings scan <repository> [inventory options] [--project tsconfig.json] [--mode source-only] [--strict]
@@ -34,6 +37,11 @@ Use --companion filename.html (or filename.md) to link a report in the same dire
 Use propose --schema-version 0.2.0 to request contracts. The default remains 0.1.0.
 Typed specifications use version 0.3.0 and select operations by --operation.
 Check evaluates supplied observations; exit 1 means a failed rule, and 3 means unknown.
+Conformance writes execution records, evaluations, run.json, and report.md to a new directory.
+It defaults to run, the smoke suite, and a unique directory under ../clearings-conformance-runs relative to this checkout.
+From a source checkout, npm run conformance builds and runs these defaults.
+Its exit codes are 0 scoped acceptance, 1 rejection, 2 invalid input, and 3 inconclusive.
+Replay re-evaluates saved conformance evidence without executing the candidate.
 For legacy context use --format readable-json to resolve prose assertions in place.
 Legacy inspect/context use 0.2.0 models. Only --scan with --repository revalidates their source.
 Their --out option requires --repository for output protection; this alone does not recheck source.
@@ -51,11 +59,15 @@ let command = process.argv[2] ?? 'help';
 try {
   const { values, positionals } = parseArgs({
     args: process.argv.slice(2), allowPositionals: true, strict: true,
-    options: { help: { type: 'boolean' }, version: { type: 'boolean' }, ref: { type: 'string' }, target: { type: 'string' }, scope: { type: 'string' }, include: { type: 'string', multiple: true }, exclude: { type: 'string', multiple: true }, out: { type: 'string' }, project: { type: 'string' }, mode: { type: 'string' }, strict: { type: 'boolean' }, repository: { type: 'string' }, instruction: { type: 'string' }, evidence: { type: 'string', multiple: true }, 'max-bytes': { type: 'string' }, id: { type: 'string' }, request: { type: 'string' }, scan: { type: 'string' }, capability: { type: 'string' }, format: { type: 'string' }, audience: { type: 'string' }, companion: { type: 'string' }, presentation: { type: 'string' }, 'schema-version': { type: 'string' }, behavior: { type: 'string' }, operation: { type: 'string' }, observation: { type: 'string' }, 'no-neighbors': { type: 'boolean' } },
+    options: { help: { type: 'boolean' }, version: { type: 'boolean' }, ref: { type: 'string' }, target: { type: 'string' }, scope: { type: 'string' }, include: { type: 'string', multiple: true }, exclude: { type: 'string', multiple: true }, out: { type: 'string' }, project: { type: 'string' }, mode: { type: 'string' }, strict: { type: 'boolean' }, repository: { type: 'string' }, instruction: { type: 'string' }, evidence: { type: 'string', multiple: true }, 'max-bytes': { type: 'string' }, id: { type: 'string' }, request: { type: 'string' }, scan: { type: 'string' }, capability: { type: 'string' }, format: { type: 'string' }, audience: { type: 'string' }, companion: { type: 'string' }, presentation: { type: 'string' }, 'schema-version': { type: 'string' }, behavior: { type: 'string' }, operation: { type: 'string' }, observation: { type: 'string' }, 'no-neighbors': { type: 'boolean' }, suite: { type: 'string' }, 'implementation-root': { type: 'string' }, 'timeout-ms': { type: 'string' } },
   });
   command = positionals[0] ?? 'help';
   if (values.version) process.stdout.write(`${TOOL_VERSION}\n`);
   else if (values.help || command === 'help') process.stdout.write(help);
+  else if (command === 'conformance') {
+    const { conformanceCommand } = await import('./conformance.js');
+    await conformanceCommand(positionals, values);
+  }
   else {
     const allowed: Record<string, string[]> = { inventory: ['ref', 'target', 'scope', 'include', 'exclude', 'out'], scan: ['ref', 'target', 'scope', 'include', 'exclude', 'out', 'project', 'mode', 'strict'], 'benchmark-fetch': ['target', 'out'], validate: ['repository', 'scan', 'request'], check: ['operation', 'id', 'observation', 'format', 'out', 'repository'], inspect: ['operation', 'id', 'capability', 'behavior', 'format', 'scan', 'repository', 'out'], context: ['operation', 'id', 'capability', 'behavior', 'format', 'scan', 'repository', 'out', 'max-bytes', 'no-neighbors'], propose: ['schema-version', 'repository', 'instruction', 'include', 'evidence', 'max-bytes', 'out'], evidence: ['repository', 'id', 'out'], import: ['repository', 'request', 'scan', 'out'], replay: ['repository', 'request', 'scan', 'out'], explain: ['operation', 'id', 'max-bytes', 'repository', 'scan', 'capability', 'out', 'format', 'presentation', 'audience', 'companion'] };
     if (!allowed[command] || Object.keys(values).some((key) => !allowed[command]?.includes(key))) throw new ClearingsError('INVALID_ARGUMENTS', 'Unknown command or unsupported option; use --help.');

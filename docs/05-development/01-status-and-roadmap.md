@@ -1,6 +1,6 @@
 # Status and development roadmap
 
-This status describes the v0.3 implementation, documentation integration, correctness fixes in PR #6, conformance artifact definitions, and bounded context-assembly recording. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
+This status describes the v0.3 implementation, documentation integration, conformance artifacts, and the complete bounded context-assembly evaluation path. Dated experiment reports are evidence for their recorded baseline; their test counts are not automatically current validation results.
 
 ## Read the evidence at the correct scope
 
@@ -17,7 +17,7 @@ These results support specification-guided development. They do not establish a 
 | Typed contracts | v0.3 types, predicates, state/effects, outcomes, decisions | Partial and opaque obligations remain explicit |
 | Context | Deterministic required closure, byte accounting, revalidation | No token-efficiency result or unrestricted retrieval planner |
 | Observation checks | Single-operation predicates and adjacent selected-state continuity | No source execution, transition legality, concurrency model, or universal proof |
-| Executable conformance | Scoped contracts and ledger, artifact validators, bounded context-assembly recorder, observation adapter, and structured capacity errors | Independent reference evaluator, acceptance report, and command integration remain unimplemented; initial examples remain authored |
+| Executable conformance | Artifact validation, bounded recording, observation mapping, independent reference evaluation, scoped acceptance, CLI execution/replay, JSON/Markdown reports, and exhaustive three-node regression gates | External effects, complete dependency authentication, universal refinement, and agent coding advantage remain unestablished; initial examples remain authored |
 | Human views | Markdown/HTML projections and historical audience reports | Independent semantic-content review remains open |
 | Technical reference | Ordered Markdown semantics, architecture, interfaces, and examples | Fumadocs renders the same Markdown with ordered navigation and static search |
 
@@ -43,14 +43,13 @@ The Fumadocs build now renders the numbered reference from ordinary Markdown. Ge
 
 ## Subsequent development candidates
 
-The first two changes in [the four-PR implementation plan](03-conformance-plan.md) define the contracts and implement recording and mapping for context assembly. Recorder regression tests execute actual returns and exceptions and exercise controlled capture, measurement, and worker failures. They do not constitute the independent evaluator or predefined implementation-fault suite. The remaining two changes implement independent evaluation and the reproducible command and reports. Historical bootstrap evidence retains its original scope.
+The [four-PR implementation plan](03-conformance-plan.md) is implemented, with the final two changes integrated together. The regression command evaluates production and an independent positive control over 1,554 cases each, then checks 26 predefined executable faults. CLI reports distinguish scoped acceptance from the broader contract verdict and replay saved evidence without candidate execution. This establishes a reproducible evaluation boundary for the declared cases. Historical bootstrap evidence retains its original scope.
 
 | Priority | Candidate | Evidence needed before broader claims |
 | --- | --- | --- |
-| 1 | Close one concrete contract-to-execution mapping | Defined adapter, actual executions, independent checks of the abstraction mapping |
-| 2 | Improve formal/prose obligation accounting | Each requirement mapped to a predicate, residual obligation, or explicit opaque record |
-| 3 | Repeat a bounded self-development task | Frozen specification and evaluation; improved Clearings version used as an input |
-| 4 | Run a matched prose-only comparison | Same task, equivalent available requirements/source, frozen scoring, recorded access |
-| 5 | Evaluate a proposed implementation IR | Distinct consumer, operation semantics, refinement obligations, and checked transformation |
+| 1 | Repeat a bounded self-development task | Frozen specification and the independent evaluator; improved Clearings version used as an input |
+| 2 | Run a matched prose-only comparison | Same task, equivalent available requirements/source, frozen scoring, recorded access |
+| 3 | Evaluate a proposed implementation IR | Distinct consumer, operation semantics, refinement obligations, and checked transformation |
+| 4 | Extend conformance to another operation | Explicit input domain, faithful observations, independent checks, and executable controls |
 
-The final review fixes preserve missing state observations, reject incompatible nested literal types and inconsistent exclusive outcomes, restrict context evidence selection to declared metadata, and restore [legacy validation compatibility](../03-reference/04-compatibility.md). Broader repositories/languages, provider transport, general inference, solvers, concurrency verification, package publication, CI, and public hosting remain separate scope decisions. Historical task instructions do not override the current user request.
+The earlier review fixes preserve missing state observations, reject incompatible nested literal types and inconsistent exclusive outcomes, restrict context evidence selection to declared metadata, and restore [legacy validation compatibility](../03-reference/04-compatibility.md). A focused conformance CI workflow is now defined. Broader repositories/languages, provider transport, general inference, solvers, concurrency verification, package publication, and public hosting remain separate scope decisions. Historical task instructions do not override the current user request.

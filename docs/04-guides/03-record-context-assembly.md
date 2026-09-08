@@ -1,6 +1,6 @@
 # Record a context-assembly invocation
 
-Use the recorder to observe an actual `assembleContext` invocation and inspect the corresponding contract checks. This guide exercises Clearings on its authored context-assembly specification. The result is evidence for one invocation; independent reference evaluation and scoped acceptance remain subsequent work.
+Use the recorder to observe an actual `assembleContext` invocation and inspect the corresponding contract checks. This guide exercises Clearings on its authored context-assembly specification. The result is evidence for one invocation. Continue with [independent evaluation and replay](04-evaluate-context-conformance.md) to obtain a scoped acceptance result.
 
 ## Prepare a built checkout
 

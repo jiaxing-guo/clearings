@@ -32,6 +32,14 @@ The pack retains each required operation, its conditions, decisions, and source.
 
 Clearings also has a proposed specification for its own context assembler. [Review the self-use demo](benchmarks/results/clearings-bootstrap/README.md) or download [its review package](benchmarks/results/clearings-bootstrap/clearings-specification-review.zip). Intended requirements and observed source behavior remain separate artifacts.
 
+Record and independently evaluate the current context assembler:
+
+```bash
+npm run conformance
+```
+
+The command builds the CLI and writes raw evidence, JSON evaluations, and `report.md` for 36 cases to a unique directory under `../clearings-conformance-runs`. It prints the output path. Scoped acceptance remains separate from the broader contract's unknown obligations. [Evaluate and replay conformance](docs/04-guides/04-evaluate-context-conformance.md) explains the full domain, independent controls, saved-evidence replay, and failure reports.
+
 ## Explore the three demos
 
 Download [the review package](benchmarks/results/hono-shared/clearings-shared-review.zip), extract it, and open `index.html`. All reports contain their own assets. You can also read the Markdown files on GitHub.
@@ -80,7 +88,7 @@ npm run docs:build
 npm run docs:check
 ```
 
-Output is written to `website/out`. Production builds default to `/clearings`; local development defaults to `/`. Set `DOCS_BASE_PATH=''` for a root production export and use the same value for `docs:check`. [Documentation maintenance](docs/05-development/02-documentation.md) describes the authoring conventions, watcher scope, and verification checks. Public hosting, CI, and package publication remain separate scope decisions.
+Output is written to `website/out`. Production builds default to `/clearings`; local development defaults to `/`. Set `DOCS_BASE_PATH=''` for a root production export and use the same value for `docs:check`. [Documentation maintenance](docs/05-development/02-documentation.md) describes the authoring conventions, watcher scope, and verification checks. Public hosting and package publication remain separate scope decisions.
 
 ## Contribute
 
