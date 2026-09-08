@@ -11,8 +11,7 @@ The goal is a compiler and execution runtime for agentic coding: agents construc
 | 1: Executable conformance               | Capture actual context-assembly executions and evaluate them against independent bounded requirements, with controls and replay            | Complete; [conformance plan](03-conformance-plan.md)                                                                               |
 | 2: Program IR and reference interpreter | Define and execute a typed implementation language and represent one real Clearings algorithm in it                                        | Complete; [Program IR plan](04-program-ir-plan.md)                                                                                 |
 | 3: Deterministic Rust backend           | Compile Program IR to native code through Rust and evaluate semantic preservation against reference execution and independent expectations | Complete: runtime, code generation, bounded conformance, and CLI/package workflow; [four-PR backend plan](06-rust-backend-plan.md) |
-
-| 4: Production adoption | Execute the compiled IR closure in ordinary context assembly with verified reusable builds and preserved evidence | Implemented for review; [adoption contract and gates](08-production-adoption.md) |
+| 4: Production adoption                  | Execute the compiled IR closure in ordinary context assembly with verified reusable builds and preserved evidence                          | Implemented for review; [adoption contract and gates](08-production-adoption.md)                                                   |
 
 Source analysis, context assembly, reports, and documentation support this pipeline. The next implementation priority is an independently evaluated agent-authored change to Program IR, followed by use of that implementation in Clearings. Broader repository demonstrations and agent-efficiency experiments do not determine the compiler's immediate architecture.
 

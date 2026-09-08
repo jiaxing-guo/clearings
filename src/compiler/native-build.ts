@@ -1,4 +1,5 @@
 import {
+  chmodSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
@@ -71,6 +72,11 @@ export function prepareNativeBuild(
     } else temporary = mkdtempSync(join(tmpdir(), 'clearings-rust-'));
     if (temporary) {
       build(temporary);
+      const executable = join(temporary, nativeExecutable);
+      if (!lstatSync(executable).isFile())
+        throw new Error('Expected a generated regular executable.');
+      // rustc inherits umask. Normalize only our new output, never a pre-existing cache entry.
+      if (process.platform !== 'win32') chmodSync(executable, 0o700);
       const identity = {
         ...expected,
         executable_sha256: sha256(readFileSync(join(temporary, nativeExecutable))),

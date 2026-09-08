@@ -33,6 +33,18 @@ export function verifyBootstrapSourceSnapshot(snapshot, bindings) {
     );
     sources.set(file.path, bytes);
   }
+  verifyBindings(sources, bindings);
+  return manifest;
+}
+
+/** Fresh outputs explicitly bind the current checkout; they do not rewrite historical evidence. */
+export function verifyBootstrapWorkingSource(root, bindings) {
+  assert.deepEqual([...new Set(bindings.map((binding) => binding.path))].sort(), paths);
+  const sources = new Map(paths.map((path) => [path, readFileSync(join(root, path))]));
+  verifyBindings(sources, bindings);
+}
+
+function verifyBindings(sources, bindings) {
   for (const binding of bindings) {
     const bytes = sources.get(binding.path);
     assert.equal(hash('sha256', bytes), binding.file_sha256, binding.path);
@@ -48,5 +60,4 @@ export function verifyBootstrapSourceSnapshot(snapshot, bindings) {
       binding.text,
     );
   }
-  return manifest;
 }
