@@ -28,7 +28,7 @@ The exact [bootstrap design](../SPECIFICATION_ARCHITECTURE.md) remains at its or
 
 The former top-level documentation is organized under [the archive](../archive/README.md). Relative Markdown links were rebased during relocation. Frozen experiment source tarballs, manifests, prompts, submissions, test inputs, and review archives remain unchanged. To reproduce a frozen run, use its archived source baseline rather than copying current documentation into that baseline.
 
-The current [bootstrap demonstration](../../benchmarks/results/clearings-bootstrap/README.md) records exact working-source bindings. When those functions change, regenerate the demonstration, its checksums, and its download archive against the new implementation. Earlier demonstration revisions remain in Git history; regenerating this demonstration does not rerun or modify the frozen agent experiments.
+The preserved [bootstrap demonstration](../../benchmarks/results/clearings-bootstrap/README.md) records exact bindings to its [archived source snapshot](../../benchmarks/sources/clearings-bootstrap/README.md). Preserve that snapshot, the demonstration, its checksums, and its download archive when production functions change. Generate fresh evidence against the current implementation in a separate output directory. Fresh bindings declare `source_scope: "working-tree"` and are verified against current source bytes; historical bindings remain verified against the immutable snapshot. Producing fresh evidence does not rewrite the preserved demonstration or rerun the frozen agent experiments.
 
 ## Validation compatibility
 
