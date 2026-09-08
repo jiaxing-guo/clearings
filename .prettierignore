@@ -29,7 +29,7 @@ docs/SEQUENCE_CHECKS.md
 package-lock.json
 website/package-lock.json
 
-# Exact working-source bindings in the preserved bootstrap demonstration.
+# Existing source layout retained until production integration; identities now bind archived bytes.
 # See docs/05-development/05-repository-maintenance.md before changing these bytes.
 src/analysis/budget.ts
 src/analysis/dependencies.ts

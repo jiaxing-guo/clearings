@@ -37,7 +37,7 @@ The [ignore file](../../.prettierignore) excludes:
 - The historical bootstrap design and compatibility document.
 - Four implementation files whose exact bytes remain bound by the preserved bootstrap demonstration: `src/analysis/budget.ts`, `src/analysis/dependencies.ts`, `src/specification/context.ts`, and `src/specification/render.ts`.
 
-Those four source exclusions are an existing evidence dependency, not an alternative formatting convention. The [bootstrap verifier](../../scripts/check-bootstrap-demo.mjs) checks their whole-file hashes and byte ranges against the recorded bindings. Removing that coupling requires an explicit evidence migration to immutable source snapshots; formatting must not silently replace the historical bindings or weaken their checks. For a new generator-owned artifact, preserve its serialization procedure and add the appropriate exclusion.
+Those four source exclusions temporarily retain the existing layout during production migration. Historical verification now reads the [immutable source snapshot](../../benchmarks/sources/clearings-bootstrap/README.md), checking the original whole-file hashes and byte ranges independently of the working tree. The snapshot's manifest records the matching repository revision without changing the historical execution claims. Current context reproduction is checked separately. Production files can now evolve; remove their formatting exclusions when they are next maintained.
 
 ## Formatting history
 
