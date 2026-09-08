@@ -1,6 +1,6 @@
 # Rust backend implementation plan
 
-Status: approved Rust backend. PR 1 implements the artifact contract and primitive runtime; code generation and native execution remain subsequent work. This is Milestone 3, following completed executable conformance and Program IR/reference execution. It defines four dependent implementation PRs. Milestone and PR numbers are planning labels; commit messages and PR titles should describe the delivered behavior.
+Status: approved Rust backend. PRs 1 and 2 implement the artifact contract, primitive runtime, deterministic code generation, and initial native execution tests. Comprehensive compiler conformance and CLI/package integration remain subsequent work. This is Milestone 3, following completed executable conformance and Program IR/reference execution. It defines four dependent implementation PRs. Milestone and PR numbers are planning labels; commit messages and PR titles should describe the delivered behavior.
 
 ## Goal and observable outcome
 
@@ -55,6 +55,8 @@ Implement the primitive runtime services needed for Program IR values, faults, d
 Completion criteria: artifact validation rejects incompatible or altered inputs; runtime primitives pass independent edge-case tests; the existing interpreter regression suite passes unchanged. Documentation records the observable comparison and all compilation/preparation limits.
 
 ### PR 2: Deterministic Rust code generation
+
+Implemented: [Rust emitter, native execution tests, and compilation experiment](../03-reference/10-rust-code-generation.md). The full language lowers through general primitives and explicit Rust control flow. Native tests retain independent expectations and compare reference diagnostics and logical accounting.
 
 Larger goal: turn Program IR algorithms into executable target programs.
 

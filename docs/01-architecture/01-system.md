@@ -2,23 +2,23 @@
 
 Clearings is developing a compiler and execution runtime for agentic coding. The intended workflow lets an agent construct or revise a typed implementation against explicit operation contracts, then uses deterministic tooling to validate, compile, execute, and independently evaluate that implementation. Bootstrapping progressively brings Clearings algorithms into this workflow.
 
-The current implementation is one TypeScript library and CLI. Its semantic artifacts are portable JSON; compiler API objects and provider SDK types remain outside the interchange model. Program IR represents algorithms as typed data, with a static validator and reference interpreter. A Rust backend is the [approved next step](../05-development/06-rust-backend-plan.md).
+The current implementation is one TypeScript library and CLI. Its semantic artifacts are portable JSON; compiler API objects and provider SDK types remain outside the interchange model. Program IR represents algorithms as typed data, with a static validator and reference interpreter. The [Rust backend](../03-reference/10-rust-code-generation.md) compiles validated programs into native-executable target modules.
 
 ## Compiler architecture and current boundaries
 
-| Responsibility          | Current implementation                                                              | Next boundary                                                                                                          |
-| ----------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Requirements            | v0.3 operation contracts and bounded predicate evaluation                           | Link a candidate Program IR implementation to a contract through an explicit observation adapter and evaluation domain |
-| Implementation language | Program IR v0.1, static typing, structured control flow, closed calls, and failures | Compile validated programs to Rust while preserving defined behavior                                                   |
-| Execution               | Reference interpreter with finite resource limits and diagnostic completions        | Generated code with a versioned runtime interface and compatible resource accounting                                   |
-| Evaluation              | Independent context-assembly conformance and independent IR closure expectations    | Differential backend testing plus independent language and algorithm expectations                                      |
-| Agent development       | External authoring and recorded specification-guided source changes                 | An evaluated agent change expressed in Program IR and used by Clearings                                                |
+| Responsibility          | Current implementation                                                                                      | Next boundary                                                                                                          |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Requirements            | v0.3 operation contracts and bounded predicate evaluation                                                   | Link a candidate Program IR implementation to a contract through an explicit observation adapter and evaluation domain |
+| Implementation language | Program IR v0.1, static typing, structured control flow, closed calls, failures, and Rust source generation | Extend compilation evidence over the full declared evaluation domain                                                   |
+| Execution               | Reference interpreter and generated native modules with finite resource limits and diagnostics              | General native process runner, CLI, and installed-package execution                                                    |
+| Evaluation              | Independent context-assembly/IR closure evaluation and initial native compiler tests                        | Systematic differential compiler conformance with independent expectations and fault controls                          |
+| Agent development       | External authoring and recorded specification-guided source changes                                         | An evaluated agent change expressed in Program IR and used by Clearings                                                |
 
 The requirements-to-implementation relation is a synthesis and conformance problem: a contract can admit multiple algorithms. It is not an existing deterministic lowering pass. Program IR-to-Rust compilation is a separate transformation with a defined semantic-preservation obligation. Test agreement supplies bounded evidence for that obligation; it is not a proof for every valid program.
 
 The reference interpreter supplies the current execution semantics. A bytecode VM, optimization IR, and self-hosting compiler are not implemented. Add another implementation IR only when a concrete analysis, optimization, or target needs a distinct representation and a specified transformation.
 
-The [backend artifact contract and primitive Rust runtime](../03-reference/09-rust-backend.md) are implemented in `src/compiler/` and `runtime/rust/`. The runtime operates on values and explicit calls from generated code; it does not interpret an AST or implement dependency closure. Source generation and native execution remain subsequent changes.
+The [backend artifact contract and primitive Rust runtime](../03-reference/09-rust-backend.md) are implemented in `src/compiler/` and `runtime/rust/`. The runtime operates on values and explicit calls from generated code; it does not interpret an AST or implement dependency closure. The emitter generates structured Rust functions, branches, and loops, evaluated through a native test harness. General runner and CLI integration remain subsequent changes.
 
 ## Codebase priorities
 

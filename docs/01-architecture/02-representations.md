@@ -1,6 +1,6 @@
 # Representation inventory
 
-An intermediate representation records information for a defined consumer or transformation. Clearings has multiple representations, but does not yet define a sequence of semantics-preserving compiler lowering passes between them.
+An intermediate representation records information for a defined consumer or transformation. Clearings has multiple representations, and now compiles Program IR directly into Rust. It does not yet require a sequence of additional lowering IRs.
 
 ## Locate the representation you need
 
@@ -17,15 +17,15 @@ The operation specification is the primary contract representation for new seman
 
 ## Existing models
 
-| Representation                  | Type and schema                                                                      | Semantics                                                                                                  | Producer and consumers                                                                   |
-| ------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Repository manifest             | `InventoryResult`; [inventory.v0.1](../../schemas/inventory.v0.1.json)               | Files, scope, exclusions, immutable commit/tree identity                                                   | Inventory; consumed by scanning and validation                                           |
-| Structural evidence model       | `ScanResult`; [scan.v0.1](../../schemas/scan.v0.1.json)                              | Declarations, imports, references, calls, dynamic writes, exact spans, resolution status                   | TypeScript scanner; consumed by authoring requests and evidence retrieval                |
-| Capability and claim model      | `SemanticModel`; [semantic.v0.1](../../schemas/semantic.v0.1.json)                   | Concepts, English assertions, typed relationships, conditional capability flows, unknowns                  | External author plus importer; consumed by inspection and reports                        |
-| Function and behavior contracts | `ContractModel`; [semantic.v0.2](../../schemas/semantic.v0.2.json)                   | Callable bindings, assertion references, state access, dependencies, failure boundaries, behavior outcomes | External author plus contract importer; consumed by reports and context export           |
-| Typed operation specification   | `SemanticSpecification`; [specification.v0.3](../../schemas/specification.v0.3.json) | Typed guards, postconditions, state updates, frames, effects, dependencies, decisions                      | Specification author; consumed by validation, checking, context assembly, and rendering  |
-| Predicate expressions           | `Expression`, inside v0.3                                                            | A typed expression AST with bounded evaluation and explicit unknown results                                | Specification author; consumed by the expression interpreter                             |
-| Program IR                      | `Program`; [program.v0.1](../../schemas/program.v0.1.json)                           | Typed values, local bindings, structured control flow, IR-defined calls, and application failures          | Program author; consumed by static validation, inspection, and the reference interpreter |
+| Representation                  | Type and schema                                                                      | Semantics                                                                                                  | Producer and consumers                                                                    |
+| ------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Repository manifest             | `InventoryResult`; [inventory.v0.1](../../schemas/inventory.v0.1.json)               | Files, scope, exclusions, immutable commit/tree identity                                                   | Inventory; consumed by scanning and validation                                            |
+| Structural evidence model       | `ScanResult`; [scan.v0.1](../../schemas/scan.v0.1.json)                              | Declarations, imports, references, calls, dynamic writes, exact spans, resolution status                   | TypeScript scanner; consumed by authoring requests and evidence retrieval                 |
+| Capability and claim model      | `SemanticModel`; [semantic.v0.1](../../schemas/semantic.v0.1.json)                   | Concepts, English assertions, typed relationships, conditional capability flows, unknowns                  | External author plus importer; consumed by inspection and reports                         |
+| Function and behavior contracts | `ContractModel`; [semantic.v0.2](../../schemas/semantic.v0.2.json)                   | Callable bindings, assertion references, state access, dependencies, failure boundaries, behavior outcomes | External author plus contract importer; consumed by reports and context export            |
+| Typed operation specification   | `SemanticSpecification`; [specification.v0.3](../../schemas/specification.v0.3.json) | Typed guards, postconditions, state updates, frames, effects, dependencies, decisions                      | Specification author; consumed by validation, checking, context assembly, and rendering   |
+| Predicate expressions           | `Expression`, inside v0.3                                                            | A typed expression AST with bounded evaluation and explicit unknown results                                | Specification author; consumed by the expression interpreter                              |
+| Program IR                      | `Program`; [program.v0.1](../../schemas/program.v0.1.json)                           | Typed values, local bindings, structured control flow, IR-defined calls, and application failures          | Program author; consumed by validation, inspection, the interpreter, and the Rust emitter |
 
 The [structural types](../../src/model/structural.ts), [semantic types](../../src/model/semantic.ts), [contract types](../../src/model/contracts.ts), and [specification types](../../src/specification/model.ts) define the corresponding TypeScript interfaces.
 
@@ -53,25 +53,26 @@ An observed specification can be abstract. An intended specification can be deta
 
 ## Current transformations
 
-| Transformation                                    | Relationship                                                                       |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Git source → structural model                     | Deterministic bounded extraction                                                   |
-| Evidence request → semantic proposal              | External interpretation, potentially incomplete or incorrect                       |
-| Proposal → imported model                         | Validation and provenance recording, without automatic acceptance                  |
-| Specification → operation context                 | Deterministic selection and projection                                             |
-| Model/context → report                            | Presentation, without new formal meaning                                           |
-| Specification + observation → check               | Predicate evaluation                                                               |
-| Program artifact → static validation              | Syntax, identity, scope, types, completion paths, and call/failure declarations    |
-| Program + positional arguments → execution result | Reference interpretation under declared finite resource limits                     |
-| Program or execution result → Markdown report     | Deterministic presentation without execution, evidence authentication, or a new IR |
-| Contract + external agent → source implementation | Specification-guided synthesis, demonstrated only by bounded experiments           |
+| Transformation                                    | Relationship                                                                                     |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Git source → structural model                     | Deterministic bounded extraction                                                                 |
+| Evidence request → semantic proposal              | External interpretation, potentially incomplete or incorrect                                     |
+| Proposal → imported model                         | Validation and provenance recording, without automatic acceptance                                |
+| Specification → operation context                 | Deterministic selection and projection                                                           |
+| Model/context → report                            | Presentation, without new formal meaning                                                         |
+| Specification + observation → check               | Predicate evaluation                                                                             |
+| Program artifact → static validation              | Syntax, identity, scope, types, completion paths, and call/failure declarations                  |
+| Program + positional arguments → execution result | Reference interpretation under declared finite resource limits                                   |
+| Validated Program IR → Rust module                | Deterministic source generation through a versioned primitive runtime; bounded native evaluation |
+| Program or execution result → Markdown report     | Deterministic presentation without execution, evidence authentication, or a new IR               |
+| Contract + external agent → source implementation | Specification-guided synthesis, demonstrated only by bounded experiments                         |
 
 There is no automatic v0.2-to-v0.3 formalization and no implicit observed-to-intended conversion. See [compatibility](../03-reference/04-compatibility.md).
 
-## Proposed compilation boundary
+## Implemented compilation boundary
 
-The [Rust backend plan](../05-development/06-rust-backend-plan.md) introduces the first deterministic source-generation path: validated Program IR to Rust and a versioned runtime interface. The generated module is a target artifact; its manifest identifies the source program, compiler, runtime, and generated bytes. The [compiled-artifact contract and primitive runtime](../03-reference/09-rust-backend.md) are implemented; code generation remains subsequent work. The artifact constructor seals supplied source without establishing its origin or semantics.
+The [Rust backend plan](../05-development/06-rust-backend-plan.md) introduces the first deterministic source-generation path: validated Program IR to Rust and a versioned runtime interface. The generated module is a target artifact; its manifest identifies the source program, compiler, runtime, and generated bytes. The [compiled-artifact contract and primitive runtime](../03-reference/09-rust-backend.md) and [deterministic code generation](../03-reference/10-rust-code-generation.md) are implemented. The artifact constructor seals supplied source without establishing its origin or semantics.
 
 Operation contracts and Program IR express different concerns: required behavior and a chosen algorithm. Their relationship needs candidate construction, observation mapping, and independent evaluation. A generated Rust backend can preserve a Program IR algorithm's semantics without establishing that the algorithm satisfies an arbitrary operation contract. Adding the backend does not create a contract-to-program compiler.
 
-CFG, SSA, bytecode, or another lower-level IR should be introduced for a concrete transformation or execution requirement. The next backend can compile the current structured Program IR directly; no additional public IR schema is required for this step.
+CFG, SSA, bytecode, or another lower-level IR should be introduced for a concrete transformation or execution requirement. The Rust backend compiles the current structured Program IR directly; no additional public IR schema is required for this step.

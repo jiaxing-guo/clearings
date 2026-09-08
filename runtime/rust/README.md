@@ -1,6 +1,6 @@
 # Clearings Rust runtime
 
-This unpublished, dependency-free crate implements the primitive runtime interface for the planned Rust backend. It contains immutable values, argument preparation, arithmetic and collection primitives, explicit completions, diagnostics, and reference-compatible logical resource accounting. It does not interpret Program IR, compile source, load modules, or implement a graph algorithm.
+This unpublished, dependency-free crate implements the primitive runtime interface for the Rust backend. It contains immutable values, argument preparation, arithmetic and collection primitives, explicit completions, diagnostics, and reference-compatible logical resource accounting. It does not interpret Program IR, compile source, load modules, or implement a graph algorithm.
 
 Use the pinned toolchain through rustup. From the repository root:
 
@@ -18,4 +18,4 @@ Read the [backend contract](../../docs/03-reference/09-rust-backend.md) for the 
 
 `RuntimeError::InvalidAbi` indicates a compiler/runtime defect and must remain a host error. Rust panics and physical allocation failures are also host failures, not application failures or logical resource exhaustion. After a panic the runtime instance must be discarded. `Runtime::finish` converts a completed invocation into an owned return/failure/fault/exhaustion result, with result-copy exhaustion taking precedence over a return or application failure.
 
-The tests contain authored primitive invocations and independent expected values and charges. They are not generated-code or compiler-conformance evidence. Full code generation and native runner packaging are subsequent changes.
+The tests contain authored primitive invocations and independent expected values and charges. They are not generated-code or compiler-conformance evidence. The separate [native compiler tests](../../tests/native/rust-codegen.test.mjs) exercise generated code; run `npm run test:compiler` from the repository root. Native runner packaging remains subsequent work.
