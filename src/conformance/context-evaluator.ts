@@ -1,3 +1,4 @@
+import { isNativeInterruption } from './native-interruption.js';
 import { fileURLToPath } from 'node:url';
 import { canonical } from '../repository/inventory.js';
 import { sha256 } from '../repository/source.js';
@@ -87,7 +88,19 @@ function evaluate(record: ExecutionRecord, identity: ContentIdentity): ContextAs
       ? 'Supported measurement projections agree with captured evidence.'
       : mapping.reason,
   );
-  const completed = record.completion.kind === 'return' || record.completion.kind === 'throw';
+  const interrupted = isNativeInterruption(record);
+  const completed =
+    !interrupted && (record.completion.kind === 'return' || record.completion.kind === 'throw');
+  if (interrupted)
+    add(
+      'interrupted-input-preservation',
+      record.arguments_after.status !== 'captured'
+        ? 'unknown'
+        : equal(record.arguments_before, record.arguments_after.value)
+          ? 'pass'
+          : 'fail',
+      'An operational interruption does not excuse observed input mutation.',
+    );
   const completionValue =
     record.completion.kind === 'return'
       ? record.completion.result

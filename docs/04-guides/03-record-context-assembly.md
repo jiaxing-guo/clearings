@@ -8,8 +8,10 @@ Use Node.js 24 and install dependencies from the lockfile. From the repository r
 
 ```bash
 npm ci --ignore-scripts
-npm run build
+npm run native:prepare
 ```
+
+Native preparation requires Rust 1.85.1 and a host linker on a cache miss. It runs before the invocation deadline; warm execution requires no Rust compiler. `CLEARINGS_NATIVE_CACHE` selects an owned local cache.
 
 The recorder needs Git history, source files, emitted JavaScript, and package metadata. It runs trusted local code in a worker with a time limit. It does not scan or execute an unrelated repository automatically.
 

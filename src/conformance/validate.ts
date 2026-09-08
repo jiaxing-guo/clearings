@@ -10,12 +10,15 @@ import type { SemanticSpecification } from '../specification/model.js';
 import type { ConformanceProfile, ExecutionRecord } from './model.js';
 
 const ajv = new Ajv({ strict: true, allErrors: false, allowUnionTypes: true });
-const compile = (name: string) =>
+const compile = (name: string, version = '0.1') =>
   ajv.compile(
-    JSON.parse(readFileSync(new URL(`../../schemas/${name}.v0.1.json`, import.meta.url), 'utf8')),
+    JSON.parse(
+      readFileSync(new URL(`../../schemas/${name}.v${version}.json`, import.meta.url), 'utf8'),
+    ),
   );
 const profileSchema = compile('conformance-profile'),
-  recordSchema = compile('execution-record');
+  recordSchema = compile('execution-record'),
+  nativeRecordSchema = compile('execution-record', '0.2');
 const invalid = (message: string): never => {
   throw new ClearingsError('INVALID_CONFORMANCE', message);
 };
@@ -136,11 +139,26 @@ export function validateExecutionRecord(
 ): asserts value is ExecutionRecord {
   validateConformanceProfile(profile, spec);
   assertPortable(value);
-  if (!recordSchema(value))
+  const schema =
+    value &&
+    typeof value === 'object' &&
+    'schema_version' in value &&
+    value.schema_version === '0.2.0'
+      ? nativeRecordSchema
+      : recordSchema;
+  if (!schema(value))
     invalid(
-      `Execution record schema mismatch: ${recordSchema.errors?.[0]?.instancePath} ${recordSchema.errors?.[0]?.message}`,
+      `Execution record schema mismatch: ${schema.errors?.[0]?.instancePath} ${schema.errors?.[0]?.message}`,
     );
   const record = value as ExecutionRecord;
+  if (record.native_execution?.status === 'observed') {
+    const native = record.native_execution;
+    for (const resource of ['work', 'allocation_units', 'value_units', 'evaluation_depth'] as const)
+      if (native.usage[resource] > native.limits[resource])
+        invalid('Native admitted usage exceeds its limit.');
+    if (record.completion.kind === 'return' && native.completion !== 'return')
+      invalid('Returned context contradicts native completion.');
+  }
   if (record.artifact_id !== executionRecordIdentity(record))
     invalid('Execution record digest does not match its content.');
   if (record.profile_id !== profile.artifact_id || record.specification_id !== spec.artifact_id)

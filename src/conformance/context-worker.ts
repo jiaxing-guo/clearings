@@ -1,3 +1,4 @@
+import { channel } from 'node:diagnostics_channel';
 import { parentPort, workerData } from 'node:worker_threads';
 import { capture, captureException } from './capture.js';
 import type { ContextAssemblyInvocation } from './context-contract.js';
@@ -14,6 +15,13 @@ try {
   const candidate = (await import(module_url)) as { assembleContext?: unknown };
   if (typeof candidate.assembleContext !== 'function')
     throw new Error('Candidate does not export assembleContext.');
+  const native = channel('clearings.context.native.v1');
+  let observed = false;
+  native.subscribe((message) => {
+    if (observed) return;
+    observed = true;
+    port.postMessage({ phase: 'native', observation: capture(message) });
+  });
   port.postMessage({ phase: 'invoke' });
   let kind: 'return' | 'throw', value: unknown;
   try {

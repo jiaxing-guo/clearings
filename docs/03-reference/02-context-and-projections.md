@@ -21,13 +21,23 @@ State and evidence records follow the inclusion rules below. If the complete req
 
 Starting from the root, it computes the least set closed under required dependency edges. Optional edges do not expand the selection. Traversal is breadth-first, with required target IDs sorted at each expansion. Each operation appears once; the root appears first. Cycles terminate through visited-ID tracking.
 
-The same ordered closure kernel now has an [implementation in Program IR](../02-semantics/06-required-dependency-closure.md), evaluated independently on bounded graph inputs. That program operates on explicit roots and record/dependency values. It does not perform whole-specification validation, alias resolution, state/evidence projection, or byte accounting. The production assembler retains the TypeScript kernel in this version.
+The same ordered closure kernel now has an [implementation in Program IR](../02-semantics/06-required-dependency-closure.md), evaluated independently on bounded graph inputs. That program operates on explicit roots and record/dependency values. It does not perform whole-specification validation, alias resolution, state/evidence projection, or byte accounting. The production assembler executes this program through the Rust backend. The TypeScript traversal remains a legacy helper and an independently compared implementation.
 
 Each selected operation is retained in full, including every outcome, rule, implementation responsibility, and decision. State selection includes all declared reads/writes; if any selected operation has a complete frame, all modeled state fields are included. State and source records are sorted by ID. All evidence referenced by selected operations and state records is attached.
 
 Evidence references come from the schema-defined `evidence_ids` fields on operations, guarantees, outcomes, postconditions, implementation responsibilities, decisions, and selected state records. Keys named `evidence_ids` inside expression literals are ordinary JSON data and do not select source records.
 
 The package retains specification identity, perspective, provenance, relationship roles, omitted operation IDs, and deferred dependencies. A deferred dependency records whether its target exists in the original specification. An optional target can still be included if it is reachable through another required path.
+
+## Native execution
+
+`prepareContextRuntime()` prepares the bundled closure ahead of invocation. `npm run native:prepare` builds the package and calls it. Cold context assembly prepares on demand and requires Rust 1.85.1 via rustup plus a host linker; warm execution reuses a local executable without a compiler. `CLEARINGS_NATIVE_CACHE` selects the cache directory. By default, an owned directory under the operating-system temporary directory is isolated by user and package path. Cache entries bind source/runtime/driver/toolchain/platform identities and executable hashes. They are trusted local build products, not authenticated against a malicious local writer.
+
+The fixed policy `context-native-v1` uses 10,000,000 work units, 10,000,000 cumulative allocation units, 1,000,000 peak value units, and evaluation depth 256. Portable argument admission is also bounded by the existing Program IR limits. These are logical bounds, not physical memory or wall-clock guarantees. The child process additionally retains the native runner's transport and timeout bounds.
+
+`CONTEXT_RESOURCE` (exit status 3) reports argument-admission or logical-resource exhaustion with the underlying diagnostic. It produces no partial context. This extends the failure behavior: a valid specification can exceed native limits even when the earlier TypeScript traversal would have succeeded. Native preparation and process errors retain their `RUST_*` operational codes. Unexpected compiled language failures produce `CONTEXT_NATIVE_FAILED`. There is no automatic fallback. Specification validation, byte-budget validity, and root resolution precede native invocation; package byte accounting follows successful traversal.
+
+Native execution metadata is published separately for recording. It never enters the semantic context or its byte accounting. `validateOperationContext` and rendering that reconstructs context have the same native prerequisites.
 
 ## Budget semantics
 
@@ -59,4 +69,4 @@ v0.2 context selection follows function dependencies, state, assertions, flow re
 
 Historical audience reports use their own v0.2 artifact and presentation plan. The newer typed Hono slice has a separate identity and narrower scope. Neither shared branding nor adjacent report links make these the same model.
 
-See [context implementation](../../src/specification/context.ts), [dependency traversal](../../src/analysis/dependencies.ts), [byte accounting](../../src/analysis/budget.ts), and [legacy query implementation](../../src/contracts/query.ts).
+See [context implementation](../../src/specification/context.ts), [native closure adapter](../../src/specification/native-closure.ts), [byte accounting](../../src/analysis/budget.ts), and [legacy query implementation](../../src/contracts/query.ts).

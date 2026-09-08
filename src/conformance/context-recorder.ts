@@ -23,7 +23,11 @@ export interface RecordContextAssemblyOptions {
   /** Covers worker startup, module import, synchronous invocation, and capture. */
   timeout_ms?: number;
 }
-type Captures = { arguments_after: CapturedValue; completion: ExecutionCompletion };
+type Captures = {
+  arguments_after: CapturedValue;
+  completion: ExecutionCompletion;
+  native_execution: NonNullable<ExecutionRecord['native_execution']>;
+};
 
 async function execute(
   module_url: string,
@@ -46,6 +50,7 @@ async function execute(
       });
     } catch {
       resolve({
+        native_execution: { status: 'unavailable', reason: 'Worker could not be started.' },
         arguments_after: unavailable('Worker could not be started.'),
         completion: {
           kind: 'harness-failure',
@@ -61,7 +66,12 @@ async function execute(
       known: 'return' | 'throw' | undefined,
       finished = false;
     let resultingSnapshot: CapturedValue | undefined;
+    let native_execution: Captures['native_execution'] = {
+      status: 'unavailable',
+      reason: 'No native execution observation was captured.',
+    };
     const fallback = (message: string, timedOut = false): Captures => ({
+      native_execution,
       arguments_after: resultingSnapshot ?? unavailable(message),
       completion:
         known === 'return'
@@ -86,19 +96,26 @@ async function execute(
       'message',
       (message: {
         phase: string;
+        observation?: CapturedValue;
         kind?: 'return' | 'throw';
         completion?: ExecutionCompletion;
         arguments_after?: CapturedValue;
       }) => {
         if (finished) return;
-        if (message.phase === 'invoke') phase = 'invoke';
+        if (message.phase === 'native' && message.observation?.status === 'captured')
+          native_execution = message.observation.value as unknown as Captures['native_execution'];
+        else if (message.phase === 'invoke') phase = 'invoke';
         else if (message.phase === 'capture') {
           phase = 'capture';
           known = message.kind;
         } else if (message.phase === 'snapshot' && message.arguments_after)
           resultingSnapshot = message.arguments_after;
         else if (message.phase === 'complete' && message.completion && message.arguments_after)
-          void finish({ completion: message.completion, arguments_after: message.arguments_after });
+          void finish({
+            completion: message.completion,
+            arguments_after: message.arguments_after,
+            native_execution,
+          });
         else if (message.phase === 'failed')
           void finish(fallback('Candidate module could not be prepared.'));
       },
@@ -174,7 +191,7 @@ export async function recordContextAssembly(
   };
   return sealExecutionRecord(
     {
-      schema_version: '0.1.0',
+      schema_version: '0.2.0',
       kind: 'execution-record',
       origin: 'recorded-execution',
       case_id: caseId,
@@ -206,9 +223,10 @@ export async function recordContextAssembly(
       limitations: [
         `One synchronous invocation; worker lifetime limit is ${timeout} ms including startup, import, invocation, and capture. Workers are not a security sandbox.`,
         'Captures are JSON values limited to 25,000 visited values and depth 48. Native errors retain own data fields and name/message, excluding stack traces and prototypes.',
-        'Git commit/tree identify the checkout baseline. File digests identify working source, emitted JavaScript, schemas, and package/contract metadata read before execution; dirty files are permitted.',
+        'Git commit/tree identify the checkout baseline. File digests identify working source, emitted JavaScript, Program IR, Rust runtime/driver sources, schemas, and package/contract metadata read before execution; dirty files are permitted.',
         'The file-set manifest is a conservative project scope, not proof of compiler provenance or complete dynamic dependencies. Environment variables and installed dependency bytes are not captured; the lockfile identifies declared dependencies.',
         'Concurrent file changes are outside the recording protocol. Boundary snapshots do not exclude transient writes, retained aliases, or external effects.',
+        'Native metadata is an observation emitted by the trusted local candidate and bound to this record. Its presence is not authenticated execution or a proof that generated code was used. Missing instrumentation is explicit.',
         'Independent reference measurements, effect instrumentation, scoped acceptance, and source refinement are not established.',
       ],
     },

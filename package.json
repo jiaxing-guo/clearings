@@ -37,7 +37,8 @@
       "types": "./dist/compiler/index.d.ts",
       "import": "./dist/compiler/index.js"
     },
-    "./schemas/program": "./schemas/program.v0.1.json"
+    "./schemas/program": "./schemas/program.v0.1.json",
+    "./schemas/execution-record-v2": "./schemas/execution-record.v0.2.json"
   },
   "files": [
     "dist",
@@ -57,7 +58,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test tests/*.test.mjs",
+    "test": "npm run build && node scripts/prepare-context-native.mjs && node --test tests/*.test.mjs",
     "conformance": "npm run build --silent && node dist/cli/main.js conformance",
     "test:conformance": "npm run build && node --test tests/conformance.test.mjs tests/context-recording.test.mjs tests/context-evaluation.test.mjs tests/conformance-cli.test.mjs && node scripts/check-context-conformance.mjs",
     "test:conformance:smoke": "npm run build && node scripts/check-context-conformance.mjs --smoke",
@@ -78,7 +79,8 @@
     "format:check": "prettier --check .",
     "clean": "node scripts/clean.mjs",
     "test:compiler": "npm run build && node --test --test-concurrency=1 tests/compiler-conformance.test.mjs tests/compiler-runner.test.mjs tests/program-compiled-artifacts.test.mjs tests/program-rust-codegen.test.mjs tests/native/*.test.mjs tests/compiled/*.test.mjs",
-    "benchmark:rust": "npm run build --silent && node scripts/measure-rust-closure.mjs"
+    "benchmark:rust": "npm run build --silent && node scripts/measure-rust-closure.mjs",
+    "native:prepare": "npm run build --silent && node scripts/prepare-context-native.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

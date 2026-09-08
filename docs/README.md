@@ -1,6 +1,6 @@
 # Clearings technical documentation
 
-Clearings is developing a compiler and execution runtime for agentic coding. Typed operation contracts express requirements; Program IR expresses implementations; execution and independent evaluation connect programs to observed behavior. This directory is the canonical Markdown reference for the implemented semantics and abstraction boundaries. The [Rust backend plan](05-development/06-rust-backend-plan.md) records the implemented compilation boundary and remaining integration work.
+Clearings is developing a compiler and execution runtime for agentic coding. Typed operation contracts express requirements; Program IR expresses implementations; execution and independent evaluation connect programs to observed behavior. This directory is the canonical Markdown reference for the implemented semantics and abstraction boundaries. The [Rust backend plan](05-development/06-rust-backend-plan.md) records the implemented compilation boundary. The [production adoption contract](05-development/08-production-adoption.md) defines its use in context assembly.
 
 ## Choose a reading path
 
@@ -52,6 +52,8 @@ The original reference order remains available for a systematic review. For a la
 | 31    | [Compiler code style review](05-development/07-code-style-review.md)                        | Which structural refactors improve the compiler workflow, and which semantic constraints limit style changes? |
 | 32    | [Compiler conformance evaluation](03-reference/11-compiler-conformance.md)                  | Which semantic-preservation obligations are evaluated, over which domain, and with what independent controls? |
 | 33    | [Compile and run with Rust](04-guides/06-compile-and-run-rust.md)                           | How do I export, execute, inspect, and package compiled programs?                                             |
+
+| 34 | [Production adoption](05-development/08-production-adoption.md) | How does context assembly reuse compiled IR while preserving evidence and defining compatibility? |
 
 ## Status and authority
 

@@ -71,3 +71,5 @@ export { renderSpecification, renderOperationContext } from './specification/ren
 export type { SpecificationReportOptions, CheckedScenario } from './specification/render.js';
 export { createContractBrief, serializeContractBrief } from './contracts/brief.js';
 export type { ContractBrief } from './contracts/brief.js';
+
+export { prepareContextRuntime, CONTEXT_NATIVE_POLICY } from './specification/native-closure.js';

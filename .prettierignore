@@ -28,10 +28,3 @@ docs/SPECIFICATION_ARCHITECTURE.md
 docs/SEQUENCE_CHECKS.md
 package-lock.json
 website/package-lock.json
-
-# Existing source layout retained until production integration; identities now bind archived bytes.
-# See docs/05-development/05-repository-maintenance.md before changing these bytes.
-src/analysis/budget.ts
-src/analysis/dependencies.ts
-src/specification/context.ts
-src/specification/render.ts

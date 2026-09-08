@@ -109,7 +109,7 @@ The compiler gate includes independent/differential conformance, native CLI beha
 
 If the toolchain is unavailable, check `rustup run 1.85.1 rustc --version` and the host linker. If a build or process fails, the CLI diagnostic retains its stage, exit status or signal, and a bounded error excerpt. If an output directory exists, select a new path or remove the generated directory deliberately. A saved artifact is an integrity-bound build product; it is not authenticated execution evidence or a native-code sandbox.
 
-This completes the initial compilation and execution workflow. Production context assembly still uses its TypeScript kernel. [Production adoption](../05-development/01-status-and-roadmap.md#work-after-the-backend) requires a separate compatibility and evidence migration.
+This completes the initial compilation and execution workflow. Production context assembly now executes the compiled closure. [Production adoption](../05-development/08-production-adoption.md) defines the compatibility and evidence migration.
 
 ## Prepare once and invoke repeatedly
 
