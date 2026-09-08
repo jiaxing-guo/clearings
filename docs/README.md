@@ -36,6 +36,7 @@ The original reference order remains available for a systematic review. For a la
 | 15 | [Executable conformance](02-semantics/04-executable-conformance.md) | How are concrete executions related to scoped requirements? |
 | 16 | [Conformance artifacts](03-reference/05-conformance-artifacts.md) | Which identities, measurements, and obligations must an evaluation record retain? |
 | 17 | [Conformance implementation plan](05-development/03-conformance-plan.md) | How do the four implementation PRs establish the first executable evaluation boundary? |
+| 18 | [Record a context-assembly invocation](04-guides/03-record-context-assembly.md) | How do I capture actual execution evidence and inspect its observation mapping? |
 
 ## Status and authority
 

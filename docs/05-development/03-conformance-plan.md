@@ -11,7 +11,7 @@ The objective is reproducible, independently checked agreement between one Clear
 | 3 | Implement the independent evaluator and executable fault tests | Production and an independent conforming implementation pass the scoped checks; predefined non-equivalent faults are detected |
 | 4 | Expose a reproducible command, replay, reports, documentation, and focused regression gates | A clean checkout reproduces results and explains failures without undocumented setup |
 
-The first change defines formats and requirements. Its authored examples are not execution evidence, and its independent check IDs name future procedures. The second change introduces a runner only for the declared context-assembly slice. The third supplies independent reference behavior. The fourth integrates those components without redefining operation semantics.
+The first two changes are implemented: artifact definitions, bounded execution recording, observation mapping, and structured context-budget details. The initial authored examples remain format illustrations. Fresh recording is available through the library, with [a worked guide](../04-guides/03-record-context-assembly.md). The third change supplies independent reference behavior and the predefined implementation-fault suite. The fourth integrates those components without redefining operation semantics.
 
 ## Evaluation commitments
 

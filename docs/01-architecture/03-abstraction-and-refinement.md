@@ -2,7 +2,7 @@
 
 An abstraction mapping relates concrete program behavior to the values represented by a contract. Refinement asks whether the implementation's abstracted behaviors are permitted by that contract.
 
-**Implementation status:** the mapping and refinement relation on this page are design concepts. Clearings evaluates supplied abstract observations; it does not implement a general abstraction adapter or a refinement proof procedure.
+**Implementation status:** Clearings evaluates supplied abstract observations and implements a concrete recording and mapping procedure for context assembly. General abstraction adapters and refinement proof procedures remain design concepts.
 
 ## Abstract domains
 
@@ -37,7 +37,7 @@ An observation adapter translates a concrete execution or test fixture into `Ope
 5. How effect IDs are captured, and which effects are unobserved.
 6. Which values are independently measured, manually supplied, or derived from the candidate under test.
 
-The [conformance profile and execution record](../03-reference/05-conformance-artifacts.md) now serialize measurement procedures, component identities, completion classes, and obligation coverage for the bounded context-assembly slice. Their validators do not execute the adapter or establish mapping fidelity. `ImplementationRole` still records a responsibility and optional symbol/evidence links; it does not encode an executable adapter. `SpecificationSource.binding` records provenance identity, not an abstraction function.
+The [conformance profile and execution record](../03-reference/05-conformance-artifacts.md) serialize measurement procedures, component identities, completion classes, and obligation coverage for the bounded context-assembly slice. Their validators do not execute the adapter or establish mapping fidelity. The separate `recordContextAssembly` and `mapContextAssemblyObservation` APIs capture actual evidence and check its projections for that slice. `ImplementationRole` still records a responsibility and optional symbol/evidence links; it does not encode an executable adapter. `SpecificationSource.binding` records provenance identity, not an abstraction function.
 
 ## Refinement
 

@@ -41,7 +41,7 @@ The typed-specification path starts with an authored `SemanticSpecification`. Va
 | Semantic exchange | Source-bound authoring requests, proposal import, recorded replay | [semantic exchange](../../src/semantics/exchange.ts) |
 | Legacy contracts | Function/behavior contracts, inspection, context selection | [contract modules](../../src/contracts) |
 | Typed kernel | Specification validation, expression evaluation, observation checks | [specification modules](../../src/specification) |
-| Conformance metadata | Evaluation scope, obligation coverage, execution-record structure and identities; no runner | [conformance modules](../../src/conformance) |
+| Executable conformance | Evaluation metadata, bounded context-assembly recording, and observation mapping | [conformance modules](../../src/conformance) |
 | Presentation | Audience plans and deterministic projections | [renderers](../../src/renderers), [presentation plans](../../src/presentation) |
 | CLI | File input/output, option validation, command routing, exit status | [CLI entry](../../src/cli/main.ts) |
 
@@ -52,7 +52,7 @@ The typed-specification path starts with an authored `SemanticSpecification`. Va
 | Source bytes → structural facts | Snapshot binding, exact spans, bounded syntax/symbol observations | Complete runtime call targets or whole-program behavior |
 | Evidence → semantic interpretation | Known citations, consistent references and provenance | That English assertions follow from the cited source |
 | Authored specification → validated specification | Schema, identity, references, expression typing, declared boundaries | Requirement acceptance or global satisfiability |
-| Concrete execution → observation | Whatever the external observation adapter actually measures | Automatic adapter fidelity, storage identity, or complete effect capture |
+| Concrete execution → observation | Captured context-assembly arguments/completions and checked measurement projections; external adapters for other APIs | General adapter fidelity, complete dependency authentication, or complete effect capture |
 | Observation → verdict | Evaluation of modeled predicates over supplied values | Source conformance for all executions |
 | Specification → agent implementation | Recorded development evidence when an experiment is performed | A built-in compiler or general code-generation guarantee |
 
