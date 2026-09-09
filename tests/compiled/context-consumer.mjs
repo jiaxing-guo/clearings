@@ -102,41 +102,51 @@ try {
   assert.equal(unavailable.status, 1);
   assert.equal(JSON.parse(unavailable.stdout).error.code, 'RUST_TOOLCHAIN_UNAVAILABLE');
 
-  // Check the public CLI's resource exit status and structured diagnostic on an independently sized chain.
-  const large = structuredClone(invocation.specification);
-  const template = large.operations[0];
-  large.operations = Array.from({ length: 512 }, (_, i) => ({
-    ...structuredClone(template),
-    id: i === 0 ? invocation.selection : `n${i}`,
-    alias: `alias-n${i}`,
-    name: `n${i}`,
-    outcomes: template.outcomes.map((outcome) => ({
-      ...structuredClone(outcome),
-      id: `done-n${i}`,
-    })),
-    dependencies:
-      i === 511
-        ? []
-        : [
-            {
-              operation_id: `n${i + 1}`,
-              requirement: 'required',
-              kind: 'uses-contract',
-              role: 'Next record.',
-            },
-          ],
-  }));
-  writeFileSync(specification, JSON.stringify(sealSpecification(large)));
-  const exhausted = command();
-  assert.equal(exhausted.status, 3, exhausted.stderr + exhausted.stdout);
-  const diagnostic = JSON.parse(exhausted.stdout).diagnostics[0];
-  assert.equal(diagnostic.code, 'CONTEXT_RESOURCE');
-  assert.equal(diagnostic.details.resource, 'work');
+  // Preserve success at the former limit and explicit exhaustion beyond the improved domain.
+  for (const size of [512, 2048]) {
+    const large = structuredClone(invocation.specification);
+    const template = large.operations[0];
+    large.operations = Array.from({ length: size }, (_, i) => ({
+      ...structuredClone(template),
+      id: i === 0 ? invocation.selection : `n${i}`,
+      alias: `alias-n${i}`,
+      name: `n${i}`,
+      outcomes: template.outcomes.map((outcome) => ({
+        ...structuredClone(outcome),
+        id: `done-n${i}`,
+      })),
+      dependencies:
+        i === size - 1
+          ? []
+          : [
+              {
+                operation_id: `n${i + 1}`,
+                requirement: 'required',
+                kind: 'uses-contract',
+                role: 'Next record.',
+              },
+            ],
+    }));
+    writeFileSync(specification, JSON.stringify(sealSpecification(large)));
+    const result = command();
+    if (size === 512) {
+      assert.equal(result.status, 0, result.stderr + result.stdout);
+      assert.deepEqual(
+        JSON.parse(result.stdout).operations.map((item) => item.id),
+        Array.from({ length: size }, (_, i) => (i === 0 ? invocation.selection : `n${i}`)),
+      );
+    } else {
+      assert.equal(result.status, 3, result.stderr + result.stdout);
+      const diagnostic = JSON.parse(result.stdout).diagnostics[0];
+      assert.equal(diagnostic.code, 'CONTEXT_RESOURCE');
+      assert.equal(diagnostic.details.resource, 'work');
+    }
+  }
 
   // Change the algorithm in IR only. The ordinary installed adapter must execute the changed algorithm.
   const programPath = join(installed, 'programs/clearings/required-dependency-closure.json');
   const program = JSON.parse(readFileSync(programPath, 'utf8'));
-  const result = program.functions.find((fn) => fn.id === 'required_targets').body.at(-1);
+  const result = program.functions.find((fn) => fn.id === 'targets').body.at(-1);
   assert.equal(result.value.kind, 'sort');
   result.value = result.value.list;
   writeFileSync(programPath, JSON.stringify(sealProgram(program)));

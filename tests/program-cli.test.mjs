@@ -99,9 +99,9 @@ test('validation and inspection preserve canonical JSON and identify static scop
   const report = run(['inspect', 'closure']);
   assert.equal(report.status, 0);
   assert.match(report.stdout, /function required_dependency_closure\(/);
-  assert.match(report.stdout, /function lookup_record\(/);
-  assert.match(report.stdout, /fail MISSING_REQUIRED_DEPENDENCY\(id\)/);
-  assert.match(report.stdout, /\/functions\/3/);
+  assert.match(report.stdout, /function lookup\(/);
+  assert.match(report.stdout, /fail MISSING_REQUIRED_DEPENDENCY\(x\)/);
+  assert.match(report.stdout, /\/functions\/5/);
 });
 
 test('custom runs require explicit positional arguments and resolve paths from the working directory', (t) => {

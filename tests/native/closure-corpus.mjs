@@ -229,9 +229,9 @@ export function closureFaultSuite() {
       args: [['root'], ordering],
       expected: success(['root', 'a', 'z', 'y', 'b']),
       edit(program) {
-        program.functions.find((fn) => fn.id === 'required_targets').body.at(-1).value = {
+        program.functions.find((fn) => fn.id === 'targets').body.at(-1).value = {
           kind: 'ref',
-          name: 'targets',
+          name: 't',
         };
       },
     },
@@ -241,7 +241,7 @@ export function closureFaultSuite() {
       expected: success(['root']),
       edit(program) {
         program.functions
-          .find((fn) => fn.id === 'required_targets')
+          .find((fn) => fn.id === 'targets')
           .body.find((statement) => statement.kind === 'while')
           .body.find((statement) => statement.kind === 'if').condition = {
           kind: 'literal',
@@ -257,7 +257,7 @@ export function closureFaultSuite() {
       edit(program) {
         program.functions[0].body.at(-1).value = {
           kind: 'sort',
-          list: { kind: 'ref', name: 'selected' },
+          list: { kind: 'ref', name: 'q' },
         };
       },
     },
@@ -266,12 +266,12 @@ export function closureFaultSuite() {
       args: [['absent'], [record('present')]],
       expected: failure('MISSING_REQUIRED_DEPENDENCY', 'absent'),
       edit(program) {
-        const body = program.functions.find((fn) => fn.id === 'lookup_record').body;
+        const body = program.functions.find((fn) => fn.id === 'lookup').body;
         body[body.length - 1] = {
           kind: 'return',
           value: {
             kind: 'index',
-            list: { kind: 'ref', name: 'records' },
+            list: { kind: 'ref', name: 'r' },
             index: { kind: 'literal', type: { kind: 'integer' }, value: 0 },
           },
         };
