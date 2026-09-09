@@ -22,7 +22,7 @@ Fresh recording must include Program IR and Rust source inventories, plus observ
 
 The final gate retains the full context-conformance domain, independent expectations, fault controls, native compiler tests, installed-package checks, source snapshot verification, and runnable documentation. The ordinary caller now uses the compiled algorithm, and the local adoption gates have recorded passing results. Hosted CI and PR review remain integration gates; the implementation does not establish universal refinement or self-hosting.
 
-Agent-authored IR changes, new language effects, optimization, additional targets, and self-hosting follow this milestone.
+Agent-authored IR changes, new language effects, optimization, additional targets, and self-hosting follow this implementation scope.
 
 ## Review and integration order
 

@@ -1,6 +1,6 @@
 # Rust backend implementation plan
 
-Status: implemented. The four PRs provide the artifact contract, primitive runtime, deterministic code generation, bounded semantic-preservation evaluation, and library/CLI/package integration. Production adoption remains subsequent work. This is Milestone 3, following completed executable conformance and Program IR/reference execution. It defines four dependent implementation PRs. Milestone and PR numbers are planning labels; commit messages and PR titles should describe the delivered behavior.
+Status: implemented. The four PRs provide the artifact contract, primitive runtime, deterministic code generation, bounded semantic-preservation evaluation, and library/CLI/package integration. Production adoption remains subsequent work. It follows executable conformance and Program IR/reference execution. The implementation used four dependent PRs.
 
 ## Goal and observable outcome
 
@@ -22,7 +22,7 @@ This provides the first compiler backend in the bootstrap sequence. The compiler
 | Program authority | Authored IR remains the source; generated files are derived build products            | Reproduction and review need a single implementation source                                                    |
 | Validation        | Differential execution plus independent language and graph expectations               | Agreement between two implementations can conceal a shared defect                                              |
 
-No optimization or speedup claim is required. The generated program must compute the algorithm directly, even if compatibility instrumentation adds overhead. Future optimized backends may define a different resource policy explicitly; this milestone must not silently weaken the current one.
+No optimization or speedup claim is required. The generated program must compute the algorithm directly, even if compatibility instrumentation adds overhead. Future optimized backends may define a different resource policy explicitly; this implementation scope must not silently weaken the current one.
 
 ## Semantic-preservation obligation
 
@@ -96,14 +96,14 @@ Completion criteria: a clean checkout and an installed package can compile and e
 
 ## Integration and deferred work
 
-Production context assembly continues to use its TypeScript kernel during this milestone. The generic production helper takes a map and callback; the IR workload takes portable graph records and applies a bounded execution contract. Whole-specification validation and kernel-level missing-reference checks also have different scopes. Replacing the caller requires explicit compatibility decisions, rather than a simple function substitution.
+Production context assembly continues to use its TypeScript kernel during this implementation scope. The generic production helper takes a map and callback; the IR workload takes portable graph records and applies a bounded execution contract. Whole-specification validation and kernel-level missing-reference checks also have different scopes. Replacing the caller requires explicit compatibility decisions, rather than a simple function substitution.
 
 Four current source files are bound by historical whole-file hashes and byte ranges, as described in [repository maintenance](05-repository-maintenance.md). Production adoption must migrate that verification to an authenticated immutable historical source snapshot while preserving the recorded artifacts and checks. It must then evaluate the new implementation through fresh evidence. Historical files should not prevent future implementation changes, and new code should not rewrite old evidence to make it pass.
 
 The subsequent production-adoption task must preserve public input behavior, ordering, failure mapping, and caller-visible resource policy. After adoption, a bounded agent-authored Program IR change can test the complete authoring, compilation, execution, evaluation, and self-use workflow.
 
-Automatic contract synthesis, optimized or multiple backends, a bytecode VM, host capabilities, new language effects, compiler self-hosting, and matched agent-efficiency experiments are outside this milestone. Extend the language only when a subsequent real Clearings algorithm demonstrates a missing construct.
+Automatic contract synthesis, optimized or multiple backends, a bytecode VM, host capabilities, new language effects, compiler self-hosting, and matched agent-efficiency experiments are outside this implementation scope. Extend the language only when a subsequent real Clearings algorithm demonstrates a missing construct.
 
 ## Definition of done
 
-Milestone 3 is complete when the four PRs establish deterministic compilation of the full supported Program IR language, compatible compiled execution, independent evaluation of compiled closure, and a reproducible library/CLI/package workflow. The evidence must show execution of generated computation and identify the tested scope. A successful milestone enables production adoption; it does not by itself establish self-hosting or automatic synthesis from requirements.
+The backend is complete when the four PRs establish deterministic compilation of the full supported Program IR language, compatible compiled execution, independent evaluation of compiled closure, and a reproducible library/CLI/package workflow. The evidence must show execution of generated computation and identify the tested scope. A completed backend enables production adoption; it does not by itself establish self-hosting or automatic synthesis from requirements.

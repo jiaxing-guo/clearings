@@ -1,0 +1,128 @@
+{
+  "version": "context-selection-v1",
+  "entry_function": "context_selection",
+  "parameters": [
+    {
+      "name": "selected_ids",
+      "type": {
+        "kind": "list",
+        "element": {
+          "kind": "string"
+        }
+      }
+    },
+    {
+      "name": "operations",
+      "type": {
+        "kind": "list",
+        "element": {
+          "kind": "record",
+          "fields": {
+            "id": {
+              "kind": "string"
+            },
+            "complete_frame": {
+              "kind": "boolean"
+            },
+            "reads": {
+              "kind": "list",
+              "element": {
+                "kind": "string"
+              }
+            },
+            "writes": {
+              "kind": "list",
+              "element": {
+                "kind": "string"
+              }
+            },
+            "evidence_groups": {
+              "kind": "list",
+              "element": {
+                "kind": "list",
+                "element": {
+                  "kind": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "states",
+      "type": {
+        "kind": "list",
+        "element": {
+          "kind": "record",
+          "fields": {
+            "id": {
+              "kind": "string"
+            },
+            "evidence_ids": {
+              "kind": "list",
+              "element": {
+                "kind": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "source_ids",
+      "type": {
+        "kind": "list",
+        "element": {
+          "kind": "string"
+        }
+      }
+    }
+  ],
+  "returns": {
+    "kind": "record",
+    "fields": {
+      "state_ids": {
+        "kind": "list",
+        "element": {
+          "kind": "string"
+        }
+      },
+      "source_ids": {
+        "kind": "list",
+        "element": {
+          "kind": "string"
+        }
+      }
+    }
+  },
+  "failures": [],
+  "domain": {
+    "state_incidence": 4096,
+    "evidence_incidence": 512,
+    "targeted": 24,
+    "total": 4632
+  },
+  "limits": {
+    "work": 10000000,
+    "allocation_units": 10000000,
+    "value_units": 1000000,
+    "evaluation_depth": 256
+  },
+  "resource_policy": {
+    "production": "context-native-v2",
+    "stages": ["closure", "selection"],
+    "accounting": "Separate full limits per stage; no aggregate logical budget.",
+    "admission": "Each argument array: 50000 portable values, 1000000 input units.",
+    "failure": "Observed exhaustion on required cases rejects. Unavailable native execution is inconclusive; independent observed violations still reject."
+  },
+  "obligations": [
+    "state-selection",
+    "declared-evidence-selection",
+    "unique-utf16-order",
+    "input-ownership",
+    "reference-native-agreement",
+    "bounded-completion"
+  ],
+  "scope": "Total relational projection on well-typed portable metadata. Unknown IDs contribute no matching catalog rows; duplicate rows contribute by existential membership. The production caller validates the entire specification before adapting it. Literal JSON is excluded by the separately tested adapter."
+}

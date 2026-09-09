@@ -114,7 +114,7 @@ if (mode) {
       throw new Error(`Pinned count mismatch: ${key}`);
   const summary = {
     schema_version: '0.1.0',
-    milestone: 'M0',
+    benchmark: 'inventory',
     target_id: target.target_id,
     commit_sha: target.commit,
     tree_sha: target.tree_sha,

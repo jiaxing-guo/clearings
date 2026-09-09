@@ -83,7 +83,8 @@
     "benchmark:rust": "npm run build --silent && node scripts/measure-rust-closure.mjs",
     "native:prepare": "npm run build --silent && node scripts/prepare-context-native.mjs",
     "closure:evaluate": "npm run build --silent && node scripts/evaluate-closure-candidate-v2.mjs",
-    "benchmark:context": "npm run build --silent && node scripts/profile-context-runtime.mjs"
+    "benchmark:context": "npm run build --silent && node scripts/profile-context-runtime.mjs",
+    "test:selection:contract": "npm run build && node --test tests/context-selection-contract.test.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

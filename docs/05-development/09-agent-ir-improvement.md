@@ -1,6 +1,6 @@
 # Independently evaluated IR improvement
 
-Milestone 5 implemented an agent-authored improvement to Clearings' compiled dependency-closure algorithm. The evaluation, candidate, and production integration are merged in PRs #26–28. This work connects a frozen behavioral contract, candidate Program IR, deterministic compilation, independent evaluation, and use of the resulting Clearings implementation.
+The evaluated IR improvement implemented an agent-authored improvement to Clearings' compiled dependency-closure algorithm. The evaluation, candidate, and production integration are merged in PRs #26–28. This work connects a frozen behavioral contract, candidate Program IR, deterministic compilation, independent evaluation, and use of the resulting Clearings implementation.
 
 ## Review sequence
 

@@ -12,6 +12,8 @@ on:
       - 'benchmarks/sources/**'
       - 'schemas/**'
       - 'tests/program*.test.mjs'
+      - 'tests/context-selection*.test.mjs'
+      - 'benchmarks/evaluation/context-selection-v1/**'
       - 'tests/helpers/program-closure-reference.mjs'
       - 'scripts/generate-program-schema.py'
       - 'scripts/build-required-closure-program.mjs'
@@ -45,5 +47,6 @@ jobs:
         working-directory: runtime/rust
       - run: npm ci --ignore-scripts
       - run: npm run native:prepare
+      - run: npm run test:selection:contract
       - run: npm run test:program
       - run: npm run docs:check:markdown

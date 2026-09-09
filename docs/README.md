@@ -31,7 +31,7 @@ The original reference order remains available for a systematic review. For a la
 | 10    | [Compatibility](03-reference/04-compatibility.md)                                           | How do versions and historical artifacts coexist?                                                             |
 | 11    | [Check a Hono case](04-guides/01-check-a-case.md)                                           | How do I inspect and evaluate an existing model?                                                              |
 | 12    | [Author and review a specification](04-guides/02-author-and-review.md)                      | How do I construct a contract and test its meaning?                                                           |
-| 13    | [Status and development roadmap](05-development/01-status-and-roadmap.md)                   | Which capabilities and bootstrap milestones are established?                                                  |
+| 13    | [Status and development roadmap](05-development/01-status-and-roadmap.md)                   | Which capabilities and bootstrap results are established?                                                     |
 | 14    | [Documentation maintenance](05-development/02-documentation.md)                             | How do I change this reference and verify it?                                                                 |
 | 15    | [Executable conformance](02-semantics/04-executable-conformance.md)                         | How are concrete executions related to scoped requirements?                                                   |
 | 16    | [Conformance artifacts](03-reference/05-conformance-artifacts.md)                           | Which identities, measurements, and obligations must an evaluation record retain?                             |
@@ -54,10 +54,11 @@ The original reference order remains available for a systematic review. For a la
 | 33    | [Compile and run with Rust](04-guides/06-compile-and-run-rust.md)                           | How do I export, execute, inspect, and package compiled programs?                                             |
 | 34    | [Production adoption](05-development/08-production-adoption.md)                             | How does context assembly reuse compiled IR while preserving evidence and defining compatibility?             |
 | 35    | [Independently evaluated IR improvement](05-development/09-agent-ir-improvement.md)         | How are agent candidates evaluated against frozen behavior and scalability requirements?                      |
+| 36    | [Context selection](02-semantics/07-context-selection.md)                                   | Which state and source records must the selection algorithm return, and how is it evaluated?                  |
 
 ## Status and authority
 
-For public source preparation, see the [publication readiness review](05-development/10-publication-readiness.md), including history and archive scope, licensing, and remaining visibility steps.
+For the public baseline, see the [publication readiness review](05-development/10-publication-readiness.md), including the completed exposure review, licensing, public checkout, and passing hosted CI.
 
 The [Rust backend artifacts and runtime](03-reference/09-rust-backend.md) define the implemented compiler preparation boundary, compiled-artifact validators, and primitive Rust runtime. The [Rust emitter](03-reference/10-rust-code-generation.md) generates executable target modules; the [native workflow](04-guides/06-compile-and-run-rust.md) provides source export, CLI execution, and installed-package support.
 

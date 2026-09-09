@@ -105,7 +105,7 @@ if (child) {
   if (fingerprint() !== before) throw new Error('Target files changed.');
   const summary = {
     schema_version: '0.1.0',
-    milestone: 'M1',
+    benchmark: 'scan',
     target_id: target.target_id,
     commit_sha: target.commit,
     tree_sha: target.tree_sha,
