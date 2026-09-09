@@ -9,6 +9,7 @@ import { expectedSelection } from '../benchmarks/evaluation/context-selection-v1
 const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const program = read('../programs/clearings/context-selection.json');
 const contract = read('../benchmarks/evaluation/context-selection-v1/contract.json');
+const reviewCases = read('../benchmarks/evaluation/context-selection-review-v1/cases.json');
 
 test('selection is reproducible closed IR with the frozen entry signature', () => {
   validateProgram(program);
@@ -19,21 +20,20 @@ test('selection is reproducible closed IR with the frozen entry signature', () =
   assert.deepEqual(entry.failures, contract.failures);
 });
 
-test('reference execution satisfies all frozen selection cases with fresh owned results', () => {
+test('reference execution satisfies original selection cases and review regressions', () => {
   let count = 0;
-  for (const item of selectionCases()) {
+  for (const item of [...selectionCases(), ...reviewCases]) {
     const before = structuredClone(item.args);
     const result = executeProgram(program, item.args, contract.limits);
     assert.deepEqual(
       result.completion,
-      { kind: 'return', value: expectedSelection(before) },
+      { kind: 'return', value: item.expected ?? expectedSelection(before) },
       item.id,
     );
     assert.deepEqual(item.args, before, item.id);
-    if (count === 0) result.completion.value.state_ids.push('caller mutation');
     count++;
   }
-  assert.equal(count, contract.domain.total);
+  assert.equal(count, contract.domain.total + reviewCases.length);
 });
 
 test('selection rejects malformed arguments at admission and preserves resource exhaustion', () => {
@@ -90,4 +90,18 @@ test('independent expectations detect executable IR selection and ordering fault
     ).completion;
     assert.notDeepEqual(completion, { kind: 'return', value: expectedSelection(item.args) });
   }
+});
+
+test('mutating returned selection lists preserves inputs and later results', () => {
+  const item = [...selectionCases()].find((item) => item.id === 'complete-state-evidence');
+  const before = structuredClone(item.args);
+  const expected = expectedSelection(before);
+  assert(expected.state_ids.length > 0 && expected.source_ids.length > 0);
+  const first = executeProgram(program, item.args, contract.limits).completion.value;
+  const second = executeProgram(program, item.args, contract.limits).completion.value;
+  first.state_ids.splice(0, first.state_ids.length, 'caller mutation');
+  first.source_ids.splice(0, first.source_ids.length, 'caller mutation');
+  assert.deepEqual(item.args, before);
+  assert.deepEqual(second, expected);
+  assert.deepEqual(executeProgram(program, item.args, contract.limits).completion.value, expected);
 });

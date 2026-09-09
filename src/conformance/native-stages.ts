@@ -91,7 +91,8 @@ export class NativeStageRecorder {
       if (
         stage === 'selection' &&
         (!this.started.has('closure') ||
-          (this.stages[0]?.status === 'observed' && this.stages[0].completion !== 'return'))
+          (this.completed.has('closure') &&
+            (this.stages[0]?.status !== 'observed' || this.stages[0].completion !== 'return')))
       )
         this.error('Selection started before successful closure.');
       this.started.add(stage);

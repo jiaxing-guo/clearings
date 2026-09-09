@@ -104,7 +104,7 @@ if (child) {
     throw new Error('Structural scan output is not byte stable.');
   if (fingerprint() !== before) throw new Error('Target files changed.');
   const summary = {
-    schema_version: '0.1.0',
+    schema_version: '0.2.0',
     benchmark: 'scan',
     target_id: target.target_id,
     commit_sha: target.commit,
