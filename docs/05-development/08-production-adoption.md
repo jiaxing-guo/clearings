@@ -34,3 +34,5 @@ Agent-authored IR changes, new language effects, optimization, additional target
 | Final adoption gate                                    | Validate the ordinary installed workflow   | Independent context conformance, IR mutation control, native failure controls, CI, and documentation |
 
 All four dependent PRs are merged. Their review order is retained here as implementation history. The [fresh adoption observation](../../benchmarks/results/native-context-adoption-20260908/README.md) preserves one recorded production invocation and explains how to reproduce the full gates.
+
+The [two-stage integration observation](../../benchmarks/results/compiled-context-selection/README.md) records the subsequent state/source extension using Clearings' own context contract, with independently accepted stage evidence and installed-package controls.
