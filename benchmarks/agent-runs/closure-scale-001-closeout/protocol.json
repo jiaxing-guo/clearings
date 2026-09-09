@@ -1,0 +1,18 @@
+{
+  "schema_version": "0.2.0",
+  "baseline_commit": "8a34ecb97f68526822b969a80bc59c55f4dc5d6c",
+  "baseline_protocol_sha256": "de16156dfae21b61f45478eb971c25118dcc8d58697507a7b5128a0a78f2520f",
+  "revision": "Separate missing native evidence from observed semantic disagreement; retain original behavioral and scalability criteria.",
+  "timing": "Evaluator correction after the original candidate submission; no new authoring attempt.",
+  "native_infrastructure_failures": "Retain diagnostics and unknown agreement; inconclusive unless another observation independently establishes rejection.",
+  "frozen_files": [
+    {
+      "path": "scripts/evaluate-closure-candidate-v2.mjs",
+      "sha256": "c72f9e8fb31189a3357c0984269d0e13205aa23687798e6d29344ddb9b93e241"
+    },
+    {
+      "path": "scripts/lib/closure-evaluation-v2.mjs",
+      "sha256": "f5c0e342913f339f36b9b6e8781309e768eff4a7d05fc02739679b824ae3bb96"
+    }
+  ]
+}

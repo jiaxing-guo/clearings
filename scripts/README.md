@@ -24,6 +24,8 @@ Use the root npm commands for normal development. Scripts run against the Cleari
 
 Build the library before invoking a `.mjs` benchmark script directly. The measurement and evaluation tools retain the historical rubric and result formats; their filenames now describe the measured operation.
 
+`closure:evaluate` runs the v0.2 closure evaluator. Native infrastructure failures produce an inconclusive result unless another observation demonstrates a behavioral failure or native/reference disagreement. The original v0.1 driver remains at `scripts/evaluate-closure-candidate.mjs` for historical reproduction. See the [evaluation protocol and correction](../docs/05-development/09-agent-ir-improvement.md#evaluator-correction-and-historical-reproduction) for evidence identities and assessment rules.
+
 `generate-*-schema.py` and `generate-conformance-schemas.py` own schema serialization. `build-required-closure-program.mjs` reproduces the authored Program IR artifact. Their tests compare generated output with committed bytes. Run the relevant generator for an intentional artifact change; Prettier does not rewrite these outputs.
 
 The authoring, replay, report-building, packaging, and archive-verification scripts support the retained Hono and bootstrap demonstrations. They remain available because those records are referenced by documentation and checks. Follow [Contributing](../CONTRIBUTING.md#reproduce-benchmark-changes) and use new output directories for new evidence.
