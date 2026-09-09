@@ -1,0 +1,23 @@
+{
+  "status": "pass",
+  "report_sha256": "49a8798fd24c6b74a99163e79e93b95ded4b26b3e753d724da83503f0749dee7",
+  "inputs_sha256": "fe13d3c004456959cdd87d9b8c248d30fcc65872e48e08b5e2ee23efcf802be6",
+  "timed_calls_verified": 600,
+  "sample_groups_verified": 150,
+  "metric_summaries_recomputed": 90,
+  "checks": [
+    "All output digests match independent reference expectations.",
+    "All measured invocations retain the original input.",
+    "Every median, p95, minimum, maximum, and count was recomputed from raw observations.",
+    "All measurement values are finite and nonnegative; total equals assembly plus final serialization.",
+    "Input and harness file hashes match the recorded bindings."
+  ],
+  "wrong_expected_digest_control": {
+    "origin": "authored-control",
+    "workload": "own-contract",
+    "change": "Replace expected output SHA-256 with 64 zeroes.",
+    "exit_status": 1,
+    "assertion_failure_observed": true,
+    "timing_result_emitted": false
+  }
+}
