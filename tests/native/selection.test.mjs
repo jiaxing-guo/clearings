@@ -11,19 +11,20 @@ import { expectedSelection } from '../../benchmarks/evaluation/context-selection
 const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
 const program = read('../../programs/clearings/context-selection.json');
 const contract = read('../../benchmarks/evaluation/context-selection-v1/contract.json');
+const reviewCases = read('../../benchmarks/evaluation/context-selection-review-v1/cases.json');
 
-test('compiled selection agrees with independent expectations and reference accounting on the full frozen domain', () => {
+test('compiled selection agrees with independent expectations and reference accounting on the original domain and review regressions', () => {
   const cache = mkdtempSync(join(tmpdir(), 'clearings-selection-test-'));
   try {
     const native = prepareRustProgram(program, { cacheDirectory: cache });
     let count = 0;
-    for (const item of selectionCases()) {
+    for (const item of [...selectionCases(), ...reviewCases]) {
       const before = structuredClone(item.args);
       const reference = executeProgram(program, item.args, contract.limits);
       const compiled = native.execute(item.args, contract.limits);
       assert.deepEqual(
         compiled.completion,
-        { kind: 'return', value: expectedSelection(before) },
+        { kind: 'return', value: item.expected ?? expectedSelection(before) },
         item.id,
       );
       assert.deepEqual(compiled.completion, reference.completion, item.id);
@@ -32,7 +33,7 @@ test('compiled selection agrees with independent expectations and reference acco
       assert.deepEqual(item.args, before, item.id);
       count++;
     }
-    assert.equal(count, contract.domain.total);
+    assert.equal(count, contract.domain.total + reviewCases.length);
     const args = [...selectionCases()].find((item) => item.id === 'dense/16').args;
     for (const limits of [
       { work: 1 },
