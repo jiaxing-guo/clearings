@@ -98,6 +98,7 @@ export function evaluateNativeStages(
   };
   for (const [index, capture] of record.native_stages!.entries()) {
     const binding = record.native_programs![index]!;
+    const args = index === 0 ? closureArgs : selectionArgs;
     if (capture.status === 'not-run') {
       add(
         `${capture.stage}-execution`,
@@ -110,6 +111,14 @@ export function evaluateNativeStages(
     }
     if (capture.status === 'unavailable') {
       add(`${capture.stage}-execution`, 'unknown', capture.reason);
+      if (capture.arguments_sha256 !== undefined)
+        add(
+          `${capture.stage}-arguments`,
+          args !== undefined && sha256(canonical(args)) === capture.arguments_sha256
+            ? 'pass'
+            : 'fail',
+          'An unavailable result does not excuse a captured argument-binding mismatch.',
+        );
       continue;
     }
     add(
@@ -126,7 +135,6 @@ export function evaluateNativeStages(
       canonical(capture.limits) === canonical(limits) ? 'pass' : 'fail',
       'Each context-native-v2 stage has its own frozen logical limits.',
     );
-    const args = index === 0 ? closureArgs : selectionArgs;
     add(
       `${capture.stage}-arguments`,
       args === undefined

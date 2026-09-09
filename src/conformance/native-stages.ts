@@ -37,6 +37,12 @@ export class NativeStageRecorder {
     this.active = true;
     if (this.errors.length < 8) this.errors.push(reason);
   }
+  captureUnavailable(reason: string): void {
+    this.active = true;
+    this.stages = this.stages.map((capture) =>
+      capture.status === 'unavailable' ? { ...capture, reason } : capture,
+    );
+  }
   receive(value: unknown): void {
     this.active = true;
     const event = object(value);
@@ -84,9 +90,9 @@ export class NativeStageRecorder {
       }
       if (
         stage === 'selection' &&
-        (!this.completed.has('closure') ||
-          this.stages[0]?.status !== 'observed' ||
-          this.stages[0].completion !== 'return')
+        (!this.started.has('closure') ||
+          (this.completed.has('closure') &&
+            (this.stages[0]?.status !== 'observed' || this.stages[0].completion !== 'return')))
       )
         this.error('Selection started before successful closure.');
       this.started.add(stage);
@@ -102,6 +108,8 @@ export class NativeStageRecorder {
       this.error(`Repeated ${stage} completion.`);
       return;
     }
+    if (stage === 'closure' && this.started.has('selection'))
+      this.error('Closure completed after selection started.');
     if (!this.started.has(stage)) this.error(`${stage} result has no start event.`);
     if (
       event.event === 'result' &&

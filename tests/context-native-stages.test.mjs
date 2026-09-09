@@ -255,6 +255,22 @@ test('result/program/argument bindings and stage ordering cannot be silently rep
   assert(!('native_evidence' in evaluateContextAssembly(old)));
 });
 
+test('selection after explicit closure unavailability rejects; an uncaptured result remains unknown', async () => {
+  const unavailable = {
+    event: 'unavailable',
+    stage: 'closure',
+    reason: 'Native execution failed.',
+  };
+  const explicit = await recorded([begin, stages[0], unavailable, ...stages.slice(2)]);
+  assert(explicit.native_stage_errors.includes('Selection started before successful closure.'));
+  assert.equal(explicit.native_stages[0].status, 'unavailable');
+  assert.equal(explicit.native_stages[1].status, 'observed');
+  assert.equal(evaluateContextAssembly(explicit).acceptance, 'rejected');
+  const uncaptured = await recorded([begin, stages[0], ...stages.slice(2)]);
+  assert.deepEqual(uncaptured.native_stage_errors, []);
+  assert.equal(evaluateContextAssembly(uncaptured).acceptance, 'inconclusive');
+});
+
 test('stage collector retains closure when selection reports an operational failure', () => {
   const recorder = new NativeStageRecorder();
   for (const event of [
@@ -268,6 +284,29 @@ test('stage collector retains closure when selection reports an operational fail
   assert.equal(recorder.stages[1].status, 'unavailable');
   assert.equal(recorder.stages[1].arguments_sha256, observations[1].arguments_sha256);
   assert.deepEqual(recorder.errors, []);
+});
+
+test('capture limits remain inconclusive while known start bindings and late completion order still reject', async () => {
+  const oversized = structuredClone(observations[0]);
+  oversized.result.value = Array(26_000).fill('unobserved');
+  oversized.result_sha256 = hash(oversized.result);
+  const record = await recorded([
+    begin,
+    stages[0],
+    { event: 'result', observation: oversized },
+    ...stages.slice(2),
+  ]);
+  assert.equal(record.native_stages[0].status, 'unavailable');
+  assert.deepEqual(record.native_stage_errors, []);
+  assert.equal(evaluateContextAssembly(record).acceptance, 'inconclusive');
+  const { profile, specification } = getContextAssemblyContract();
+  record.native_stages[0].arguments_sha256 = '0'.repeat(64);
+  assert.equal(
+    evaluateContextAssembly(sealExecutionRecord(record, profile, specification)).acceptance,
+    'rejected',
+  );
+  const reordered = await recorded([begin, stages[0], stages[2], stages[1], stages[3]]);
+  assert.equal(evaluateContextAssembly(reordered).acceptance, 'rejected');
 });
 
 test('worker timeout and observed exhaustion preserve the completed prefix without hiding violations', async () => {
