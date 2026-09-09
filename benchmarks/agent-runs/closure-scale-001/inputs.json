@@ -1,0 +1,57 @@
+{
+  "files": [
+    {
+      "path": "package.json",
+      "sha256": "e4d18efa17bb4db92ea35878f1c8697d513f71a25731cc7260279f9efad41b46"
+    },
+    {
+      "path": "programs/clearings/required-dependency-closure.mjs",
+      "sha256": "9dbd1cfafd43ec5c11a341958b8d2261cfe1dfd4920e526c64de0db781c5007a"
+    },
+    {
+      "path": "programs/clearings/required-dependency-closure.json",
+      "sha256": "2afee99ea47eea8330407391fe84c1a33b7adfa7e9679b8f37a0565934f40942"
+    },
+    {
+      "path": "programs/clearings/required-dependency-closure.arguments.json",
+      "sha256": "ed1523db3e6ee1b66ae51d6fb9addd69f457d9d99ffdc1a58eac3f82e300a4ea"
+    },
+    {
+      "path": "scripts/build-required-closure-program.mjs",
+      "sha256": "082a24f66e39b0c1f1427d2bd581ef318c832317800d1bcf29d1f1dc4e51ff65"
+    },
+    {
+      "path": "docs/02-semantics/05-program-ir.md",
+      "sha256": "f03d8ed8cd11491d87a14480742f1656e4769573f4922444e465dc8554741aef"
+    },
+    {
+      "path": "docs/02-semantics/06-required-dependency-closure.md",
+      "sha256": "b4166b5f1592714a0d63bc64880fe7144207df352cdb7b6c3382ec013ff11580"
+    },
+    {
+      "path": "docs/03-reference/06-program-artifacts.md",
+      "sha256": "853f5eea089f2442fc58c055347e79fe85bed71726dca54fa0ffe2e636569b80"
+    },
+    {
+      "path": "docs/03-reference/07-program-execution.md",
+      "sha256": "14600641bb59c33f6bccd18c2fe785ebbb6d45768dad6ba6082591b582c3c178"
+    },
+    {
+      "path": "docs/03-reference/09-rust-backend.md",
+      "sha256": "802247acb7ffb22a97ee2c3a12037d8dadb9a67fad45546d7e384ecbd4da6f24"
+    }
+  ],
+  "protocol_sha256": "de16156dfae21b61f45478eb971c25118dcc8d58697507a7b5128a0a78f2520f",
+  "dist": {
+    "file_count": 243,
+    "inventory_sha256": "a1ca1849dfdc88c795afa2a494a90e0fe883bae72e527bc14e123835618bc062"
+  },
+  "schemas": {
+    "file_count": 11,
+    "inventory_sha256": "c755e28b9e2cee9d8fd9c88a04df3c743df911d22c6a2c6d746099b5f3692fa6"
+  },
+  "runtime/rust": {
+    "file_count": 12,
+    "inventory_sha256": "d407a25c8aa0385c6c3cde546083c4e7f3626521b7fb0df62b2e29fc82d29d39"
+  }
+}

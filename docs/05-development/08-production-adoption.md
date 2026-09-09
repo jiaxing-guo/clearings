@@ -33,4 +33,4 @@ Agent-authored IR changes, new language effects, optimization, additional target
 | [23](https://github.com/jiaxing-guo/clearings/pull/23) | Adopt compiled closure in context assembly | Caller compatibility, explicit resource policy, and v0.2 execution records                           |
 | Final adoption gate                                    | Validate the ordinary installed workflow   | Independent context conformance, IR mutation control, native failure controls, CI, and documentation |
 
-The PRs are dependent and remain subject to review. Merge in this order, then retarget or restack the remaining branches. The [fresh adoption observation](../../benchmarks/results/native-context-adoption-20260908/README.md) preserves one recorded production invocation and explains how to reproduce the full gates.
+All four dependent PRs are merged. Their review order is retained here as implementation history. The [fresh adoption observation](../../benchmarks/results/native-context-adoption-20260908/README.md) preserves one recorded production invocation and explains how to reproduce the full gates.

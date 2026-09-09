@@ -80,7 +80,9 @@
     "clean": "node scripts/clean.mjs",
     "test:compiler": "npm run build && node --test --test-concurrency=1 tests/compiler-conformance.test.mjs tests/compiler-runner.test.mjs tests/program-compiled-artifacts.test.mjs tests/program-rust-codegen.test.mjs tests/native/*.test.mjs tests/compiled/*.test.mjs",
     "benchmark:rust": "npm run build --silent && node scripts/measure-rust-closure.mjs",
-    "native:prepare": "npm run build --silent && node scripts/prepare-context-native.mjs"
+    "native:prepare": "npm run build --silent && node scripts/prepare-context-native.mjs",
+    "closure:evaluate": "npm run build --silent && node scripts/evaluate-closure-candidate.mjs",
+    "benchmark:context": "npm run build --silent && node scripts/profile-context-runtime.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",
