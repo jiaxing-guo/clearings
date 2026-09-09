@@ -9,6 +9,7 @@ import type { ContextAssemblyEvaluation } from './context-evaluator.js';
 
 export type ContextSuiteName = 'smoke' | 'full' | 'single';
 export interface ContextConformanceEntry {
+  native_evidence?: 'accepted' | 'rejected' | 'inconclusive';
   case_id: string;
   record_id: string;
   evaluation_id: string;
@@ -92,6 +93,7 @@ export function contextConformanceEntry(
     completion: record.completion.kind,
     acceptance: evaluation.acceptance,
     contract_verdict: evaluation.contract?.verdict ?? null,
+    ...(evaluation.native_evidence ? { native_evidence: evaluation.native_evidence.verdict } : {}),
     failures: [...evaluation.checks, ...evaluation.obligations]
       .filter((check) => check.status === 'fail')
       .map((check) => `${check.id}: ${check.reason}`),
@@ -157,6 +159,7 @@ const escape = (text: string): string =>
     .replace(/[\\`*_[\]{}|]/g, '\\$&')
     .replace(/[\r\n]+/g, ' ');
 export function renderContextConformanceReport(report: ContextConformanceReport): string {
+  const native = report.cases.some((item) => item.native_evidence !== undefined);
   const lines = [
     '# Context conformance report',
     '',
@@ -170,12 +173,14 @@ export function renderContextConformanceReport(report: ContextConformanceReport)
     '',
     `Evaluator: \`${report.evaluator.sha256}\``,
     '',
-    '| Case | Completion | Scoped result | Contract verdict | Evidence |',
-    '| --- | --- | --- | --- | --- |',
+    native
+      ? '| Case | Completion | Scoped result | Contract verdict | Native evidence | Evidence |'
+      : '| Case | Completion | Scoped result | Contract verdict | Evidence |',
+    native ? '| --- | --- | --- | --- | --- | --- |' : '| --- | --- | --- | --- | --- |',
   ];
   for (const item of report.cases)
     lines.push(
-      `| ${escape(item.case_id)} | ${item.completion} | ${item.acceptance} | ${item.contract_verdict ?? 'unmapped'} | [Record](${item.record_file}) · [Evaluation](${item.evaluation_file}) |`,
+      `| ${escape(item.case_id)} | ${item.completion} | ${item.acceptance} | ${item.contract_verdict ?? 'unmapped'} | ${native ? `${item.native_evidence ?? 'historical'} | ` : ''}[Record](${item.record_file}) · [Evaluation](${item.evaluation_file}) |`,
     );
   for (const item of report.cases.filter((item) => item.acceptance !== 'accepted')) {
     lines.push(

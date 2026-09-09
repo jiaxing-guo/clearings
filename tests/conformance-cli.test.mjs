@@ -24,6 +24,34 @@ function workspace(t) {
   return root;
 }
 
+test('CLI can require two-stage evidence and replay explicit missing instrumentation', (t) => {
+  const root = workspace(t),
+    candidate = candidateCheckout(controlSource);
+  t.after(candidate.dispose);
+  const input = join(root, 'input.json'),
+    run = join(root, 'stages'),
+    replay = join(root, 'replay');
+  write(input, cases[0].invocation);
+  const recorded = invoke(
+    'run',
+    input,
+    '--implementation-root',
+    candidate.root,
+    '--native-stages',
+    '--out',
+    run,
+  );
+  assert.equal(recorded.status, 3, recorded.stderr);
+  const record = read(join(run, 'record-00000.json'));
+  assert.equal(record.schema_version, '0.3.0');
+  assert(record.native_stages.every((stage) => stage.status === 'unavailable'));
+  assert.equal(read(join(run, 'run.json')).cases[0].native_evidence, 'inconclusive');
+  assert.match(readFileSync(join(run, 'report.md'), 'utf8'), /Native evidence/);
+  candidate.dispose();
+  assert.equal(invoke('replay', run, '--out', replay).status, 3);
+  assert.equal(read(join(replay, 'run.json')).cases[0].native_evidence, 'inconclusive');
+});
+
 test('CLI records and replays saved evidence after candidate removal', (t) => {
   const root = workspace(t),
     candidate = candidateCheckout(controlSource);

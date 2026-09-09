@@ -107,3 +107,26 @@ native = obj({
 native_record['properties']['native_execution'] = {'oneOf':[native,unavailable]}
 native_record['required'].append('native_execution')
 (ROOT / 'schemas/execution-record.v0.2.json').write_text(json.dumps(native_record,indent=2)+'\n')
+
+# Ordered stage observations extend the record contract without reinterpreting v0.1/v0.2.
+stage_record = copy.deepcopy(json.loads((ROOT / 'schemas/execution-record.v0.1.json').read_text()))
+stage_record['$id'] = 'https://clearings.dev/schemas/execution-record.v0.3.json'
+stage_record['properties']['schema_version'] = enum('0.3.0')
+stage = enum('closure', 'selection')
+stage_native = copy.deepcopy(native)
+stage_native['properties'].update({'stage': stage, 'policy': enum('context-native-v2'),
+    'arguments_sha256': HASH, 'result_sha256': HASH, 'result': ref('JsonValue')})
+stage_native['required'] += ['stage', 'arguments_sha256', 'result_sha256', 'result']
+stage_capture = {'oneOf': [stage_native,
+    obj({'stage': stage, 'status': enum('not-run'), 'reason': TEXT}),
+    obj({'stage': stage, 'status': enum('unavailable'), 'reason': TEXT, 'arguments_sha256': HASH}, ['arguments_sha256'])]}
+program_binding = {'oneOf': [obj({'stage': stage, 'status': enum('bound'), 'path': PATH,
+    'sha256': HASH, 'program_id': {'type':'string','pattern':'^program:[a-f0-9]{64}$'}}),
+    obj({'stage': stage, 'status': enum('unavailable'), 'reason': TEXT})]}
+stage_record['properties'].update({
+    'native_stages': {**array(stage_capture, 2), 'maxItems': 2},
+    'native_programs': {**array(program_binding, 2), 'maxItems': 2},
+    'native_stage_errors': {**array(TEXT), 'maxItems': 8},
+})
+stage_record['required'] += ['native_stages', 'native_programs', 'native_stage_errors']
+(ROOT / 'schemas/execution-record.v0.3.json').write_text(json.dumps(stage_record, indent=2)+'\n')

@@ -35,7 +35,7 @@ Required successful cases must complete under 10,000,000 work units, 10,000,000 
 
 The planned production policy `context-native-v2` gives closure and selection separate copies of these limits. It is not one aggregate logical budget. Each stage separately admits at most 50,000 portable values and 1,000,000 input units; existing native process limits and the recorder's overall invocation deadline also apply. The additional stage can reject a previously successful input, so adoption must document the resource compatibility change and retain `CONTEXT_RESOURCE` separately from post-projection `CONTEXT_BUDGET`. Native operational failures must remain explicit, without fallback or partial contexts.
 
-Recording must retain both stages under an explicit execution-record version, including stage order, program/build identities, argument/result bindings, usage, completion, and unavailable or not-run status. Historical records keep their original single-stage meaning. Successful context bytes, ownership, omissions, and revalidation remain unchanged by the recording representation.
+The [stage-aware execution record](../03-reference/05-conformance-artifacts.md#ordered-native-stages) implements the explicit v0.3 recording boundary: stage order, program/build identities, argument/result bindings, usage, completion, and unavailable or not-run status. Historical records keep their original single-stage meaning. Successful context bytes, ownership, omissions, and revalidation remain unchanged by the recording representation.
 
 ## Reproduce the program evaluation
 

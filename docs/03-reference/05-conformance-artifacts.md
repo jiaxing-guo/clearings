@@ -92,6 +92,18 @@ An observed native invocation records the policy, Program IR and compiled-artifa
 
 Resource exhaustion and native infrastructure interruptions leave evaluation inconclusive when no completed application result is available. Captured argument mutation and inconsistent measurement claims still fail independently. An unexpected compiled language failure is evaluated as a mismatching application completion. Successful native traversal can precede an ordinary `CONTEXT_BUDGET` exception; its native completion remains `return`.
 
+### Ordered native stages
+
+The [v0.3 execution-record schema](../../schemas/execution-record.v0.3.json), exported as `clearings/schemas/execution-record-v3`, adds ordered `native_stages`, `native_programs`, and `native_stage_errors` in place of the singular observation. Closure and selection each appear exactly once. The recorder binds each program ID to validated program-file bytes in the implementation manifest before invocation; replay does not load those paths.
+
+An observed stage retains the full native completion, its content digest, an argument digest, program/artifact/build identities, and per-stage limits and usage. `unavailable` means the result was not observed. `not-run` means the declared invocation ended before that stage started. A completed closure remains recorded if selection fails, times out, or cannot be captured. The recorder retains protocol errors for duplicate, reordered, malformed, or excess events instead of overwriting the first result.
+
+The `clearings.context.native.v2` channel declares the invocation and publishes stage start/result or unavailable events. The recorder forwards at most eight events and records overflow explicitly. These are observations of trusted local instrumentation, not independent authentication. The maximum worker lifetime still covers startup, import, both executions, and capture; it is not reset between stages.
+
+Stage-aware candidates automatically produce v0.3 records. Set `native_recording: 'stages'` in the recording API, or `--native-stages` on `conformance run`, to require the stage evidence contract even when instrumentation is absent. Otherwise candidates using only the legacy channel retain v0.2 recording. Historical v0.1/v0.2 schemas, identities, and replay interpretations remain unchanged.
+
+For v0.3 records, `native_evidence` reports agreement with independently reconstructed arguments and expected closure/selection results, recorded program bindings, ordering, and the declared resource policy. These additional checks participate in scoped acceptance. Missing required evidence is inconclusive; demonstrated violations still reject. A pre-execution validation failure can make both stages not applicable. Resource exhaustion remains an interruption for inputs outside successful finite execution, while the separate frozen algorithm evaluator rejects exhaustion on its required successful cases. Semantic context bytes do not contain this recording metadata.
+
 ## Library interfaces
 
 | Function                                                 | Contract                                                                                                                                                  |

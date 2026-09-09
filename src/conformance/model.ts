@@ -75,10 +75,30 @@ export interface NativeExecutionObservation {
   usage: NativeExecutionObservation['limits'];
   completion: 'return' | 'application-failure' | 'runtime-fault' | 'resource-exhaustion';
 }
+export type NativeContextStage = 'closure' | 'selection';
+export type NativeProgramBinding =
+  | { stage: NativeContextStage; status: 'bound'; path: string; sha256: string; program_id: string }
+  | { stage: NativeContextStage; status: 'unavailable'; reason: string };
+export type NativeStageObservation = Omit<NativeExecutionObservation, 'policy'> & {
+  stage: NativeContextStage;
+  policy: 'context-native-v2';
+  arguments_sha256: string;
+  result_sha256: string;
+  /** Complete native completion, including return value or failure diagnostic. */
+  result: JsonValue;
+};
+export type NativeStageCapture =
+  | NativeStageObservation
+  | { stage: NativeContextStage; status: 'not-run'; reason: string }
+  | { stage: NativeContextStage; status: 'unavailable'; reason: string; arguments_sha256?: string };
 export interface ExecutionRecord {
-  schema_version: '0.1.0' | '0.2.0';
+  schema_version: '0.1.0' | '0.2.0' | '0.3.0';
   /** Required by v0.2; absent from historical v0.1 records. Observations are not authenticated. */
   native_execution?: NativeExecutionObservation | { status: 'unavailable'; reason: string };
+  /** Required only by v0.3; historical records keep their singular observation. */
+  native_programs?: NativeProgramBinding[];
+  native_stages?: NativeStageCapture[];
+  native_stage_errors?: string[];
   kind: 'execution-record';
   artifact_id: string;
   origin: 'recorded-execution' | 'authored-example';
