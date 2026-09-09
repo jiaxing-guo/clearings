@@ -123,7 +123,7 @@ async function execute(
           >;
         else if (message.phase === 'native-stage') {
           if (message.observation?.status === 'captured') stages.receive(message.observation.value);
-          else stages.error('Native stage event could not be captured.');
+          else stages.captureUnavailable('Native stage event could not be captured.');
         } else if (message.phase === 'native-stage-overflow')
           stages.error('Native stage event limit exceeded.');
         else if (message.phase === 'invoke') phase = 'invoke';

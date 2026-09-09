@@ -1,6 +1,6 @@
 # Production adoption of compiled dependency closure
 
-The goal is for ordinary context assembly to execute dependency closure from compiled Program IR. The four dependent changes preserve historical evidence, prepare reusable executables, integrate the production caller, and verify the installed workflow.
+Ordinary context assembly executes required dependency closure and state/source selection from compiled Program IR. This page records the original closure adoption; the [selection contract](../02-semantics/07-context-selection.md) and [current native policy](../03-reference/02-context-and-projections.md#native-execution) describe the two-stage extension. The four dependent changes preserve historical evidence, prepare reusable executables, integrate the production caller, and verify the installed workflow.
 
 ## Implemented preparation
 
@@ -10,7 +10,7 @@ Historical bindings now reference the [preserved source snapshot](../../benchmar
 
 Integration preserves the synchronous context API, whole-specification validation before root resolution and traversal, required-edge selection, breadth-first/UTF-16 ordering, input ownership, and exact successful serialization. Byte-budget accounting remains a separate operation after projection.
 
-Native execution introduces explicit operational requirements and finite execution limits. The context policy `context-native-v1` uses the existing maximum Program IR limits: 10,000,000 work units, 10,000,000 allocation units, 1,000,000 peak value units, and evaluation depth 256. Existing argument preparation and process bounds remain applicable. An input accepted by specification validation can exceed these limits; this is an explicit compatibility addition, not a claim of identical successful input domains. It must produce `CONTEXT_RESOURCE` with exit status 3 and retain the underlying diagnostic, rather than a partial context or `CONTEXT_BUDGET`. Native infrastructure failures remain operational failures. There is no automatic TypeScript fallback.
+Native execution introduces explicit operational requirements and finite execution limits. The original context policy `context-native-v1` used the existing maximum Program IR limits: 10,000,000 work units, 10,000,000 allocation units, 1,000,000 peak value units, and evaluation depth 256. Existing argument preparation and process bounds remain applicable. An input accepted by specification validation can exceed these limits; this is an explicit compatibility addition, not a claim of identical successful input domains. It must produce `CONTEXT_RESOURCE` with exit status 3 and retain the underlying diagnostic, rather than a partial context or `CONTEXT_BUDGET`. Native infrastructure failures remain operational failures. There is no automatic TypeScript fallback.
 
 The adapter converts all operation records to the portable graph representation; it does not implement traversal in host code. Whole-specification validation still rejects missing required references outside the reached closure. The pinned IR program checks its own duplicate-record and reached-reference conditions. Success/failure mapping must preserve these different scopes.
 

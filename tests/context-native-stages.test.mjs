@@ -238,6 +238,29 @@ test('stage collector retains closure when selection reports an operational fail
   assert.deepEqual(recorder.errors, []);
 });
 
+test('capture limits remain inconclusive while known start bindings and late completion order still reject', async () => {
+  const oversized = structuredClone(observations[0]);
+  oversized.result.value = Array(26_000).fill('unobserved');
+  oversized.result_sha256 = hash(oversized.result);
+  const record = await recorded([
+    begin,
+    stages[0],
+    { event: 'result', observation: oversized },
+    ...stages.slice(2),
+  ]);
+  assert.equal(record.native_stages[0].status, 'unavailable');
+  assert.deepEqual(record.native_stage_errors, []);
+  assert.equal(evaluateContextAssembly(record).acceptance, 'inconclusive');
+  const { profile, specification } = getContextAssemblyContract();
+  record.native_stages[0].arguments_sha256 = '0'.repeat(64);
+  assert.equal(
+    evaluateContextAssembly(sealExecutionRecord(record, profile, specification)).acceptance,
+    'rejected',
+  );
+  const reordered = await recorded([begin, stages[0], stages[2], stages[1], stages[3]]);
+  assert.equal(evaluateContextAssembly(reordered).acceptance, 'rejected');
+});
+
 test('worker timeout and observed exhaustion preserve the completed prefix without hiding violations', async () => {
   const timed = await recorded(
     [begin, ...stages.slice(0, 2), stages[2]],
