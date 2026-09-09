@@ -1,6 +1,6 @@
 # Context state and source selection
 
-Context selection determines which modeled states and supporting source records accompany the operation IDs returned by required dependency closure. The [context projection contract](../03-reference/02-context-and-projections.md) remains authoritative for the full context. The portable selection boundary, mechanical adapter, and frozen independent evaluator are implemented. Production selection currently remains in TypeScript; adoption of the IR program is a subsequent integration change.
+Context selection determines which modeled states and supporting source records accompany the operation IDs returned by required dependency closure. The [context projection contract](../03-reference/02-context-and-projections.md) remains authoritative for the full context. The portable selection boundary, mechanical adapter, frozen independent evaluator, and [Program IR implementation](../../programs/clearings/context-selection.json) are implemented. The same IR runs in the reference interpreter and through the Rust backend. Production selection currently remains in TypeScript; adoption is a subsequent integration change.
 
 ## Portable boundary
 
@@ -36,3 +36,16 @@ Required successful cases must complete under 10,000,000 work units, 10,000,000 
 The planned production policy `context-native-v2` gives closure and selection separate copies of these limits. It is not one aggregate logical budget. Each stage separately admits at most 50,000 portable values and 1,000,000 input units; existing native process limits and the recorder's overall invocation deadline also apply. The additional stage can reject a previously successful input, so adoption must document the resource compatibility change and retain `CONTEXT_RESOURCE` separately from post-projection `CONTEXT_BUDGET`. Native operational failures must remain explicit, without fallback or partial contexts.
 
 Recording must retain both stages under an explicit execution-record version, including stage order, program/build identities, argument/result bindings, usage, completion, and unavailable or not-run status. Historical records keep their original single-stage meaning. Successful context bytes, ownership, omissions, and revalidation remain unchanged by the recording representation.
+
+## Reproduce the program evaluation
+
+The [syntax builder](../../programs/clearings/context-selection.mjs) constructs IR only. The program computes membership, complete-frame expansion, unions, duplicate removal, and final sorting. No runtime primitive was added.
+
+```bash
+npm run build
+node scripts/build-context-selection-program.mjs
+npm run test:selection
+npm run selection:evaluate -- --candidate programs/clearings/context-selection.json --out /tmp/context-selection-evaluation.json
+```
+
+The evaluator checks the frozen packet identity and candidate signature before execution. Each backend is compared to independent expectations, then completions, limits, and logical usage are compared across backends. The report binds the generated artifact, native build, case corpus, executions, and evaluator, and measures cold preparation separately from per-case invocation. Its exit status is zero for scoped acceptance, one for rejection, and two for unavailable required evidence. Tests additionally exercise malformed admission, exhaustion, and executable IR mutations.
