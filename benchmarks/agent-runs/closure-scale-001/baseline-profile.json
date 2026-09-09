@@ -1,0 +1,276 @@
+{
+  "schema_version": "0.1.0",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "linux",
+    "architecture": "x64",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C"
+  },
+  "samples": 5,
+  "quantiles": "nearest rank p95; upper middle median",
+  "program_id": "program:e1c3b84ce0f6fccb3d5f36b6351d9bcd48f2b4f19210a0f8c2a8910bbb10686c",
+  "compiled_artifact_id": "compiled-program:e21a8d4b4bcb70a4e5541ae81745d283f37545c693dbdb36bb78e021a032310f",
+  "native": {
+    "build_id": "native-build:c9993e294e05975b151f623e7cd9dc4007649d67c24ed566a0c229b71d329983",
+    "platform": "linux",
+    "architecture": "x64",
+    "executable_sha256": "e7fa0718f5b9a037146006e63123bb684fb22cc661794d1991b655e046033de7"
+  },
+  "source_generation": {
+    "milliseconds": [
+      23.729241000000002,
+      9.338396999999986,
+      20.738927999999987,
+      10.212054000000023,
+      15.230748000000006
+    ],
+    "median_ms": 15.230748000000006,
+    "p95_ms": 23.729241000000002
+  },
+  "cold_preparation_and_disposal": {
+    "milliseconds": [
+      2065.616587,
+      2066.3476800000003,
+      2027.0370400000002,
+      1980.865232,
+      2187.4076210000003
+    ],
+    "median_ms": 2065.616587,
+    "p95_ms": 2187.4076210000003
+  },
+  "warm_preparation_and_disposal": {
+    "milliseconds": [
+      11.943606000000727,
+      9.525125000000116,
+      16.56818100000055,
+      12.857731000000058,
+      10.22200200000043
+    ],
+    "median_ms": 11.943606000000727,
+    "p95_ms": 16.56818100000055
+  },
+  "cases": [
+    {
+      "id": "chain-32",
+      "completion": "return",
+      "usage": {
+        "work": 89436,
+        "allocation_units": 13526,
+        "value_units": 1242,
+        "evaluation_depth": 12
+      },
+      "admission": {
+        "milliseconds": [
+          4.57029700000021,
+          2.318423000000621,
+          2.3708540000006906,
+          1.9485609999992448,
+          2.0727270000006683
+        ],
+        "median_ms": 2.318423000000621,
+        "p95_ms": 4.57029700000021
+      },
+      "encoding": {
+        "milliseconds": [
+          0.9458359999989625,
+          0.6353739999995014,
+          0.3525150000004942,
+          0.7375850000007631,
+          0.415898000001107
+        ],
+        "median_ms": 0.6353739999995014,
+        "p95_ms": 0.9458359999989625
+      },
+      "reference": {
+        "milliseconds": [
+          12.99844099999973,
+          9.735528000001068,
+          6.009044999998878,
+          8.036533999998937,
+          3.468832000000475
+        ],
+        "median_ms": 8.036533999998937,
+        "p95_ms": 12.99844099999973
+      },
+      "native": {
+        "milliseconds": [
+          11.301800000001094,
+          13.164788000000044,
+          38.77029799999946,
+          19.424504000000525,
+          29.651490000000194
+        ],
+        "median_ms": 19.424504000000525,
+        "p95_ms": 38.77029799999946
+      }
+    },
+    {
+      "id": "chain-128",
+      "completion": "return",
+      "usage": {
+        "work": 1086644,
+        "allocation_units": 160252,
+        "value_units": 5138,
+        "evaluation_depth": 12
+      },
+      "admission": {
+        "milliseconds": [
+          4.45028099999945,
+          7.266046000000642,
+          9.25906600000053,
+          4.491379000000961,
+          4.527753000000303
+        ],
+        "median_ms": 4.527753000000303,
+        "p95_ms": 9.25906600000053
+      },
+      "encoding": {
+        "milliseconds": [
+          1.193304000000353,
+          0.6817030000001978,
+          0.49037399999906484,
+          0.5161790000001929,
+          0.5424439999987953
+        ],
+        "median_ms": 0.5424439999987953,
+        "p95_ms": 1.193304000000353
+      },
+      "reference": {
+        "milliseconds": [
+          41.94534600000043,
+          40.8085030000002,
+          38.43112199999996,
+          39.80879900000036,
+          49.2753589999993
+        ],
+        "median_ms": 40.8085030000002,
+        "p95_ms": 49.2753589999993
+      },
+      "native": {
+        "milliseconds": [
+          24.966811000000234,
+          24.619347999998354,
+          23.072314999999435,
+          20.390196000000287,
+          24.443898999999874
+        ],
+        "median_ms": 24.443898999999874,
+        "p95_ms": 24.966811000000234
+      }
+    },
+    {
+      "id": "chain-256",
+      "completion": "return",
+      "usage": {
+        "work": 4134308,
+        "allocation_units": 634492,
+        "value_units": 10514,
+        "evaluation_depth": 12
+      },
+      "admission": {
+        "milliseconds": [
+          7.696920000000318,
+          7.269751999998334,
+          7.910090000001219,
+          4.680833000000348,
+          6.0155720000002475
+        ],
+        "median_ms": 7.269751999998334,
+        "p95_ms": 7.910090000001219
+      },
+      "encoding": {
+        "milliseconds": [
+          1.9922979999992094,
+          1.5702369999999064,
+          0.43424100000083854,
+          0.504585999999108,
+          0.4785589999992226
+        ],
+        "median_ms": 0.504585999999108,
+        "p95_ms": 1.9922979999992094
+      },
+      "reference": {
+        "milliseconds": [
+          142.30698999999913,
+          211.5552829999997,
+          147.35064399999828,
+          146.59150899999986,
+          148.41690200000085
+        ],
+        "median_ms": 147.35064399999828,
+        "p95_ms": 211.5552829999997
+      },
+      "native": {
+        "milliseconds": [
+          68.00247899999886,
+          67.21307200000047,
+          58.374987000001056,
+          54.28500300000087,
+          56.0632859999987
+        ],
+        "median_ms": 58.374987000001056,
+        "p95_ms": 68.00247899999886
+      }
+    },
+    {
+      "id": "chain-512",
+      "completion": "resource-exhaustion",
+      "usage": {
+        "work": 9999999,
+        "allocation_units": 1796987,
+        "value_units": 21266,
+        "evaluation_depth": 12
+      },
+      "admission": {
+        "milliseconds": [
+          10.018812999998772,
+          9.696775000000343,
+          8.190414000000601,
+          6.749595999999656,
+          7.825792999999976
+        ],
+        "median_ms": 8.190414000000601,
+        "p95_ms": 10.018812999998772
+      },
+      "encoding": {
+        "milliseconds": [
+          3.014581999999791,
+          3.250903999998627,
+          10.235734000001685,
+          1.7446689999997034,
+          1.0086780000001454
+        ],
+        "median_ms": 3.014581999999791,
+        "p95_ms": 10.235734000001685
+      },
+      "reference": {
+        "milliseconds": [
+          362.8662600000007,
+          336.33643699999993,
+          355.61939299999904,
+          365.8731769999995,
+          335.6898400000009
+        ],
+        "median_ms": 355.61939299999904,
+        "p95_ms": 365.8731769999995
+      },
+      "native": {
+        "milliseconds": [
+          116.80266599999959,
+          123.5335649999979,
+          102.58465799999976,
+          119.49933200000305,
+          112.92179899999974
+        ],
+        "median_ms": 116.80266599999959,
+        "p95_ms": 123.5335649999979
+      }
+    }
+  ],
+  "limitations": [
+    "Invocation timings include result comparison overhead. Cold preparation includes disposal.",
+    "Admission and encoding are separate microbenchmarks; their durations cannot be subtracted to isolate process startup.",
+    "Native invocation includes verification, process startup, execution, and response decoding. Physical memory and event-loop delay are not measured.",
+    "A small local timing sample is a feasibility observation, not a performance guarantee or acceptance threshold."
+  ]
+}

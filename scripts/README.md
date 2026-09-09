@@ -18,6 +18,8 @@ Use the root npm commands for normal development. Scripts run against the Cleari
 | Measure inventory                          | `node scripts/measure-inventory.mjs <pinned-bare-repo> <new-output-directory>` |
 | Measure structural scanning                | `node scripts/measure-scan.mjs <pinned-bare-repo> <new-output-directory>`      |
 | Evaluate selected structural facts         | `node scripts/evaluate-scan.mjs <scan.json> <pinned-repo>`                     |
+| Evaluate an IR closure candidate           | `npm run closure:evaluate -- --candidate candidate.json --out evaluation.json` |
+| Profile native context runtime costs       | `npm run benchmark:context -- --out profile.json`                              |
 
 Build the library before invoking a `.mjs` benchmark script directly. The measurement and evaluation tools retain the historical rubric and result formats; their filenames now describe the measured operation.
 

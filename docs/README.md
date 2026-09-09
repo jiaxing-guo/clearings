@@ -53,6 +53,7 @@ The original reference order remains available for a systematic review. For a la
 | 32    | [Compiler conformance evaluation](03-reference/11-compiler-conformance.md)                  | Which semantic-preservation obligations are evaluated, over which domain, and with what independent controls? |
 | 33    | [Compile and run with Rust](04-guides/06-compile-and-run-rust.md)                           | How do I export, execute, inspect, and package compiled programs?                                             |
 | 34    | [Production adoption](05-development/08-production-adoption.md)                             | How does context assembly reuse compiled IR while preserving evidence and defining compatibility?             |
+| 35    | [Independently evaluated IR improvement](05-development/09-agent-ir-improvement.md)         | How are agent candidates evaluated against frozen behavior and scalability requirements?                      |
 
 ## Status and authority
 
