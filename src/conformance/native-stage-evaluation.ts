@@ -31,6 +31,18 @@ export function evaluateNativeStages(
   const invocation = record.arguments_before as unknown as ContextAssemblyInvocation;
   const spec = invocation.specification,
     context = reference.context;
+  const completion = record.completion;
+  const thrown =
+    completion.kind === 'throw' && completion.thrown.status === 'captured'
+      ? completion.thrown.value
+      : undefined;
+  // Byte-budget enforcement follows both native stages, just as returning a context does.
+  const reachedProjection =
+    completion.kind === 'return' ||
+    (thrown !== null &&
+      typeof thrown === 'object' &&
+      !Array.isArray(thrown) &&
+      thrown.code === 'CONTEXT_BUDGET');
   const selected = context?.operations.map((operation) => operation.id);
   // Enumerate the frozen schema positions independently of the production adapter.
   const selectionArgs = selected
@@ -89,7 +101,7 @@ export function evaluateNativeStages(
     if (capture.status === 'not-run') {
       add(
         `${capture.stage}-execution`,
-        context ? (record.completion.kind === 'return' ? 'fail' : 'unknown') : 'not-applicable',
+        context ? (reachedProjection ? 'fail' : 'unknown') : 'not-applicable',
         context
           ? 'Required native stage did not execute.'
           : 'Validation or selection stopped before native execution was applicable.',

@@ -148,6 +148,38 @@ test('missing instrumentation stays unavailable; declared unstarted stages remai
   assert.equal(evaluateContextAssembly(old).acceptance, 'accepted');
 });
 
+test('byte-budget rejection requires both stages while interruptions retain unknown evidence', async () => {
+  const invocation = structuredClone(fixture);
+  invocation.options.maxBytes = 1;
+  const reference = referenceContextAssembly(invocation);
+  assert.equal(reference.code, 'CONTEXT_BUDGET');
+  assert(reference.context);
+  for (const messages of [[begin], [begin, ...stages.slice(0, 2)], events]) {
+    const record = await recorded(messages, { invocation });
+    assert.equal(record.completion.kind, 'throw');
+    assert.equal(record.completion.thrown.value.code, 'CONTEXT_BUDGET');
+    const evaluation = evaluateContextAssembly(record);
+    assert.equal(evaluation.acceptance, messages === events ? 'accepted' : 'rejected');
+    for (const stage of record.native_stages.filter((stage) => stage.status === 'not-run'))
+      assert.equal(
+        evaluation.native_evidence.checks.find(
+          (check) => check.id === `native-${stage.stage}-execution`,
+        ).status,
+        'fail',
+      );
+  }
+  for (const code of ['CONTEXT_RESOURCE', 'RUST_EXECUTION_FAILED']) {
+    const record = await recorded(
+      [begin],
+      {},
+      `throw Object.assign(new Error('interrupted'), { code: '${code}' });`,
+    );
+    const evaluation = evaluateContextAssembly(record);
+    assert.equal(evaluation.native_evidence.verdict, 'inconclusive');
+    assert.equal(evaluation.acceptance, 'inconclusive');
+  }
+});
+
 test('completed closure survives missing selection evidence and malformed, repeated, or reordered events', async () => {
   const partial = await recorded([begin, ...stages.slice(0, 2), stages[2]]);
   assert.deepEqual(partial.native_stages[0], observations[0]);
