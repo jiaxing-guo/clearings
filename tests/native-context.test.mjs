@@ -97,8 +97,27 @@ test('validation guards precede native execution and byte capacity follows it', 
   assert.equal(evaluateContextAssembly(capacity).acceptance, 'accepted');
 });
 
-test('native resource exhaustion does not return a partial context or conceal input mutation', () => {
-  const invocation = chain(512);
+test('the accepted indexed IR returns complete 512-operation contexts in either declaration order', () => {
+  for (const reverse of [false, true]) {
+    const invocation = chain(512);
+    if (reverse) invocation.specification.operations.reverse();
+    invocation.specification = sealSpecification(invocation.specification);
+    const before = structuredClone(invocation);
+    const context = assembleContext(
+      invocation.specification,
+      invocation.selection,
+      invocation.options,
+    );
+    assert.deepEqual(
+      context.operations.map((item) => item.id),
+      Array.from({ length: 512 }, (_, i) => `n${i}`),
+    );
+    assert.deepEqual(invocation, before);
+  }
+});
+
+test('native resource exhaustion still returns no partial context or input mutation', () => {
+  const invocation = chain(2048);
   const before = structuredClone(invocation);
   let observation;
   const events = channel('clearings.context.native.v1');
@@ -122,6 +141,34 @@ test('native resource exhaustion does not return a partial context or conceal in
     events.unsubscribe(listener);
   }
   assert.equal(observation.completion, 'resource-exhaustion');
+  assert.deepEqual(invocation, before);
+});
+
+test('a complete 512-operation closure still rejects an insufficient byte budget without truncation', () => {
+  // Follow-up review of the context contract requires a distinct byte-capacity failure.
+  const invocation = chain(512);
+  invocation.options.maxBytes = 1;
+  const before = structuredClone(invocation);
+  let completion;
+  const events = channel('clearings.context.native.v1');
+  const listener = (value) => {
+    completion = value.completion;
+  };
+  events.subscribe(listener);
+  try {
+    assert.throws(
+      () => assembleContext(invocation.specification, invocation.selection, invocation.options),
+      (error) => {
+        assert.equal(error.code, 'CONTEXT_BUDGET');
+        assert.equal(error.exitCode, 2);
+        assert(error.details.required_bytes > invocation.options.maxBytes);
+        return true;
+      },
+    );
+  } finally {
+    events.unsubscribe(listener);
+  }
+  assert.equal(completion, 'return');
   assert.deepEqual(invocation, before);
 });
 

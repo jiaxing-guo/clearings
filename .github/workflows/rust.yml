@@ -12,6 +12,7 @@ on:
       - 'scripts/lib/closure-evaluation.mjs'
       - 'scripts/evaluate-closure-candidate.mjs'
       - 'scripts/profile-context-runtime.mjs'
+      - 'scripts/record-indexed-context.mjs'
       - 'benchmarks/agent-runs/closure-scale-001/**'
       - 'scripts/prepare-context-native.mjs'
       - 'src/program/**'

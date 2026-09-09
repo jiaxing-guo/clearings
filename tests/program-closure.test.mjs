@@ -24,7 +24,7 @@ const returned = (roots, records, expected) => {
   assert.deepEqual(result.completion, { kind: 'return', value: expected });
   return result;
 };
-const failed = (roots, records, code, id, helper = 'lookup_record') => {
+const failed = (roots, records, code, id, helper = 'lookup') => {
   const result = run(roots, records),
     completion = result.completion;
   assert.equal(completion.kind, 'application-failure');
@@ -49,10 +49,18 @@ const ordering = [
 test('closure artifact validates, reproduces exactly, and contains its algorithm as closed IR', () => {
   validateProgram(program);
   assert.equal(JSON.stringify(createRequiredDependencyClosureProgram(), null, 2) + '\n', bytes);
+  assert.equal(
+    bytes,
+    readFileSync(
+      new URL('../benchmarks/agent-runs/closure-scale-001/candidate.program.json', import.meta.url),
+      'utf8',
+    ),
+    'Production executes the exact independently accepted submission',
+  );
   assert.equal(program.entry_function, 'required_dependency_closure');
   assert.deepEqual(
     program.functions.map((fn) => fn.id),
-    ['required_dependency_closure', 'validate_records', 'lookup_record', 'required_targets'],
+    ['required_dependency_closure', 'record_index', 'block', 'merge', 'lookup', 'targets'],
   );
   const kinds = new Set(),
     calls = new Set();
@@ -79,7 +87,7 @@ test('closure artifact validates, reproduces exactly, and contains its algorithm
     'field',
   ])
     assert(kinds.has(kind), kind);
-  assert.deepEqual([...calls].sort(), ['lookup_record', 'required_targets', 'validate_records']);
+  assert.deepEqual([...calls].sort(), ['block', 'lookup', 'merge', 'record_index', 'targets']);
 });
 
 test('the committed invocation example executes through the JSON artifact', () => {
@@ -301,15 +309,15 @@ test('unreachable missing references remain outside the kernel traversal boundar
 
 test('duplicate record declarations are rejected before traversal and before missing-root failure', () => {
   for (const roots of [[], ['a'], ['missing']])
-    failed(roots, [record('a'), record('a')], 'DUPLICATE_RECORD_ID', 'a', 'validate_records');
+    failed(roots, [record('a'), record('a')], 'DUPLICATE_RECORD_ID', 'a', 'record_index');
   failed(
     ['root'],
     [record('root', ['missing']), record('b'), record('a'), record('b'), record('a')],
     'DUPLICATE_RECORD_ID',
     'b',
-    'validate_records',
+    'record_index',
   );
-  failed([''], [record(''), record('')], 'DUPLICATE_RECORD_ID', '', 'validate_records');
+  failed([''], [record(''), record('')], 'DUPLICATE_RECORD_ID', '', 'record_index');
 });
 
 test('workload signature rejects malformed data before an application failure can be interpreted', () => {
@@ -387,9 +395,9 @@ test('independent expectations reject valid IR mutations of closure, ordering, e
       args: [['root'], ordering],
       expected: { kind: 'return', value: ['root', 'a', 'z', 'y', 'b'] },
       edit: (p) => {
-        p.functions.find((fn) => fn.id === 'required_targets').body.at(-1).value = {
+        p.functions.find((fn) => fn.id === 'targets').body.at(-1).value = {
           kind: 'ref',
-          name: 'targets',
+          name: 't',
         };
       },
     },
@@ -399,7 +407,7 @@ test('independent expectations reject valid IR mutations of closure, ordering, e
       expected: { kind: 'return', value: ['root'] },
       edit: (p) => {
         p.functions
-          .find((fn) => fn.id === 'required_targets')
+          .find((fn) => fn.id === 'targets')
           .body.find((s) => s.kind === 'while')
           .body.find((s) => s.kind === 'if').condition = {
           kind: 'literal',
@@ -415,7 +423,7 @@ test('independent expectations reject valid IR mutations of closure, ordering, e
       edit: (p) => {
         p.functions[0].body.at(-1).value = {
           kind: 'sort',
-          list: { kind: 'ref', name: 'selected' },
+          list: { kind: 'ref', name: 'q' },
         };
       },
     },
@@ -428,12 +436,12 @@ test('independent expectations reject valid IR mutations of closure, ordering, e
         details: 'absent',
       },
       edit: (p) => {
-        const body = p.functions.find((fn) => fn.id === 'lookup_record').body;
+        const body = p.functions.find((fn) => fn.id === 'lookup').body;
         body[body.length - 1] = {
           kind: 'return',
           value: {
             kind: 'index',
-            list: { kind: 'ref', name: 'records' },
+            list: { kind: 'ref', name: 'r' },
             index: { kind: 'literal', type: { kind: 'integer' }, value: 0 },
           },
         };

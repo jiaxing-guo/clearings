@@ -64,20 +64,26 @@ Every shortest path has a simple representative, so cycles do not require enumer
 
 ## IR function decomposition
 
-| Function                      | Implementation responsibility                                                                               | Declared failures                     |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `required_dependency_closure` | Validate record uniqueness, maintain the worklist and visited list, expand records, and return selected IDs | Both failure codes below              |
-| `validate_records`            | Scan IDs with a local seen list; reject the first duplicate                                                 | `DUPLICATE_RECORD_ID: string`         |
-| `lookup_record`               | Scan record declarations for an exact ID; return the record or fail                                         | `MISSING_REQUIRED_DEPENDENCY: string` |
-| `required_targets`            | Filter dependency records by `required`, collect target IDs, and sort the result                            | None                                  |
+| Function                      | Implementation responsibility                                                               | Declared failures                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `required_dependency_closure` | Build the index, seed a unique FIFO, resolve each queued record, and return discovery order | Both failure codes                    |
+| `record_index`                | Stably sort original record positions and reject the earliest repeated declaration          | `DUPLICATE_RECORD_ID: string`         |
+| `block`                       | Sort a bounded initial run of record positions                                              | None                                  |
+| `merge`                       | Merge two sorted runs of positions using UTF-16 record IDs                                  | None                                  |
+| `lookup`                      | Find an exact ID in the sorted index using binary lifting                                   | `MISSING_REQUIRED_DEPENDENCY: string` |
+| `targets`                     | Deduplicate required targets and sort their IDs                                             | None                                  |
 
-All calls resolve to functions in the same artifact. The call graph is acyclic. Cyclic input graphs are handled by iteration and visited-ID membership.
+All calls resolve to functions in the same artifact. The call graph is acyclic. Cyclic input graphs are handled by iteration and discovered-ID membership.
 
-The entry function starts with `pending = roots`, `selected = []`, and a cursor at zero. Each iteration reads the next pending ID. If it is already selected, the iteration advances without expanding it. Otherwise lookup must succeed; the ID is appended to `selected`, and each sorted required target not yet selected is appended to `pending`. The cursor then advances. Duplicate pending IDs are permitted and skipped when encountered later.
+The index stores integer positions into the original input. It does not copy dependency-bearing records into constructed index values. Initial runs contain at most 16 positions; stable merges produce a sorted permutation. Equal IDs retain declaration order. The smallest original position among equal-ID successors identifies the first repeated declaration, preserving failure precedence even with empty roots.
 
-For finite valid input, each record is expanded at most once. Each expansion examines a finite dependency list. At most `roots.length` initial entries plus one entry per required edge of an expanded record can enter the worklist. These properties explain termination of the unbounded algorithm; a bounded interpreter may still exhaust its resources.
+The entry function constructs powers of two using integer addition. `lookup` uses those strides to find the lower bound of a requested ID in the permutation; no division or host lookup operation is required. Lookup remains delayed until an ID's FIFO position is expanded, preserving missing-reference failure order.
 
-This implementation uses linear record lookup and visited-list membership, and persistent list append. Its purpose is an explicit executable algorithm and a reference workload. No asymptotic improvement over the production map/set implementation is claimed. Runtime limits include work within sorting, membership, value construction, and output copying.
+`q` is both the unique FIFO of discovered IDs and the eventual result. Distinct roots enter first in requested order. Each expansion appends previously undiscovered required targets in ascending UTF-16 order. Marking at enqueue time removes redundant pending entries while preserving first-visit order. Every finite record is expanded at most once; finite roots and dependency lists establish termination of the unbounded algorithm.
+
+Index construction uses O(n log n) ID comparisons and each lookup uses O(log n) comparisons. Total logical work is not bounded by those comparison counts alone: immutable list append, queue membership, and target deduplication can still accumulate quadratic costs. A bounded execution may exhaust resources, and index setup can increase cost for some small graphs or early failures.
+
+The [independent agent evaluation](../../benchmarks/agent-runs/closure-scale-001/RESULT.md) accepted this exact IR over its frozen domain. A 256-record chain used 79.4% less work than the preserved baseline, and both 512-record chain declaration orders returned under unchanged limits. These results establish a bounded improvement, not universal refinement or an asymptotic bound on the complete algorithm. Historical results remain bound to their original program identities.
 
 ## Execute the committed artifact
 
@@ -96,7 +102,7 @@ assert.equal(missing.completion.kind, 'application-failure');
 assert.equal(missing.completion.code, 'MISSING_REQUIRED_DEPENDENCY');
 assert.equal(missing.completion.details, 'absent');
 assert.deepEqual(missing.completion.diagnostic.call_stack.map(frame => frame.function_id),
-  ['required_dependency_closure', 'lookup_record']);
+  ['required_dependency_closure', 'lookup']);
 ```
 
 The [authoring module](../../programs/clearings/required-dependency-closure.mjs) constructs typed syntax records. The [build script](../../scripts/build-required-closure-program.mjs) seals and serializes those records. Neither receives an invocation graph or computes a closure. Runtime execution reads the committed JSON artifact and does not load the authoring module.
@@ -109,4 +115,4 @@ The [independent oracle](../../tests/helpers/program-closure-reference.mjs) enum
 
 Targeted cases cover multiple and duplicate roots, duplicate edges, optional edges, self-loops and larger cycles, diamonds, shortest-path tie-breaking, breadth-first ordering across parents, declaration permutations, Unicode IDs, missing roots and targets, duplicate-record precedence, value ownership, and resource exhaustion. Larger finite examples exercise the program under default limits. Five well-typed IR mutations check that the expectations detect incomplete closure, omitted target sorting, optional expansion, global output sorting, and missing-record substitution.
 
-Agreement establishes the declared bounded evaluation domain. The tests do not establish universal refinement, production replacement, a self-hosting compiler, or a general contract-to-program translation. The [program workflow](../04-guides/05-run-programs.md) exposes this algorithm through `npm run program -- demo` and `npm run program -- inspect closure`. Focused CI runs the algorithm evaluation alongside language, CLI, and packaging tests.
+Agreement establishes the declared bounded evaluation domain. The tests do not establish universal refinement, a self-hosting compiler, or a general contract-to-program translation. Production integration separately checks use of the accepted IR through ordinary context assembly. The [program workflow](../04-guides/05-run-programs.md) exposes this algorithm through `npm run program -- demo` and `npm run program -- inspect closure`. Focused CI runs the algorithm evaluation alongside language, CLI, and packaging tests.

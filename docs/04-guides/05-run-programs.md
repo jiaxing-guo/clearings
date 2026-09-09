@@ -45,7 +45,7 @@ npm run program -- inspect closure
 npm run program -- validate closure
 ```
 
-Inspection shows all four functions, including their parameter types, return types, declared failures, and complete bodies. Find the mutable `pending`, `selected`, and `cursor` bindings in `required_dependency_closure`. The loop calls the IR-defined `lookup_record` and `required_targets` functions; the latter collects required targets and sorts them. `validate_records` rejects duplicate record IDs before traversal.
+Inspection shows all six functions, including their parameter types, return types, declared failures, and complete bodies. In `required_dependency_closure`, `s` holds the sorted record-position index, `p` holds binary-search strides, and `q` is the unique discovery queue. The loop calls the IR-defined `lookup` and `targets` functions. `record_index`, `block`, and `merge` build the stable index and reject the first duplicate declaration before traversal.
 
 The listing is a derived display notation. The canonical [JSON artifact](../../programs/clearings/required-dependency-closure.json) remains the implementation representation. Function comments such as `/functions/2` connect the listing to JSON Pointer diagnostics. Static validation and inspection do not execute the program or prove termination.
 
@@ -78,7 +78,7 @@ The returned value is `["entry", "a", "z"]`. To execute another artifact, replac
 
 ## Inspect failure and exhaustion
 
-Change the roots in `closure.arguments.json` to `["absent"]` and run the same command. The completion is `application-failure`, with code `MISSING_REQUIRED_DEPENDENCY` and details `"absent"`. The diagnostic identifies the `fail` statement in `lookup_record` and retains the caller stack. The process exits with status `1`.
+Change the roots in `closure.arguments.json` to `["absent"]` and run the same command. The completion is `application-failure`, with code `MISSING_REQUIRED_DEPENDENCY` and details `"absent"`. The diagnostic identifies the `fail` statement in `lookup` and retains the caller stack. The process exits with status `1`.
 
 Use a deliberately small work limit to inspect resource exhaustion:
 

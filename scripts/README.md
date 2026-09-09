@@ -2,24 +2,25 @@
 
 Use the root npm commands for normal development. Scripts run against the Clearings checkout; benchmark tools require the pinned repository and keep results outside the analyzed target.
 
-| Task                                       | Command or script                                                              |
-| ------------------------------------------ | ------------------------------------------------------------------------------ |
-| Format maintained files                    | `npm run format`; check with `npm run format:check`                            |
-| Remove generated build products            | `npm run clean`                                                                |
-| Build or type-check the library            | `npm run build`, `npm run typecheck`                                           |
-| Run Program IR examples                    | `npm run program -- demo`                                                      |
-| Test Program IR and its CLI                | `npm run test:program`                                                         |
-| Test Rust runtime primitives               | `npm run test:rust`                                                            |
-| Format and check the Rust runtime          | `npm run format:rust`, `npm run check:rust`                                    |
-| Record and evaluate context assembly       | `npm run conformance`                                                          |
-| Run the complete conformance gate          | `npm run test:conformance`                                                     |
-| Develop, build, or verify documentation    | `npm run docs:dev`, `npm run docs:build`, `npm run docs:check`                 |
-| Check Markdown links and runnable examples | `npm run docs:check:markdown`                                                  |
-| Measure inventory                          | `node scripts/measure-inventory.mjs <pinned-bare-repo> <new-output-directory>` |
-| Measure structural scanning                | `node scripts/measure-scan.mjs <pinned-bare-repo> <new-output-directory>`      |
-| Evaluate selected structural facts         | `node scripts/evaluate-scan.mjs <scan.json> <pinned-repo>`                     |
-| Evaluate an IR closure candidate           | `npm run closure:evaluate -- --candidate candidate.json --out evaluation.json` |
-| Profile native context runtime costs       | `npm run benchmark:context -- --out profile.json`                              |
+| Task                                         | Command or script                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------------------ |
+| Format maintained files                      | `npm run format`; check with `npm run format:check`                            |
+| Remove generated build products              | `npm run clean`                                                                |
+| Build or type-check the library              | `npm run build`, `npm run typecheck`                                           |
+| Run Program IR examples                      | `npm run program -- demo`                                                      |
+| Test Program IR and its CLI                  | `npm run test:program`                                                         |
+| Test Rust runtime primitives                 | `npm run test:rust`                                                            |
+| Format and check the Rust runtime            | `npm run format:rust`, `npm run check:rust`                                    |
+| Record and evaluate context assembly         | `npm run conformance`                                                          |
+| Run the complete conformance gate            | `npm run test:conformance`                                                     |
+| Develop, build, or verify documentation      | `npm run docs:dev`, `npm run docs:build`, `npm run docs:check`                 |
+| Check Markdown links and runnable examples   | `npm run docs:check:markdown`                                                  |
+| Measure inventory                            | `node scripts/measure-inventory.mjs <pinned-bare-repo> <new-output-directory>` |
+| Measure structural scanning                  | `node scripts/measure-scan.mjs <pinned-bare-repo> <new-output-directory>`      |
+| Evaluate selected structural facts           | `node scripts/evaluate-scan.mjs <scan.json> <pinned-repo>`                     |
+| Evaluate an IR closure candidate             | `npm run closure:evaluate -- --candidate candidate.json --out evaluation.json` |
+| Profile native context runtime costs         | `npm run benchmark:context -- --out profile.json`                              |
+| Record subsequent context use of accepted IR | `node scripts/record-indexed-context.mjs <new-output-directory>`               |
 
 Build the library before invoking a `.mjs` benchmark script directly. The measurement and evaluation tools retain the historical rubric and result formats; their filenames now describe the measured operation.
 

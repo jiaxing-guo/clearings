@@ -35,3 +35,11 @@ Restore passing hosted CI before merge. Provision Rust 1.85.1 and a host linker 
 Measure repeated cold preparation, warm preparation, generated-source compilation, reference execution, and complete native invocation separately. These measurements do not isolate every internal phase or establish that subprocess startup dominates. Asynchronous calls, persistent workers, and new language primitives require a separate measured need and explicit lifecycle or semantic contracts.
 
 This is one bounded agent experiment. Passing it supports an evaluated algorithm improvement and a subsequent production use. It does not establish universal refinement, physical-resource isolation, compiler self-hosting, or a measured advantage over a matched prose-only coding workflow.
+
+## Recorded result and production integration
+
+The [first candidate](../../benchmarks/agent-runs/closure-scale-001/RESULT.md) passed all 1,561 frozen cases with native/reference agreement. The 256-record chain uses 79.4% less work, and both 512-record chain declaration orders return under the existing ceilings. Production now loads the exact accepted JSON. Its authoring module received formatting only; reproducibility is checked against the preserved submission.
+
+The [subsequent context task](../../benchmarks/agent-runs/closure-scale-001/followup/README.md) uses that Clearings version to assemble its own context contract for integration review. The resulting byte-budget obligation is covered by a new large-context regression. Installed-package checks retain disabled interpreter/TypeScript traversal controls, successful 512-operation CLI execution, explicit exhaustion at a larger workload, IR mutation detection, and invalid-cache rejection.
+
+This completes the implementation for review. Hosted CI remains a merge gate. Cold preparation remains material and the runner remains synchronous; broader optimization requires measured evidence.
