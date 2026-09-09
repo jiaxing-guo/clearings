@@ -3,7 +3,7 @@ title: "TypeScript library API"
 description: "Compose inspection, context export, and reports in your code."
 ---
 
-The library uses ESM and portable JSON types. This private package is not published. The example below runs from the repository root after `npm run build`.
+The library uses ESM and portable JSON types. The package is not published to npm; build it from source. The example below runs from the repository root after `npm run build`.
 
 ## Inspect a recorded model
 
@@ -29,7 +29,7 @@ console.log(inspection.root_ids)
 process.stdout.write(serializeContextPack(pack))
 ```
 
-In a consumer with the package installed from an authorized local checkout, import from `clearings`. Type declarations are exported with the runtime API. Compiler objects and model-provider SDK types are absent from the interchange types.
+In a consumer with the package installed from a local checkout, import from `clearings`. Type declarations are exported with the runtime API. Compiler objects and model-provider SDK types are absent from the interchange types.
 
 ## Main APIs
 

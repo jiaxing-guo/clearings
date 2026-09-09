@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.85"
 publish = false
+license = "Apache-2.0"
 description = "Value and execution primitives for compiled Clearings Program IR"
 
 [lib]
