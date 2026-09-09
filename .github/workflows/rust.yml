@@ -56,5 +56,6 @@ jobs:
       - run: npm run test:rust
       - run: npm run build
       - run: node --test tests/closure-evaluation.test.mjs
+      - run: node scripts/evaluate-closure-candidate.mjs --candidate benchmarks/agent-runs/closure-scale-001/candidate.program.json --out "$RUNNER_TEMP/closure-candidate-evaluation.json"
       - run: npm run test:compiler
       - run: npm run docs:check:rust
