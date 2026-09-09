@@ -14,6 +14,7 @@ on:
       - 'tests/program*.test.mjs'
       - 'tests/context-selection*.test.mjs'
       - 'benchmarks/evaluation/context-selection-v1/**'
+      - 'benchmarks/evaluation/context-selection-review-v1/**'
       - 'tests/helpers/program-closure-reference.mjs'
       - 'scripts/generate-program-schema.py'
       - 'scripts/build-required-closure-program.mjs'
