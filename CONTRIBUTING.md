@@ -2,7 +2,7 @@
 
 Contributions can improve code, documentation, original fixtures, or the accuracy of a semantic explanation. Start with a small change that a reviewer can understand and verify.
 
-Clearings is a private review prototype. Work through the repository's issues and pull requests with your existing access. Public distribution and package publishing are separate decisions.
+Clearings is in early development. Use issues to discuss bugs and proposed changes, and pull requests for reviewable implementations. Read the [publication readiness review](docs/05-development/10-publication-readiness.md) for the source-publication boundary. Package publishing remains a separate decision.
 
 ## Choose a task
 
@@ -14,7 +14,7 @@ For a sensitive finding, use an access-controlled discussion with the repository
 
 ## Set up the library
 
-Use Node.js 24, npm 11, and Git 2.51 or later on Linux or macOS. Linux is the current verification environment. Windows support is pending. Archive tests and documentation commands also require Python 3.9 or newer, available as `python3`.
+Use Node.js 24, npm 11, and Git 2.51 or later on Linux or macOS. Linux is the current verification environment. Windows support is pending. The full test suite and documentation preparation require Rust 1.85.1 and a host linker. Archive tests and documentation commands also require Python 3.9 or newer, available as `python3`.
 
 ```bash
 npm ci --ignore-scripts
@@ -31,7 +31,7 @@ For the Rust backend, install [rustup](https://rust-lang.org/tools/install/) and
 
 ## Format and clean
 
-Run `npm run format` before committing. The pinned Prettier configuration applies to maintained library, CLI, documentation, and website files; `npm run format:check` enforces it in CI. Frozen evidence, generator-owned artifacts, intentional fixtures, and four source files with historical byte bindings are excluded. See [Repository maintenance](docs/05-development/05-repository-maintenance.md) for the exact boundaries and renamed benchmark scripts.
+Run `npm run format` before committing. The pinned Prettier configuration applies to maintained library, CLI, documentation, and website files; `npm run format:check` enforces it in CI. Frozen evidence, generator-owned artifacts, intentional fixtures, and historical source snapshots are excluded. See [Repository maintenance](docs/05-development/05-repository-maintenance.md) for the exact boundaries and renamed benchmark scripts.
 
 Use `npm run clean` to remove generated library and documentation build products. Stop development servers first, then rebuild with `npm run build` or `npm run docs:dev`. Recorded runs and dependencies are retained.
 

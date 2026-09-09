@@ -2,7 +2,7 @@
   "name": "clearings",
   "version": "0.0.1",
   "private": true,
-  "description": "Internal representation for AI coding",
+  "description": "A compiler and execution runtime for agentic coding",
   "type": "module",
   "engines": {
     "node": ">=24 <25"
@@ -53,7 +53,8 @@
     "runtime/rust/rust-toolchain.toml",
     "runtime/rust/src/*.rs",
     "README.md",
-    "runtime/rust/runner/*.rs"
+    "runtime/rust/runner/*.rs",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
     "build": "tsc",
@@ -91,5 +92,6 @@
   "devDependencies": {
     "@types/node": "24.13.3",
     "prettier": "3.9.6"
-  }
+  },
+  "license": "Apache-2.0"
 }

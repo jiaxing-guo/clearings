@@ -57,6 +57,8 @@ The original reference order remains available for a systematic review. For a la
 
 ## Status and authority
 
+For public source preparation, see the [publication readiness review](05-development/10-publication-readiness.md), including history and archive scope, licensing, and remaining visibility steps.
+
 The [Rust backend artifacts and runtime](03-reference/09-rust-backend.md) define the implemented compiler preparation boundary, compiled-artifact validators, and primitive Rust runtime. The [Rust emitter](03-reference/10-rust-code-generation.md) generates executable target modules; the [native workflow](04-guides/06-compile-and-run-rust.md) provides source export, CLI execution, and installed-package support.
 
 This reference describes the implemented v0.3.0 contract language, its relationship to the v0.1/v0.2 models, and Program IR v0.1 with its static validator and reference interpreter. Program execution implements the defined language semantics under documented resource limits. Ordered required dependency closure is implemented in IR and evaluated against independent bounded graph-domain expectations. The program CLI exposes validation, complete function inspection, fresh execution, and JSON/Markdown reports. Refinement proof procedures remain subsequent work.

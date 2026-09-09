@@ -20,6 +20,8 @@ Large benchmark archives and reports remain required evidence. File age or size 
 
 ## Formatting
 
+Before changing repository visibility, follow the [publication readiness review](10-publication-readiness.md). A clean working tree alone does not account for Git history, embedded archives, discussions, or Actions output.
+
 Install root dependencies with `npm ci --ignore-scripts`. The repository pins Prettier as a development dependency so local commands, editors, and CI use the same formatter version. This follows the [Prettier installation guidance](https://prettier.io/docs/install).
 
 ```bash

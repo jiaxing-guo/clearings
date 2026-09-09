@@ -1,124 +1,100 @@
 # Clearings
 
-**A compiler and execution runtime for agentic coding, under development.**
+**A compiler and execution runtime for agentic coding.**
 
-Clearings aims to let coding agents construct and revise typed programs against explicit behavioral contracts. The system should validate those programs, compile them deterministically, execute them under defined semantics, and evaluate their behavior against independently specified requirements. Bootstrapping starts by representing Clearings algorithms in its own Program IR and progressively using the resulting implementations in Clearings itself.
+Clearings is building a way for coding agents to change programs against explicit behavioral requirements. It separates what a program should do from its implementation, then validates, compiles, executes, and evaluates that implementation.
 
-The current foundation has three parts:
+Today, Clearings can execute typed programs, compile them to Rust, and check their behavior against independently defined expectations. It already runs one of its own algorithms this way: selecting the required dependencies of an operation. A separately evaluated agent improvement to that algorithm is integrated into production context assembly.
 
-- **Operation contracts** express intended inputs, outcomes, state changes, effects, and unresolved obligations.
-- **Program IR and a reference interpreter** represent and execute typed algorithms. Ordered required dependency closure is implemented in IR and checked against an independent graph oracle.
-- **Executable conformance** captures actual context-assembly executions and evaluates them against a bounded domain, with controls and saved-evidence replay.
+**Status:** early development. The compiler and runtime work within a documented, bounded language. Automatic translation from natural-language requirements to programs is future work.
 
-The [Rust backend](docs/05-development/06-rust-backend-plan.md) now compiles Program IR into deterministic Rust source. Generated identity, sum, and dependency-closure programs execute natively through the [primitive runtime](docs/03-reference/09-rust-backend.md). See [code generation](docs/03-reference/10-rust-code-generation.md) for the library API and native test commands. Bounded compiler conformance, source export, and native CLI/package execution are implemented. [Compile and run with Rust](docs/04-guides/06-compile-and-run-rust.md) describes the complete workflow. Production context assembly now executes the compiled closure under an explicit [native execution policy](docs/05-development/08-production-adoption.md). Automatic contract-to-program synthesis is not implemented. Repository analysis, agent context, and human reports provide supporting evidence and projections. See the [architecture](docs/01-architecture/01-system.md) and [status and roadmap](docs/05-development/01-status-and-roadmap.md).
+[Documentation](docs/README.md) · [Program guide](docs/04-guides/05-run-programs.md) · [Roadmap](docs/05-development/01-status-and-roadmap.md) · [Contributing](CONTRIBUTING.md)
 
-This is a private, unpublished prototype. Historical Hono demonstrations cover request dispatch and middleware composition; independent claim-support review remains pending.
+## Quickstart
 
-## Try it
-
-Use Node.js 24, npm 11, and Git 2.51 or later. Run these commands from an authorized checkout on Linux or macOS. Windows support is pending.
+Use Node.js 24, npm 11, and Git 2.51 or later. Development targets Linux and macOS; verification currently runs on Linux. Windows support is pending. Build from source; there is no published npm release.
 
 ```bash
+git clone https://github.com/jiaxing-guo/clearings.git
+cd clearings
 npm ci --ignore-scripts
-npm run build
 npm run program -- demo
+```
+
+The demo runs required dependency closure through the reference interpreter. Its result contains the ordered operation IDs:
+
+```json
+["root", "a", "z", "y", "b"]
+```
+
+The algorithm is represented in [Program IR](programs/clearings/required-dependency-closure.json), a typed intermediate representation with values, collections, bindings, branches, loops, calls, and explicit failure. Inspect its functions as typed pseudocode:
+
+```bash
 npm run program -- inspect closure
 ```
 
-The demo executes ordered required dependency closure from Program IR and returns `["root", "a", "z", "y", "b"]`. Inspection displays every IR function as typed pseudocode. [Run and inspect a program](docs/04-guides/05-run-programs.md) covers custom arguments, application failures, resource limits, and the installed CLI.
+No model provider or API key is required. See [Run and inspect a program](docs/04-guides/05-run-programs.md) for custom inputs and execution reports.
 
-To execute generated native code, install Rust 1.85.1 with rustup and use:
+## Compile and run with Rust
+
+Export deterministic Rust source:
 
 ```bash
-npm run program -- demo --backend rust
 npm run program -- compile closure --out compiled/closure
 ```
 
-Source export requires no Rust installation. Native execution uses the pinned toolchain and a host linker. The interpreter remains the default backend.
-
-Inspect an existing operation contract:
+Source export needs no Rust installation and requires a new output directory. To execute the generated code, install [rustup](https://rust-lang.org/tools/install/), the pinned Rust 1.85.1 toolchain, and a host linker:
 
 ```bash
-node dist/cli/main.js inspect specifications/hono/response-selection.json --operation response-selection
+rustup toolchain install 1.85.1 --profile minimal
+npm run program -- demo --backend rust
 ```
 
-The result contains typed operations with individual function responsibilities and exact attached source. No Hono checkout or API key is needed. This is an authored source interpretation; hash checks establish integrity, not source authenticity or claim support.
+The reference interpreter and Rust runtime enforce the same defined value semantics and logical resource limits. [Compile and run with Rust](docs/04-guides/06-compile-and-run-rust.md) covers the compiler API, native execution, and artifact validation.
 
-Export the rules for an agent:
+## What works today
 
-```bash
-node dist/cli/main.js context specifications/hono/response-selection.json --operation response-selection --max-bytes 131072
-```
+| Capability             | What it provides                                                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- |
+| Operation contracts    | Typed inputs, outcomes, state changes, effects, and explicit unresolved requirements                      |
+| Program IR             | Static validation and reference execution of typed algorithms                                             |
+| Rust backend           | Deterministic source generation and native execution with bounded resources                               |
+| Production use         | Context assembly executes dependency closure compiled from IR and reuses a verified native executable     |
+| Independent evaluation | Frozen cases, separately defined expectations, faulty-program controls, and replayable execution evidence |
+| Source inspection      | Bounded TypeScript analysis, source references, agent context, and human-readable reports                 |
 
-Context assembly requires Rust 1.85.1 and a host linker on a cache miss. Run `npm run native:prepare` once before recording or running the context workflow. Warm execution reuses a verified local executable. See the [context execution contract](docs/03-reference/02-context-and-projections.md#native-execution).
+The accepted dependency-closure candidate was evaluated over **1,561 frozen cases**. It used **79.4% fewer logical work units** on the recorded 256-operation chain and completed the 512-operation chains under unchanged limits. These are bounded algorithm results, not a general latency or agent-productivity claim. Read the [evaluation and its limitations](docs/05-development/09-agent-ir-improvement.md) and the [recorded experiments](benchmarks/agent-runs/README.md).
 
-The pack retains each required operation, its conditions, decisions, and source. Its byte count covers exact compact JSON plus its final newline. Read [the typed specification guide](docs/04-guides/01-check-a-case.md) to check a concrete case or use the API.
+Clearings does not yet synthesize complete applications, prove arbitrary programs correct, or replace a general coding agent. Native execution is synchronous and requires a trusted local toolchain; its resource accounting is not a security sandbox. The compiler is not self-hosting. [Architecture](docs/01-architecture/01-system.md) and [validation limits](website/content/docs/concepts/limits.mdx) describe the boundaries.
 
-Clearings also has a proposed specification for its own context assembler. [Review the self-use demo](benchmarks/results/clearings-bootstrap/README.md) or download [its review package](benchmarks/results/clearings-bootstrap/clearings-specification-review.zip). Intended requirements and observed source behavior remain separate artifacts.
+## Explore contracts and evidence
 
-Record and independently evaluate the current context assembler:
+The [first operation contract](docs/00-learn/01-first-contract.md) follows one requirement through passing, failing, and incomplete observations. The [conformance guide](docs/04-guides/04-evaluate-context-conformance.md) shows how to capture and independently evaluate context assembly:
 
 ```bash
 npm run conformance
 ```
 
-The command builds the CLI and writes raw evidence, JSON evaluations, and `report.md` for 36 cases to a unique directory under `../clearings-conformance-runs`. It prints the output path. Scoped acceptance remains separate from the broader contract's unknown obligations. [Evaluate and replay conformance](docs/04-guides/04-evaluate-context-conformance.md) explains the full domain, independent controls, saved-evidence replay, and failure reports.
+This workflow requires Rust 1.85.1 and a host linker when preparing the native executable. It writes evidence and a readable report to a new directory and prints its path.
 
-The `clearings/program` library subpath exposes Program IR validation and reference execution. `npm run test:program` checks validation, execution semantics, the closure algorithm, CLI behavior, and packaged examples. See [Program IR semantics](docs/02-semantics/05-program-ir.md), [artifact interfaces](docs/03-reference/06-program-artifacts.md), and [program execution](docs/03-reference/07-program-execution.md).
+The earlier [Hono demonstrations](benchmarks/results/hono-shared/README.md) illustrate source interpretation and report presentation. They remain historical examples with their original evidence and limitations.
 
-## Explore the three demos
+## Read the docs locally
 
-Download [the review package](benchmarks/results/hono-shared/clearings-shared-review.zip), extract it, and open `index.html`. All reports contain their own assets. You can also read the Markdown files on GitHub.
-
-| View     | Request dispatch                                                                     | Middleware composition                                                                     |
-| -------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| Overview | [Purpose and outcomes](benchmarks/results/hono-shared/request-dispatch.overview.md)  | [Purpose and outcomes](benchmarks/results/hono-shared/middleware-composition.overview.md)  |
-| Engineer | [Conditions and source](benchmarks/results/hono-shared/request-dispatch.engineer.md) | [Conditions and source](benchmarks/results/hono-shared/middleware-composition.engineer.md) |
-
-[Inspect the typed response decisions](benchmarks/results/hono-shared/internal.md) to compare conditions, state changes, function responsibilities, and source. Agents receive `operation.context.json`; HTML is the human view. The typed slice is bound to checked source from the historical model. The accepted reading guides retain that original model; the [legacy walkthrough](benchmarks/results/hono-shared/internal-legacy.md) remains available.
-
-The model has 22 function contracts, four behavior contracts, 73 assertions, and ten critical unknowns. The [recorded agent demonstration](benchmarks/agent-runs/hono-comprehension/README.md) answers six questions from selected IR. It is an author demonstration with prior source exposure, not an independent evaluation or an efficiency benchmark.
-
-## Build a model from source
-
-Clearings provides this workflow:
-
-1. **Scan** a Git commit for bounded TypeScript structure and exact evidence.
-2. **Export** a request for an external authoring agent or person.
-3. **Import** the proposal after checking its schema, source, and references.
-4. **Inspect, export context, or render** the resulting model.
-
-The library has no built-in model endpoint. Scans read immutable Git objects; they do not run target scripts, install target dependencies, or modify target files. Semantic assertions remain proposed interpretations. A citation resolving does not prove a claim.
-
-[Start with the quickstart](website/content/docs/quickstart.mdx), [use the library API](website/content/docs/reference/library.mdx), or [read the validation limits](website/content/docs/concepts/limits.mdx).
-
-## Documentation
-
-Start with [Your first operation contract](docs/00-learn/01-first-contract.md), use the [practical guides](docs/04-guides/01-check-a-case.md), or consult the [technical reference](docs/README.md). Fumadocs presents the canonical Markdown in four reading paths: learning, guides, reference, and architecture. The operation-contract page compares passing, failing, and incomplete observations.
-
-To read and edit the documentation locally, use Node.js 24, npm 11, and Python 3.9 or newer under `python3`. From the repository root:
+Documentation preparation also requires Rust 1.85.1, a host linker, and Python 3.9 or newer as `python3`. After the root dependency install above:
 
 ```bash
-npm ci --ignore-scripts
 npm --prefix website ci --ignore-scripts
 npm run docs:dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The command builds the library, prepares the documentation assets, and starts Next.js. Changes under the canonical numbered `docs/` directories regenerate automatically. Use `npm run docs:dev -- --port 3001` if you need another port, and stop with Ctrl+C.
+Open [localhost:3000](http://localhost:3000). To use another port, run `npm run docs:dev -- --port 3001`. Changes to the numbered Markdown reference regenerate automatically.
 
-For a production export and validation:
+The authoritative documentation lives in [docs/](docs/README.md); Fumadocs renders it for the browser. See [documentation maintenance](docs/05-development/02-documentation.md) for production builds and validation.
 
-```bash
-npm run docs:check:markdown
-npm run docs:build
-npm run docs:check
-```
+## Contributing
 
-Output is written to `website/out`. Production builds default to `/clearings`; local development defaults to `/`. Set `DOCS_BASE_PATH=''` for a root production export and use the same value for `docs:check`. [Documentation maintenance](docs/05-development/02-documentation.md) describes the authoring conventions, watcher scope, and verification checks. Public hosting and package publication remain separate scope decisions.
-
-## Contribute
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, focused changes, documentation work, and source-backed reviews.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [roadmap](docs/05-development/01-status-and-roadmap.md). Small, reproducible improvements to the language, compiler, runtime, evaluation, and documentation are useful.
 
 ```bash
 npm run format:check
@@ -126,10 +102,8 @@ npm run typecheck
 npm test
 ```
 
-Use `npm run format` to apply the pinned Prettier style and `npm run clean` to remove generated builds. [Repository maintenance](docs/05-development/05-repository-maintenance.md) records the formatting exclusions, cleanup scope, and descriptive script names.
+The full test suite requires the pinned Rust toolchain, a host linker, and Python. Maintained TypeScript and Markdown use Prettier; Rust uses rustfmt. Preserve frozen experiment records when making changes.
 
-For Rust runtime work, install [rustup](https://rust-lang.org/tools/install/) and run `npm run test:rust` and `npm run check:rust`. These commands select the pinned toolchain. Use `npm run format:rust` to apply rustfmt. The existing TypeScript library and interpreter do not require Rust to run.
+## License
 
-The archive tests require Python 3.9 or newer under the `python3` command.
-
-The [status and roadmap](docs/05-development/01-status-and-roadmap.md) records scope and remaining work. Historical artifacts and their replay stay available. Distributed Hono excerpts include the upstream [MIT notice](benchmarks/results/hono-shared/LICENSE-HONO).
+Clearings is licensed under [Apache License 2.0](LICENSE). Bundled Hono source excerpts retain their MIT license; see [third-party notices](THIRD_PARTY_NOTICES.md).
