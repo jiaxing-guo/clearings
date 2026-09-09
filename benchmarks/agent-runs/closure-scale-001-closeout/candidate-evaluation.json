@@ -1,0 +1,624 @@
+{
+  "schema_version": "0.2.0",
+  "protocol_sha256": "a48e6d017e9fd601b6fa5b8157b5acacfd7460ed92a36ae038ae586fe590081d",
+  "baseline_protocol_sha256": "de16156dfae21b61f45478eb971c25118dcc8d58697507a7b5128a0a78f2520f",
+  "candidate_sha256": "4baf2baef430a51991653a630332a176880ce988a9da34c4aabe2166812df2ea",
+  "program_id": "program:e08458748756b1d965490a1bda8572814b468e7f1868a2222ff7a3faad0cc1d8",
+  "compiled_artifact_id": "compiled-program:58c7b6c19d1d4e28a4e139a2e33814768da5b53ea73b18ed16cf819e3bf5d3b4",
+  "limits": {
+    "work": 10000000,
+    "allocation_units": 10000000,
+    "value_units": 1000000,
+    "evaluation_depth": 256
+  },
+  "reference": "accepted",
+  "native": "passed",
+  "acceptance": "accepted",
+  "failures": [],
+  "native_errors": [],
+  "cases": 1561,
+  "observations_sha256": "49c49601eec45e8618cbf0b2ff0f08bca39e60c0a9c88242a8bafc4e9b5ca1fb",
+  "scalability": [
+    {
+      "id": "breadth-first",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 5774,
+          "allocation_units": 912,
+          "value_units": 166,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 7304,
+          "allocation_units": 1312,
+          "value_units": 166,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "multiple-roots",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 5842,
+          "allocation_units": 921,
+          "value_units": 166,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 7436,
+          "allocation_units": 1329,
+          "value_units": 166,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "empty",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 212,
+          "allocation_units": 12,
+          "value_units": 1,
+          "evaluation_depth": 8
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 196,
+          "allocation_units": 24,
+          "value_units": 2,
+          "evaluation_depth": 8
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "unicode",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 7323,
+          "allocation_units": 1346,
+          "value_units": 218,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 8870,
+          "allocation_units": 1728,
+          "value_units": 218,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "optional-and-unreachable",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 1164,
+          "allocation_units": 431,
+          "value_units": 101,
+          "evaluation_depth": 11
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 1724,
+          "allocation_units": 534,
+          "value_units": 101,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "missing-root",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 1734,
+          "allocation_units": 641,
+          "value_units": 166,
+          "evaluation_depth": 11
+        },
+        "completion": "application-failure"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 4120,
+          "allocation_units": 984,
+          "value_units": 166,
+          "evaluation_depth": 21
+        },
+        "completion": "application-failure"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "missing-target-order",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 1767,
+          "allocation_units": 318,
+          "value_units": 58,
+          "evaluation_depth": 12
+        },
+        "completion": "application-failure"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 1547,
+          "allocation_units": 383,
+          "value_units": 58,
+          "evaluation_depth": 14
+        },
+        "completion": "application-failure"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "root-before-target-failure",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 1430,
+          "allocation_units": 264,
+          "value_units": 40,
+          "evaluation_depth": 12
+        },
+        "completion": "application-failure"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 1444,
+          "allocation_units": 352,
+          "value_units": 40,
+          "evaluation_depth": 14
+        },
+        "completion": "application-failure"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "first-duplicate",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 555,
+          "allocation_units": 197,
+          "value_units": 73,
+          "evaluation_depth": 8
+        },
+        "completion": "application-failure"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 2280,
+          "allocation_units": 417,
+          "value_units": 73,
+          "evaluation_depth": 21
+        },
+        "completion": "application-failure"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "duplicate-with-empty-roots",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 369,
+          "allocation_units": 95,
+          "value_units": 37,
+          "evaluation_depth": 8
+        },
+        "completion": "application-failure"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 964,
+          "allocation_units": 184,
+          "value_units": 37,
+          "evaluation_depth": 21
+        },
+        "completion": "application-failure"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "chain-32",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 89436,
+          "allocation_units": 13526,
+          "value_units": 1242,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 63015,
+          "allocation_units": 12819,
+          "value_units": 1242,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "reversed-chain-32",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 89436,
+          "allocation_units": 13746,
+          "value_units": 1242,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 63240,
+          "allocation_units": 12844,
+          "value_units": 1242,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "chain-128",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 1086644,
+          "allocation_units": 160252,
+          "value_units": 5138,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 345407,
+          "allocation_units": 93456,
+          "value_units": 5138,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "reversed-chain-128",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 1086644,
+          "allocation_units": 164232,
+          "value_units": 5138,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 346424,
+          "allocation_units": 93569,
+          "value_units": 5138,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "chain-256",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 4134308,
+          "allocation_units": 634492,
+          "value_units": 10514,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 850897,
+          "allocation_units": 303091,
+          "value_units": 10514,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "reversed-chain-256",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 4134308,
+          "allocation_units": 652552,
+          "value_units": 10514,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 853048,
+          "allocation_units": 303330,
+          "value_units": 10514,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "chain-512",
+      "baseline": {
+        "matches": false,
+        "usage": {
+          "work": 9999999,
+          "allocation_units": 1796987,
+          "value_units": 21266,
+          "evaluation_depth": 12
+        },
+        "completion": "resource-exhaustion"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 2258797,
+          "allocation_units": 1076353,
+          "value_units": 21266,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "reversed-chain-512",
+      "baseline": {
+        "matches": false,
+        "usage": {
+          "work": 10000000,
+          "allocation_units": 1347094,
+          "value_units": 21266,
+          "evaluation_depth": 12
+        },
+        "completion": "resource-exhaustion"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 2263234,
+          "allocation_units": 1076846,
+          "value_units": 21266,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "star-32",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 88450,
+          "allocation_units": 15705,
+          "value_units": 1242,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 65931,
+          "allocation_units": 14836,
+          "value_units": 1242,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "cycle-32",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 89754,
+          "allocation_units": 13623,
+          "value_units": 1261,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 63197,
+          "allocation_units": 12918,
+          "value_units": 1261,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "duplicate-edges-32",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 152178,
+          "allocation_units": 50562,
+          "value_units": 3075,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 73446,
+          "allocation_units": 21159,
+          "value_units": 3075,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "star-128",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 1064530,
+          "allocation_units": 202045,
+          "value_units": 5138,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 389663,
+          "allocation_units": 131975,
+          "value_units": 5138,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "cycle-128",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 1086962,
+          "allocation_units": 160349,
+          "value_units": 5157,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 345589,
+          "allocation_units": 93555,
+          "value_units": 5157,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "duplicate-edges-128",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 1586526,
+          "allocation_units": 683294,
+          "value_units": 12815,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 388262,
+          "allocation_units": 128424,
+          "value_units": 12815,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    },
+    {
+      "id": "small-closure-large-specification",
+      "baseline": {
+        "matches": true,
+        "usage": {
+          "work": 2049121,
+          "allocation_units": 1884640,
+          "value_units": 26984,
+          "evaluation_depth": 12
+        },
+        "completion": "return"
+      },
+      "candidate": {
+        "matches": true,
+        "usage": {
+          "work": 917109,
+          "allocation_units": 428596,
+          "value_units": 26984,
+          "evaluation_depth": 21
+        },
+        "completion": "return"
+      },
+      "native_agreement": true
+    }
+  ],
+  "mismatches": []
+}

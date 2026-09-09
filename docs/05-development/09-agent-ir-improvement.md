@@ -1,6 +1,6 @@
 # Independently evaluated IR improvement
 
-The next bootstrap step is an agent-authored improvement to Clearings' compiled dependency-closure algorithm. Production adoption is merged. This work connects a frozen behavioral contract, candidate Program IR, deterministic compilation, independent evaluation, and use of the resulting Clearings implementation.
+Milestone 5 implemented an agent-authored improvement to Clearings' compiled dependency-closure algorithm. The evaluation, candidate, and production integration are merged in PRs #26–28. This work connects a frozen behavioral contract, candidate Program IR, deterministic compilation, independent evaluation, and use of the resulting Clearings implementation.
 
 ## Review sequence
 
@@ -23,7 +23,7 @@ Every scale workload must return the independently expected value under unchange
 Run a candidate evaluation from a built checkout:
 
 ```bash
-node scripts/evaluate-closure-candidate.mjs --candidate candidate.json --out candidate-evaluation.json
+npm run closure:evaluate -- --candidate candidate.json --out candidate-evaluation.json
 ```
 
 The default executes both reference and native backends. `--backend reference` supports preliminary checks but cannot establish acceptance. Output creation refuses replacement. Reports bind the frozen protocol, candidate bytes, program, compiled artifact, resource limits, aggregate observation digest, and individual scalability results. Mismatches retain complete observations. The workload generator and candidate reproduce the evaluated inputs and outputs.
@@ -42,4 +42,24 @@ The [first candidate](../../benchmarks/agent-runs/closure-scale-001/RESULT.md) p
 
 The [subsequent context task](../../benchmarks/agent-runs/closure-scale-001/followup/README.md) uses that Clearings version to assemble its own context contract for integration review. The resulting byte-budget obligation is covered by a new large-context regression. Installed-package checks retain disabled interpreter/TypeScript traversal controls, successful 512-operation CLI execution, explicit exhaustion at a larger workload, IR mutation detection, and invalid-cache rejection.
 
-This completes the implementation for review. Hosted CI remains a merge gate. Cold preparation remains material and the runner remains synchronous; broader optimization requires measured evidence.
+This completes the defined implementation and production integration. The [closeout record](../../benchmarks/agent-runs/closure-scale-001-closeout/README.md) distinguishes the evaluator correction and local validation from the outstanding hosted CI failure. Cold preparation remains material and the runner remains synchronous; broader optimization requires measured evidence.
+
+## Evaluator correction and historical reproduction
+
+The original evaluator used one exception handler for native execution and comparison. Consequently, a timeout, failed process launch, executable verification error, or another execution exception could be reported as a semantic disagreement without a native result. The resolved review thread on PR #26 did not change that implementation.
+
+The v0.2 evaluator separates execution from comparison and retains native infrastructure diagnostics by stage and case. Its assessment follows these rules:
+
+| Evidence                                                                     | Assessment                                                 |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| A reference execution violates an independent behavioral or work requirement | Rejected, even if native execution is unavailable          |
+| A completed native result disagrees with its reference result                | Rejected, even if another native invocation is unavailable |
+| All requirements and native comparisons pass                                 | Accepted                                                   |
+| No demonstrated failure, but native preparation, execution, or cleanup fails | Inconclusive                                               |
+| Reference-only evaluation without a demonstrated failure                     | Inconclusive                                               |
+
+An execution exception records unknown agreement (`null`), its error code when available, and its message. Only a comparison assertion establishes disagreement. A returned logical resource-exhaustion completion remains a program result and is evaluated against the unchanged workload expectations. An infrastructure exception does not become a program completion. Exit status remains 0 for acceptance, 1 for rejection, and 3 for an inconclusive result.
+
+The [correction protocol](../../benchmarks/agent-runs/closure-scale-001-closeout/protocol.json) binds the new driver and orchestration module and the original protocol digest. The workload generator, independent oracle, behavioral criteria, work threshold, Program IR, compiler, runtime, and original frozen files remain unchanged. Reports identify both protocol digests. This is a disclosed evaluator correction after candidate submission; it is not a new blind authoring trial.
+
+The npm command and CI use `scripts/evaluate-closure-candidate-v2.mjs`. The original `scripts/evaluate-closure-candidate.mjs` remains available for historical reproduction under v0.1, including its original error-classification limitation. Original experiment records are preserved in `closure-scale-001`; new evaluation evidence is stored separately in `closure-scale-001-closeout`.
