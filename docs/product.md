@@ -2,7 +2,7 @@
 
 **Version:** 0.1
 
-**Status:** Draft for product review
+**Status:** Product direction and embedded execution architecture approved; implementation tracked separately
 
 **Date:** 10 September 2026
 
@@ -20,21 +20,21 @@ The initial product hypothesis is that teams will adopt a small execution bounda
 
 ## 2. Decision record
 
-| Item                                                          | Status           | Basis or remaining decision                                                |
-| ------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------- |
-| TypeScript SDK and Python SDK                                 | Approved         | Both are part of the product. This document does not defer Python.         |
-| Adapter system                                                | Approved         | Reusable knowledge about supported databases and services.                 |
-| Runtime                                                       | Approved         | Clearings owns execution mechanics within its supported boundary.          |
-| CLI and MCP                                                   | Approved         | Development tools expose the same underlying capabilities and records.     |
-| Application logic, capabilities and policies as the interface | Agreed direction | Accepted in the discussion replacing mandatory execution templates.        |
-| Templates as optional, inspectable presets                    | Agreed direction | Presets expand to normal settings and introduce no exclusive behavior.     |
-| Read aggregation as the first release boundary                | Proposed         | Provides a concrete execution problem and a small adoption boundary.       |
-| Embedded execution with shared quota coordination             | Proposed         | Exact process boundary and coordinator architecture remain open.           |
-| PostgreSQL read adapter and a typed HTTP adapter              | Proposed         | Specific integration packages and supported operations remain open.        |
-| Initial public invocation method: `run`                       | Proposed         | Persistent `submit` and incremental `stream` are separate scope decisions. |
-| Exact flow syntax, policy schema and package names            | Open             | Examples here are not final APIs.                                          |
-| Runtime implementation language and reuse of current IR       | Open             | Decide after mapping requirements to existing code.                        |
-| Numeric performance and adoption thresholds                   | Open             | Agree before implementation results influence acceptance criteria.         |
+| Item                                                          | Status           | Basis or remaining decision                                                           |
+| ------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
+| TypeScript SDK and Python SDK                                 | Approved         | Both are part of the product. This document does not defer Python.                    |
+| Adapter system                                                | Approved         | Reusable knowledge about supported databases and services.                            |
+| Runtime                                                       | Approved         | Clearings owns execution mechanics within its supported boundary.                     |
+| CLI and MCP                                                   | Approved         | Development tools expose the same underlying capabilities and records.                |
+| Application logic, capabilities and policies as the interface | Agreed direction | Accepted in the discussion replacing mandatory execution templates.                   |
+| Templates as optional, inspectable presets                    | Agreed direction | Presets expand to normal settings and introduce no exclusive behavior.                |
+| Read aggregation as the first release boundary                | Proposed         | Provides a concrete execution problem and a small adoption boundary.                  |
+| Embedded execution with shared quota coordination             | Approved         | Embedded Rust core, host-owned I/O and optional Valkey admission approved.            |
+| PostgreSQL read adapter and a typed HTTP adapter              | Proposed         | Specific integration packages and supported operations remain open.                   |
+| Initial public invocation method: `run`                       | Proposed         | Persistent `submit` and incremental `stream` are separate scope decisions.            |
+| Exact flow syntax, policy schema and package names            | Open             | Examples here are not final APIs.                                                     |
+| Runtime implementation language and reuse of current IR       | Approved         | New Rust scheduling core; do not restore the retired compiler.                        |
+| Numeric performance and adoption thresholds                   | Open             | Initial budgets are fixed in contracts/acceptance.json before runtime implementation. |
 
 ## 3. Users and jobs
 
@@ -260,7 +260,7 @@ Performance and adoption are hypotheses until measured. Acceptance must include 
 | Maintenance     | Changes needed for a second feature or policy adjustment         | Track custom execution machinery retained in the application, not line count alone.                     |
 | Agent usability | Successful integration and modification using discoverable tools | Preserve task and environment context; token use is secondary to completed work.                        |
 
-Before implementation benchmarks, agree representative workloads and numeric gates for meaningful improvement, acceptable overhead and adoption effort. This draft deliberately leaves those figures open. The explanatory six-to-two call example is not a performance target.
+The [execution contract](execution.md) and [acceptance budgets](../contracts/acceptance.json) define initial representative workloads and numeric runtime-overhead gates before implementation. Broader adoption claims require the later integration journeys. The explanatory six-to-two call example is not a performance target.
 
 A release should show a complete useful flow in each language, interacting mechanisms under load, and a second application change that avoids rebuilding execution machinery. Passing internal conformance alone does not establish product value.
 
@@ -299,7 +299,7 @@ These constraints describe where the system needs information and ownership. The
 | D-09 | Acceptance gates           | Agree workloads and numeric thresholds before implementation evaluation         | Gives “efficient” and “easy to adopt” reviewable meanings.                           |
 | D-10 | Repository cleanup         | Completed in the active tree; historical revision preserved                     | See [project history](history.md) for removed interfaces and retrieval instructions. |
 
-The PRD can become the runtime implementation baseline after the open decisions and acceptance gates are resolved. Technical design should then specify schemas, state transitions, process boundaries and repository changes. PR sequencing follows that design.
+The [execution contract](execution.md) adopts the shared Rust core, host boundaries, initial authoring semantics and acceptance budgets. Requirements beyond that execution slice remain subsequent capabilities; implementation status must be stated separately.
 
 ## 14. Technical precedents
 

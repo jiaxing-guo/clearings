@@ -49,4 +49,4 @@ This removes the named documentation outputs, generated content and type caches.
 
 ## Scope of future code
 
-Add SDKs, adapters, a runtime and CLI/MCP implementations with their actual callers and behavior checks. Python and runtime CI should arrive with real packages. The runtime language and process boundary remain open. Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer.
+Add SDKs, adapters, a runtime and CLI/MCP implementations with their actual callers and behavior checks. Python and runtime CI should arrive with real packages. The approved core is embedded Rust; Node and Python retain host I/O and payload ownership. See the [execution contract](execution.md). Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer.

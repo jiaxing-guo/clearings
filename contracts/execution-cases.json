@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "null",
+      "kind": "value",
+      "input": null,
+      "expected": null,
+      "calls": 0
+    },
+    {
+      "id": "absent-versus-null",
+      "kind": "value",
+      "input": {
+        "present": null,
+        "nested": [false, 0, ""]
+      },
+      "expected": {
+        "present": null,
+        "nested": [false, 0, ""]
+      },
+      "calls": 0
+    },
+    {
+      "id": "portable-boundaries",
+      "kind": "value",
+      "input": [9007199254740991, -9007199254740991, 1.25, "東京😀", "2026-09-10T00:00:00Z"],
+      "expected": [9007199254740991, -9007199254740991, 1.25, "東京😀", "2026-09-10T00:00:00Z"],
+      "calls": 0
+    },
+    {
+      "id": "empty-map",
+      "kind": "cards",
+      "input": [],
+      "expected": [],
+      "calls": 0
+    },
+    {
+      "id": "single-card",
+      "kind": "cards",
+      "input": ["A"],
+      "expected": [
+        {
+          "name": "Apple",
+          "available": true
+        }
+      ],
+      "calls": 2
+    },
+    {
+      "id": "ordered-duplicates",
+      "kind": "cards",
+      "input": ["A", "B", "A"],
+      "expected": [
+        {
+          "name": "Apple",
+          "available": true
+        },
+        {
+          "name": "Book",
+          "available": false
+        },
+        {
+          "name": "Apple",
+          "available": true
+        }
+      ],
+      "calls": 6
+    },
+    {
+      "id": "reversed-order",
+      "kind": "cards",
+      "input": ["B", "A"],
+      "expected": [
+        {
+          "name": "Book",
+          "available": false
+        },
+        {
+          "name": "Apple",
+          "available": true
+        }
+      ],
+      "calls": 4
+    },
+    {
+      "id": "dependency",
+      "kind": "dependency",
+      "input": 3,
+      "expected": 8,
+      "calls": 2
+    },
+    {
+      "id": "shared-dependency",
+      "kind": "shared",
+      "input": 4,
+      "expected": [5, 10],
+      "calls": 1
+    },
+    {
+      "id": "operation-failure",
+      "kind": "failure",
+      "input": "missing",
+      "error": "OPERATION_FAILED"
+    },
+    {
+      "id": "transform-failure",
+      "kind": "transform_failure",
+      "input": 0,
+      "error": "TRANSFORM_FAILED"
+    }
+  ]
+}

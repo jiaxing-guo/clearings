@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "status": "engineering acceptance targets, not measured results",
+  "portable_values": {
+    "max_depth": 64,
+    "max_entries": 100000,
+    "max_string_bytes": 1048576,
+    "max_integer": 9007199254740991
+  },
+  "workloads": {
+    "individual_overhead": {
+      "logical_calls": 32,
+      "warmups": 30,
+      "samples": 200,
+      "comparison": "same async no-op handler and same capacity in an ordinary host helper",
+      "max_added_p50_ms": 2,
+      "max_added_p95_ms": 5,
+      "timing": "public invocation including validation, graph construction, native transitions and records"
+    },
+    "product_cards": {
+      "input": ["A", "B", "A"],
+      "initial_physical_calls": 6,
+      "bulk_physical_calls": 2,
+      "conditions": "both adapters permit in-run reuse and bulk reads of two distinct IDs; exact ordered outputs match"
+    },
+    "load": {
+      "runs": 1000,
+      "concurrent_callers": 64,
+      "gate": "configured live action and owned graph bounds never exceeded; after all actions settle, zero live handles and runs"
+    }
+  },
+  "measurement": {
+    "build": "release native artifacts",
+    "host": "record OS, architecture, CPU, memory, runtime versions and implementation hashes",
+    "ordering": "alternate paired implementations on one host",
+    "correctness": "expected output and call count checks outside timing; reject a sample group if any result differs",
+    "interpretation": "budgets apply to declared fixtures; real provider latency and general speedups remain unestablished"
+  }
+}

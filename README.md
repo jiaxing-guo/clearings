@@ -19,7 +19,7 @@ The earlier repository analyzer, specification engine, Program IR and Rust compi
 | Explicit reuse and authorization scopes   | Eligible deduplication                       |
 | Resource policies and service limits      | Concurrency, admission and quota waiting     |
 
-Execution policies are composable settings. Optional presets can provide defaults. The exact flow API, runtime implementation language and deployment boundary remain open.
+Execution policies are composable settings. Optional presets can provide defaults. The execution architecture is approved: one embedded Rust scheduling core with native Node and Python bindings, and host-owned I/O. See the [execution contract](docs/execution.md).
 
 Read the [product requirements](docs/product.md) for proposed scope, acceptance scenarios and unresolved decisions. Performance benefits remain to be demonstrated.
 
