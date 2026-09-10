@@ -6,7 +6,7 @@ Clearings is being designed to handle batching, scoped deduplication, concurrenc
 
 ## Status
 
-This repository contains the product requirements and documentation infrastructure. The managed runtime, SDKs, service adapters, CLI and MCP interface are **not implemented yet**. API examples in the requirements are proposals.
+The repository contains the execution contract and a bounded Rust scheduling core. Native SDKs, service adapters, batching, shared quotas, CLI and MCP are **not implemented yet**. The core is tested through a fake host; performance benefits remain unmeasured.
 
 The earlier repository analyzer, specification engine, Program IR and Rust compiler have been retired from the active tree. Their code, tests and recorded experiments remain available at a pinned historical revision. See [project history and retrieval instructions](docs/history.md).
 

@@ -13,3 +13,13 @@ website/package-lock.json
 .clearings/
 runs/
 benchmark-checkouts/
+
+# Native and SDK build outputs.
+target/
+dist/
+*.node
+*.so
+*.pyd
+__pycache__/
+.venv/
+*.egg-info/

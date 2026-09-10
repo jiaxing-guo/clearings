@@ -1,6 +1,6 @@
 # Development
 
-The active build produces documentation. There is no service runtime package or executable CLI to install yet.
+The repository builds documentation and a host-independent Rust execution core. Native SDK packages and the CLI are not implemented in this change.
 
 ## Setup
 
@@ -50,3 +50,15 @@ This removes the named documentation outputs, generated content and type caches.
 ## Scope of future code
 
 Add SDKs, adapters, a runtime and CLI/MCP implementations with their actual callers and behavior checks. Python and runtime CI should arrive with real packages. The approved core is embedded Rust; Node and Python retain host I/O and payload ownership. See the [execution contract](execution.md). Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer.
+
+## Execution core
+
+Install Rust with rustup; `rust-toolchain.toml` selects the pinned toolchain and components.
+
+```sh
+cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+node scripts/check-protocol.mjs
+```
+
+The core tests use injected time and fake host completions. They establish scheduling and lifecycle behavior without claiming real-service performance. `contracts/protocol.schema.json` is generated from Rust types; `contracts/execution-cases.json` contains separately authored public-result expectations.

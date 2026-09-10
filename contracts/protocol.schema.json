@@ -1,0 +1,478 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Protocol",
+  "description": "Schema root for both native bindings and generated SDK projections.",
+  "type": "object",
+  "properties": {
+    "command": {
+      "$ref": "#/$defs/Command"
+    },
+    "event": {
+      "$ref": "#/$defs/Event"
+    },
+    "failure": {
+      "$ref": "#/$defs/Failure"
+    },
+    "limits": {
+      "$ref": "#/$defs/Limits"
+    },
+    "plan": {
+      "$ref": "#/$defs/Plan"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/Snapshot"
+    },
+    "turn": {
+      "$ref": "#/$defs/Turn"
+    }
+  },
+  "required": ["limits", "plan", "event", "command", "turn", "snapshot", "failure"],
+  "$defs": {
+    "Command": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "binding": {
+              "type": "string"
+            },
+            "command": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "uint32",
+                "minimum": 0
+              }
+            },
+            "kind": {
+              "$ref": "#/$defs/Kind"
+            },
+            "node": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "run": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "source": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "const": "dispatch"
+            }
+          },
+          "required": ["type", "run", "command", "node", "kind", "binding", "source", "inputs"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "release"
+            },
+            "value": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            }
+          },
+          "required": ["type", "run", "value"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "run": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "cancel"
+            }
+          },
+          "required": ["type", "run", "command"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "error": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Failure"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "record": {
+              "$ref": "#/$defs/Record"
+            },
+            "run": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "finished"
+            },
+            "value": {
+              "type": ["integer", "null"],
+              "format": "uint32",
+              "minimum": 0
+            }
+          },
+          "required": ["type", "run", "record"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "dropped"
+            }
+          },
+          "required": ["type", "run"]
+        }
+      ]
+    },
+    "ErrorCode": {
+      "type": "string",
+      "enum": [
+        "INVALID_PLAN",
+        "INVALID_VALUE",
+        "UNSUPPORTED",
+        "CAPACITY",
+        "OPERATION_FAILED",
+        "TRANSFORM_FAILED",
+        "CANCELLED",
+        "TIMEOUT",
+        "CLOSED"
+      ]
+    },
+    "Event": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "error": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Failure"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "run": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "complete"
+            },
+            "value": {
+              "type": ["integer", "null"],
+              "format": "uint32",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false,
+          "required": ["type", "run", "command"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0
+            },
+            "type": {
+              "type": "string",
+              "const": "cancel"
+            }
+          },
+          "additionalProperties": false,
+          "required": ["type", "run"]
+        }
+      ]
+    },
+    "Failure": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "source": {
+          "type": ["string", "null"]
+        }
+      },
+      "additionalProperties": false,
+      "required": ["code"]
+    },
+    "Kind": {
+      "type": "string",
+      "enum": ["value", "call", "transform", "join"]
+    },
+    "Limits": {
+      "type": "object",
+      "properties": {
+        "max_in_flight": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "max_nodes": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "max_runs": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": ["max_runs", "max_nodes", "max_in_flight"]
+    },
+    "Node": {
+      "type": "object",
+      "properties": {
+        "binding": {
+          "type": "string"
+        },
+        "deps": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint32",
+            "minimum": 0
+          }
+        },
+        "kind": {
+          "$ref": "#/$defs/Kind"
+        },
+        "source": {
+          "type": "string"
+        },
+        "value": {
+          "type": ["integer", "null"],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": ["kind", "deps", "binding", "source"]
+    },
+    "Plan": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "string"
+        },
+        "flow": {
+          "type": "string"
+        },
+        "max_in_flight": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Node"
+          }
+        },
+        "protocol": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "root": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": ["protocol", "flow", "build", "nodes", "root", "timeout_ms", "max_in_flight"]
+    },
+    "Record": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "string"
+        },
+        "completed_calls": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "core_version": {
+          "type": "string"
+        },
+        "dispatched_calls": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "effective_max_in_flight": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "finished_ms": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "flow": {
+          "type": "string"
+        },
+        "limit_origin": {
+          "type": "string"
+        },
+        "logical_calls": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "protocol": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "queue_ms": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "started_ms": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "strategy": {
+          "type": "string"
+        },
+        "uncertain_actions": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "protocol",
+        "core_version",
+        "strategy",
+        "flow",
+        "build",
+        "started_ms",
+        "finished_ms",
+        "logical_calls",
+        "dispatched_calls",
+        "completed_calls",
+        "queue_ms",
+        "uncertain_actions",
+        "effective_max_in_flight",
+        "limit_origin"
+      ]
+    },
+    "Snapshot": {
+      "type": "object",
+      "properties": {
+        "closed": {
+          "type": "boolean"
+        },
+        "ignored_completions": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        },
+        "in_flight": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "nodes": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "runs": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": ["runs", "nodes", "in_flight", "ignored_completions", "closed"]
+    },
+    "Turn": {
+      "type": "object",
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Command"
+          }
+        },
+        "has_work": {
+          "type": "boolean"
+        },
+        "next_wakeup_ms": {
+          "type": ["integer", "null"],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "steps": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "required": ["commands", "has_work", "steps"]
+    }
+  }
+}

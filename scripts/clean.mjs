@@ -12,6 +12,7 @@ const generated = [
   'website/public/reference.json',
   // Earlier generated outputs can remain when switching an existing checkout.
   'dist',
+  'target',
   'coverage',
   'compiled',
   'runtime/rust/target',
