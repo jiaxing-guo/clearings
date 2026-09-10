@@ -11,7 +11,7 @@ from clearings import ClearingsError, Runtime, flow, operation, s
 from fixtures import case_flow
 
 ROOT = Path(__file__).resolve().parents[2]
-CASES = json.loads((ROOT / "contracts/execution-cases.json").read_text())["cases"]
+CASES = json.loads((ROOT / "contracts/execution-cases.json").read_text(encoding="utf-8"))["cases"]
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda case: case["id"])

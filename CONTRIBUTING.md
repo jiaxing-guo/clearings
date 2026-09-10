@@ -1,6 +1,6 @@
 # Contributing to Clearings
 
-Start with the [product requirements](docs/product.md). Clearings is preparing a managed execution runtime for backend operations; the runtime and SDKs are not implemented yet.
+Start with the [product requirements](docs/product.md). The current execution slice runs finite read flows through an embedded Rust core. The SDK guides describe available packages and their checks. Real service adapters, batching, reuse and shared admission remain subsequent work.
 
 The [development guide](docs/development.md) contains setup commands, validation and documentation conventions. The [historical revision](docs/history.md) preserves the earlier implementation and its evidence.
 

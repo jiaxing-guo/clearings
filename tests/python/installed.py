@@ -8,7 +8,7 @@ from fixtures import case_flow
 
 
 async def main():
-    cases = json.loads((Path(__file__).parent / "cases.json").read_text())["cases"]
+    cases = json.loads((Path(__file__).parent / "cases.json").read_text(encoding="utf-8"))["cases"]
     assert importlib.util.find_spec("clearings._native").origin.endswith((".so", ".pyd"))
     records = []
     for case in cases:

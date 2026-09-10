@@ -35,5 +35,5 @@ with tempfile.TemporaryDirectory(prefix="clearings-installed-python-") as tempor
     subprocess.run([str(binary), "-c", "import shutil; assert shutil.which('rustc') is None; assert shutil.which('cargo') is None"], check=True, env=env)
     result = subprocess.run([str(binary), "check.py"], cwd=project, env=env, check=True, capture_output=True, text=True)
     records = json.loads(result.stdout)
-    (output / "results.json").write_text(json.dumps(records, indent=2) + "\n")
+    (output / "results.json").write_text(json.dumps(records, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"installed_cases": len(records), "native": True}))

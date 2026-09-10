@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-schema = json.loads((ROOT / "contracts/protocol.schema.json").read_text())
+schema = json.loads((ROOT / "contracts/protocol.schema.json").read_text(encoding="utf-8"))
 lines = ["# Generated from contracts/protocol.schema.json. Do not edit.", "from __future__ import annotations", "from typing import Literal, NotRequired, TypedDict", ""]
 
 
@@ -53,7 +53,7 @@ emit("Protocol", schema)
 source = "\n".join(lines)
 target = ROOT / "python/clearings/src/clearings/_control.py"
 if "--check" in sys.argv:
-    if target.read_text() != source:
+    if target.read_text(encoding="utf-8") != source:
         raise SystemExit("Python control projection differs; regenerate it.")
 else:
-    target.write_text(source)
+    target.write_text(source, encoding="utf-8")
