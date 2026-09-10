@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import inspect
 from collections.abc import Awaitable, Callable
@@ -45,7 +43,7 @@ def operation(
 
 @dataclass(frozen=True)
 class Ref(Generic[OutputT]):
-    owner: Context
+    owner: "Context"
     id: int
 
 

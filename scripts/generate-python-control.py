@@ -1,11 +1,12 @@
 """Generate TypedDict projections of the core's JSON Schema; no behavior is generated."""
 import json
 import sys
+from graphlib import TopologicalSorter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 schema = json.loads((ROOT / "contracts/protocol.schema.json").read_text(encoding="utf-8"))
-lines = ["# Generated from contracts/protocol.schema.json. Do not edit.", "from __future__ import annotations", "from typing import Literal, NotRequired, TypedDict", ""]
+lines = ["# Generated from contracts/protocol.schema.json. Do not edit.", "from typing import Literal, NotRequired, TypedDict", ""]
 
 
 def expression(spec: dict) -> str:
@@ -47,8 +48,22 @@ def emit(name: str, spec: dict) -> None:
         lines.append("")
 
 
-for name, spec in schema["$defs"].items():
-    emit(name, spec)
+def references(spec):
+    if isinstance(spec, dict):
+        if "$ref" in spec:
+            yield spec["$ref"].rsplit("/", 1)[1]
+        for value in spec.values():
+            yield from references(value)
+    elif isinstance(spec, list):
+        for value in spec:
+            yield from references(value)
+
+
+# Define referenced types first so annotations evaluate normally at import time.
+definitions = schema["$defs"]
+dependencies = {name: tuple(references(spec)) for name, spec in definitions.items()}
+for name in TopologicalSorter(dependencies).static_order():
+    emit(name, definitions[name])
 emit("Protocol", schema)
 source = "\n".join(lines)
 target = ROOT / "python/clearings/src/clearings/_control.py"

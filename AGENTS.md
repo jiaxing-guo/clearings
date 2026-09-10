@@ -13,5 +13,6 @@ Read `README.md`, `docs/product.md`, `docs/development.md` and `docs/history.md`
 - Use the pinned Prettier configuration. Run `npm run format` and `npm run check` for maintained changes. For runtime changes, run the affected Rust/SDK tests, generated-contract checks and installed-package checks from docs/development.md. Use the Python package Ruff and mypy configuration. `npm run clean` removes only named build outputs and preserves saved records.
 - Use Conventional Commits and capability names. Maintained code, documentation, PR metadata and commit messages must not use internal planning labels.
 - Add tests for meaningful behavior and concrete risks. Report checks actually run and their scope; documentation checks do not establish runtime correctness or performance.
+- Use normally evaluated Python annotations. Postponed annotation evaluation needs a specific, documented reason; use explicit forward references where needed.
 
 Use plain technical prose. Define project-specific terms, keep terminology consistent, and distinguish requirements, implementation and observed results.
