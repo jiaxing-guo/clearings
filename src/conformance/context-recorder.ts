@@ -8,7 +8,12 @@ import { sha256 } from '../repository/source.js';
 import { snapshot, unavailable } from './capture.js';
 import { getContextAssemblyContract, validateContextInvocation } from './context-contract.js';
 import { measureContextCaptures } from './context-adapter.js';
-import { componentDigest, implementationIdentity } from './recording-identity.js';
+import {
+  componentDigest,
+  implementationIdentity,
+  nativeProgramBindings,
+} from './recording-identity.js';
+import { NativeStageRecorder } from './native-stages.js';
 import { sealExecutionRecord } from './validate.js';
 import type { ContextAssemblyInvocation } from './context-contract.js';
 import type { CapturedValue, ExecutionCompletion, ExecutionRecord } from './model.js';
@@ -22,19 +27,33 @@ export interface RecordContextAssemblyOptions {
   repository?: string;
   /** Covers worker startup, module import, synchronous invocation, and capture. */
   timeout_ms?: number;
+  /** Request stage evidence even when the candidate has no stage instrumentation. */
+  native_recording?: 'stages';
 }
 type Captures = {
   arguments_after: CapturedValue;
   completion: ExecutionCompletion;
-  native_execution: NonNullable<ExecutionRecord['native_execution']>;
+  native_execution?: NonNullable<ExecutionRecord['native_execution']>;
+  native_stages?: NonNullable<ExecutionRecord['native_stages']>;
+  native_stage_errors?: string[];
 };
 
 async function execute(
   module_url: string,
   invocation: ContextAssemblyInvocation,
   timeout: number,
+  forceStages: boolean,
 ): Promise<Captures> {
   return new Promise((resolve) => {
+    const stages = new NativeStageRecorder(forceStages);
+    let native_execution: NonNullable<Captures['native_execution']> = {
+      status: 'unavailable',
+      reason: 'No native execution observation was captured.',
+    };
+    const nativeMetadata = () =>
+      stages.active
+        ? { native_stages: [...stages.stages], native_stage_errors: [...stages.errors] }
+        : { native_execution };
     let worker: Worker;
     try {
       worker = new Worker(new URL('./context-worker.js', import.meta.url), {
@@ -50,7 +69,7 @@ async function execute(
       });
     } catch {
       resolve({
-        native_execution: { status: 'unavailable', reason: 'Worker could not be started.' },
+        ...nativeMetadata(),
         arguments_after: unavailable('Worker could not be started.'),
         completion: {
           kind: 'harness-failure',
@@ -66,12 +85,8 @@ async function execute(
       known: 'return' | 'throw' | undefined,
       finished = false;
     let resultingSnapshot: CapturedValue | undefined;
-    let native_execution: Captures['native_execution'] = {
-      status: 'unavailable',
-      reason: 'No native execution observation was captured.',
-    };
     const fallback = (message: string, timedOut = false): Captures => ({
-      native_execution,
+      ...nativeMetadata(),
       arguments_after: resultingSnapshot ?? unavailable(message),
       completion:
         known === 'return'
@@ -103,7 +118,14 @@ async function execute(
       }) => {
         if (finished) return;
         if (message.phase === 'native' && message.observation?.status === 'captured')
-          native_execution = message.observation.value as unknown as Captures['native_execution'];
+          native_execution = message.observation.value as unknown as NonNullable<
+            Captures['native_execution']
+          >;
+        else if (message.phase === 'native-stage') {
+          if (message.observation?.status === 'captured') stages.receive(message.observation.value);
+          else stages.captureUnavailable('Native stage event could not be captured.');
+        } else if (message.phase === 'native-stage-overflow')
+          stages.error('Native stage event limit exceeded.');
         else if (message.phase === 'invoke') phase = 'invoke';
         else if (message.phase === 'capture') {
           phase = 'capture';
@@ -114,7 +136,7 @@ async function execute(
           void finish({
             completion: message.completion,
             arguments_after: message.arguments_after,
-            native_execution,
+            ...nativeMetadata(),
           });
         else if (message.phase === 'failed')
           void finish(fallback('Candidate module could not be prepared.'));
@@ -135,6 +157,11 @@ export async function recordContextAssembly(
 ): Promise<ExecutionRecord> {
   if (!options || typeof options !== 'object' || Array.isArray(options))
     throw new ClearingsError('INVALID_CONFORMANCE', 'Expected a recording options object.');
+  if (options.native_recording !== undefined && options.native_recording !== 'stages')
+    throw new ClearingsError(
+      'INVALID_CONFORMANCE',
+      'native_recording must be stages when supplied.',
+    );
   const timeout = options.timeout_ms ?? 10000;
   if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60000)
     throw new ClearingsError(
@@ -180,10 +207,12 @@ export async function recordContextAssembly(
       'Cannot bind the built checkout: require Git HEAD, package.json, package-lock.json, and regular src/dist context-assembly files.',
     );
   }
+  const programs = nativeProgramBindings(implementationRoot, implementation.files);
   const captures = await execute(
     pathToFileURL(join(implementationRoot, 'dist/specification/context.js')).href,
     invocation,
     timeout,
+    options.native_recording === 'stages',
   );
   const raw = {
     arguments_before: invocation as unknown as ExecutionRecord['arguments_before'],
@@ -191,7 +220,8 @@ export async function recordContextAssembly(
   };
   return sealExecutionRecord(
     {
-      schema_version: '0.2.0',
+      schema_version: captures.native_stages ? '0.3.0' : '0.2.0',
+      ...(captures.native_stages ? { native_programs: programs } : {}),
       kind: 'execution-record',
       origin: 'recorded-execution',
       case_id: caseId,

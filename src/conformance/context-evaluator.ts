@@ -7,6 +7,7 @@ import { validateContextInvocation, getContextAssemblyContract } from './context
 import { mapContextAssemblyObservation } from './context-adapter.js';
 import { referenceContextAssembly } from './context-reference.js';
 import { componentDigest } from './recording-identity.js';
+import { evaluateNativeStages, type NativeEvidenceEvaluation } from './native-stage-evaluation.js';
 import type { OperationCheck, JsonValue } from '../specification/model.js';
 import type { ContentIdentity, ExecutionRecord, Measurement } from './model.js';
 
@@ -31,6 +32,7 @@ export interface ContextAssemblyEvaluation {
   obligations: (ConformanceCheck & { mandatory: boolean })[];
   reference_measurements: Measurement[];
   limitations: string[];
+  native_evidence?: NativeEvidenceEvaluation;
 }
 const equal = (a: unknown, b: unknown): boolean => canonical(a) === canonical(b);
 const object = (value: JsonValue): Record<string, JsonValue> | undefined =>
@@ -290,6 +292,9 @@ function evaluate(record: ExecutionRecord, identity: ContentIdentity): ContextAs
           .join('; ') || 'All applicable declared predicates pass.',
     };
   });
+  const native_evidence =
+    record.schema_version === '0.3.0' ? evaluateNativeStages(record, reference) : undefined;
+  if (native_evidence) checks.push(...native_evidence.checks);
   const status = combine([...checks, ...obligations.filter((obligation) => obligation.mandatory)]);
   const body = {
     schema_version: '0.1.0' as const,
@@ -309,6 +314,7 @@ function evaluate(record: ExecutionRecord, identity: ContentIdentity): ContextAs
     checks,
     obligations,
     reference_measurements,
+    ...(native_evidence ? { native_evidence } : {}),
     limitations: [
       ...record.limitations,
       'Scoped acceptance concerns this captured invocation and the current profile. It is not universal refinement or execution authentication.',

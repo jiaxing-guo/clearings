@@ -18,7 +18,8 @@ const compile = (name: string, version = '0.1') =>
   );
 const profileSchema = compile('conformance-profile'),
   recordSchema = compile('execution-record'),
-  nativeRecordSchema = compile('execution-record', '0.2');
+  nativeRecordSchema = compile('execution-record', '0.2'),
+  stageRecordSchema = compile('execution-record', '0.3');
 const invalid = (message: string): never => {
   throw new ClearingsError('INVALID_CONFORMANCE', message);
 };
@@ -143,14 +144,58 @@ export function validateExecutionRecord(
     value &&
     typeof value === 'object' &&
     'schema_version' in value &&
-    value.schema_version === '0.2.0'
-      ? nativeRecordSchema
-      : recordSchema;
+    value.schema_version === '0.3.0'
+      ? stageRecordSchema
+      : value &&
+          typeof value === 'object' &&
+          'schema_version' in value &&
+          value.schema_version === '0.2.0'
+        ? nativeRecordSchema
+        : recordSchema;
   if (!schema(value))
     invalid(
       `Execution record schema mismatch: ${schema.errors?.[0]?.instancePath} ${schema.errors?.[0]?.message}`,
     );
   const record = value as ExecutionRecord;
+  if (record.schema_version === '0.3.0') {
+    for (const [index, stage] of (['closure', 'selection'] as const).entries()) {
+      const capture = record.native_stages![index]!,
+        binding = record.native_programs![index]!;
+      if (capture.stage !== stage || binding.stage !== stage)
+        invalid('Native stages must occur once each in closure/selection order.');
+      if (
+        binding.status === 'bound' &&
+        binding.path !==
+          `programs/clearings/${stage === 'closure' ? 'required-dependency-closure' : 'context-selection'}.json`
+      )
+        invalid('Native program path differs from its stage.');
+      if (
+        binding.status === 'bound' &&
+        !record.identities.implementation.files.some(
+          (file) => file.path === binding.path && file.sha256 === binding.sha256,
+        )
+      )
+        invalid('Native program binding is absent from the implementation manifest.');
+      if (capture.status !== 'observed') continue;
+      if (capture.result_sha256 !== sha256(canonical(capture.result)))
+        invalid('Native stage result digest differs.');
+      if (
+        !capture.result ||
+        typeof capture.result !== 'object' ||
+        Array.isArray(capture.result) ||
+        capture.result.kind !== capture.completion
+      )
+        invalid('Native stage completion differs from its result.');
+      for (const resource of [
+        'work',
+        'allocation_units',
+        'value_units',
+        'evaluation_depth',
+      ] as const)
+        if (capture.usage[resource] > capture.limits[resource])
+          invalid('Native admitted usage exceeds its limit.');
+    }
+  }
   if (record.native_execution?.status === 'observed') {
     const native = record.native_execution;
     for (const resource of ['work', 'allocation_units', 'value_units', 'evaluation_depth'] as const)

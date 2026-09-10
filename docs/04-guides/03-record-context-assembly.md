@@ -65,3 +65,7 @@ Inspect `mapping.status` before reading `mapping.observation`. Missing snapshots
 For another built implementation of the same API, pass its Git working-tree root as `implementation_root`. The recorder always loads `dist/specification/context.js` and calls its `assembleContext` export. A custom `repository` value supplies provenance metadata; it does not select a remote execution target. The recorder does not compile the candidate or authenticate its installed dependencies.
 
 See [conformance artifacts](../03-reference/05-conformance-artifacts.md#recording-interface-and-identity-scope) for capture limits, identity scope, and error handling, and [executable conformance](../02-semantics/04-executable-conformance.md) for the observation and acceptance boundaries.
+
+## Require native stage evidence
+
+For a candidate expected to execute both compiled programs, add `--native-stages` to `clearings conformance run`, or set `native_recording: 'stages'` when calling `recordContextAssembly`. This requests a v0.3 record even when instrumentation is absent. Missing stage evidence yields inconclusive acceptance; a demonstrated result or binding violation still rejects. The report shows native evidence separately from the broader contract verdict. See [ordered native stages](../03-reference/05-conformance-artifacts.md#ordered-native-stages) for bindings, interruptions, and historical replay.

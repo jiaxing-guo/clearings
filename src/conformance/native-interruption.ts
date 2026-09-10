@@ -3,7 +3,7 @@ import type { ExecutionRecord } from './model.js';
 /** These failures provide no completed application result to compare with the reference. */
 export function isNativeInterruption(record: ExecutionRecord): boolean {
   if (
-    record.schema_version !== '0.2.0' ||
+    (record.schema_version !== '0.2.0' && record.schema_version !== '0.3.0') ||
     record.completion.kind !== 'throw' ||
     record.completion.thrown.status !== 'captured'
   )

@@ -4,6 +4,33 @@ import { execFileSync } from 'node:child_process';
 import { sha256 } from '../repository/source.js';
 import { canonical } from '../repository/inventory.js';
 import type { ExecutionRecord } from './model.js';
+import type { NativeProgramBinding } from './model.js';
+import { validateProgram } from '../program/validate.js';
+
+/** Bind stage program identities to bytes read before candidate execution. */
+export function nativeProgramBindings(
+  root: string,
+  files: { path: string; sha256: string }[],
+): NativeProgramBinding[] {
+  return (['closure', 'selection'] as const).map((stage) => {
+    const path = `programs/clearings/${stage === 'closure' ? 'required-dependency-closure' : 'context-selection'}.json`;
+    try {
+      const bytes = readFileSync(join(root, path)),
+        hash = sha256(bytes),
+        program = JSON.parse(bytes.toString('utf8'));
+      validateProgram(program);
+      if (!files.some((file) => file.path === path && file.sha256 === hash))
+        throw new Error('Program changed after manifest capture.');
+      return { stage, status: 'bound', path, sha256: hash, program_id: program.artifact_id };
+    } catch {
+      return {
+        stage,
+        status: 'unavailable',
+        reason: `No validated, manifest-bound ${stage} program was available.`,
+      };
+    }
+  });
+}
 
 /** A conservative file-set manifest, not compiler provenance or a dynamic import proof. */
 export function componentFiles(root: string): { path: string; sha256: string }[] {

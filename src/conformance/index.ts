@@ -1,4 +1,5 @@
 export type * from './model.js';
+export type { NativeEvidenceEvaluation } from './native-stage-evaluation.js';
 export type { ContextAssemblyInvocation } from './context-contract.js';
 export type { ContextAssemblyMapping } from './context-adapter.js';
 export type { RecordContextAssemblyOptions } from './context-recorder.js';

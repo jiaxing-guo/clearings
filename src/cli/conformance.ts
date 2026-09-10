@@ -124,7 +124,7 @@ export async function conformanceCommand(
     input = positionals[2];
   const allowed =
     action === 'run'
-      ? ['out', 'suite', 'implementation-root', 'timeout-ms']
+      ? ['out', 'suite', 'implementation-root', 'timeout-ms', 'native-stages']
       : action === 'replay'
         ? ['out']
         : [];
@@ -218,6 +218,7 @@ export async function conformanceCommand(
             ...cases[index]!,
             implementation_root: target,
             timeout_ms: timeout,
+            ...(values['native-stages'] === true ? { native_recording: 'stages' as const } : {}),
           })
         : current.value!;
     const evaluation = evaluateContextAssembly(record),

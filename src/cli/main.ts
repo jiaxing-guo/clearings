@@ -16,7 +16,7 @@ clearings context <specification.json> --operation alias --max-bytes n [--format
 clearings check <specification.json> --operation alias --observation case.json
 clearings explain <specification.json> --operation alias [--format markdown|html]
 clearings conformance [--suite smoke|full] [--out new-directory]
-clearings conformance run [invocation.json] [--out new-directory] [--suite smoke|full] [--implementation-root checkout] [--timeout-ms n]
+clearings conformance run [invocation.json] [--out new-directory] [--suite smoke|full] [--implementation-root checkout] [--timeout-ms n] [--native-stages]
 clearings conformance replay <record.json|run-directory> [--out new-directory]
 clearings inventory <repository> [--ref HEAD] [--include path] [--exclude path] [--out file]
 clearings inventory <repository> --target manifest.json [--scope inventory|deep] [--out file]
@@ -97,6 +97,7 @@ try {
       suite: { type: 'string' },
       'implementation-root': { type: 'string' },
       'timeout-ms': { type: 'string' },
+      'native-stages': { type: 'boolean' },
       work: { type: 'string' },
       'allocation-units': { type: 'string' },
       'value-units': { type: 'string' },

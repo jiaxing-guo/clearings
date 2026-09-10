@@ -38,7 +38,8 @@
       "import": "./dist/compiler/index.js"
     },
     "./schemas/program": "./schemas/program.v0.1.json",
-    "./schemas/execution-record-v2": "./schemas/execution-record.v0.2.json"
+    "./schemas/execution-record-v2": "./schemas/execution-record.v0.2.json",
+    "./schemas/execution-record-v3": "./schemas/execution-record.v0.3.json"
   },
   "files": [
     "dist",
@@ -61,7 +62,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node scripts/prepare-context-native.mjs && node --test tests/*.test.mjs",
     "conformance": "npm run build --silent && node dist/cli/main.js conformance",
-    "test:conformance": "npm run build && node scripts/prepare-context-native.mjs --quiet && node --test tests/conformance.test.mjs tests/context-recording.test.mjs tests/context-evaluation.test.mjs tests/conformance-cli.test.mjs && node scripts/check-context-conformance.mjs",
+    "test:conformance": "npm run build && node scripts/prepare-context-native.mjs --quiet && node --test tests/conformance.test.mjs tests/context-recording.test.mjs tests/context-native-stages.test.mjs tests/context-evaluation.test.mjs tests/conformance-cli.test.mjs && node scripts/check-context-conformance.mjs",
     "test:conformance:smoke": "npm run build && node scripts/prepare-context-native.mjs --quiet && node scripts/check-context-conformance.mjs --smoke",
     "benchmark:fetch": "node dist/cli/main.js benchmark-fetch --target benchmarks/targets/hono.json --out benchmark-checkouts/hono.git",
     "demo:build": "npm run build && node scripts/build-shared-demo.mjs",

@@ -22,6 +22,13 @@ try {
     observed = true;
     port.postMessage({ phase: 'native', observation: capture(message) });
   });
+  let stageMessages = 0;
+  channel('clearings.context.native.v2').subscribe((message) => {
+    stageMessages++;
+    if (stageMessages <= 8)
+      port.postMessage({ phase: 'native-stage', observation: capture(message) });
+    else if (stageMessages === 9) port.postMessage({ phase: 'native-stage-overflow' });
+  });
   port.postMessage({ phase: 'invoke' });
   let kind: 'return' | 'throw', value: unknown;
   try {
