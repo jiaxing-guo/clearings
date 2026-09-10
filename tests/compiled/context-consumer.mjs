@@ -24,13 +24,13 @@ export function checkInstalledContext(installed, directory) {
 import { channel } from 'node:diagnostics_channel';
 import { assembleContext } from 'clearings';
 const input = JSON.parse(readFileSync(process.argv[2], 'utf8'));
-let native;
-channel('clearings.context.native.v1').subscribe(value => { native = value; });
+const native = [];
+channel('clearings.context.native.v2').subscribe(value => { if (value.event === 'result') native.push(value.observation); });
 try {
   const context = assembleContext(input.specification, input.selection, input.options);
   console.log(JSON.stringify({context, native}));
 } catch (error) {
-  console.log(JSON.stringify({error: {code: error.code, details: error.details}}));
+  console.log(JSON.stringify({error: {code: error.code, details: error.details}, native}));
   process.exitCode = error.exitCode ?? 1;
 }
 `,
@@ -51,10 +51,69 @@ try {
     actual.context.operations.map((item) => item.id),
     ['root', 'a', 'z', 'y', 'b'],
   );
-  assert.equal(actual.native.status, 'observed');
+  assert.deepEqual(
+    actual.native.map((stage) => stage.stage),
+    ['closure', 'selection'],
+  );
+  assert(
+    actual.native.every((stage) => stage.status === 'observed' && stage.completion === 'return'),
+  );
   const warm = execute({ PATH: '' });
   assert.equal(warm.status, 0, warm.stderr + warm.stdout);
   assert.deepEqual(JSON.parse(warm.stdout), actual);
+
+  // A stateful case makes the second algorithm observable independently of closure.
+  const rich = cases.find((item) => item.case_id === 'complete-frame-evidence').invocation;
+  writeFileSync(fixture, JSON.stringify(rich));
+  const richRun = execute({ PATH: '' });
+  assert.equal(richRun.status, 0, richRun.stderr + richRun.stdout);
+  const richResult = JSON.parse(richRun.stdout);
+  assert.deepEqual(richResult.context, referenceContextAssembly(rich).context);
+  assert(richResult.context.states.length > 0 && richResult.context.sources.length > 0);
+  const selectionPath = join(installed, 'programs/clearings/context-selection.json');
+  const selectionBytes = readFileSync(selectionPath, 'utf8');
+  const selection = JSON.parse(selectionBytes);
+  selection.functions[0].body.at(-1).value.fields.forEach((field) => {
+    field.value = { kind: 'list', element_type: { kind: 'string' }, items: [] };
+  });
+  writeFileSync(selectionPath, JSON.stringify(sealProgram(selection)));
+  const missingSelection = execute({ PATH: '' });
+  assert.equal(missingSelection.status, 1);
+  const missingResult = JSON.parse(missingSelection.stdout);
+  assert.equal(missingResult.error.code, 'RUST_TOOLCHAIN_UNAVAILABLE');
+  assert.equal(missingResult.error.details.context_stage, 'selection');
+  assert.deepEqual(
+    missingResult.native.map((stage) => stage.stage),
+    ['closure'],
+  );
+  const selectedMutant = execute();
+  assert.equal(selectedMutant.status, 0, selectedMutant.stderr + selectedMutant.stdout);
+  const selectedResult = JSON.parse(selectedMutant.stdout);
+  assert.equal(
+    selectedResult.native[0].compiled_artifact_id,
+    richResult.native[0].compiled_artifact_id,
+  );
+  assert.notEqual(
+    selectedResult.native[1].compiled_artifact_id,
+    richResult.native[1].compiled_artifact_id,
+  );
+  assert.deepEqual(selectedResult.context.states, []);
+  assert.deepEqual(selectedResult.context.sources, []);
+  assert.notDeepEqual(selectedResult.context, richResult.context);
+  writeFileSync(selectionPath, selectionBytes);
+  const selectionExecutable = join(
+    cache,
+    richResult.native[1].native.build_id.slice('native-build:'.length),
+    process.platform === 'win32' ? 'native.exe' : 'native',
+  );
+  const executableBytes = readFileSync(selectionExecutable);
+  appendFileSync(selectionExecutable, '\naltered');
+  const corruptedSelection = execute({ PATH: '' });
+  assert.equal(corruptedSelection.status, 1);
+  assert.equal(JSON.parse(corruptedSelection.stdout).error.code, 'RUST_BUILD_INVALID');
+  assert.equal(JSON.parse(corruptedSelection.stdout).error.details.context_stage, 'selection');
+  writeFileSync(selectionExecutable, executableBytes);
+  writeFileSync(fixture, JSON.stringify(invocation));
 
   const cli = join(installed, 'dist/cli/main.js');
   const specification = join(directory, 'context-specification.json');
@@ -153,7 +212,7 @@ try {
   const mutant = execute();
   assert.equal(mutant.status, 0, mutant.stderr + mutant.stdout);
   const changed = JSON.parse(mutant.stdout);
-  assert.notEqual(changed.native.compiled_artifact_id, actual.native.compiled_artifact_id);
+  assert.notEqual(changed.native[0].compiled_artifact_id, actual.native[0].compiled_artifact_id);
   assert.notDeepEqual(changed.context, referenceContextAssembly(invocation).context);
   assert.deepEqual(
     changed.context.operations.map((item) => item.id),
@@ -162,7 +221,7 @@ try {
 
   const executable = join(
     cache,
-    changed.native.native.build_id.slice('native-build:'.length),
+    changed.native[0].native.build_id.slice('native-build:'.length),
     process.platform === 'win32' ? 'native.exe' : 'native',
   );
   appendFileSync(executable, '\naltered');

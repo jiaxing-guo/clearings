@@ -1,0 +1,131 @@
+{
+  "task": "Use compiled closure and state/source selection to assemble Clearings’ own context contract for integration review.",
+  "specification": {
+    "path": "specifications/clearings/context-assembly.json",
+    "sha256": "67bc49ad7fcc61d9798fbab8442c4cc4c8349e1f74e0c3bc2a5aa57e079f25a2",
+    "artifact_id": "specification:03e94a4d33af12456ea816c0ffa1ffc8482d3fd93ff6f46b4e3fbd752b2d2aa6"
+  },
+  "program_id": "program:e08458748756b1d965490a1bda8572814b468e7f1868a2222ff7a3faad0cc1d8",
+  "selection_program_id": "program:60733f6ce9dcfbf419c89f996fab3b814051ed6a22056953ae7436aa41dffb78",
+  "native_stages": [
+    {
+      "arguments_sha256": "b5ef162c93927f25eecfee1e2d4d89ed7f82d48a0b0c0b4ac6b07d83f54837f7",
+      "compiled_artifact_id": "compiled-program:bad447d79ebd1faae2668baad037c07897f7b130c4c1c819ddc1c53a56569e93",
+      "compiler_version": "0.1.1",
+      "completion": "return",
+      "execution_semantics_version": "0.1.0",
+      "limits": {
+        "allocation_units": 10000000,
+        "evaluation_depth": 256,
+        "value_units": 1000000,
+        "work": 10000000
+      },
+      "native": {
+        "architecture": "x64",
+        "build_id": "native-build:319bd4fe0498a7db67dfa129c2b5588c9a3017ab230e8c1e4b2f69947e3e2fc0",
+        "executable_sha256": "1373fa1edc30273e4f711eed4ba71e2d9f5e4717d2b64852c7bb4f7689d0c832",
+        "platform": "linux"
+      },
+      "policy": "context-native-v2",
+      "program_id": "program:e08458748756b1d965490a1bda8572814b468e7f1868a2222ff7a3faad0cc1d8",
+      "result": {
+        "kind": "return",
+        "value": [
+          "assemble-context",
+          "measure-package",
+          "project-operation",
+          "select-required"
+        ]
+      },
+      "result_sha256": "62e615aa12019dcca67a47601a5a9d91dafae167b0a37a25ab33183e69b602c8",
+      "runner": {
+        "source_id": "rust-runner:1c00967b05a557f16cc7f5cde9be3d828c61da7703077f674cda8b7b90b8f689",
+        "version": "0.1.0"
+      },
+      "runtime": {
+        "abi_version": "0.1.0",
+        "source_id": "rust-runtime:c6a4512cc4d4dbe5e18c314a0c206d9f1200c60428d371643766e6176d260e54"
+      },
+      "stage": "closure",
+      "status": "observed",
+      "usage": {
+        "allocation_units": 1845,
+        "evaluation_depth": 21,
+        "value_units": 261,
+        "work": 5705
+      }
+    },
+    {
+      "arguments_sha256": "25720925ed453251778fd5a932dfaac1a3cf4565b81ca39927fbd5d1fd843b61",
+      "compiled_artifact_id": "compiled-program:f5eaf919e8c9737def54cc9fc677361c3f10f5b6497eafa85208236216873312",
+      "compiler_version": "0.1.1",
+      "completion": "return",
+      "execution_semantics_version": "0.1.0",
+      "limits": {
+        "allocation_units": 10000000,
+        "evaluation_depth": 256,
+        "value_units": 1000000,
+        "work": 10000000
+      },
+      "native": {
+        "architecture": "x64",
+        "build_id": "native-build:91f2ab1bec82d36511b353ba856f9f7f139d786f4bab321120fe97cf4ee53ad1",
+        "executable_sha256": "c890cf2e89220f539757fdf0a4e5659f65f41580bee1b2358b2fdabc7600602d",
+        "platform": "linux"
+      },
+      "policy": "context-native-v2",
+      "program_id": "program:60733f6ce9dcfbf419c89f996fab3b814051ed6a22056953ae7436aa41dffb78",
+      "result": {
+        "kind": "return",
+        "value": {
+          "source_ids": [
+            "design:context"
+          ],
+          "state_ids": [
+            "model-digest"
+          ]
+        }
+      },
+      "result_sha256": "cfff6b27c56c6658c9e8eadab73cf7665820ec8ca20a5cb67c4d823653ec9d0d",
+      "runner": {
+        "source_id": "rust-runner:1c00967b05a557f16cc7f5cde9be3d828c61da7703077f674cda8b7b90b8f689",
+        "version": "0.1.0"
+      },
+      "runtime": {
+        "abi_version": "0.1.0",
+        "source_id": "rust-runtime:c6a4512cc4d4dbe5e18c314a0c206d9f1200c60428d371643766e6176d260e54"
+      },
+      "stage": "selection",
+      "status": "observed",
+      "usage": {
+        "allocation_units": 4316,
+        "evaluation_depth": 13,
+        "value_units": 782,
+        "work": 12962
+      }
+    }
+  ],
+  "operations": [
+    {
+      "id": "assemble-context",
+      "purpose": "Give an agent the selected operation and its required rules together. Preserve open decisions and explain deferred lookups. Return an explicit error when the required package cannot be produced."
+    },
+    {
+      "id": "measure-package",
+      "purpose": "Count UTF-8 bytes of compact JSON plus its final newline. Include the counters themselves in the calculation."
+    },
+    {
+      "id": "project-operation",
+      "purpose": "Keep the operation purpose and every conditional outcome in one record. Each implementation entry explains that function’s own responsibility."
+    },
+    {
+      "id": "select-required",
+      "purpose": "Traverse required dependency references once per operation. Keep cycles finite and leave optional relationships deferred."
+    }
+  ],
+  "context_bytes": 29489,
+  "acceptance": "accepted",
+  "record_sha256": "d7ec9b337fad841138d5a68da9e3a75b3b8af1fdec42551cf337bd50bd17afa8",
+  "evaluation_sha256": "e094191b3248675fc682218e5d171241d2c294435d8ca8733bd3f023c3619ce2",
+  "limitation": "A subsequent context-assembly and integration-review task, not a second independent agent trial or compiler self-hosting."
+}

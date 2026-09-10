@@ -101,4 +101,4 @@ For multiple records, call `createContextAssemblyEvaluator()` once and reuse the
 
 ## Native setup and replay
 
-The default CLI `conformance run` prepares this package’s native executable before creating output or starting bounded workers. Setup failure stops the run with an operational diagnostic. For an explicitly selected candidate, prepare its cache separately; the recorder does not execute candidate setup outside its deadline. Library callers can invoke `prepareContextRuntime()` before recording. `conformance replay` validates saved records and runs the independent evaluator without preparing or executing native code.
+The default CLI `conformance run` prepares both of this package’s native executables before creating output or starting bounded workers. Setup failure stops the run with an operational diagnostic. For an explicitly selected candidate, prepare its cache separately; the recorder does not execute candidate setup outside its deadline. Library callers can invoke `prepareContextRuntime()` before recording. `conformance replay` validates saved records and runs the independent evaluator without preparing or executing native code.

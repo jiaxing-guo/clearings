@@ -126,7 +126,7 @@ if (mode) {
       git: execFileSync('git', ['--version'], { encoding: 'utf8' }).trim(),
     },
     measurement:
-      'Three fresh Node processes per scope. Wall time covers inventory, schema/integrity validation, and JSON serialization; excludes process startup/imports and artifact writes. maxRSS is the Node process only, in KiB; excludes Git child memory. Filesystem caches were not flushed. This is inventory, not an M1 extraction performance result.',
+      'Three fresh Node processes per scope. Wall time covers inventory, schema/integrity validation, and JSON serialization; excludes process startup/imports and artifact writes. maxRSS is the Node process only, in KiB; excludes Git child memory. Filesystem caches were not flushed. These measurements cover inventory only; TypeScript extraction is excluded.',
     observed_counts,
     target_files_unchanged: before === after,
     scopes,

@@ -2,6 +2,8 @@ import { ClearingsError } from '../model/types.js';
 import { normalized } from '../semantics/identity.js';
 import { canonical } from '../repository/inventory.js';
 import { nativeRequiredClosure } from './native-closure.js';
+import { nativeContextSelection } from './native-selection.js';
+import { beginContextNativeExecution } from './native-observation.js';
 import {
   accountBytes,
   compactJson,
@@ -56,6 +58,7 @@ export function assembleContext(
   selection: string,
   options: { maxBytes: number },
 ): OperationContext {
+  beginContextNativeExecution();
   validateSpecification(spec);
   validateByteBudget(options.maxBytes);
   const root = resolveOperation(spec, selection);
@@ -63,30 +66,11 @@ export function assembleContext(
   const ids = nativeRequiredClosure(root.id, spec.operations);
   const included = new Set(ids);
   const operations = ids.map((id) => index.get(id)!);
-  // Complete frames preserve all modeled fields; partial frames include explicit accesses.
-  const stateIds = new Set(
-    operations.some((item) => item.frame === 'complete')
-      ? spec.states.map((item) => item.id)
-      : operations.flatMap((item) => [...item.reads, ...item.writes]),
-  );
-  const states = spec.states
-    .filter((state) => stateIds.has(state.id))
-    .sort((a, b) => (a.id < b.id ? -1 : 1));
-  const sourceIds = new Set<string>();
-  const evidence = (record: { evidence_ids: string[] }): void => {
-    record.evidence_ids.forEach((id) => sourceIds.add(id));
-  };
-  states.forEach(evidence);
-  for (const operation of operations) {
-    evidence(operation);
-    operation.guarantees.forEach(evidence);
-    operation.implementations.forEach(evidence);
-    operation.decisions.forEach(evidence);
-    for (const outcome of operation.outcomes) {
-      evidence(outcome);
-      outcome.ensures.forEach(evidence);
-    }
-  }
+  const selected = nativeContextSelection(spec, ids);
+  const stateIndex = new Map(spec.states.map((state) => [state.id, state]));
+  const sourceIndex = new Map(spec.sources.map((source) => [source.id, source]));
+  const states = selected.state_ids.map((id) => stateIndex.get(id)!);
+  const sources = selected.source_ids.map((id) => sourceIndex.get(id)!);
   const links = operations.flatMap((operation) =>
     operation.dependencies.map((dependency) => ({
       from_id: operation.id,
@@ -106,9 +90,7 @@ export function assembleContext(
     selection: { operation_id: root.id, name: root.name },
     operations,
     states,
-    sources: spec.sources
-      .filter((source) => sourceIds.has(source.id))
-      .sort((a, b) => (a.id < b.id ? -1 : 1)),
+    sources,
     links,
     omissions: {
       operation_ids: spec.operations

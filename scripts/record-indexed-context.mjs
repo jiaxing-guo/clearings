@@ -15,9 +15,12 @@ const accepted = JSON.parse(
   readFileSync('benchmarks/agent-runs/closure-scale-001/candidate-evaluation.json'),
 );
 assert.equal(accepted.acceptance, 'accepted');
+const selection = JSON.parse(readFileSync('benchmarks/results/context-selection/evaluation.json'));
+assert.equal(selection.verdict, 'accepted');
+assert.equal(native.stages[1].program_id, selection.program_id);
 assert.equal(native.program_id, accepted.program_id);
 const record = await recordContextAssembly({
-  case_id: 'indexed-closure-followup',
+  case_id: 'compiled-context-integration-review',
   fixture_name: 'Review complete-context and byte-budget behavior after IR integration',
   invocation: {
     specification: JSON.parse(source),
@@ -27,21 +30,27 @@ const record = await recordContextAssembly({
 });
 const evaluation = evaluateContextAssembly(record);
 assert.equal(evaluation.acceptance, 'accepted');
-assert.equal(record.native_execution.program_id, accepted.program_id);
+assert.equal(evaluation.native_evidence.verdict, 'accepted');
+assert.equal(record.native_stages[1].program_id, selection.program_id);
+assert.equal(
+  record.native_stages.find((stage) => stage.stage === 'closure').program_id,
+  accepted.program_id,
+);
 assert.equal(record.completion.kind, 'return');
 const context = record.completion.result.value;
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const recordBytes = JSON.stringify(record) + '\n';
 const evaluationBytes = JSON.stringify(evaluation) + '\n';
 const summary = {
-  task: 'Use the revised Clearings implementation to assemble its own context contract for integration review.',
+  task: 'Use compiled closure and state/source selection to assemble Clearings’ own context contract for integration review.',
   specification: {
     path: specificationPath,
     sha256: hash(source),
     artifact_id: context.artifact_id,
   },
   program_id: accepted.program_id,
-  native_execution: record.native_execution,
+  selection_program_id: selection.program_id,
+  native_stages: record.native_stages,
   operations: context.operations.map((operation) => ({
     id: operation.id,
     purpose: operation.purpose,

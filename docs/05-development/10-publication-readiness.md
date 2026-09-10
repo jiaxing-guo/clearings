@@ -73,7 +73,7 @@ Live repository metadata reports public visibility and Apache-2.0. An anonymous 
 
 The jobs now execute on hosted runners; the earlier workflow-start blocker no longer prevents this validation. The main branch is unprotected and the ruleset inventory is empty, as before publication. No review protections were changed during these checks. Required review and status-check protection remains an explicit repository-policy decision.
 
-The next development scope is [context selection](../02-semantics/07-context-selection.md). Package publication, public documentation hosting, and a supported-version or vulnerability-response commitment remain separate decisions. Verify a reporting route before advertising one.
+The subsequent implementation adds [compiled context selection](../02-semantics/07-context-selection.md) with independent evaluation and explicit resource compatibility. Package publication, public documentation hosting, and a supported-version or vulnerability-response commitment remain separate decisions. Verify a reporting route before advertising one.
 
 ## Repeat the review
 
