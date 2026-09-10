@@ -16,6 +16,8 @@ const generated = [
   'packages/sdk/dist',
   'bindings/node/clearings.node',
   'bindings/node/platform.json',
+  'python/clearings/src/clearings/_native.abi3.so',
+  'python/clearings/src/clearings/_native.pyd',
   'coverage',
   'compiled',
   'runtime/rust/target',

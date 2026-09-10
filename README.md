@@ -6,7 +6,7 @@ Clearings is being designed to handle batching, scoped deduplication, concurrenc
 
 ## Status
 
-The repository contains a bounded Rust scheduling core and a TypeScript SDK with a native Node binding. Read the [TypeScript guide](docs/typescript.md) for the executable slice. Python, service adapters, batching, shared quotas, CLI and MCP are **not implemented yet**. Performance benefits remain unmeasured.
+TypeScript and Python SDKs now execute finite read flows through a shared Rust scheduling core. They support dependencies, joins, bounded maps, local capacity, deadlines and cancellation. Read the [TypeScript guide](docs/typescript.md) or [Python guide](docs/python.md). Service adapters, batching, reuse, shared quotas, CLI and MCP are **not implemented yet**. Performance benefits remain unmeasured.
 
 The earlier repository analyzer, specification engine, Program IR and Rust compiler have been retired from the active tree. Their code, tests and recorded experiments remain available at a pinned historical revision. See [project history and retrieval instructions](docs/history.md).
 
@@ -41,7 +41,7 @@ Run all current checks:
 npm run check
 ```
 
-These checks cover formatting, the documentation build, types, links and static search. They do not test a service runtime. See the [development guide](docs/development.md) and [contribution guide](CONTRIBUTING.md).
+These checks cover formatting, the documentation build, types, links and static search. Runtime and installed-package checks have separate commands in the SDK guides. See the [development guide](docs/development.md) and [contribution guide](CONTRIBUTING.md).
 
 ## License
 

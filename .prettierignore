@@ -24,3 +24,8 @@ __pycache__/
 .venv/
 *.egg-info/
 bindings/node/platform.json
+
+# Python checker caches.
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

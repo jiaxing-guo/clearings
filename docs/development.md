@@ -1,6 +1,6 @@
 # Development
 
-The repository builds documentation, a host-independent Rust execution core and the [TypeScript SDK](typescript.md). Python and the CLI remain subsequent changes.
+The repository builds documentation, a host-independent Rust execution core and the [TypeScript](typescript.md) and [Python](python.md) SDKs. Service adapters, combined optimizations and CLI/MCP remain subsequent capabilities.
 
 ## Setup
 
@@ -49,7 +49,7 @@ This removes the named documentation outputs, generated content and type caches.
 
 ## Scope of future code
 
-Add SDKs, adapters, a runtime and CLI/MCP implementations with their actual callers and behavior checks. Python and runtime CI should arrive with real packages. The approved core is embedded Rust; Node and Python retain host I/O and payload ownership. See the [execution contract](execution.md). Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer.
+Extend the SDKs and core, add service adapters and implement CLI/MCP with their actual callers and behavior checks. Native and Python CI run with the current packages. The approved core is embedded Rust; Node and Python retain host I/O and payload ownership. See the [execution contract](execution.md). Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer.
 
 ## Execution core
 
@@ -62,3 +62,18 @@ node scripts/check-protocol.mjs
 ```
 
 The core tests use injected time and fake host completions. They establish scheduling and lifecycle behavior without claiming real-service performance. `contracts/protocol.schema.json` is generated from Rust types; `contracts/execution-cases.json` contains separately authored public-result expectations.
+
+## Both SDKs
+
+```sh
+npm run build:native
+npm run build:sdk
+npm run test:sdk
+uv sync --project python/clearings --frozen --group dev
+uv run --project python/clearings --frozen --group dev pytest -c python/clearings/pyproject.toml tests/python -q
+uv run --project python/clearings --frozen --group dev mypy --config-file python/clearings/pyproject.toml python/clearings/src/clearings
+python scripts/generate-python-control.py --check
+node scripts/generate-control-types.mjs --check
+```
+
+See the SDK guides for isolated artifact installation and cross-language checks. The native packages are not published. `npm run clean` removes current SDK and native outputs as well as documentation outputs; it preserves dependency environments and saved records.

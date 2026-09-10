@@ -268,7 +268,7 @@ A release should show a complete useful flow in each language, interacting mecha
 
 The earlier analyzer, specification engine, closed Program IR, Rust compiler, context assembly and evaluation corpus have been retired from the active tree. Their original code and evidence are preserved at the [historical revision](history.md).
 
-The active repository contains these requirements, documentation tooling and a bounded Rust execution core. The [TypeScript SDK](typescript.md) uses that core. Python, service adapters and CLI/MCP are not implemented. Recover earlier mechanisms only when a concrete requirement needs them; the existing compiler does not determine the new execution model.
+The active repository contains these requirements, documentation tooling and a bounded Rust execution core. Both the [TypeScript SDK](typescript.md) and [Python SDK](python.md) use that core for finite individual-call execution. Real service adapters, batching, reuse, shared quotas and CLI/MCP are not implemented. Recover earlier mechanisms only when a concrete requirement needs them; the existing compiler does not determine the new execution model.
 
 ## 12. Constraints and design risks
 

@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname, delimiter } from 'node:path';
 import assert from 'node:assert/strict';
@@ -62,19 +62,17 @@ try {
   );
   copyFileSync('tests/sdk/fixtures.mjs', join(project, 'fixtures.mjs'));
   copyFileSync('contracts/execution-cases.json', join(project, 'cases.json'));
-  const check = `import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { Runtime } from '@clearings/sdk';
-import { caseFlow } from './fixtures.mjs';
-const cases=JSON.parse(readFileSync(new URL('./cases.json',import.meta.url),'utf8')).cases;
-for(const c of cases){const runtime=new Runtime();let calls=0;const result=runtime.run(caseFlow(c.kind,()=>calls++),c.input);if(c.error)await assert.rejects(result,{code:c.error});else{assert.deepEqual(await result,c.expected);assert.equal(calls,c.calls);}await runtime.drain();assert.equal(runtime.snapshot().live_values,0);runtime.close();}
-console.log(JSON.stringify({installed_cases:cases.length,native:true}));
-`;
+  const check = readFileSync('tests/sdk/parity.mjs', 'utf8').replace(
+    '../../contracts/execution-cases.json',
+    './cases.json',
+  );
   writeFileSync(join(project, 'check.mjs'), check);
   writeFileSync(join(output, 'check.mjs'), check);
   copyFileSync('tests/sdk/fixtures.mjs', join(output, 'fixtures.mjs'));
   copyFileSync('contracts/execution-cases.json', join(output, 'cases.json'));
-  console.log(run(process.execPath, ['check.mjs'], { cwd: project, env }).trim());
+  const records = JSON.parse(run(process.execPath, ['check.mjs'], { cwd: project, env }));
+  writeFileSync(join(output, 'results.json'), JSON.stringify(records, null, 2) + '\n');
+  console.log(JSON.stringify({ installed_cases: records.length, native: true }));
 } finally {
   rmSync(project, { recursive: true, force: true });
 }
