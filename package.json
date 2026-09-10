@@ -84,7 +84,9 @@
     "native:prepare": "npm run build --silent && node scripts/prepare-context-native.mjs",
     "closure:evaluate": "npm run build --silent && node scripts/evaluate-closure-candidate-v2.mjs",
     "benchmark:context": "npm run build --silent && node scripts/profile-context-runtime.mjs",
-    "test:selection:contract": "npm run build && node --test tests/context-selection-contract.test.mjs"
+    "test:selection:contract": "npm run build && node --test tests/context-selection-contract.test.mjs",
+    "test:selection": "npm run build && node --test tests/context-selection-contract.test.mjs tests/program-selection.test.mjs tests/native/selection.test.mjs",
+    "selection:evaluate": "npm run build --silent && node scripts/evaluate-context-selection.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

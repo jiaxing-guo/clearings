@@ -15,9 +15,12 @@ on:
       - 'tests/context-selection*.test.mjs'
       - 'benchmarks/evaluation/context-selection-v1/**'
       - 'benchmarks/evaluation/context-selection-review-v1/**'
+      - 'tests/helpers/selection-native-faults.mjs'
       - 'tests/helpers/program-closure-reference.mjs'
       - 'scripts/generate-program-schema.py'
       - 'scripts/build-required-closure-program.mjs'
+      - 'scripts/build-context-selection-program.mjs'
+      - 'scripts/evaluate-context-selection.mjs'
       - 'scripts/check-markdown-docs.mjs'
       - 'docs/**'
       - 'README.md'
@@ -49,5 +52,6 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run native:prepare
       - run: npm run test:selection:contract
+      - run: node --test tests/context-selection-evaluation.test.mjs
       - run: npm run test:program
       - run: npm run docs:check:markdown
