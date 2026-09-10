@@ -1,0 +1,13 @@
+{
+  "version": "context-selection-review-v1",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "4e3cab9daa6a4d90b6d34990ab40006ddb1a2fd1f747be7d875e4c732d3dd0d1"
+    },
+    {
+      "path": "cases.json",
+      "sha256": "64cdc37324b1b443252f823adceb7c733b47178b69873a9195f3c259d1c5ed49"
+    }
+  ]
+}

@@ -1,0 +1,399 @@
+[
+  {
+    "id": "operation-evidence/0/1",
+    "args": [
+      [
+        "op"
+      ],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [],
+          "writes": [],
+          "evidence_groups": [
+            [
+              "decoy",
+              "target"
+            ]
+          ]
+        }
+      ],
+      [],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [],
+      "source_ids": [
+        "target"
+      ]
+    }
+  },
+  {
+    "id": "operation-evidence/0/4",
+    "args": [
+      [
+        "op"
+      ],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [],
+          "writes": [],
+          "evidence_groups": [
+            [
+              "decoy",
+              "decoy",
+              "decoy",
+              "decoy",
+              "target"
+            ]
+          ]
+        }
+      ],
+      [],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [],
+      "source_ids": [
+        "target"
+      ]
+    }
+  },
+  {
+    "id": "operation-evidence/6/1",
+    "args": [
+      [
+        "op"
+      ],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [],
+          "writes": [],
+          "evidence_groups": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [
+              "decoy",
+              "target"
+            ]
+          ]
+        }
+      ],
+      [],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [],
+      "source_ids": [
+        "target"
+      ]
+    }
+  },
+  {
+    "id": "operation-evidence/6/4",
+    "args": [
+      [
+        "op"
+      ],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [],
+          "writes": [],
+          "evidence_groups": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [
+              "decoy",
+              "decoy",
+              "decoy",
+              "decoy",
+              "target"
+            ]
+          ]
+        }
+      ],
+      [],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [],
+      "source_ids": [
+        "target"
+      ]
+    }
+  },
+  {
+    "id": "operation-evidence/12/1",
+    "args": [
+      [
+        "op"
+      ],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [],
+          "writes": [],
+          "evidence_groups": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [
+              "decoy",
+              "target"
+            ]
+          ]
+        }
+      ],
+      [],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [],
+      "source_ids": [
+        "target"
+      ]
+    }
+  },
+  {
+    "id": "operation-evidence/12/4",
+    "args": [
+      [
+        "op"
+      ],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [],
+          "writes": [],
+          "evidence_groups": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [
+              "decoy",
+              "decoy",
+              "decoy",
+              "decoy",
+              "target"
+            ]
+          ]
+        }
+      ],
+      [],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [],
+      "source_ids": [
+        "target"
+      ]
+    }
+  },
+  {
+    "id": "state-evidence/1",
+    "args": [
+      [
+        "op"
+      ],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [
+            "state"
+          ],
+          "writes": [],
+          "evidence_groups": []
+        }
+      ],
+      [
+        {
+          "id": "state",
+          "evidence_ids": [
+            "decoy",
+            "target"
+          ]
+        }
+      ],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [
+        "state"
+      ],
+      "source_ids": [
+        "target"
+      ]
+    }
+  },
+  {
+    "id": "state-evidence/4",
+    "args": [
+      [
+        "op"
+      ],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [
+            "state"
+          ],
+          "writes": [],
+          "evidence_groups": []
+        }
+      ],
+      [
+        {
+          "id": "state",
+          "evidence_ids": [
+            "decoy",
+            "decoy",
+            "decoy",
+            "decoy",
+            "target"
+          ]
+        }
+      ],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [
+        "state"
+      ],
+      "source_ids": [
+        "target"
+      ]
+    }
+  },
+  {
+    "id": "unselected/operation-evidence/12/4",
+    "args": [
+      [],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [],
+          "writes": [],
+          "evidence_groups": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [
+              "decoy",
+              "decoy",
+              "decoy",
+              "decoy",
+              "target"
+            ]
+          ]
+        }
+      ],
+      [],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [],
+      "source_ids": []
+    }
+  },
+  {
+    "id": "unselected/state-evidence/4",
+    "args": [
+      [],
+      [
+        {
+          "id": "op",
+          "complete_frame": false,
+          "reads": [
+            "state"
+          ],
+          "writes": [],
+          "evidence_groups": []
+        }
+      ],
+      [
+        {
+          "id": "state",
+          "evidence_ids": [
+            "decoy",
+            "decoy",
+            "decoy",
+            "decoy",
+            "target"
+          ]
+        }
+      ],
+      [
+        "target"
+      ]
+    ],
+    "expected": {
+      "state_ids": [],
+      "source_ids": []
+    }
+  }
+]

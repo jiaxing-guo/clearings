@@ -1,0 +1,25 @@
+{
+  "version": "context-selection-v1",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "fe434b554380478c1f5806175f5e08a38f215d6d9788b11c007cc9cf26fbda6c"
+    },
+    {
+      "path": "contract.json",
+      "sha256": "3ef7a9911d1dc4316d47e9107ed3c038a08289ca1ee4acdd7610375c50465986"
+    },
+    {
+      "path": "oracle.mjs",
+      "sha256": "d9e9aad3e6448102e8f833d4be92a86d364b87434798dc9310bd8096a6f43aa7"
+    },
+    {
+      "path": "cases.mjs",
+      "sha256": "3370902aebdaee1a7d952faeb93a5428a35861240aaec114d491ecf1c1bacc6b"
+    },
+    {
+      "path": "controls.mjs",
+      "sha256": "54741ad41f7571ad87706f7eec4f8e98afea58a1e1f85885b25b4b4ccb406048"
+    }
+  ]
+}

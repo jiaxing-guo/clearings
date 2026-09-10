@@ -23,6 +23,6 @@ Record retained unknowns and distinguish scoped acceptance from the broader cont
 
 ## Subsequent boundary
 
-Program IR, a reference interpreter, compiler backends, general agent procedures, and staged compiler bootstrapping follow this milestone. The conformance infrastructure should provide an independent evaluation boundary for those implementation changes.
+Program IR, a reference interpreter, compiler backends, general agent procedures, and staged compiler bootstrapping follow this implementation scope. The conformance infrastructure should provide an independent evaluation boundary for those implementation changes.
 
 See [executable conformance](../02-semantics/04-executable-conformance.md), [artifact interfaces](../03-reference/05-conformance-artifacts.md), and [current project status](01-status-and-roadmap.md).
