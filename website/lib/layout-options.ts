@@ -3,10 +3,10 @@ export function getLayoutOptions(): BaseLayoutProps {
   return {
     nav: { title: 'Clearings' },
     links: [
-      { text: 'Learn', url: '/docs/technical/learn/first-contract' },
-      { text: 'Guides', url: '/docs/technical/guides/check-a-case' },
-      { text: 'Reference', url: '/docs/technical' },
-      { text: 'Architecture', url: '/docs/technical/architecture/system' },
+      { text: 'Overview', url: '/docs' },
+      { text: 'Product', url: '/docs/product' },
+      { text: 'Development', url: '/docs/development' },
+      { text: 'History', url: '/docs/history' },
     ],
     githubUrl: 'https://github.com/jiaxing-guo/clearings',
   };

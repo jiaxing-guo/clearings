@@ -1,2 +1,0 @@
-# Preserve intentional CRLF bytes used to verify UTF-8 evidence offsets.
-tests/fixtures/unicode/index.ts -text whitespace=cr-at-eol

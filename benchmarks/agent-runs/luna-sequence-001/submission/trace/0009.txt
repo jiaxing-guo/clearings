@@ -1,5 +1,0 @@
-
-> clearings-semantic@0.0.1 build
-> tsc
-
-npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.

@@ -1,14 +1,10 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { checkOperation } from '../dist/index.js';
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
 import { parse } from '../website/node_modules/parse5/dist/index.js';
-import { checkReviewArchive } from './review-archive.mjs';
 import { staticClient } from '../website/node_modules/fumadocs-core/dist/search/client/orama-static.js';
 const root = resolve('website/out');
-checkReviewArchive(join(root, 'demo'));
-checkReviewArchive(join(root, 'demo/bootstrap'), 'clearings-specification-review.zip');
 const files = [];
 function walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -56,13 +52,10 @@ function tree(file) {
 }
 function target(url, file, requirePrefix = true) {
   const current = '/' + relative(root, file).replaceAll('\\', '/');
-  const full = new URL(
-    url,
-    'https://local.invalid' + (file.includes('/demo/') ? '' : base) + current,
-  );
+  const full = new URL(url, 'https://local.invalid' + base + current);
   if (full.origin !== 'https://local.invalid') return null;
   let path = decodeURIComponent(full.pathname);
-  if (!file.includes('/demo/') && requirePrefix) {
+  if (requirePrefix) {
     assert(path === base || path.startsWith(base + '/'), `Missing base path ${url} in ${file}`);
     path = path.slice(base.length) || '/';
   } else if (base && path.startsWith(base + '/')) path = path.slice(base.length);
@@ -99,18 +92,13 @@ for (const file of files.filter((f) => f.endsWith('.html'))) {
     links++;
   }
 }
-const reference = JSON.parse(readFileSync(join(root, 'technical-reference.json'), 'utf8'));
+const reference = JSON.parse(readFileSync(join(root, 'reference.json'), 'utf8'));
 const expectedSources = [
   'docs/README.md',
   ...readdirSync('docs')
-    .filter((name) => /^\d+-/.test(name))
+    .filter((name) => name.endsWith('.md') && name !== 'README.md')
     .sort()
-    .flatMap((section) =>
-      readdirSync(join('docs', section))
-        .filter((name) => /^\d+-.*\.md$/.test(name))
-        .sort()
-        .map((name) => `docs/${section}/${name}`),
-    ),
+    .map((name) => `docs/${name}`),
 ];
 assert.deepEqual(
   reference.pages.map((page) => page.source),
@@ -136,33 +124,34 @@ for (const page of reference.pages) {
   visit(document);
   assert.deepEqual(headings, [page.title], `Missing or duplicate page title: ${page.url}`);
 }
-const explorer = JSON.parse(readFileSync(join(root, 'operation-explorer.json'), 'utf8'));
-const specificationBytes = readFileSync(explorer.source, 'utf8');
-const specification = JSON.parse(specificationBytes);
-assert.equal(explorer.source_sha256, createHash('sha256').update(specificationBytes).digest('hex'));
-assert.equal(explorer.artifact_id, specification.artifact_id);
-assert.deepEqual(
-  explorer.operation,
-  specification.operations.find((operation) => operation.id === 'response-selection'),
+const historicalRoutes = JSON.parse(readFileSync('website/lib/historical-routes.json', 'utf8'));
+const historicalRevision = readFileSync('website/lib/history.ts', 'utf8').match(
+  /historicalRevision = '([a-f0-9]{40})'/,
+)?.[1];
+assert(
+  historicalRevision && readFileSync('docs/history.md', 'utf8').includes(historicalRevision),
+  'Historical revision must agree with the retrieval guide.',
 );
-assert.deepEqual(
-  explorer.cases.map((example) => example.expected),
-  ['pass', 'fail', 'unknown'],
-);
-for (const example of explorer.cases) {
-  const result = checkOperation(specification, explorer.operation.id, example.observation);
-  assert.deepEqual(example.result, result, `Stale operation explorer result: ${example.id}`);
-  assert.equal(result.verdict, example.expected);
+for (const [url, source] of Object.entries(historicalRoutes)) {
+  const file = target(base + url, join(root, 'index.html'));
+  assert(
+    tree(file).links.includes(
+      `https://github.com/jiaxing-guo/clearings/blob/${historicalRevision}/${source}`,
+    ),
+    `Historical page has no original source link: ${url}`,
+  );
+  assert(
+    readFileSync(file, 'utf8').includes('Historical documentation'),
+    `Historical page is not labeled: ${url}`,
+  );
 }
-const operationPage = join(root, 'docs/technical/semantics/operations/index.html');
-assert(tree(operationPage).ids.has('explorer-title'), 'Operation explorer was not rendered.');
 const navigation = tree(join(root, 'docs/index.html')).links.map((link) => link.replace(/\/$/, ''));
 for (const page of reference.pages)
   assert(
     navigation.includes(base + page.url),
     `Reference page is missing from navigation: ${page.url}`,
   );
-const queries = ['finalized', 'context', 'source', 'refinement', 'opaque', 'frame'];
+const queries = ['batching', 'adapters', 'TypeScript', 'Python', 'quota'];
 const searchFile = join(root, 'search-index.json');
 assert(existsSync(searchFile), 'Static search index missing.');
 const originalFetch = globalThis.fetch;
@@ -178,30 +167,26 @@ try {
     const results = await client.search(query);
     assert(results.length > 0, `Search has no results for ${query}`);
     for (const item of results) target(item.url, join(root, 'index.html'), false);
-    if (['refinement', 'opaque', 'frame'].includes(query))
+    for (const item of results) {
+      const path = new URL(item.url, 'https://local.invalid').pathname.replace(/\/$/, '');
       assert(
-        results.some((item) => item.url.includes('/docs/technical/')),
-        `Technical reference missing from search: ${query}`,
+        !Object.hasOwn(historicalRoutes, path),
+        `Historical redirect polluted current search: ${path}`,
       );
+    }
   }
 } finally {
   globalThis.fetch = originalFetch;
 }
-const model = JSON.parse(readFileSync(join(root, 'demo/semantic.json')));
-assert.equal(
-  model.artifact_id,
-  JSON.parse(readFileSync('benchmarks/results/hono-contracts/semantic.json')).artifact_id,
-);
 assert(!files.some((f) => f.endsWith('.php') || f.endsWith('.node')));
 console.log(
   JSON.stringify({
     static_html_pages: files.filter((f) => f.endsWith('.html')).length,
     links_checked: links,
     base_path: base,
-    technical_reference_pages: reference.pages.length,
-    operation_explorer_cases: explorer.cases.length,
+    reference_pages: reference.pages.length,
+    historical_routes: Object.keys(historicalRoutes).length,
     static_search_queries: queries.length,
-    demo_artifact: model.artifact_id,
     external_html_asset_references: 0,
     asset_check_scope:
       'HTML src and stylesheet/preload/modulepreload href; CSS and JavaScript references are not inspected',

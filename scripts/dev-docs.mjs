@@ -4,18 +4,17 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const website = fileURLToPath(new URL('../website/', import.meta.url));
 const run = (script) => execFileSync(process.execPath, [script], { cwd: root, stdio: 'inherit' });
-run('node_modules/typescript/bin/tsc');
 run('scripts/prepare-docs.mjs');
 let timer;
 const watcher = watch(
   new URL('../docs/', import.meta.url),
   { recursive: true },
   (_event, filename) => {
-    if (filename && filename !== 'README.md' && !/^\d+-/.test(filename)) return;
+    if (filename && !filename.endsWith('.md')) return;
     clearTimeout(timer);
     timer = setTimeout(() => {
       try {
-        run('scripts/prepare-technical-docs.mjs');
+        run('scripts/prepare-docs.mjs');
       } catch {
         console.error('Documentation generation failed. Correct the Markdown and save again.');
       }

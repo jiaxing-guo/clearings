@@ -2,99 +2,22 @@
   "name": "clearings",
   "version": "0.0.1",
   "private": true,
-  "description": "A compiler and execution runtime for agentic coding",
+  "description": "Product requirements and documentation for the Clearings backend execution runtime",
   "type": "module",
   "engines": {
     "node": ">=24 <25"
   },
   "packageManager": "npm@11.9.0",
-  "bin": {
-    "clearings": "dist/cli/main.js"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./conformance": {
-      "types": "./dist/conformance/index.d.ts",
-      "import": "./dist/conformance/index.js"
-    },
-    "./schemas/inventory": "./schemas/inventory.v0.1.json",
-    "./schemas/scan": "./schemas/scan.v0.1.json",
-    "./schemas/semantic": "./schemas/semantic.v0.1.json",
-    "./schemas/presentation": "./schemas/presentation.v0.1.json",
-    "./schemas/contracts": "./schemas/semantic.v0.2.json",
-    "./schemas/contract-presentation": "./schemas/presentation.v0.2.json",
-    "./schemas/specification": "./schemas/specification.v0.3.json",
-    "./schemas/conformance-profile": "./schemas/conformance-profile.v0.1.json",
-    "./schemas/execution-record": "./schemas/execution-record.v0.1.json",
-    "./program": {
-      "types": "./dist/program/index.d.ts",
-      "import": "./dist/program/index.js"
-    },
-    "./compiler": {
-      "types": "./dist/compiler/index.d.ts",
-      "import": "./dist/compiler/index.js"
-    },
-    "./schemas/program": "./schemas/program.v0.1.json",
-    "./schemas/execution-record-v2": "./schemas/execution-record.v0.2.json",
-    "./schemas/execution-record-v3": "./schemas/execution-record.v0.3.json"
-  },
-  "files": [
-    "dist",
-    "schemas",
-    "specifications/clearings/conformance/profile.json",
-    "specifications/clearings/conformance/specification.json",
-    "specifications/clearings/conformance/suite.json",
-    "programs/examples/*.json",
-    "programs/clearings/*.json",
-    "runtime/rust/Cargo.toml",
-    "runtime/rust/Cargo.lock",
-    "runtime/rust/rust-toolchain.toml",
-    "runtime/rust/src/*.rs",
-    "README.md",
-    "runtime/rust/runner/*.rs",
-    "THIRD_PARTY_NOTICES.md"
-  ],
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "test": "npm run build && node scripts/prepare-context-native.mjs && node --test tests/*.test.mjs",
-    "conformance": "npm run build --silent && node dist/cli/main.js conformance",
-    "test:conformance": "npm run build && node scripts/prepare-context-native.mjs --quiet && node --test tests/conformance.test.mjs tests/context-recording.test.mjs tests/context-native-stages.test.mjs tests/context-evaluation.test.mjs tests/conformance-cli.test.mjs && node scripts/check-context-conformance.mjs",
-    "test:conformance:smoke": "npm run build && node scripts/prepare-context-native.mjs --quiet && node scripts/check-context-conformance.mjs --smoke",
-    "benchmark:fetch": "node dist/cli/main.js benchmark-fetch --target benchmarks/targets/hono.json --out benchmark-checkouts/hono.git",
-    "demo:build": "npm run build && node scripts/build-shared-demo.mjs",
     "docs:dev": "node scripts/dev-docs.mjs",
-    "docs:build": "npm run build && node scripts/prepare-docs.mjs && npm --prefix website run build",
+    "docs:build": "npm --prefix website run build",
     "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs",
-    "bootstrap:demo": "npm run build && node scripts/build-bootstrap-demo.mjs",
-    "docs:check:rust": "npm run build && node scripts/check-markdown-docs.mjs --rust",
-    "docs:check:markdown": "npm run build && node scripts/check-markdown-docs.mjs",
-    "test:program": "npm run build && node --test tests/program*.test.mjs",
-    "test:rust": "cd runtime/rust && cargo test --locked --offline",
-    "format:rust": "cd runtime/rust && cargo fmt && rustfmt --edition 2021 ../../tests/native/support.rs && rustfmt --edition 2021 --config skip_children=true runner/*.rs",
-    "check:rust": "cd runtime/rust && cargo fmt -- --check && cargo clippy --locked --offline --all-targets -- -D warnings && rustfmt --edition 2021 --check ../../tests/native/support.rs && rustfmt --edition 2021 --config skip_children=true --check runner/*.rs",
-    "program": "npm run build --silent && node dist/cli/main.js program",
+    "check": "npm run format:check && npm run docs:build && npm run docs:check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "clean": "node scripts/clean.mjs",
-    "test:compiler": "npm run build && node --test --test-concurrency=1 tests/compiler-conformance.test.mjs tests/compiler-runner.test.mjs tests/program-compiled-artifacts.test.mjs tests/program-rust-codegen.test.mjs tests/native/*.test.mjs tests/compiled/*.test.mjs",
-    "benchmark:rust": "npm run build --silent && node scripts/measure-rust-closure.mjs",
-    "native:prepare": "npm run build --silent && node scripts/prepare-context-native.mjs",
-    "closure:evaluate": "npm run build --silent && node scripts/evaluate-closure-candidate-v2.mjs",
-    "benchmark:context": "npm run build --silent && node scripts/profile-context-runtime.mjs",
-    "test:selection:contract": "npm run build && node --test tests/context-selection-contract.test.mjs",
-    "test:selection": "npm run build && node --test tests/context-selection-contract.test.mjs tests/program-selection.test.mjs tests/native/selection.test.mjs",
-    "selection:evaluate": "npm run build --silent && node scripts/evaluate-context-selection.mjs"
-  },
-  "dependencies": {
-    "ajv": "8.20.0",
-    "typescript": "5.9.3"
+    "clean": "node scripts/clean.mjs"
   },
   "devDependencies": {
-    "@types/node": "24.13.3",
     "prettier": "3.9.6"
   },
   "license": "Apache-2.0"

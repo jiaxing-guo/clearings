@@ -3,7 +3,14 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 // Removed routes must not survive in either Next.js or Fumadocs macro output.
-for (const name of ['.next', '.source', 'out'])
+for (const name of [
+  '.next',
+  '.source',
+  'out',
+  'public/demo',
+  'public/technical-reference.json',
+  'public/operation-explorer.json',
+])
   rmSync(new URL(`../${name}`, import.meta.url), { recursive: true, force: true });
 const run = spawnSync(
   process.execPath,

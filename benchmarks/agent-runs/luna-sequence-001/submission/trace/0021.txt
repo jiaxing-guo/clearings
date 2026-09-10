@@ -1,7 +1,0 @@
-src/specification/check.ts
-src/specification/context.ts
-src/specification/expressions.ts
-src/specification/model.ts
-src/specification/render.ts
-src/specification/sequence.ts
-src/specification/validate.ts

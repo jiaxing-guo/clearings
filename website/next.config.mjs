@@ -8,6 +8,8 @@ export default function configure(phase) {
   if (basePath && !/^\/[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*$/.test(basePath))
     throw new Error('DOCS_BASE_PATH must be empty or a path without a trailing slash.');
   return withMDX({
+    // Contributor instructions are maintained in the repository-root AGENTS.md.
+    agentRules: false,
     output: 'export',
     trailingSlash: true,
     basePath,
