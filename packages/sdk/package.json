@@ -1,0 +1,25 @@
+{
+  "name": "@clearings/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "dependencies": {
+    "@clearings/native": "0.1.0"
+  },
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
+}

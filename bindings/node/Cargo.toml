@@ -1,0 +1,21 @@
+[package]
+name = "clearings-node"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+test = false
+doctest = false
+
+[dependencies]
+clearings-core = { path = "../../crates/core" }
+napi = { version = "3.12.2", default-features = false, features = ["napi8"] }
+napi-derive = "3.5.5"
+serde_json.workspace = true
+
+[build-dependencies]
+napi-build = "2.3.1"

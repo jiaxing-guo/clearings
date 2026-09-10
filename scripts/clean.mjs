@@ -13,6 +13,9 @@ const generated = [
   // Earlier generated outputs can remain when switching an existing checkout.
   'dist',
   'target',
+  'packages/sdk/dist',
+  'bindings/node/clearings.node',
+  'bindings/node/platform.json',
   'coverage',
   'compiled',
   'runtime/rust/target',

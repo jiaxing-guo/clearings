@@ -1,6 +1,6 @@
 # Development
 
-The repository builds documentation and a host-independent Rust execution core. Native SDK packages and the CLI are not implemented in this change.
+The repository builds documentation, a host-independent Rust execution core and the [TypeScript SDK](typescript.md). Python and the CLI remain subsequent changes.
 
 ## Setup
 

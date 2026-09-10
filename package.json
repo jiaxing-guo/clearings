@@ -15,10 +15,23 @@
     "check": "npm run format:check && npm run docs:build && npm run docs:check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "clean": "node scripts/clean.mjs"
+    "clean": "node scripts/clean.mjs",
+    "build:native": "node scripts/build-node.mjs",
+    "build:sdk": "npm run build --workspace @clearings/sdk",
+    "test:sdk": "node --test tests/sdk/*.test.mjs",
+    "protocol:types": "node scripts/generate-control-types.mjs",
+    "check:node-package": "node scripts/check-node-package.mjs",
+    "test:runtime": "cargo test --workspace --locked && npm run build:sdk && npm run test:sdk"
   },
   "devDependencies": {
-    "prettier": "3.9.6"
+    "@types/node": "24.13.4",
+    "json-schema-to-typescript": "16.0.0",
+    "prettier": "3.9.6",
+    "typescript": "7.0.2"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "workspaces": [
+    "bindings/node",
+    "packages/sdk"
+  ]
 }

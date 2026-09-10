@@ -1,0 +1,17 @@
+{
+  "name": "@clearings/native",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.cjs",
+  "types": "index.d.ts",
+  "files": [
+    "index.cjs",
+    "index.d.ts",
+    "clearings.node",
+    "platform.json"
+  ],
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "license": "Apache-2.0"
+}

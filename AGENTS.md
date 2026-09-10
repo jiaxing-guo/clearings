@@ -4,7 +4,7 @@ Read `README.md`, `docs/product.md`, `docs/development.md` and `docs/history.md`
 
 - Product goal: make straightforward backend code run efficiently as workloads grow. The approved direction includes TypeScript and Python SDKs, service adapters, a managed runtime, CLI and MCP.
 - The interface separates application logic, operation capabilities and execution policies. Templates are optional presets. The approved architecture uses an embedded Rust scheduling core, napi-rs Node bindings and PyO3 Python bindings; host languages own I/O and values. Follow docs/execution.md for the execution contract.
-- The repository contains the execution contract, documentation tooling and a bounded Rust scheduling core. Do not describe planned runtime behavior or illustrative API examples as implemented or measured.
+- The repository contains the execution contract, documentation tooling and a bounded Rust scheduling core and the TypeScript SDK. Do not describe planned runtime behavior or illustrative API examples as implemented or measured.
 - Keep each new component tied to a concrete requirement and caller. Recover old implementation from the historical revision only when it serves that requirement. Do not recreate an active legacy archive or add speculative shared packages.
 - Preserve dependencies, authorization scopes, result mapping and effect semantics when implementing optimizations. Batching, reuse, retries and cancellation require explicit adapter semantics. State the scope of quota enforcement.
 - Keep `docs/` as the authored reference and Fumadocs as its site. Generated content under `website/content/docs/` must not be edited or committed.
