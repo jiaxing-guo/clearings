@@ -1,1 +1,0 @@
-Error: ENOENT: no such file or directory, lstat '/workspace/scratch/06f15dda6fa2/clearings-luna-sequence-coding/tests/specification.test.mjs'

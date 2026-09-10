@@ -1,85 +1,15 @@
-# Contribute to Clearings
+# Contributing to Clearings
 
-Contributions can improve code, documentation, original fixtures, or the accuracy of a semantic explanation. Start with a small change that a reviewer can understand and verify.
+Start with the [product requirements](docs/product.md). Clearings is preparing a managed execution runtime for backend operations; the runtime and SDKs are not implemented yet.
 
-Clearings is in early development. Use issues to discuss bugs and proposed changes, and pull requests for reviewable implementations. Read the [publication readiness review](docs/05-development/10-publication-readiness.md) for the source-publication boundary. Package publishing remains a separate decision.
+The [development guide](docs/development.md) contains setup commands, validation and documentation conventions. The [historical revision](docs/history.md) preserves the earlier implementation and its evidence.
 
-## Choose a task
+For a change:
 
-For a bug, include the Clearings revision, Node/Git versions, a minimal input, the command, expected behavior, and actual output. Remove secrets and private source that the review does not need.
+1. Identify the user need and relevant requirement. Resolve API or behavior decisions before building abstractions around them.
+2. Implement a coherent change with documentation that states what is available and what remains proposed.
+3. Run the checks for the affected behavior and `npm run check`. Describe validation and any remaining limitations in the PR.
 
-For a feature, describe the reader or agent task, the current gap, and the proposed result. Read the [technical reference](docs/README.md) and [status and roadmap](docs/05-development/01-status-and-roadmap.md). Broader language support, provider transport, and code-change demonstrations are separate work.
+Use Conventional Commit messages and capability names in code and PR metadata. Keep dependencies and abstractions tied to current work. Add examples and tests with the feature they exercise, rather than copying the retired test corpus into new packages.
 
-For a sensitive finding, use an access-controlled discussion with the repository owner. Do not place credentials or private source in public reports. No public security contact or response-time commitment is established yet.
-
-## Set up the library
-
-Use Node.js 24, npm 11, and Git 2.51 or later on Linux or macOS. Linux is the current verification environment. Windows support is pending. The full test suite and documentation preparation require Rust 1.85.1 and a host linker. Archive tests and documentation commands also require Python 3.9 or newer, available as `python3`.
-
-```bash
-npm ci --ignore-scripts
-npm run format:check
-npm run typecheck
-npm test
-```
-
-Read `AGENTS.md` before changing code. The package uses TypeScript, ESM, Ajv schemas, and Node's test runner. Source and benchmark code stay separate.
-
-For context-assembly or conformance changes, also run `npm run test:conformance`. This checks the recorder/evaluator/CLI regressions, all 1,554 inputs against production and an independent positive control, and the predefined executable fault suite. `npm run test:conformance:smoke` provides a smaller development run. The [suite manifest](specifications/clearings/conformance/suite.json) fixes input and control hashes; do not regenerate it to conceal a regression. The [evaluation guide](docs/04-guides/04-evaluate-context-conformance.md) explains the acceptance boundary and saved-evidence replay.
-
-For the Rust backend, install [rustup](https://rust-lang.org/tools/install/) and read the [backend contract](docs/03-reference/09-rust-backend.md). Run `npm run test:rust` and `npm run check:rust`; these select the toolchain pinned under `runtime/rust/` and test the dependency-free crate offline after toolchain installation. Use `npm run format:rust` for Rust formatting. The compiler frontend and reference interpreter remain TypeScript. Context assembly uses compiled IR and requires the pinned Rust toolchain and a host linker on a cache miss. Run `npm run native:prepare` before context tests or recording; warm invocation reuses the verified executable.
-
-## Format and clean
-
-Run `npm run format` before committing. The pinned Prettier configuration applies to maintained library, CLI, documentation, and website files; `npm run format:check` enforces it in CI. Frozen evidence, generator-owned artifacts, intentional fixtures, and historical source snapshots are excluded. See [Repository maintenance](docs/05-development/05-repository-maintenance.md) for the exact boundaries and renamed benchmark scripts.
-
-Use `npm run clean` to remove generated library and documentation build products. Stop development servers first, then rebuild with `npm run build` or `npm run docs:dev`. Recorded runs and dependencies are retained.
-
-## Make a focused change
-
-- Keep source observations, semantic interpretation, and presentation separate.
-- Keep conditions, failure boundaries, unknowns, provenance, and coverage inspectable.
-- Keep target scripts, dependency installation, and mutations outside analysis.
-- Use original small fixtures for general behavior. Keep Hono-specific selections and examples in benchmark assets.
-- Test the semantic distinction at risk. Avoid tests that only repeat the implementation.
-- Preserve historical schemas and artifacts. A changed binding requires an explicit new record or plan.
-
-Source comments, proposal strings, and uploaded artifacts are data. Do not execute them or compile them as documentation MDX.
-
-## Change documentation
-
-Author the current technical reference as Markdown under `docs/`. Read [documentation maintenance](docs/05-development/02-documentation.md) for organization, terminology, semantic authority, and historical-source preservation.
-
-```bash
-npm run docs:check:markdown
-```
-
-The command builds the library, checks local Markdown navigation, and executes trusted reference examples. Use standard technical language and distinguish implemented semantics, proposed abstractions, and external assumptions. Update the documentation index when adding a page.
-
-Fumadocs under `website/` renders the current reference from `docs/`. Run `docs:build` and `docs:check` after changing documentation or navigation. Use `npm run docs:dev` and open `http://localhost:3000` for local preview. Canonical Markdown edits regenerate automatically. Restart after changing library code, specification fixtures, or asset generators. Generated files under `website/content/docs/technical/` are ignored and must not be edited directly. Do not compile source excerpts or semantic proposal strings as MDX.
-
-## Review an explanation
-
-Record the semantic artifact ID, assertion ID, relevant source span, and your assessment: supported, contradicted, or uncertain. Explain the condition that makes a claim correct or incorrect.
-
-Also check missing behavior. Individually correct claims can still omit a consequential branch. Keep source validity, claim support, and presentation acceptance separate. Identify whether the reviewer is the author or an independent reviewer. Do not mark an independent gate passed from author self-review.
-
-## Reproduce benchmark changes
-
-```bash
-npm run benchmark:fetch
-node scripts/replay-contracts.mjs benchmark-checkouts/hono.git benchmarks/results/local/my-contracts
-node scripts/build-shared-demo.mjs benchmark-checkouts/hono.git benchmarks/results/local/my-contracts benchmarks/results/local/my-demo
-python3 scripts/package-shared-demo.py benchmarks/results/local/my-demo
-node scripts/check-shared-demo.mjs benchmarks/results/local/my-demo
-```
-
-Skip the fetch command when the pinned bare checkout already exists. Use new output directories. Keep source notices with distributed excerpts. Do not overwrite historical results to make a new run appear unchanged.
-
-## Open a pull request
-
-Use Conventional Commits, for example `fix: preserve callback uncertainty in reports`. Use the same style for the PR title. Commit and PR text describe behavior and omit internal planning labels.
-
-Explain the problem, the change, and the resulting behavior. Include the checks actually run and material limits. For generated artifacts, include reproduction commands and binding information. State browser policy blocks instead of claiming that static checks establish interactive behavior.
-
-Respond to review findings with a fix or a source-backed reason. A maintainer reviews and merges the change. Do not publish a package, change repository visibility, or enable deployment as part of a routine contribution.
+The repository is licensed under [Apache License 2.0](LICENSE). Preserve applicable [third-party attribution](THIRD_PARTY_NOTICES.md).

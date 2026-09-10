@@ -1,43 +1,62 @@
-import OperationExplorer from '@/components/operation-explorer';
+import Link from 'next/link';
 import { source } from '@/lib/source';
+import { historicalRoutes, historicalSource } from '@/lib/history';
 import { notFound } from 'next/navigation';
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from 'fumadocs-ui/page';
 import { getMDXComponents } from '@/mdx-components';
+const route = (slug?: string[]) => '/docs' + (slug?.length ? '/' + slug.join('/') : '');
 export default async function Page(props: { params: Promise<{ slug?: string[] }> }) {
   const params = await props.params;
   const page = source.getPage(params.slug);
-  if (!page) notFound();
+  if (!page) {
+    const original = historicalRoutes[route(params.slug)];
+    if (!original) notFound();
+    return (
+      <DocsPage toc={[]}>
+        <DocsTitle>Historical documentation</DocsTitle>
+        <DocsBody>
+          <p>
+            This page described the earlier Clearings analyzer, specification engine or compiler.
+            That implementation has been retired from the active repository.
+          </p>
+          <p>
+            <a href={historicalSource(original)}>
+              Read the original page at its preserved revision
+            </a>
+            .
+          </p>
+          <p>
+            See <Link href="/docs/history">project history</Link> for retrieval instructions, or the{' '}
+            <Link href="/docs">current documentation</Link> for the planned backend runtime.
+          </p>
+        </DocsBody>
+      </DocsPage>
+    );
+  }
   const Content = page.data.body;
-  const category = params.slug?.[0] === 'technical' ? params.slug[1] : undefined;
-  const kinds: Record<string, string> = {
-    learn: 'Learn Clearings',
-    guides: 'Practical guide',
-    semantics: 'Semantics reference',
-    reference: 'Interface reference',
-    architecture: 'Architecture',
-    development: 'Development',
-  };
-  const kind = category ? kinds[category] : undefined;
-  const explorer = page.url === '/docs/technical/semantics/operations';
-  const toc = explorer
-    ? [{ title: 'Inspect an operation check', url: '#explorer-title', depth: 2 }, ...page.data.toc]
-    : page.data.toc;
   return (
-    <DocsPage toc={toc} full={page.data.full}>
-      {kind && <p className="eyebrow">{kind}</p>}
+    <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
-        {explorer && <OperationExplorer />}
         <Content components={getMDXComponents()} />
       </DocsBody>
     </DocsPage>
   );
 }
 export function generateStaticParams() {
-  return source.generateParams();
+  const current = new Set(source.getPages().map((page) => page.url));
+  return [
+    ...source.generateParams(),
+    ...Object.keys(historicalRoutes)
+      .filter((url) => !current.has(url))
+      .map((url) => ({ slug: url.slice('/docs/'.length).split('/') })),
+  ];
 }
 export async function generateMetadata(props: { params: Promise<{ slug?: string[] }> }) {
-  const page = source.getPage((await props.params).slug);
-  return { title: page?.data.title, description: page?.data.description };
+  const params = await props.params;
+  const page = source.getPage(params.slug);
+  return page
+    ? { title: page.data.title, description: page.data.description }
+    : { title: 'Historical documentation', robots: { index: false, follow: true } };
 }

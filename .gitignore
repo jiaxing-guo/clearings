@@ -1,25 +1,19 @@
 node_modules/
-dist/
-coverage/
-/compiled/
-*.tsbuildinfo
 .DS_Store
 .env
 .env.*
 !.env.example
-.clearings/cache/
-runs/
-benchmark-checkouts/
-benchmarks/results/local/
-runtime/rust/target/
 
-# Local documentation build
+# Generated documentation and local build output.
 website/.next/
 website/out/
 website/.source/
 website/next-env.d.ts
 website/*.tsbuildinfo
-website/public/demo/
-website/content/docs/technical/
-website/public/technical-reference.json
-website/public/operation-explorer.json
+website/content/docs/
+website/public/reference.json
+
+# User-owned records and checkouts from historical versions.
+.clearings/
+runs/
+benchmark-checkouts/

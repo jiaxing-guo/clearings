@@ -4,7 +4,7 @@ Clearings source is licensed under Apache License 2.0, except material carrying 
 
 ## Hono
 
-The repository contains Hono source excerpts in benchmark inputs, authored proposals, specifications, frozen experiments, and generated reports and review archives. These excerpts come from [Hono](https://github.com/honojs/hono) and remain available under its MIT license. Existing `LICENSE` and `LICENSE-HONO` copies in those directories and archives must be retained when redistributing the material.
+Historical revisions contain Hono source excerpts in benchmark inputs, authored proposals, specifications, frozen experiments, and generated reports and review archives. The active tree no longer includes those materials; see [project history](docs/history.md) to retrieve them. These excerpts come from [Hono](https://github.com/honojs/hono) and remain available under its MIT license. Existing `LICENSE` and `LICENSE-HONO` copies in those directories and archives must be retained when redistributing the material.
 
 MIT License
 

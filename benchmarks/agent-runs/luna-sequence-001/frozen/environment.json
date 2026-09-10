@@ -1,6 +1,0 @@
-{
-  "node": "v24.19.0",
-  "npm": "11.9.0",
-  "platform": "linux",
-  "dependency_installation": "existing locked dependencies; none installed during coding"
-}
