@@ -7,7 +7,11 @@ const paths = [
     'SDKs, adapters, execution policies and the proposed first workload.',
     '/docs/product',
   ],
-  ['Development', 'Set up the documentation site and run the current checks.', '/docs/development'],
+  [
+    'Development',
+    'Build the available SDKs and run execution and documentation checks.',
+    '/docs/development',
+  ],
   ['Current status', 'What this repository contains and what remains to be built.', '/docs'],
   [
     'Project history',
@@ -22,9 +26,9 @@ export default function Home() {
         <p className="eyebrow">Clearings · In development</p>
         <h1>Straightforward backend logic. Efficient execution as workloads grow.</h1>
         <p>
-          We are designing TypeScript and Python SDKs that let engineers and coding agents describe
-          application operations while Clearings handles batching, scoped reuse, concurrency and
-          service limits.
+          Clearings provides an execution boundary for backend read flows. Application logic
+          describes operations and dependencies; the runtime manages scheduling, local capacity,
+          cancellation and deadlines.
         </p>
         <div className="reading-paths">
           {paths.map(([title, description, href]) => (
@@ -38,9 +42,9 @@ export default function Home() {
           ))}
         </div>
         <p className="home-note">
-          This repository currently contains requirements and documentation infrastructure. The
-          managed runtime, SDKs, adapters, CLI and MCP are not implemented yet. Performance benefits
-          remain to be demonstrated.
+          The native core and SDKs are in development. See the current documentation for package
+          availability and setup. Real service adapters, batching, reuse, shared quotas, CLI and MCP
+          remain subsequent work. Performance benefits remain to be demonstrated.
         </p>
       </main>
     </HomeLayout>
