@@ -109,13 +109,25 @@ fn file_input(input: Value) -> Result<FileInput> {
     Ok(args)
 }
 
-pub(crate) fn validate_file_fixture(
+fn query_input(input: &Value) -> Result<&serde_json::Map<String, Value>> {
+    let args = input
+        .as_object()
+        .context("HTTP input must be an object of query strings")?;
+    ensure!(
+        args.values().all(Value::is_string),
+        "query values must be strings"
+    );
+    Ok(args)
+}
+
+pub(crate) fn validate_fixture(
     name: &str,
     input: &Value,
     result: &Value,
     max_bytes: usize,
 ) -> Result<()> {
     if !matches!(name, "files.read" | "files.list") {
+        query_input(input)?;
         ensure!(
             serde_json::to_vec(result)?.len() <= max_bytes,
             "capability fixture exceeds response byte limit"
@@ -183,9 +195,7 @@ impl Broker for LocalBroker {
             let max_bytes = self.max_bytes;
             return crate::blocking_io::call(remaining, move || {
                 let mut url = binding.url.clone();
-                let args = input
-                    .as_object()
-                    .context("HTTP input must be an object of query strings")?;
+                let args = query_input(&input)?;
                 for (key, value) in args {
                     ensure!(binding.query_keys.contains(key), "query key is not granted");
                     url.query_pairs_mut()

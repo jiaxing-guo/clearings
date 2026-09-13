@@ -30,7 +30,7 @@ pub struct Run {
 
 fn exchange(
     executable: &Path,
-    request: &Request,
+    request: Request,
     limits: &Limits,
     mut broker: Option<&mut dyn Broker>,
     calls: &mut usize,
@@ -78,7 +78,7 @@ fn exchange(
                         "capability call budget exhausted"
                     );
                     capability_failure.get_or_insert_with(|| message.clone());
-                    send(&input, &json!({"ok":false,"error":message}), deadline)?;
+                    send(&input, json!({"ok":false,"error":message}), deadline)?;
                 }
                 Event::Call {
                     name,
@@ -103,7 +103,7 @@ fn exchange(
                             json!({"ok":false,"error":message})
                         }
                     };
-                    send(&input, &response, deadline)?;
+                    send(&input, response, deadline)?;
                 }
                 Event::Finished {
                     outcome: Outcome::Completed { .. },
@@ -126,10 +126,9 @@ fn exchange(
 
 fn send(
     input: &Arc<Mutex<std::process::ChildStdin>>,
-    message: &impl Serialize,
+    message: impl Serialize + Send + 'static,
     deadline: Instant,
 ) -> Result<()> {
-    let message = serde_json::to_value(message)?;
     let input = input.clone();
     let remaining = deadline
         .checked_duration_since(Instant::now())
@@ -148,7 +147,7 @@ pub fn prepare(executable: &Path, source: &str) -> Result<Prepared> {
     require_source(source)?;
     let event = exchange(
         executable,
-        &Request::Prepare {
+        Request::Prepare {
             source: source.into(),
         },
         &Limits::default(),
@@ -188,7 +187,7 @@ pub fn run(
         };
         let event = exchange(
             executable,
-            &request,
+            request,
             &contract.limits,
             Some(broker),
             &mut capability_calls,
@@ -228,7 +227,7 @@ fn validate(
 ) -> Result<()> {
     match exchange(
         executable,
-        &Request::Validate {
+        Request::Validate {
             contract: contract.clone(),
             boundary,
         },
