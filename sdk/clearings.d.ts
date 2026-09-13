@@ -7,6 +7,8 @@ type Outcome<T extends Json = Json> =
   | { status: 'failed'; code: string; message: string };
 
 declare const clearings: {
+  /** A policy-bound, declared JSON operation. */
+  call(name: string, input: Json): Promise<Json>;
   call(name: 'files.read', input: { root: string; path: string }): Promise<{ text: string }>;
   call(name: 'files.list', input: { root: string; path: string }): Promise<{ entries: string[] }>;
 };

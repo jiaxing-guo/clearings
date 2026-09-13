@@ -18,9 +18,25 @@ jobs:
           persist-credentials: false
       - name: Install pinned Rust
         run: rustup show
+      - name: Resolve new dependencies
+        run: cargo generate-lockfile
       - name: Build and test
         run: cargo test --locked --workspace
       - name: Formatting
         run: cargo fmt --all --check
       - name: Lints
+        if: always()
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - name: Capture build evidence
+        if: always()
+        run: |
+          cargo fmt --all
+          git diff -- crates > rustfmt.patch
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-evidence-${{ matrix.os }}
+          path: |
+            Cargo.lock
+            rustfmt.patch
+            target/debug/clearings
