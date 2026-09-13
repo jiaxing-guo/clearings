@@ -17,12 +17,15 @@ enum Action {
     Sdk,
     #[command(name = "__worker", hide = true)]
     Worker,
+    #[command(name = "__isolation-probe", hide = true)]
+    IsolationProbe { path: PathBuf },
 }
 
 fn read<T: DeserializeOwned>(path: PathBuf) -> Result<T> { Ok(serde_json::from_slice(&std::fs::read(path)?)?) }
 
 fn main() -> Result<()> {
     match Cli::parse().command {
+        Action::IsolationProbe { path } => clearings::isolation_probe(&path),
         Action::Worker => clearings::worker_main(),
         Action::Sdk => { print!("{}", include_str!("../../../sdk/clearings.d.ts")); Ok(()) }
         Action::RunSource { source, contract, input, policy } => {
@@ -35,6 +38,7 @@ fn main() -> Result<()> {
             let mut broker = LocalBroker::new(&contract, &policy)?;
             let run = execute::run(&executable, &contract, &prepared, input, &mut broker);
             println!("{}", serde_json::to_string_pretty(&run)?);
+            anyhow::ensure!(!matches!(run.outcome, clearings::contract::Outcome::Failed { .. }), "routine failed; see JSON result");
             Ok(())
         }
     }

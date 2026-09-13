@@ -92,3 +92,24 @@ fn malformed_source_and_external_schema_references_are_rejected() {
     let mut c=contract();c.input_schema=json!({"$ref":"https://example.com/schema"});
     assert!(c.validate().is_err());
 }
+
+#[test]
+fn native_isolation_blocks_ambient_effects() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("secret");
+    std::fs::write(&path, "unchanged").unwrap();
+    let status = std::process::Command::new(executable()).arg("__isolation-probe").arg(&path).status().unwrap();
+    assert!(status.success());
+    assert_eq!(std::fs::read_to_string(path).unwrap(), "unchanged");
+}
+
+#[test]
+fn failing_after_a_call_retains_accounting() {
+    let temp = tempfile::tempdir().unwrap();
+    std::fs::write(temp.path().join("a"), "ok").unwrap();
+    let policy = Policy { roots: [("data".into(), temp.path().into())].into() };
+    let mut c = contract(); c.limits.wall_ms = 100;
+    let result = run("export default async function(){await clearings.call('files.read',{root:'data',path:'a'});while(true){}}",json!({}),policy,c);
+    assert!(matches!(result.outcome, Outcome::Failed { .. }));
+    assert_eq!(result.capability_calls, 1);
+}

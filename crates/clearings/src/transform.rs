@@ -12,14 +12,14 @@ pub fn prepare(source: &str) -> Result<Prepared> {
     require_source(source)?;
     let allocator = Allocator::default();
     let parsed = Parser::new(&allocator, source, SourceType::ts()).parse();
-    ensure!(parsed.errors.is_empty(), "TypeScript syntax errors: {:?}", parsed.errors);
+    ensure!(parsed.diagnostics.is_empty(), "TypeScript syntax errors: {:?}", parsed.diagnostics);
     let mut program = parsed.program;
     let semantic = SemanticBuilder::new().build(&program);
-    ensure!(semantic.errors.is_empty(), "TypeScript semantic errors: {:?}", semantic.errors);
+    ensure!(semantic.diagnostics.is_empty(), "TypeScript semantic errors: {:?}", semantic.diagnostics);
     let options = TransformOptions::default();
     let transformed = Transformer::new(&allocator, Path::new("routine.ts"), &options)
         .build_with_scoping(semantic.semantic.into_scoping(), &mut program);
-    ensure!(transformed.errors.is_empty(), "unsupported TypeScript transform: {:?}", transformed.errors);
+    ensure!(transformed.diagnostics.is_empty(), "unsupported TypeScript transform: {:?}", transformed.diagnostics);
     let generated = Codegen::new().with_options(CodegenOptions {
         source_map_path: Some("routine.ts".into()),
         ..CodegenOptions::default()

@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::Result;
 
 pub fn enter() -> Result<()> {
     #[cfg(unix)]
@@ -70,13 +70,13 @@ fn platform() -> Result<()> {
             unsafe { sandbox_free_error(error) };
             message
         };
-        bail!("{message}");
+        anyhow::bail!("{message}");
     }
     Ok(())
 }
 
 #[cfg(not(any(target_os = "macos", all(target_os = "linux", any(target_arch = "x86_64", target_arch = "aarch64")))))]
 fn platform() -> Result<()> {
-    bail!("OS isolation is not implemented on this platform")
+    anyhow::bail!("OS isolation is not implemented on this platform")
 }
 

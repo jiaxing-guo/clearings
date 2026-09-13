@@ -23,7 +23,7 @@ pub struct Run {
     pub model_usage: Option<Value>,
 }
 
-fn exchange(executable: &Path, request: &Request, limits: &Limits, mut broker: Option<&mut dyn Broker>) -> Result<(Event, usize)> {
+fn exchange(executable: &Path, request: &Request, limits: &Limits, mut broker: Option<&mut dyn Broker>, calls: &mut usize) -> Result<Event> {
     let mut child = Guard(Command::new(executable).arg("__worker")
         .env_clear().stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null())
         .spawn().context("start isolated worker")?);
@@ -39,17 +39,16 @@ fn exchange(executable: &Path, request: &Request, limits: &Limits, mut broker: O
         }
     });
     let deadline = Instant::now() + Duration::from_millis(limits.wall_ms);
-    let result = (|| -> Result<(Event, usize)> {
+    let result = (|| -> Result<Event> {
         write_message(&mut input, request)?;
-        let mut calls = 0;
         loop {
             let remaining = deadline.checked_duration_since(Instant::now()).context("worker deadline exceeded")?;
             let message = receiver.recv_timeout(remaining).context("worker deadline or channel failure")?
                 .map_err(|e| anyhow::anyhow!(e))?;
             match message {
                 Event::Call { name, input: arguments } => {
-                    calls += 1;
-                    ensure!(calls <= limits.capability_calls, "capability call budget exhausted");
+                    *calls += 1;
+                    ensure!(*calls <= limits.capability_calls, "capability call budget exhausted");
                     let broker = broker.as_deref_mut().context("capabilities are unavailable during preparation")?;
                     let remaining = deadline.checked_duration_since(Instant::now()).context("worker deadline exceeded")?;
                     let response = match broker.call(&name, arguments, remaining) {
@@ -58,7 +57,7 @@ fn exchange(executable: &Path, request: &Request, limits: &Limits, mut broker: O
                     };
                     write_message(&mut input, &response)?;
                 }
-                terminal => return Ok((terminal, calls)),
+                terminal => return Ok(terminal),
             }
         }
     })();
@@ -71,7 +70,7 @@ fn exchange(executable: &Path, request: &Request, limits: &Limits, mut broker: O
 
 pub fn prepare(executable: &Path, source: &str) -> Result<Prepared> {
     require_source(source)?;
-    let (event, _) = exchange(executable, &Request::Prepare { source: source.into() }, &Limits::default(), None)?;
+    let event = exchange(executable, &Request::Prepare { source: source.into() }, &Limits::default(), None, &mut 0)?;
     match event {
         Event::Prepared { prepared } => Ok(prepared),
         Event::Error { message } => bail!("{message}"),
@@ -81,20 +80,21 @@ pub fn prepare(executable: &Path, source: &str) -> Result<Prepared> {
 
 pub fn run(executable: &Path, contract: &Contract, prepared: &Prepared, input: Value, broker: &mut dyn Broker) -> Run {
     let start = Instant::now();
-    let result = (|| -> Result<(Outcome, usize)> {
+    let mut capability_calls = 0;
+    let result = (|| -> Result<Outcome> {
         contract.validate()?;
         contract.check_input(&input)?;
         let request = Request::Run { prepared: prepared.clone(), input, limits: contract.limits.clone() };
-        let (event, calls) = exchange(executable, &request, &contract.limits, Some(broker))?;
+        let event = exchange(executable, &request, &contract.limits, Some(broker), &mut capability_calls)?;
         match event {
-            Event::Finished { outcome } => { contract.check_outcome(&outcome)?; Ok((outcome, calls)) }
-            Event::Error { message } => Ok((Outcome::failed("EXECUTION", message), calls)),
+            Event::Finished { outcome } => { contract.check_outcome(&outcome)?; Ok(outcome) }
+            Event::Error { message } => Ok(Outcome::failed("EXECUTION", message)),
             _ => bail!("invalid execution result"),
         }
     })();
-    let (outcome, capability_calls) = match result {
+    let outcome = match result {
         Ok(v) => v,
-        Err(error) => (Outcome::failed("RUNTIME", error), 0),
+        Err(error) => Outcome::failed("RUNTIME", error),
     };
     Run { outcome, elapsed_ms: start.elapsed().as_millis(), capability_calls, model_usage: None }
 }
