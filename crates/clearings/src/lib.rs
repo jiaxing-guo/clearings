@@ -1,7 +1,7 @@
-mod file_io;
 pub mod capabilities;
 pub mod contract;
 pub mod execute;
+mod file_io;
 mod isolation;
 mod transform;
 mod worker;

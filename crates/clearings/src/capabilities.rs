@@ -6,8 +6,8 @@ use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::{Component, Path};
-use std::time::Duration;
 use std::sync::Arc;
+use std::time::Duration;
 
 pub trait Broker {
     fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value>;
@@ -27,8 +27,10 @@ impl LocalBroker {
             .map(|(name, root)| {
                 Ok((
                     name.clone(),
-                    Arc::new(Dir::open_ambient_dir(root, ambient_authority())
-                        .with_context(|| format!("cannot open granted root {name}"))?),
+                    Arc::new(
+                        Dir::open_ambient_dir(root, ambient_authority())
+                            .with_context(|| format!("cannot open granted root {name}"))?,
+                    ),
                 ))
             })
             .collect::<Result<_>>()?;
@@ -62,7 +64,11 @@ impl Broker for LocalBroker {
                     .all(|c| matches!(c, Component::Normal(_) | Component::CurDir)),
             "only relative paths within a granted root are allowed"
         );
-        let dir = self.roots.get(&args.root).context("root is not granted")?.clone();
+        let dir = self
+            .roots
+            .get(&args.root)
+            .context("root is not granted")?
+            .clone();
         let name = name.to_owned();
         let path = path.to_owned();
         let max_bytes = self.max_bytes;
@@ -78,8 +84,7 @@ impl Broker for LocalBroker {
                 let file = dir.open_with(&path, &options)?;
                 ensure!(file.metadata()?.is_file(), "only regular files can be read");
                 let mut bytes = Vec::new();
-                file.take(max_bytes as u64 + 1)
-                    .read_to_end(&mut bytes)?;
+                file.take(max_bytes as u64 + 1).read_to_end(&mut bytes)?;
                 ensure!(bytes.len() <= max_bytes, "file exceeds read limit");
                 Ok(json!({"text": String::from_utf8(bytes)?}))
             }
