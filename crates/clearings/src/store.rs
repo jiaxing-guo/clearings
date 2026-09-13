@@ -12,8 +12,9 @@ use std::{path::Path, time::Duration};
 
 // Change this when preparation or execution semantics change. Old versions require re-submission.
 const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
+const OBJECT_BYTES: usize = REPORT_BYTES - 4096;
 
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-7";
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-8";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -151,7 +152,10 @@ impl Store {
     }
     fn put(&self, kind: &str, value: &impl Serialize) -> Result<String> {
         let body = serde_json::to_string(value)?;
-        ensure!(body.len() <= MAX_WIRE_BYTES, "stored object exceeds 4 MiB");
+        ensure!(
+            body.len() <= OBJECT_BYTES,
+            "stored object exceeds inspect byte limit"
+        );
         let id = digest(value)?;
         self.db.execute(
             "INSERT OR IGNORE INTO objects(id,kind,body) VALUES(?1,?2,?3)",
@@ -160,14 +164,15 @@ impl Store {
         Ok(id)
     }
     pub fn get<T: DeserializeOwned + Serialize>(&self, kind: &str, id: &str) -> Result<T> {
-        let body: String = self
-            .db
-            .query_row(
-                "SELECT body FROM objects WHERE id=?1 AND kind=?2",
-                params![id, kind],
-                |r| r.get(0),
-            )
-            .context("object not found")?;
+        let (bytes, body): (usize, Option<String>) = self.db.query_row(
+            "SELECT length(CAST(body AS BLOB)),CASE WHEN length(CAST(body AS BLOB)) <= ?3 THEN body END FROM objects WHERE id=?1 AND kind=?2",
+            params![id, kind, OBJECT_BYTES], |r| Ok((r.get(0)?,r.get(1)?)),
+        ).context("object not found")?;
+        ensure!(
+            bytes <= OBJECT_BYTES,
+            "stored object exceeds inspect byte limit"
+        );
+        let body = body.context("missing stored object")?;
         let value: T = serde_json::from_str(&body)?;
         ensure!(digest(&value)? == id, "stored object digest mismatch");
         Ok(value)
@@ -220,6 +225,7 @@ impl Store {
                 &mut fixture,
             );
             let accepted = run.outcome == case.expected
+                && run.capability_calls == fixture.calls.len()
                 && fixture.position == fixture.calls.len()
                 && !fixture.mismatch;
             let result = json!({"name":case.name,"accepted":accepted,"run":run});
