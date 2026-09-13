@@ -208,7 +208,10 @@ fn bridge<'js>(
 ) -> Result<Function<'js>> {
     Ok(Function::new(
         ctx,
-        move |name: rquickjs::Value<'js>, input: rquickjs::Value<'js>, input_prototype: Object<'js>| -> String {
+        move |name: rquickjs::Value<'js>,
+              input: rquickjs::Value<'js>,
+              input_prototype: Object<'js>|
+              -> String {
             let event = (|| -> Result<Event> {
                 let name = name
                     .as_string()
