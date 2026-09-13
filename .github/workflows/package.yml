@@ -17,6 +17,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+      - name: Check package source selection
+        run: python3 -m unittest discover -s tests -p test_package_sources.py
       - run: rustup show
       - name: Check dependency license material
         run: python3 scripts/package.py target/release/clearings "$RUNNER_TEMP/clearings-package" --licenses-only

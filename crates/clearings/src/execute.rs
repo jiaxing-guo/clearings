@@ -1,5 +1,7 @@
 use crate::capabilities::Broker;
-use crate::contract::{Contract, Event, Limits, Outcome, Prepared, Request, require_source};
+use crate::contract::{
+    Contract, Event, Limits, Outcome, Prepared, Request, Validation, require_source,
+};
 use crate::worker::{read_message, write_message};
 use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
@@ -32,6 +34,7 @@ fn exchange(
     limits: &Limits,
     mut broker: Option<&mut dyn Broker>,
     calls: &mut usize,
+    deadline: Instant,
 ) -> Result<Event> {
     let mut child = Guard(
         Command::new(executable)
@@ -50,13 +53,12 @@ fn exchange(
         let mut output = BufReader::new(output);
         loop {
             let message = read_message::<Event>(&mut output).map_err(|e| e.to_string());
-            let terminal = !matches!(message, Ok(Event::Call { .. }));
+            let terminal = !matches!(message, Ok(Event::Call { .. } | Event::CallError { .. }));
             if sender.send(message).is_err() || terminal {
                 break;
             }
         }
     });
-    let deadline = Instant::now() + Duration::from_millis(limits.wall_ms);
     let mut capability_failure = None;
     let result = (|| -> Result<Event> {
         write_message(&mut input, request)?;
@@ -69,6 +71,15 @@ fn exchange(
                 .context("worker deadline or channel failure")?
                 .map_err(|e| anyhow::anyhow!(e))?;
             match message {
+                Event::CallError { message } => {
+                    *calls += 1;
+                    ensure!(
+                        *calls <= limits.capability_calls,
+                        "capability call budget exhausted"
+                    );
+                    capability_failure.get_or_insert_with(|| message.clone());
+                    write_message(&mut input, &json!({"ok":false,"error":message}))?;
+                }
                 Event::Call {
                     name,
                     input: arguments,
@@ -123,6 +134,7 @@ pub fn prepare(executable: &Path, source: &str) -> Result<Prepared> {
         &Limits::default(),
         None,
         &mut 0,
+        Instant::now() + Duration::from_millis(Limits::default().wall_ms),
     )?;
     match event {
         Event::Prepared { prepared } => Ok(prepared),
@@ -141,8 +153,14 @@ pub fn run(
     let start = Instant::now();
     let mut capability_calls = 0;
     let result = (|| -> Result<Outcome> {
-        contract.validate()?;
-        contract.check_input(&input)?;
+        contract.limits.validate()?;
+        let deadline = start + Duration::from_millis(contract.limits.wall_ms);
+        validate(
+            executable,
+            contract,
+            Validation::Input(input.clone()),
+            deadline,
+        )?;
         let request = Request::Run {
             prepared: prepared.clone(),
             input,
@@ -154,10 +172,16 @@ pub fn run(
             &contract.limits,
             Some(broker),
             &mut capability_calls,
+            deadline,
         )?;
         match event {
             Event::Finished { outcome } => {
-                contract.check_outcome(&outcome)?;
+                validate(
+                    executable,
+                    contract,
+                    Validation::Outcome(outcome.clone()),
+                    deadline,
+                )?;
                 Ok(outcome)
             }
             Event::Error { message } => Ok(Outcome::failed("EXECUTION", message)),
@@ -173,5 +197,28 @@ pub fn run(
         elapsed_ms: start.elapsed().as_millis(),
         capability_calls,
         model_usage: None,
+    }
+}
+
+fn validate(
+    executable: &Path,
+    contract: &Contract,
+    boundary: Validation,
+    deadline: Instant,
+) -> Result<()> {
+    match exchange(
+        executable,
+        &Request::Validate {
+            contract: contract.clone(),
+            boundary,
+        },
+        &contract.limits,
+        None,
+        &mut 0,
+        deadline,
+    )? {
+        Event::Validated => Ok(()),
+        Event::Error { message } => bail!("{message}"),
+        _ => bail!("invalid validation result"),
     }
 }

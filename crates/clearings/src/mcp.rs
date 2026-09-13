@@ -17,12 +17,12 @@ fn tool(
     required: Value,
     read_only: bool,
 ) -> Value {
-    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":false,"openWorldHint":name=="run"}})
+    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"),"openWorldHint":name=="run"}})
 }
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
-        tool("list","List user-defined tasks and their active versions.",json!({}),json!([]),true),
+        tool("list","List a bounded task page and active versions. Pass next_after as after to continue.",json!({"after":id}),json!([]),true),
         tool("inspect","Inspect a task or version, source and recorded evaluation.",json!({"id":id}),json!(["id"]),true),
         tool("sdk","Read the bundled TypeScript interface and a task document example before authoring.",json!({}),json!([]),true),
         tool("prepare_task","Record requirements and independent acceptance cases before writing source. task contains contract and cases; use sdk for its shape.",json!({"task":{"type":"object","required":["contract","cases"],"properties":{"contract":{"type":"object"},"cases":{"type":"array","minItems":1,"maxItems":100}},"additionalProperties":false}}),json!(["task"]),false),

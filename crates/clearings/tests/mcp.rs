@@ -191,3 +191,11 @@ fn run_source_preserves_top_level_run_and_failed_exit_status() {
         assert_eq!(result["capability_calls"], 0);
     }
 }
+
+#[test]
+fn tool_annotations_describe_state_replacement() {
+    for tool in clearings::mcp::tools()["tools"].as_array().unwrap() {
+        let name = tool["name"].as_str().unwrap();
+        assert_eq!(tool["annotations"]["destructiveHint"],matches!(name,"clearings_activate"|"clearings_deactivate"));
+    }
+}

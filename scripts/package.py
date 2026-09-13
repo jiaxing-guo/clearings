@@ -9,21 +9,21 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
+from package_sources import copy_sources
 from pathlib import Path
 
 binary = Path(sys.argv[1]).resolve()
 output = Path(sys.argv[2]).resolve()
 root = Path(__file__).resolve().parents[1]
 output.mkdir(parents=True, exist_ok=True)
-package = output / 'clearings'
+staging = tempfile.TemporaryDirectory(prefix='clearings-package-', dir=output)
+package = Path(staging.name) / 'clearings'
 package.mkdir(exist_ok=True)
 licenses_only = '--licenses-only' in sys.argv[3:]
 if not licenses_only:
     shutil.copy2(binary, package / 'clearings')
-    for name in ['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md']:
-        shutil.copy2(root / name, package / name)
-    for name in ['sdk', 'examples', 'integrations', 'docs']:
-        shutil.copytree(root / name, package / name)
+    copy_sources(root, package)
 metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--format-version=1'], cwd=root))
 licenses = package / 'licenses'
 licenses.mkdir(exist_ok=True)

@@ -167,3 +167,73 @@ fn large_history_is_paged_before_loading_reports() {
     );
     assert_eq!(s.runs_page(Some(100)).unwrap()["runs"][0]["id"], 99);
 }
+
+#[test]
+fn repeated_evaluation_returns_the_original_without_a_worker() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let task = s.prepare_task(&task()).unwrap();
+    let version = s.submit(exe(), &task, GOOD.into()).unwrap();
+    let report = s.evaluate(exe(), &version).unwrap();
+    assert_eq!(
+        s.evaluate(Path::new("/no-such-clearings-worker"), &version)
+            .unwrap(),
+        report
+    );
+}
+
+#[test]
+fn aggregate_evaluation_overflow_is_rejected_before_persistence() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("state.db");
+    let mut s = Store::open(&path).unwrap();
+    let mut t = task();
+    t.contract.output_schema = json!({"type":"string"});
+    t.contract.limits.output_bytes = 1024 * 1024;
+    t.cases = (0..100).map(|n| serde_json::from_value(json!({"name":format!("case-{n}"),"input":n,"expected":{"status":"completed","output":""}})).unwrap()).collect();
+    let task = s.prepare_task(&t).unwrap();
+    let version = s.submit(exe(),&task,"export default async function(){return {status:'completed',output:'x'.repeat(1_000_000)};}".into()).unwrap();
+    assert!(
+        s.evaluate(exe(), &version)
+            .unwrap_err()
+            .to_string()
+            .contains("report exceeds byte limit")
+    );
+    assert!(s.activate(&version, None).is_err());
+    let db = rusqlite::Connection::open(path).unwrap();
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM evaluations", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn task_discovery_pages_large_descriptions_without_losing_tasks() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut expected = std::collections::BTreeSet::new();
+    for n in 0..1000 {
+        let mut t = task();
+        t.contract.name = format!("task-{n}");
+        t.contract.description = "x".repeat(4096);
+        expected.insert(s.prepare_task(&t).unwrap());
+    }
+    let mut after = None;
+    let mut seen = std::collections::BTreeSet::new();
+    loop {
+        let page = s.list_page(after.as_deref()).unwrap();
+        assert!(serde_json::to_vec(&page).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
+        let tasks = page["tasks"].as_array().unwrap();
+        assert_eq!(tasks.len(),100);
+        for task in tasks {
+            assert!(seen.insert(task["task"].as_str().unwrap().to_owned()));
+            assert_eq!(task["description"].as_str().unwrap().len(),4096);
+        }
+        after = page["next_after"].as_str().map(str::to_owned);
+        if after.is_none() { break; }
+    }
+    assert_eq!(seen,expected);
+    assert!(s.list_page(Some("invalid cursor")).is_err());
+}

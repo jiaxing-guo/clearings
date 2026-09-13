@@ -11,7 +11,9 @@ use sha2::{Digest, Sha256};
 use std::{path::Path, time::Duration};
 
 // Change this when preparation or execution semantics change. Old versions require re-submission.
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-2";
+const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
+
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-3";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -175,9 +177,13 @@ impl Store {
     }
     pub fn evaluate(&self, executable: &Path, id: &str) -> Result<Value> {
         let version = self.version(id)?;
+        if let Some(report) = self.evaluation(id)? {
+            return Ok(report);
+        }
         let task: Task = self.get("task", &version.task)?;
         task.validate()?;
         let mut cases = Vec::new();
+        let mut report_bytes = 1024;
         for case in task.cases {
             let mut fixture = Fixtures {
                 calls: &case.calls,
@@ -194,21 +200,43 @@ impl Store {
             let accepted = run.outcome == case.expected
                 && fixture.position == fixture.calls.len()
                 && !fixture.mismatch;
-            cases.push(json!({"name":case.name,"accepted":accepted,"run":run}));
+            let result = json!({"name":case.name,"accepted":accepted,"run":run});
+            report_bytes += serde_json::to_vec(&result)?.len() + 1;
+            ensure!(
+                report_bytes <= REPORT_BYTES,
+                "evaluation report exceeds byte limit; no evaluation was recorded"
+            );
+            cases.push(result);
         }
         let accepted = cases.iter().all(|c| c["accepted"] == true);
         let report = json!({"version":id,"task":version.task,"engine":ENGINE,"accepted":accepted,"cases":cases});
+        ensure!(
+            serde_json::to_vec(&report)?.len() <= REPORT_BYTES,
+            "evaluation report exceeds byte limit"
+        );
         // First evaluation is immutable. A fresh candidate gets a fresh version if source changes.
         self.db.execute(
             "INSERT OR IGNORE INTO evaluations(version,engine,report) VALUES(?1,?2,?3)",
             params![id, ENGINE, serde_json::to_string(&report)?],
         )?;
-        let recorded: String = self.db.query_row(
-            "SELECT report FROM evaluations WHERE version=?1 AND engine=?2",
-            params![id, ENGINE],
-            |r| r.get(0),
-        )?;
-        Ok(serde_json::from_str(&recorded)?)
+        self.evaluation(id)?.context("evaluation was not recorded")
+    }
+
+    fn evaluation(&self, id: &str) -> Result<Option<Value>> {
+        let row: Option<(usize, Option<String>)> = self.db.query_row(
+            "SELECT length(CAST(report AS BLOB)), CASE WHEN length(CAST(report AS BLOB)) <= ?3 THEN report END FROM evaluations WHERE version=?1 AND engine=?2",
+            params![id, ENGINE, REPORT_BYTES], |r| Ok((r.get(0)?,r.get(1)?)),
+        ).optional()?;
+        row.map(|(bytes, body)| {
+            ensure!(
+                bytes <= REPORT_BYTES,
+                "stored evaluation exceeds byte limit"
+            );
+            Ok(serde_json::from_str(
+                &body.context("missing evaluation body")?,
+            )?)
+        })
+        .transpose()
     }
     pub fn active(&self, task: &str) -> Result<Option<String>> {
         Ok(self
@@ -301,17 +329,30 @@ impl Store {
         )
     }
     pub fn list(&self) -> Result<Value> {
-        let mut stmt = self
-            .db
-            .prepare("SELECT id,body FROM objects WHERE kind='task' ORDER BY id")?;
-        let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
+        self.list_page(None)
+    }
+    pub fn list_page(&self, after: Option<&str>) -> Result<Value> {
+        ensure!(after.is_none_or(|s| s.len() == 64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))), "after must be a task ID");
+        let mut stmt = self.db.prepare(
+            "SELECT objects.id,json_extract(body,'$.contract.name'),json_extract(body,'$.contract.description'),active.version
+             FROM objects LEFT JOIN active ON active.task=objects.id
+             WHERE kind='task' AND (?1 IS NULL OR objects.id > ?1) ORDER BY objects.id LIMIT 101",
+        )?;
+        let mut rows = stmt.query([after])?;
         let mut tasks = Vec::new();
-        for row in rows {
-            let (id, body) = row?;
-            let task: Task = serde_json::from_str(&body)?;
-            tasks.push(json!({"task":id,"name":task.contract.name,"description":task.contract.description,"active":self.active(&id)?}));
+        let mut bytes = 1024;
+        let mut next_after = None;
+        while let Some(row) = rows.next()? {
+            if tasks.len() == 100 {
+                next_after = tasks.last().and_then(|v: &Value| v["task"].as_str()).map(str::to_owned);
+                break;
+            }
+            let task = json!({"task":row.get::<_,String>(0)?,"name":row.get::<_,String>(1)?,"description":row.get::<_,String>(2)?,"active":row.get::<_,Option<String>>(3)?});
+            bytes += serde_json::to_vec(&task)?.len() + 1;
+            ensure!(bytes <= REPORT_BYTES, "task page exceeds byte limit");
+            tasks.push(task);
         }
-        Ok(json!({"tasks":tasks}))
+        Ok(json!({"tasks":tasks,"next_after":next_after}))
     }
     pub fn inspect(&self, id: &str) -> Result<Value> {
         let (kind, body): (String, String) =
