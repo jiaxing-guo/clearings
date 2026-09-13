@@ -1,5 +1,14 @@
 export default async function (input: { root: string; path: string }) {
-  const { text } = await clearings.call('files.read', input);
+  let text: string;
+  try {
+    ({ text } = await clearings.call('files.read', input));
+  } catch {
+    return {
+      status: 'needs_agent',
+      reason: 'Log sample could not be read within configured limits',
+      context: input,
+    };
+  }
   const groups = new Map<string, { level: string; message: string; count: number }>();
   const lines = text.split('\n').filter((line) => line.trim() !== '');
   if (lines.length > 5000)

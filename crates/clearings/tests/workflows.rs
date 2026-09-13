@@ -41,6 +41,15 @@ fn user_defined_workflows_share_one_runtime_and_revisions_preserve_history() {
         store.activate(&revision, Some(&version)).unwrap();
         assert_eq!(store.inspect(&version).unwrap()["object"]["source"], source);
         store.activate(&version, Some(&revision)).unwrap();
+        if name == "group-logs" {
+            let path = temp.path().join("oversized.jsonl");
+            let record = format!("{}\n", json!({"level":"info","message":"x".repeat(80)}));
+            std::fs::write(&path, record.repeat(5001)).unwrap();
+            policy.roots.insert("logs".into(), temp.path().into());
+            let result = store.run(exe, &id, json!({"root":"logs","path":"oversized.jsonl"}), &policy).unwrap();
+            assert_eq!(result["run"]["outcome"]["status"], "needs_agent");
+            assert_eq!(result["run"]["capability_calls"], 1);
+        }
         if name == "normalize-contacts" {
             assert_eq!(
                 store.run(exe, &id, json!({"rows":[{}]}), &policy).unwrap()["run"]["outcome"]["status"],
