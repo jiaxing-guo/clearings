@@ -124,12 +124,20 @@ fn exchange(
     result
 }
 
-fn send(input: &Arc<Mutex<std::process::ChildStdin>>, message: &impl Serialize, deadline: Instant) -> Result<()> {
+fn send(
+    input: &Arc<Mutex<std::process::ChildStdin>>,
+    message: &impl Serialize,
+    deadline: Instant,
+) -> Result<()> {
     let message = serde_json::to_value(message)?;
     let input = input.clone();
-    let remaining = deadline.checked_duration_since(Instant::now()).context("worker write deadline exceeded")?;
+    let remaining = deadline
+        .checked_duration_since(Instant::now())
+        .context("worker write deadline exceeded")?;
     crate::blocking_io::call(remaining, move || {
-        let mut input = input.lock().map_err(|_| anyhow::anyhow!("worker stdin unavailable"))?;
+        let mut input = input
+            .lock()
+            .map_err(|_| anyhow::anyhow!("worker stdin unavailable"))?;
         write_message(&mut *input, &message)?;
         Ok(Value::Null)
     })?;
