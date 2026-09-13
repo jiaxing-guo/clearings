@@ -63,6 +63,10 @@ pub struct Contract {
 
 impl Contract {
     pub fn validate(&self) -> Result<()> {
+        self.checked_schemas().map(|_| ())
+    }
+
+    pub(crate) fn checked_schemas(&self) -> Result<(jsonschema::Validator, jsonschema::Validator)> {
         ensure!(self.abi == ABI, "unsupported routine ABI");
         ensure!(
             !self.name.is_empty()
@@ -75,10 +79,17 @@ impl Contract {
         );
         ensure!(self.description.len() <= 4096, "description too long");
         ensure!(self.capabilities.len() <= 64, "too many capabilities");
+        for name in &self.capabilities {
+            ensure!(
+                !name.starts_with("files.") || matches!(name.as_str(), "files.read" | "files.list"),
+                "unsupported capability in reserved files namespace"
+            );
+        }
         self.limits.validate()?;
-        compile_schema(&self.input_schema)?;
-        compile_schema(&self.output_schema)?;
-        Ok(())
+        Ok((
+            compile_schema(&self.input_schema)?,
+            compile_schema(&self.output_schema)?,
+        ))
     }
 
     pub fn check_input(&self, value: &Value) -> Result<()> {

@@ -49,16 +49,19 @@ fn exchange(
     let input = Arc::new(Mutex::new(child.0.stdin.take().context("worker stdin")?));
     let output = child.0.stdout.take().context("worker stdout")?;
     let (sender, receiver) = mpsc::sync_channel(1);
-    let reader = std::thread::spawn(move || {
-        let mut output = BufReader::new(output);
-        loop {
-            let message = read_message::<Event>(&mut output).map_err(|e| e.to_string());
-            let terminal = !matches!(message, Ok(Event::Call { .. } | Event::CallError { .. }));
-            if sender.send(message).is_err() || terminal {
-                break;
+    let reader = std::thread::Builder::new()
+        .name("clearings-worker-reader".into())
+        .spawn(move || {
+            let mut output = BufReader::new(output);
+            loop {
+                let message = read_message::<Event>(&mut output).map_err(|e| e.to_string());
+                let terminal = !matches!(message, Ok(Event::Call { .. } | Event::CallError { .. }));
+                if sender.send(message).is_err() || terminal {
+                    break;
+                }
             }
-        }
-    });
+        })
+        .context("start worker reader")?;
     let mut capability_failure = None;
     let result = (|| -> Result<Event> {
         send(&input, request, deadline)?;
