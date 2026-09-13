@@ -6,8 +6,8 @@ use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::{Component, Path};
-use std::time::Duration;
 use std::sync::Arc;
+use std::time::Duration;
 
 pub trait Broker {
     fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value>;
@@ -45,16 +45,24 @@ impl LocalBroker {
                 url.username().is_empty() && url.password().is_none() && url.fragment().is_none(),
                 "credentials and fragments do not belong in the URL"
             );
-            http.insert(name.clone(), ValidatedHttpBinding {
-                url,
-                query_keys: binding.query_keys.clone(),
-                output: compile_schema(&binding.output_schema)?,
-                bearer_token_env: binding.bearer_token_env.clone(),
-            });
+            http.insert(
+                name.clone(),
+                ValidatedHttpBinding {
+                    url,
+                    query_keys: binding.query_keys.clone(),
+                    output: compile_schema(&binding.output_schema)?,
+                    bearer_token_env: binding.bearer_token_env.clone(),
+                },
+            );
         }
-        let client = if http.is_empty() { None } else {
-            Some(reqwest::blocking::Client::builder()
-                .redirect(reqwest::redirect::Policy::none()).build()?)
+        let client = if http.is_empty() {
+            None
+        } else {
+            Some(
+                reqwest::blocking::Client::builder()
+                    .redirect(reqwest::redirect::Policy::none())
+                    .build()?,
+            )
         };
         let roots = policy
             .roots
@@ -62,8 +70,10 @@ impl LocalBroker {
             .map(|(name, root)| {
                 Ok((
                     name.clone(),
-                    Arc::new(Dir::open_ambient_dir(root, ambient_authority())
-                        .with_context(|| format!("cannot open granted root {name}"))?),
+                    Arc::new(
+                        Dir::open_ambient_dir(root, ambient_authority())
+                            .with_context(|| format!("cannot open granted root {name}"))?,
+                    ),
                 ))
             })
             .collect::<Result<_>>()?;
@@ -100,8 +110,12 @@ impl Broker for LocalBroker {
                 url.query_pairs_mut()
                     .append_pair(key, value.as_str().context("query values must be strings")?);
             }
-            let mut request = self.client.as_ref().context("HTTP client unavailable")?
-                .get(url).timeout(remaining);
+            let mut request = self
+                .client
+                .as_ref()
+                .context("HTTP client unavailable")?
+                .get(url)
+                .timeout(remaining);
             if let Some(env) = &binding.bearer_token_env {
                 request = request.bearer_auth(
                     std::env::var(env).context("configured credential is unavailable")?,
@@ -127,7 +141,10 @@ impl Broker for LocalBroker {
             );
             let value: Value = serde_json::from_slice(&body)?;
             check_json(&value)?;
-            binding.output.validate(&value).map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
+            binding
+                .output
+                .validate(&value)
+                .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
             return Ok(value);
         }
         let args: FileInput = serde_json::from_value(input)?;
@@ -139,7 +156,11 @@ impl Broker for LocalBroker {
                     .all(|c| matches!(c, Component::Normal(_) | Component::CurDir)),
             "only relative paths within a granted root are allowed"
         );
-        let dir = self.roots.get(&args.root).context("root is not granted")?.clone();
+        let dir = self
+            .roots
+            .get(&args.root)
+            .context("root is not granted")?
+            .clone();
         let name = name.to_owned();
         let path = path.to_owned();
         let max_bytes = self.max_bytes;
@@ -155,8 +176,7 @@ impl Broker for LocalBroker {
                 let file = dir.open_with(&path, &options)?;
                 ensure!(file.metadata()?.is_file(), "only regular files can be read");
                 let mut bytes = Vec::new();
-                file.take(max_bytes as u64 + 1)
-                    .read_to_end(&mut bytes)?;
+                file.take(max_bytes as u64 + 1).read_to_end(&mut bytes)?;
                 ensure!(bytes.len() <= max_bytes, "file exceeds read limit");
                 Ok(json!({"text": String::from_utf8(bytes)?}))
             }
