@@ -345,31 +345,61 @@ fn directory_listing_is_sorted_bounded_and_confined() {
 
 #[test]
 fn lossy_json_values_and_custom_stringification_are_rejected() {
-    for value in ["NaN", "Infinity", "-Infinity", "{nested:NaN}", "[undefined]", "{missing:undefined}", "1n", "Symbol('x')", "{toJSON(){return null;},n:NaN}"] {
-        let source = format!("export default async function(){{return {{status:'completed',output:{value}}};}}");
-        assert!(matches!(run(&source,json!({}),Policy::default(),contract()).outcome,Outcome::Failed { .. }),"{value}");
+    for value in [
+        "NaN",
+        "Infinity",
+        "-Infinity",
+        "{nested:NaN}",
+        "[undefined]",
+        "{missing:undefined}",
+        "1n",
+        "Symbol('x')",
+        "{toJSON(){return null;},n:NaN}",
+    ] {
+        let source = format!(
+            "export default async function(){{return {{status:'completed',output:{value}}};}}"
+        );
+        assert!(
+            matches!(
+                run(&source, json!({}), Policy::default(), contract()).outcome,
+                Outcome::Failed { .. }
+            ),
+            "{value}"
+        );
     }
 }
 
 #[test]
 fn invalid_capability_arguments_are_observed_even_when_caught() {
-    for value in ["undefined", "NaN", "1n", "{bad:undefined}", "(()=>{const x={};x.self=x;return x;})()"] {
-        let source = format!("export default async function(){{try{{await clearings.call('files.read',{value});}}catch{{}}return {{status:'completed',output:true}};}}");
-        let result = run(&source,json!({}),Policy::default(),contract());
-        assert!(matches!(result.outcome,Outcome::Failed { .. }),"{value}");
-        assert_eq!(result.capability_calls,1,"{value}");
+    for value in [
+        "undefined",
+        "NaN",
+        "1n",
+        "{bad:undefined}",
+        "(()=>{const x={};x.self=x;return x;})()",
+    ] {
+        let source = format!(
+            "export default async function(){{try{{await clearings.call('files.read',{value});}}catch{{}}return {{status:'completed',output:true}};}}"
+        );
+        let result = run(&source, json!({}), Policy::default(), contract());
+        assert!(matches!(result.outcome, Outcome::Failed { .. }), "{value}");
+        assert_eq!(result.capability_calls, 1, "{value}");
     }
 }
 
 #[test]
 fn expensive_schema_validation_shares_the_invocation_deadline() {
-    let prepared = execute::prepare(executable(),"export default async function(){return {status:'completed',output:true};}").unwrap();
+    let prepared = execute::prepare(
+        executable(),
+        "export default async function(){return {status:'completed',output:true};}",
+    )
+    .unwrap();
     let mut c = contract();
     c.input_schema = json!({"allOf":vec![json!({"type":"object"});50_000]});
     c.limits.wall_ms = 10;
-    let mut broker = LocalBroker::new(&c,&Policy::default()).unwrap();
-    let result = execute::run(executable(),&c,&prepared,json!({}),&mut broker);
-    assert!(matches!(result.outcome,Outcome::Failed { .. }));
+    let mut broker = LocalBroker::new(&c, &Policy::default()).unwrap();
+    let result = execute::run(executable(), &c, &prepared, json!({}), &mut broker);
+    assert!(matches!(result.outcome, Outcome::Failed { .. }));
     assert!(result.elapsed_ms < 3000);
-    assert_eq!(result.capability_calls,0);
+    assert_eq!(result.capability_calls, 0);
 }
