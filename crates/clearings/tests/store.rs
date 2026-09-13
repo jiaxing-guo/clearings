@@ -224,3 +224,39 @@ fn fixture_responses_and_expected_outcomes_obey_live_byte_limits() {
     };
     assert!(s.prepare_task(&t).is_ok());
 }
+
+#[test]
+fn custom_fixture_inputs_match_live_query_arguments() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut t = task();
+    t.contract.capabilities = vec!["lookup".into()];
+    t.cases[0].calls = vec![
+        serde_json::from_value(json!({"name":"lookup","input":{},"result":null})).unwrap(),
+    ];
+    for input in [json!(null), json!([]), json!({"status":1})] {
+        t.cases[0].calls[0].input = input;
+        assert!(s.prepare_task(&t).is_err());
+    }
+    t.cases[0].calls[0].input = json!({"status":"open"});
+    assert!(s.prepare_task(&t).is_ok());
+}
+
+#[test]
+fn large_validation_failures_remain_readable_in_history() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut s = Store::open(&temp.path().join("state.db")).unwrap();
+    let task = s.prepare_task(&task()).unwrap();
+    let version = s.submit(exe(), &task, GOOD.into()).unwrap();
+    s.evaluate(exe(), &version).unwrap();
+    s.activate(&version, None).unwrap();
+    for input in [json!("x".repeat(2_000_000)), json!("世".repeat(500_000))] {
+        let report = s.run(exe(), &task, input, &Policy::default()).unwrap();
+        assert_eq!(report["run"]["outcome"]["status"], "failed");
+        let message = report["run"]["outcome"]["message"].as_str().unwrap();
+        assert!(message.len() <= 4108);
+        assert!(message.ends_with("[truncated]"));
+        assert!(serde_json::to_vec(&report).unwrap().len() < 8192);
+        assert_eq!(s.runs().unwrap()["runs"][0]["run"], report["run"]);
+    }
+}
