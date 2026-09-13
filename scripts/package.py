@@ -34,12 +34,13 @@ for item in metadata['packages']:
     if item.get('source') is None:
         continue
     name = item['name'] + '-' + item['version']
-    matches = [p for p in source.rglob('*') if p.is_file() and (p.name.upper().startswith(('LICENSE', 'LICENCE', 'COPYING', 'NOTICE')) or any(part.upper() in ('LICENSES', 'LICENCES') for part in p.relative_to(source).parts[:-1]))]
+    matches = [p for p in source.rglob('*') if p.is_file() and (p.name.upper().startswith(('LICENSE', 'LICENCE', 'COPYING', 'NOTICE', 'AUTHORS')) or any(part.upper() in ('LICENSES', 'LICENCES') for part in p.relative_to(source).parts[:-1]))]
     if item.get('license_file'):
         declared = source / item['license_file']
         if declared.is_file() and declared not in matches:
             matches.append(declared)
     upstream = []
+    material = 'archive'
     if not matches:
         # Some workspace crates omit their root license when published. Recover only
         # from the exact source commit recorded in the checksummed crate archive.
@@ -64,15 +65,29 @@ for item in metadata['packages']:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(body)
                 upstream.append({'url': url, 'sha256': hashlib.sha256(body).hexdigest()})
+        material = 'pinned-upstream'
         if not upstream:
-            missing.append(name)
-            print(json.dumps({'missing': name, 'repository': repository, 'license': item.get('license'), 'vcs': vcs, 'root_files': [p.name for p in source.iterdir()]}), flush=True)
+            # These two checked publications declare MIT but contain no standalone
+            # license or copyright notice, including in their recorded upstream tree.
+            # Preserve their complete published source and original declaration;
+            # supply standard MIT terms without inventing a copyright holder or year.
+            declaration_only = name in ('escape-simd-0.1.0', 'json-escape-simd-3.1.2') and commit == '4f54347555d2f520ac38b406cf69ff66d9570a57' and item.get('license') == 'MIT'
+            if declaration_only:
+                target = licenses / name
+                target.mkdir(parents=True, exist_ok=True)
+                shutil.copytree(source, target / 'published-source', dirs_exist_ok=True)
+                shutil.copy2(root / 'scripts/license-texts/MIT.txt', target / 'MIT.txt')
+                (target / 'NOTICE.txt').write_text('Upstream declares SPDX MIT in Cargo.toml. No standalone license or copyright notice was supplied. The complete published source and its declaration are included; MIT.txt provides the standard license terms. Source: https://spdx.org/licenses/MIT.html\n')
+                material = 'spdx-declaration-and-complete-source'
+            else:
+                missing.append(name)
+
 
     for file in matches:
         target = licenses / name / file.relative_to(source)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(file, target)
-    manifest.append({**{k: item.get(k) for k in ['name', 'version', 'license', 'repository']}, 'upstream_license_sources': upstream})
+    manifest.append({**{k: item.get(k) for k in ['name', 'version', 'license', 'repository']}, 'upstream_license_sources': upstream, 'license_material': material})
 if missing:
     raise RuntimeError('No license material found for: ' + ', '.join(missing))
 (package / 'dependencies.json').write_text(json.dumps(manifest, indent=2) + '\n')

@@ -14,7 +14,7 @@ tar -xzf clearings.tar.gz
 ./clearings/clearings sdk
 ```
 
-Use `sha256sum -c SHA256SUMS` on systems that provide it, or `shasum -a 256 -c SHA256SUMS` on macOS. Packaging collects license material from resolved dependencies, including bundled native sources. When a published workspace crate omits its root license, the build retrieves it from the exact upstream commit recorded in that crate. `dependencies.json` records package names, versions, declared licenses, and the URLs and hashes of these additional license files.
+Use `sha256sum -c SHA256SUMS` on systems that provide it, or `shasum -a 256 -c SHA256SUMS` on macOS. Packaging collects license material from resolved dependencies, including bundled native sources. When a published workspace crate omits its root license, the build retrieves it from the exact upstream commit recorded in that crate. Two pinned SIMD crate publications declare MIT but supply no standalone license notice. Their complete published source and original declarations are included alongside the standard MIT terms; no copyright holder or year is invented. `dependencies.json` distinguishes this case from original license files and records the URLs and hashes of retrieved license files.
 
 ## Build from source
 
