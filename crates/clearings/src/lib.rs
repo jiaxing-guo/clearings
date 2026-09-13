@@ -1,8 +1,8 @@
 pub mod api;
+mod blocking_io;
 pub mod capabilities;
 pub mod contract;
 pub mod execute;
-mod file_io;
 mod isolation;
 pub mod mcp;
 pub mod store;

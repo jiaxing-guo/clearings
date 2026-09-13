@@ -1,4 +1,4 @@
-//! Bound waiting and outstanding read-only filesystem work, including stalled mounts.
+//! Bound waiting and outstanding blocking work, including stalled I/O.
 use anyhow::{Context, Result, ensure};
 use serde_json::Value;
 use std::sync::{Arc, Mutex, OnceLock, mpsc};
@@ -15,7 +15,7 @@ impl Pool {
         for _ in 0..workers {
             let receiver = receiver.clone();
             std::thread::Builder::new()
-                .name("clearings-file-io".into())
+                .name("clearings-blocking-io".into())
                 .spawn(move || {
                     loop {
                         let job = receiver.lock().unwrap().recv();
@@ -34,7 +34,7 @@ impl Pool {
         remaining: Duration,
         operation: impl FnOnce() -> Result<Value> + Send + 'static,
     ) -> Result<Value> {
-        ensure!(!remaining.is_zero(), "file I/O deadline exceeded");
+        ensure!(!remaining.is_zero(), "blocking I/O deadline exceeded");
         let deadline = Instant::now() + remaining;
         let (sender, receiver) = mpsc::sync_channel(1);
         self.sender
@@ -43,13 +43,13 @@ impl Pool {
                     let _ = sender.send(operation());
                 }
             }))
-            .map_err(|_| anyhow::anyhow!("file I/O capacity exhausted"))?;
+            .map_err(|_| anyhow::anyhow!("blocking I/O capacity exhausted"))?;
         let remaining = deadline
             .checked_duration_since(Instant::now())
-            .context("file I/O deadline exceeded")?;
+            .context("blocking I/O deadline exceeded")?;
         receiver
             .recv_timeout(remaining)
-            .context("file I/O deadline exceeded")?
+            .context("blocking I/O deadline exceeded")?
     }
 }
 
@@ -60,7 +60,7 @@ pub(crate) fn call(
     static POOL: OnceLock<std::result::Result<Pool, String>> = OnceLock::new();
     POOL.get_or_init(|| Pool::new(4, 4).map_err(|e| e.to_string()))
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("file I/O pool unavailable: {e}"))?
+        .map_err(|e| anyhow::anyhow!("blocking I/O pool unavailable: {e}"))?
         .call(remaining, operation)
 }
 

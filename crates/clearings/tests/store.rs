@@ -286,15 +286,15 @@ fn accepted_objects_remain_inspectable_with_large_evaluations() {
     t.contract.output_schema = json!({});
     t.contract.limits.output_bytes = 1024 * 1024;
     t.cases.truncate(1);
-    t.cases[0].expected = clearings::contract::Outcome::Completed {
-        output: json!("x".repeat(3_000_000)),
-    };
+    t.contract.input_schema = json!({});
+    t.cases[0].input = json!("x".repeat(3_000_000));
     assert!(
         s.prepare_task(&t)
             .unwrap_err()
             .to_string()
             .contains("inspect byte limit")
     );
+    t.cases[0].input = json!(0);
     t.cases[0].expected = clearings::contract::Outcome::Completed {
         output: json!("x".repeat(900_000)),
     };
@@ -314,4 +314,38 @@ fn accepted_objects_remain_inspectable_with_large_evaluations() {
     assert!(
         serde_json::to_vec(&inspected).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3
     );
+}
+
+#[test]
+fn fixture_responses_and_expected_outcomes_obey_live_byte_limits() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut t = task();
+    t.contract.capabilities = vec!["lookup".into()];
+    t.contract.limits.output_bytes = 128;
+    t.cases[0].calls = vec![
+        serde_json::from_value(json!({"name":"lookup","input":{},"result":"x".repeat(200)}))
+            .unwrap(),
+    ];
+    assert!(
+        s.prepare_task(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("response byte limit")
+    );
+    t.cases[0].calls.clear();
+    t.contract.output_schema = json!({});
+    t.cases[0].expected = clearings::contract::Outcome::Completed {
+        output: json!("x".repeat(200)),
+    };
+    assert!(
+        s.prepare_task(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("output byte limit")
+    );
+    t.cases[0].expected = clearings::contract::Outcome::Completed {
+        output: json!("ok"),
+    };
+    assert!(s.prepare_task(&t).is_ok());
 }

@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 use std::io::BufReader;
 use std::path::Path;
 use std::process::{Child, Command, Stdio};
-use std::sync::mpsc;
+use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
 struct Guard(Child);
@@ -46,7 +46,7 @@ fn exchange(
             .spawn()
             .context("start isolated worker")?,
     );
-    let mut input = child.0.stdin.take().context("worker stdin")?;
+    let input = Arc::new(Mutex::new(child.0.stdin.take().context("worker stdin")?));
     let output = child.0.stdout.take().context("worker stdout")?;
     let (sender, receiver) = mpsc::sync_channel(1);
     let reader = std::thread::spawn(move || {
@@ -61,7 +61,7 @@ fn exchange(
     });
     let mut capability_failure = None;
     let result = (|| -> Result<Event> {
-        write_message(&mut input, request)?;
+        send(&input, request, deadline)?;
         loop {
             let remaining = deadline
                 .checked_duration_since(Instant::now())
@@ -78,7 +78,7 @@ fn exchange(
                         "capability call budget exhausted"
                     );
                     capability_failure.get_or_insert_with(|| message.clone());
-                    write_message(&mut input, &json!({"ok":false,"error":message}))?;
+                    send(&input, &json!({"ok":false,"error":message}), deadline)?;
                 }
                 Event::Call {
                     name,
@@ -103,7 +103,7 @@ fn exchange(
                             json!({"ok":false,"error":message})
                         }
                     };
-                    write_message(&mut input, &response)?;
+                    send(&input, &response, deadline)?;
                 }
                 Event::Finished {
                     outcome: Outcome::Completed { .. },
@@ -122,6 +122,26 @@ fn exchange(
     drop(child);
     let _ = reader.join();
     result
+}
+
+fn send(
+    input: &Arc<Mutex<std::process::ChildStdin>>,
+    message: &impl Serialize,
+    deadline: Instant,
+) -> Result<()> {
+    let message = serde_json::to_value(message)?;
+    let input = input.clone();
+    let remaining = deadline
+        .checked_duration_since(Instant::now())
+        .context("worker write deadline exceeded")?;
+    crate::blocking_io::call(remaining, move || {
+        let mut input = input
+            .lock()
+            .map_err(|_| anyhow::anyhow!("worker stdin unavailable"))?;
+        write_message(&mut *input, &message)?;
+        Ok(Value::Null)
+    })?;
+    Ok(())
 }
 
 pub fn prepare(executable: &Path, source: &str) -> Result<Prepared> {
