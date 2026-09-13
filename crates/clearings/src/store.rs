@@ -339,7 +339,10 @@ impl Store {
 
     pub fn runs_page(&self, before: Option<i64>) -> Result<Value> {
         const PAGE_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
-        ensure!(before.is_none_or(|id| id > 0), "before must be a positive run ID");
+        ensure!(
+            before.is_none_or(|id| id > 0),
+            "before must be a positive run ID"
+        );
         let mut stmt = self.db.prepare(
             "SELECT id,version,input_digest,length(CAST(report AS BLOB)),
              CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at

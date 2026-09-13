@@ -36,7 +36,9 @@ pub enum Operation {
         task: String,
         input: Value,
     },
-    Runs { before: Option<i64> },
+    Runs {
+        before: Option<i64>,
+    },
     Sdk,
 }
 pub struct Api {

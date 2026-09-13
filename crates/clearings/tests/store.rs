@@ -118,12 +118,17 @@ fn large_history_is_paged_before_loading_reports() {
     let path = temp.path().join("history.db");
     let s = Store::open(&path).unwrap();
     let id = s.prepare_task(&task()).unwrap();
-    let version = s.submit(exe(),&id,GOOD.into()).unwrap();
+    let version = s.submit(exe(), &id, GOOD.into()).unwrap();
     let mut db = rusqlite::Connection::open(&path).unwrap();
     let transaction = db.transaction().unwrap();
     let report = json!({"outcome":{"status":"completed","output":"x".repeat(1_000_000)},"elapsed_ms":1,"capability_calls":0,"model_usage":null}).to_string();
     for _ in 0..100 {
-        transaction.execute("INSERT INTO runs(version,input_digest,report) VALUES(?1,?2,?3)",rusqlite::params![version,"a".repeat(64),report]).unwrap();
+        transaction
+            .execute(
+                "INSERT INTO runs(version,input_digest,report) VALUES(?1,?2,?3)",
+                rusqlite::params![version, "a".repeat(64), report],
+            )
+            .unwrap();
     }
     transaction.commit().unwrap();
     let mut before = None;
@@ -132,17 +137,33 @@ fn large_history_is_paged_before_loading_reports() {
         let page = s.runs_page(before).unwrap();
         assert!(serde_json::to_vec(&page).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
         let rows = page["runs"].as_array().unwrap();
-        assert_eq!(rows.len(),1);
-        assert_eq!(rows[0]["id"],expected);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["id"], expected);
         expected -= 1;
         before = page["next_before"].as_i64();
-        if before.is_none() { break; }
+        if before.is_none() {
+            break;
+        }
     }
-    assert_eq!(expected,0);
+    assert_eq!(expected, 0);
     assert!(s.runs_page(Some(0)).is_err());
-    assert!(s.runs_page(Some(1)).unwrap()["runs"].as_array().unwrap().is_empty());
+    assert!(
+        s.runs_page(Some(1)).unwrap()["runs"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
     // An oversized row is rejected before its malformed JSON is decoded.
-    db.execute("UPDATE runs SET report=?1 WHERE id=100",["!".repeat(clearings::contract::MAX_WIRE_BYTES)]).unwrap();
-    assert!(s.runs().unwrap_err().to_string().contains("history page limit"));
-    assert_eq!(s.runs_page(Some(100)).unwrap()["runs"][0]["id"],99);
+    db.execute(
+        "UPDATE runs SET report=?1 WHERE id=100",
+        ["!".repeat(clearings::contract::MAX_WIRE_BYTES)],
+    )
+    .unwrap();
+    assert!(
+        s.runs()
+            .unwrap_err()
+            .to_string()
+            .contains("history page limit")
+    );
+    assert_eq!(s.runs_page(Some(100)).unwrap()["runs"][0]["id"], 99);
 }

@@ -160,7 +160,11 @@ pub fn serve(mut api: Api) -> Result<()> {
 fn write_response(output: &mut impl std::io::Write, response: &Value) -> Result<()> {
     // The newline is part of the wire limit, including at the exact boundary.
     if serde_json::to_vec(response)?.len() >= crate::contract::MAX_WIRE_BYTES {
-        let mut bounded = error(response["id"].clone(), -32000, "Response exceeds transport limit");
+        let mut bounded = error(
+            response["id"].clone(),
+            -32000,
+            "Response exceeds transport limit",
+        );
         if serde_json::to_vec(&bounded)?.len() >= crate::contract::MAX_WIRE_BYTES {
             bounded["id"] = Value::Null;
         }
@@ -177,16 +181,23 @@ mod tests {
     fn exact_wire_boundary_returns_error_and_keeps_transport_writable() {
         let empty = json!({"jsonrpc":"2.0","id":1,"result":{"padding":""}});
         let overhead = serde_json::to_vec(&empty).unwrap().len();
-        for body_bytes in [crate::contract::MAX_WIRE_BYTES - 1, crate::contract::MAX_WIRE_BYTES, crate::contract::MAX_WIRE_BYTES + 1] {
+        for body_bytes in [
+            crate::contract::MAX_WIRE_BYTES - 1,
+            crate::contract::MAX_WIRE_BYTES,
+            crate::contract::MAX_WIRE_BYTES + 1,
+        ] {
             let mut response = empty.clone();
             response["result"]["padding"] = json!("x".repeat(body_bytes - overhead));
             let mut wire = Vec::new();
-            write_response(&mut wire,&response).unwrap();
+            write_response(&mut wire, &response).unwrap();
             assert!(wire.len() <= crate::contract::MAX_WIRE_BYTES);
             let parsed: Value = serde_json::from_slice(&wire).unwrap();
-            assert_eq!(parsed.get("error").is_some(),body_bytes >= crate::contract::MAX_WIRE_BYTES);
-            write_response(&mut wire,&json!({"jsonrpc":"2.0","id":2,"result":{}})).unwrap();
-            assert_eq!(wire.iter().filter(|b| **b == b'\n').count(),2);
+            assert_eq!(
+                parsed.get("error").is_some(),
+                body_bytes >= crate::contract::MAX_WIRE_BYTES
+            );
+            write_response(&mut wire, &json!({"jsonrpc":"2.0","id":2,"result":{}})).unwrap();
+            assert_eq!(wire.iter().filter(|b| **b == b'\n').count(), 2);
         }
     }
 }
