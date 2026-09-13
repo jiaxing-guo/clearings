@@ -403,3 +403,11 @@ fn expensive_schema_validation_shares_the_invocation_deadline() {
     assert!(result.elapsed_ms < 3000);
     assert_eq!(result.capability_calls, 0);
 }
+
+#[test]
+fn literal_reference_names_are_valid_schema_data() {
+    let schema = json!({"type":"object","properties":{"$ref":{"type":"string"},"$dynamicRef":{"type":"integer"}},"required":["$ref","$dynamicRef"]});
+    clearings::contract::validate_schema(&schema, &json!({"$ref":"hello","$dynamicRef":3})).unwrap();
+    clearings::contract::validate_schema(&json!({"const":{"$ref":"literal"}}), &json!({"$ref":"literal"})).unwrap();
+    assert!(clearings::contract::validate_schema(&json!({"$ref":"file:///etc/passwd"}), &json!(null)).is_err());
+}
