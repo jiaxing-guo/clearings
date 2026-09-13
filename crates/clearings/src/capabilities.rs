@@ -72,7 +72,7 @@ impl Broker for LocalBroker {
         let name = name.to_owned();
         let path = path.to_owned();
         let max_bytes = self.max_bytes;
-        crate::file_io::call(remaining, move || match name.as_str() {
+        crate::blocking_io::call(remaining, move || match name.as_str() {
             "files.read" => {
                 let mut options = cap_std::fs::OpenOptions::new();
                 options.read(true);
