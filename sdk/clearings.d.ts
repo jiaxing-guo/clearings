@@ -6,9 +6,21 @@ type Outcome<T extends Json = Json> =
   | { status: 'needs_agent'; reason: string; context: Json }
   | { status: 'failed'; code: string; message: string };
 
+type CapabilityInput<Name extends string> = Name extends 'files.read' | 'files.list'
+  ? { root: string; path: string }
+  : Json;
+type CapabilityOutput<Name extends string> = Name extends 'files.read'
+  ? { text: string }
+  : Name extends 'files.list'
+    ? { entries: string[] }
+    : Json;
+
 declare const clearings: {
-  call(name: 'files.read', input: { root: string; path: string }): Promise<{ text: string }>;
-  call(name: 'files.list', input: { root: string; path: string }): Promise<{ entries: string[] }>;
+  /** A policy-bound operation. Requires TypeScript 5.4+ when type-checking source. */
+  call<const Name extends string>(
+    name: Name,
+    input: NoInfer<CapabilityInput<Name>>,
+  ): Promise<CapabilityOutput<Name>>;
 };
 
 // Each routine default-exports one async function accepting JSON and returning Outcome.

@@ -43,6 +43,7 @@ fn file_grants_and_fresh_reads() {
     let temp = tempfile::tempdir().unwrap();
     let policy = Policy {
         roots: [("data".into(), temp.path().into())].into(),
+        ..Policy::default()
     };
     let source = "export default async function(x) { const r=await clearings.call('files.read',x); return {status:'completed',output:r.text}; }";
     for text in ["one", "新しい値"] {
@@ -91,6 +92,7 @@ fn symlink_cannot_escape_root() {
     std::os::unix::fs::symlink("/etc/passwd", temp.path().join("escape")).unwrap();
     let policy = Policy {
         roots: [("data".into(), temp.path().into())].into(),
+        ..Policy::default()
     };
     let result = run(
         "export default async function(){return {status:'completed',output:await clearings.call('files.read',{root:'data',path:'escape'})};}",
@@ -214,6 +216,7 @@ fn failing_after_a_call_retains_accounting() {
     std::fs::write(temp.path().join("a"), "ok").unwrap();
     let policy = Policy {
         roots: [("data".into(), temp.path().into())].into(),
+        ..Policy::default()
     };
     let mut c = contract();
     c.limits.wall_ms = 500;
@@ -236,6 +239,7 @@ fn caught_capability_errors_cannot_become_success_but_can_handoff() {
         let temp = tempfile::tempdir().unwrap();
         let policy = Policy {
             roots: [("data".into(), temp.path().into())].into(),
+            ..Policy::default()
         };
         for status in ["completed", "needs_agent", "not_applicable"] {
             let source = format!(
@@ -281,6 +285,7 @@ fn directory_listing_is_sorted_bounded_and_confined() {
     std::fs::write(temp.path().join("nested/hidden"), "").unwrap();
     let policy = Policy {
         roots: [("data".into(), temp.path().into())].into(),
+        ..Policy::default()
     };
     let mut broker = LocalBroker::new(&contract(), &policy).unwrap();
     let call = |broker: &mut LocalBroker, root: &str, path: &str| {

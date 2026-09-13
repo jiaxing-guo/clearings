@@ -1,4 +1,4 @@
-use crate::contract::{Contract, Policy};
+use crate::contract::{Contract, Policy, check_json, compile_schema};
 use anyhow::{Context, Result, bail, ensure};
 use cap_std::{ambient_authority, fs::Dir};
 use serde::Deserialize;
@@ -17,10 +17,53 @@ pub struct LocalBroker {
     capabilities: Vec<String>,
     roots: BTreeMap<String, Arc<Dir>>,
     max_bytes: usize,
+    http: BTreeMap<String, ValidatedHttpBinding>,
+    client: Option<reqwest::blocking::Client>,
+}
+
+struct ValidatedHttpBinding {
+    url: reqwest::Url,
+    query_keys: Vec<String>,
+    output: jsonschema::Validator,
+    bearer_token_env: Option<String>,
 }
 
 impl LocalBroker {
     pub fn new(contract: &Contract, policy: &Policy) -> Result<Self> {
+        let mut http = BTreeMap::new();
+        for (name, binding) in &policy.http {
+            ensure!(!name.starts_with("files."), "reserved capability name");
+            let url = reqwest::Url::parse(&binding.url)?;
+            ensure!(url.host_str().is_some(), "HTTP endpoint requires a host");
+            ensure!(
+                url.scheme() == "https"
+                    || (url.scheme() == "http"
+                        && matches!(url.host_str(), Some("127.0.0.1" | "[::1]" | "localhost"))),
+                "HTTP bindings require HTTPS except explicit loopback endpoints"
+            );
+            ensure!(
+                url.username().is_empty() && url.password().is_none() && url.fragment().is_none(),
+                "credentials and fragments do not belong in the URL"
+            );
+            http.insert(
+                name.clone(),
+                ValidatedHttpBinding {
+                    url,
+                    query_keys: binding.query_keys.clone(),
+                    output: compile_schema(&binding.output_schema)?,
+                    bearer_token_env: binding.bearer_token_env.clone(),
+                },
+            );
+        }
+        let client = if http.is_empty() {
+            None
+        } else {
+            Some(
+                reqwest::blocking::Client::builder()
+                    .redirect(reqwest::redirect::Policy::none())
+                    .build()?,
+            )
+        };
         let roots = policy
             .roots
             .iter()
@@ -37,6 +80,8 @@ impl LocalBroker {
         Ok(Self {
             capabilities: contract.capabilities.clone(),
             roots,
+            http,
+            client,
             max_bytes: contract.limits.output_bytes,
         })
     }
@@ -49,21 +94,128 @@ struct FileInput {
     path: String,
 }
 
+fn file_input(input: Value) -> Result<FileInput> {
+    let args: FileInput = serde_json::from_value(input)?;
+    let path = Path::new(&args.path);
+    ensure!(
+        !path.is_absolute()
+            && path
+                .components()
+                .all(|c| matches!(c, Component::Normal(_) | Component::CurDir)),
+        "only relative paths within a granted root are allowed"
+    );
+    Ok(args)
+}
+
+pub(crate) fn validate_file_fixture(
+    name: &str,
+    input: &Value,
+    result: &Value,
+    max_bytes: usize,
+) -> Result<()> {
+    if !matches!(name, "files.read" | "files.list") {
+        return Ok(());
+    }
+    file_input(input.clone())?;
+    let object = result
+        .as_object()
+        .context("file fixture result must be an object")?;
+    ensure!(
+        object.len() == 1,
+        "file fixture result has unexpected fields"
+    );
+    if name == "files.read" {
+        let text = result
+            .get("text")
+            .and_then(Value::as_str)
+            .context("file fixture requires text")?;
+        ensure!(text.len() <= max_bytes, "file fixture exceeds read limit");
+    } else {
+        let entries = result
+            .get("entries")
+            .and_then(Value::as_array)
+            .context("listing fixture requires entries")?;
+        ensure!(entries.len() <= 1000, "listing fixture exceeds entry limit");
+        let mut previous: Option<&str> = None;
+        for entry in entries {
+            let name = entry.as_str().context("listing entries must be strings")?;
+            let mut components = Path::new(name).components();
+            ensure!(
+                matches!(components.next(), Some(Component::Normal(_)))
+                    && components.next().is_none()
+                    && !name.contains('/')
+                    && !name.contains('\0'),
+                "listing entries must be immediate filenames"
+            );
+            ensure!(
+                previous.is_none_or(|p| p < name),
+                "listing entries must be sorted and unique"
+            );
+            previous = Some(name);
+        }
+        ensure!(
+            serde_json::to_vec(result)?.len() <= max_bytes,
+            "listing fixture exceeds byte limit"
+        );
+    }
+    Ok(())
+}
+
 impl Broker for LocalBroker {
     fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value> {
         ensure!(
             self.capabilities.iter().any(|c| c == name),
             "capability was not declared: {name}"
         );
-        let args: FileInput = serde_json::from_value(input)?;
+        if let Some(binding) = self.http.get(name) {
+            let mut url = binding.url.clone();
+            let args = input
+                .as_object()
+                .context("HTTP input must be an object of query strings")?;
+            for (key, value) in args {
+                ensure!(binding.query_keys.contains(key), "query key is not granted");
+                url.query_pairs_mut()
+                    .append_pair(key, value.as_str().context("query values must be strings")?);
+            }
+            let mut request = self
+                .client
+                .as_ref()
+                .context("HTTP client unavailable")?
+                .get(url)
+                .timeout(remaining);
+            if let Some(env) = &binding.bearer_token_env {
+                request = request.bearer_auth(
+                    std::env::var(env).context("configured credential is unavailable")?,
+                );
+            }
+            // Errors deliberately exclude URLs and headers; credentials never enter the worker protocol.
+            let response = request
+                .send()
+                .map_err(|_| anyhow::anyhow!("HTTP request failed"))?;
+            ensure!(
+                response.status().is_success(),
+                "HTTP endpoint returned status {}",
+                response.status().as_u16()
+            );
+            let mut body = Vec::new();
+            response
+                .take(self.max_bytes as u64 + 1)
+                .read_to_end(&mut body)
+                .map_err(|_| anyhow::anyhow!("HTTP body read failed"))?;
+            ensure!(
+                body.len() <= self.max_bytes,
+                "HTTP response exceeds byte limit"
+            );
+            let value: Value = serde_json::from_slice(&body)?;
+            check_json(&value)?;
+            binding
+                .output
+                .validate(&value)
+                .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
+            return Ok(value);
+        }
+        let args = file_input(input)?;
         let path = Path::new(&args.path);
-        ensure!(
-            !path.is_absolute()
-                && path
-                    .components()
-                    .all(|c| matches!(c, Component::Normal(_) | Component::CurDir)),
-            "only relative paths within a granted root are allowed"
-        );
         let dir = self
             .roots
             .get(&args.root)

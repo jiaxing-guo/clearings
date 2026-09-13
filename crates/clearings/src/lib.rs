@@ -3,6 +3,7 @@ pub mod contract;
 pub mod execute;
 mod file_io;
 mod isolation;
+pub mod store;
 mod transform;
 mod worker;
 

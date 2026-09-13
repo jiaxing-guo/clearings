@@ -100,7 +100,7 @@ impl Contract {
 
 // Network and file retrieval are disabled by jsonschema's default-features = false.
 // Let the schema compiler distinguish schema keywords from literal property names.
-fn compile_schema(schema: &Value) -> Result<jsonschema::Validator> {
+pub(crate) fn compile_schema(schema: &Value) -> Result<jsonschema::Validator> {
     jsonschema::validator_for(schema).map_err(|e| anyhow::anyhow!("invalid schema: {e}"))
 }
 
@@ -159,6 +159,8 @@ impl Outcome {
 pub struct Policy {
     #[serde(default)]
     pub roots: BTreeMap<String, PathBuf>,
+    #[serde(default)]
+    pub http: BTreeMap<String, HttpBinding>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -214,4 +216,14 @@ pub fn require_source(source: &str) -> Result<()> {
         bail!("routine source exceeds 256 KiB");
     }
     Ok(())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HttpBinding {
+    pub url: String,
+    #[serde(default)]
+    pub query_keys: Vec<String>,
+    pub output_schema: Value,
+    pub bearer_token_env: Option<String>,
 }
