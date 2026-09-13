@@ -65,7 +65,10 @@ impl Task {
             );
             self.contract.check_input(&case.input)?;
             self.contract.check_outcome(&case.expected)?;
-            ensure!(serde_json::to_vec(&case.expected)?.len() <= self.contract.limits.output_bytes, "expected outcome exceeds run output byte limit");
+            ensure!(
+                serde_json::to_vec(&case.expected)?.len() <= self.contract.limits.output_bytes,
+                "expected outcome exceeds run output byte limit"
+            );
             ensure!(
                 case.calls.len() <= self.contract.limits.capability_calls,
                 "fixture exceeds call budget"

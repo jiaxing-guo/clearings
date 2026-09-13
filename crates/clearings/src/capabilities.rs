@@ -116,7 +116,10 @@ pub(crate) fn validate_file_fixture(
     max_bytes: usize,
 ) -> Result<()> {
     if !matches!(name, "files.read" | "files.list") {
-        ensure!(serde_json::to_vec(result)?.len() <= max_bytes, "capability fixture exceeds response byte limit");
+        ensure!(
+            serde_json::to_vec(result)?.len() <= max_bytes,
+            "capability fixture exceeds response byte limit"
+        );
         return Ok(());
     }
     file_input(input.clone())?;
@@ -172,50 +175,50 @@ impl Broker for LocalBroker {
         );
         if let Some(binding) = self.http.get(name) {
             let binding = binding.clone();
-            let client = self.client.as_ref().context("HTTP client unavailable")?.clone();
+            let client = self
+                .client
+                .as_ref()
+                .context("HTTP client unavailable")?
+                .clone();
             let max_bytes = self.max_bytes;
             return crate::blocking_io::call(remaining, move || {
-            let mut url = binding.url.clone();
-            let args = input
-                .as_object()
-                .context("HTTP input must be an object of query strings")?;
-            for (key, value) in args {
-                ensure!(binding.query_keys.contains(key), "query key is not granted");
-                url.query_pairs_mut()
-                    .append_pair(key, value.as_str().context("query values must be strings")?);
-            }
-            let mut request = client.get(url)
-                .timeout(remaining);
-            if let Some(env) = &binding.bearer_token_env {
-                request = request.bearer_auth(
-                    std::env::var(env).context("configured credential is unavailable")?,
+                let mut url = binding.url.clone();
+                let args = input
+                    .as_object()
+                    .context("HTTP input must be an object of query strings")?;
+                for (key, value) in args {
+                    ensure!(binding.query_keys.contains(key), "query key is not granted");
+                    url.query_pairs_mut()
+                        .append_pair(key, value.as_str().context("query values must be strings")?);
+                }
+                let mut request = client.get(url).timeout(remaining);
+                if let Some(env) = &binding.bearer_token_env {
+                    request = request.bearer_auth(
+                        std::env::var(env).context("configured credential is unavailable")?,
+                    );
+                }
+                // Errors deliberately exclude URLs and headers; credentials never enter the worker protocol.
+                let response = request
+                    .send()
+                    .map_err(|_| anyhow::anyhow!("HTTP request failed"))?;
+                ensure!(
+                    response.status().is_success(),
+                    "HTTP endpoint returned status {}",
+                    response.status().as_u16()
                 );
-            }
-            // Errors deliberately exclude URLs and headers; credentials never enter the worker protocol.
-            let response = request
-                .send()
-                .map_err(|_| anyhow::anyhow!("HTTP request failed"))?;
-            ensure!(
-                response.status().is_success(),
-                "HTTP endpoint returned status {}",
-                response.status().as_u16()
-            );
-            let mut body = Vec::new();
-            response
-                .take(max_bytes as u64 + 1)
-                .read_to_end(&mut body)
-                .map_err(|_| anyhow::anyhow!("HTTP body read failed"))?;
-            ensure!(
-                body.len() <= max_bytes,
-                "HTTP response exceeds byte limit"
-            );
-            let value: Value = serde_json::from_slice(&body)?;
-            check_json(&value)?;
-            binding
-                .output
-                .validate(&value)
-                .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
-            Ok(value)
+                let mut body = Vec::new();
+                response
+                    .take(max_bytes as u64 + 1)
+                    .read_to_end(&mut body)
+                    .map_err(|_| anyhow::anyhow!("HTTP body read failed"))?;
+                ensure!(body.len() <= max_bytes, "HTTP response exceeds byte limit");
+                let value: Value = serde_json::from_slice(&body)?;
+                check_json(&value)?;
+                binding
+                    .output
+                    .validate(&value)
+                    .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
+                Ok(value)
             });
         }
         let args = file_input(input)?;

@@ -198,12 +198,29 @@ fn fixture_responses_and_expected_outcomes_obey_live_byte_limits() {
     let mut t = task();
     t.contract.capabilities = vec!["lookup".into()];
     t.contract.limits.output_bytes = 128;
-    t.cases[0].calls = vec![serde_json::from_value(json!({"name":"lookup","input":{},"result":"x".repeat(200)})).unwrap()];
-    assert!(s.prepare_task(&t).unwrap_err().to_string().contains("response byte limit"));
+    t.cases[0].calls = vec![
+        serde_json::from_value(json!({"name":"lookup","input":{},"result":"x".repeat(200)}))
+            .unwrap(),
+    ];
+    assert!(
+        s.prepare_task(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("response byte limit")
+    );
     t.cases[0].calls.clear();
     t.contract.output_schema = json!({});
-    t.cases[0].expected = clearings::contract::Outcome::Completed { output:json!("x".repeat(200)) };
-    assert!(s.prepare_task(&t).unwrap_err().to_string().contains("output byte limit"));
-    t.cases[0].expected = clearings::contract::Outcome::Completed { output:json!("ok") };
+    t.cases[0].expected = clearings::contract::Outcome::Completed {
+        output: json!("x".repeat(200)),
+    };
+    assert!(
+        s.prepare_task(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("output byte limit")
+    );
+    t.cases[0].expected = clearings::contract::Outcome::Completed {
+        output: json!("ok"),
+    };
     assert!(s.prepare_task(&t).is_ok());
 }
