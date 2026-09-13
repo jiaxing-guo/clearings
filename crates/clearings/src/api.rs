@@ -10,7 +10,9 @@ use std::path::PathBuf;
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
-    List { after: Option<String> },
+    List {
+        after: Option<String>,
+    },
     Inspect {
         id: String,
     },

@@ -94,6 +94,73 @@ struct FileInput {
     path: String,
 }
 
+fn file_input(input: Value) -> Result<FileInput> {
+    let args: FileInput = serde_json::from_value(input)?;
+    let path = Path::new(&args.path);
+    ensure!(
+        !path.is_absolute()
+            && path
+                .components()
+                .all(|c| matches!(c, Component::Normal(_) | Component::CurDir)),
+        "only relative paths within a granted root are allowed"
+    );
+    Ok(args)
+}
+
+pub(crate) fn validate_file_fixture(
+    name: &str,
+    input: &Value,
+    result: &Value,
+    max_bytes: usize,
+) -> Result<()> {
+    if !matches!(name, "files.read" | "files.list") {
+        return Ok(());
+    }
+    file_input(input.clone())?;
+    let object = result
+        .as_object()
+        .context("file fixture result must be an object")?;
+    ensure!(
+        object.len() == 1,
+        "file fixture result has unexpected fields"
+    );
+    if name == "files.read" {
+        let text = result
+            .get("text")
+            .and_then(Value::as_str)
+            .context("file fixture requires text")?;
+        ensure!(text.len() <= max_bytes, "file fixture exceeds read limit");
+    } else {
+        let entries = result
+            .get("entries")
+            .and_then(Value::as_array)
+            .context("listing fixture requires entries")?;
+        ensure!(entries.len() <= 1000, "listing fixture exceeds entry limit");
+        let mut previous: Option<&str> = None;
+        for entry in entries {
+            let name = entry.as_str().context("listing entries must be strings")?;
+            let mut components = Path::new(name).components();
+            ensure!(
+                matches!(components.next(), Some(Component::Normal(_)))
+                    && components.next().is_none()
+                    && !name.contains('/')
+                    && !name.contains('\0'),
+                "listing entries must be immediate filenames"
+            );
+            ensure!(
+                previous.is_none_or(|p| p < name),
+                "listing entries must be sorted and unique"
+            );
+            previous = Some(name);
+        }
+        ensure!(
+            serde_json::to_vec(result)?.len() <= max_bytes,
+            "listing fixture exceeds byte limit"
+        );
+    }
+    Ok(())
+}
+
 impl Broker for LocalBroker {
     fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value> {
         ensure!(
@@ -147,15 +214,8 @@ impl Broker for LocalBroker {
                 .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
             return Ok(value);
         }
-        let args: FileInput = serde_json::from_value(input)?;
+        let args = file_input(input)?;
         let path = Path::new(&args.path);
-        ensure!(
-            !path.is_absolute()
-                && path
-                    .components()
-                    .all(|c| matches!(c, Component::Normal(_) | Component::CurDir)),
-            "only relative paths within a granted root are allowed"
-        );
         let dir = self
             .roots
             .get(&args.root)
