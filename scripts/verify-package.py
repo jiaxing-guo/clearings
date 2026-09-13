@@ -38,6 +38,16 @@ with tempfile.TemporaryDirectory() as temporary:
                 assert second['run']['capability_calls'] == 2
             finally:
                 path.write_bytes(original)
+        if name == 'group-logs':
+            path = folder / 'data' / 'sample.jsonl'
+            original = path.read_bytes()
+            try:
+                row = {'level': 'warn', 'message': '__proto__'}
+                path.write_text(json.dumps(row) + '\n' + json.dumps(row) + '\n')
+                second = run('run', task, '--input', folder / 'input.json', '--policy', folder / 'policy.json')
+                assert second['run']['outcome']['output'] == [{**row, 'count': 2}]
+            finally:
+                path.write_bytes(original)
         if name == 'normalize-contacts':
             new_input = temp / 'contacts.json'
             new_input.write_text(json.dumps({'rows': [{'name': ' Zoe ', 'email': 'Z@EXAMPLE.COM'}, {'name': 'Second', 'email': 'z@example.com'}]}))
@@ -47,5 +57,5 @@ with tempfile.TemporaryDirectory() as temporary:
             handoff = run('run', task, '--input', new_input, '--policy', folder / 'policy.json')
             assert handoff['run']['outcome']['status'] == 'needs_agent'
     assert len(run('list')['tasks']) == 3
-    assert len(run('runs')['runs']) == 6
-print('Packaged binary: 3 taught routines, 6 fresh executions, explicit handoff, empty PATH.')
+    assert len(run('runs')['runs']) == 7
+print('Packaged binary: 3 taught routines, 7 fresh executions, explicit handoff, empty PATH.')

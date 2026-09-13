@@ -28,6 +28,6 @@ Change the input and run again. For a real task, ask your existing coding agent 
 
 ## Evidence and limits
 
-The package check teaches all three routines using the CLI, evaluates and activates them, then makes six executions. It verifies a file changed after activation, an unseen contact input and an explicit handoff. Each executable invocation receives an empty `PATH`, with no Node, Python, npm or Rust compiler available. Python orchestrates the build-time check outside the installed runtime.
+The package check teaches all three routines using the CLI, evaluates and activates them, then makes seven executions. It verifies a file changed after activation, an unseen log sample, an unseen contact input and an explicit handoff. Each executable invocation receives an empty `PATH`, with no Node, Python, npm or Rust compiler available. Python orchestrates the build-time check outside the installed runtime.
 
 `runs` records results, elapsed execution time and capability-call counts. Missing model usage is `null`; token savings are not inferred from a successful run or a shorter output. The runtime itself calls no model, while authoring, choosing a routine and interpreting its result still consume agent work. These examples establish reusable execution, not a measured reduction in total agent cost.

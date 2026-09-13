@@ -25,13 +25,3 @@ jobs:
       - name: Lints
         if: always()
         run: cargo clippy --locked --workspace --all-targets -- -D warnings
-      - name: Capture workflow formatting
-        if: always()
-        run: |
-          cargo fmt --all
-          git diff -- crates > rustfmt.patch
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: workflow-formatting-${{ matrix.os }}
-          path: rustfmt.patch

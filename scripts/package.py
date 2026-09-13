@@ -19,7 +19,7 @@ for name in ['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md']:
     shutil.copy2(root / name, package / name)
 for name in ['sdk', 'examples', 'integrations', 'docs']:
     shutil.copytree(root / name, package / name)
-metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--offline', '--format-version=1'], cwd=root))
+metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--format-version=1'], cwd=root))
 licenses = package / 'licenses'
 licenses.mkdir()
 manifest = []
@@ -29,6 +29,10 @@ for item in metadata['packages']:
         continue
     name = item['name'] + '-' + item['version']
     matches = [p for p in source.rglob('*') if p.is_file() and p.name.upper().startswith(('LICENSE', 'LICENCE', 'COPYING', 'NOTICE'))]
+    if item.get('license_file'):
+        declared = source / item['license_file']
+        if declared.is_file() and declared not in matches:
+            matches.append(declared)
     if not matches:
         raise RuntimeError('No license material found for ' + name)
     for file in matches:
