@@ -98,31 +98,9 @@ impl Contract {
     }
 }
 
-// Schema references are local to this document. Validation must never fetch a URL.
+// Network and file retrieval are disabled by jsonschema's default-features = false.
+// Let the schema compiler distinguish schema keywords from literal property names.
 pub(crate) fn compile_schema(schema: &Value) -> Result<jsonschema::Validator> {
-    fn refs(value: &Value) -> Result<()> {
-        match value {
-            Value::Object(map) => {
-                for (key, value) in map {
-                    if key == "$ref" || key == "$dynamicRef" {
-                        ensure!(
-                            value.as_str().is_some_and(|s| s.starts_with('#')),
-                            "only local schema references are supported"
-                        );
-                    }
-                    refs(value)?;
-                }
-            }
-            Value::Array(values) => {
-                for value in values {
-                    refs(value)?;
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-    refs(schema)?;
     jsonschema::validator_for(schema).map_err(|e| anyhow::anyhow!("invalid schema: {e}"))
 }
 

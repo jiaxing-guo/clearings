@@ -12,8 +12,9 @@ use std::{path::Path, time::Duration};
 
 // Change this when preparation or execution semantics change. Old versions require re-submission.
 const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
+const OBJECT_BYTES: usize = REPORT_BYTES - 4096;
 
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-3";
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-4";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -76,6 +77,12 @@ impl Task {
                 );
                 crate::contract::check_json(&call.input)?;
                 crate::contract::check_json(&call.result)?;
+                crate::capabilities::validate_file_fixture(
+                    &call.name,
+                    &call.input,
+                    &call.result,
+                    self.contract.limits.output_bytes,
+                )?;
             }
         }
         Ok(())
@@ -129,7 +136,7 @@ impl Store {
     }
     fn put(&self, kind: &str, value: &impl Serialize) -> Result<String> {
         let body = serde_json::to_string(value)?;
-        ensure!(body.len() <= MAX_WIRE_BYTES, "stored object exceeds 4 MiB");
+        ensure!(body.len() <= OBJECT_BYTES, "stored object exceeds inspect byte limit");
         let id = digest(value)?;
         self.db.execute(
             "INSERT OR IGNORE INTO objects(id,kind,body) VALUES(?1,?2,?3)",
@@ -138,14 +145,12 @@ impl Store {
         Ok(id)
     }
     pub fn get<T: DeserializeOwned + Serialize>(&self, kind: &str, id: &str) -> Result<T> {
-        let body: String = self
-            .db
-            .query_row(
-                "SELECT body FROM objects WHERE id=?1 AND kind=?2",
-                params![id, kind],
-                |r| r.get(0),
-            )
-            .context("object not found")?;
+        let (bytes, body): (usize, Option<String>) = self.db.query_row(
+            "SELECT length(CAST(body AS BLOB)),CASE WHEN length(CAST(body AS BLOB)) <= ?3 THEN body END FROM objects WHERE id=?1 AND kind=?2",
+            params![id, kind, OBJECT_BYTES], |r| Ok((r.get(0)?,r.get(1)?)),
+        ).context("object not found")?;
+        ensure!(bytes <= OBJECT_BYTES, "stored object exceeds inspect byte limit");
+        let body = body.context("missing stored object")?;
         let value: T = serde_json::from_str(&body)?;
         ensure!(digest(&value)? == id, "stored object digest mismatch");
         Ok(value)
@@ -332,7 +337,12 @@ impl Store {
         self.list_page(None)
     }
     pub fn list_page(&self, after: Option<&str>) -> Result<Value> {
-        ensure!(after.is_none_or(|s| s.len() == 64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))), "after must be a task ID");
+        ensure!(
+            after.is_none_or(|s| s.len() == 64
+                && s.bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))),
+            "after must be a task ID"
+        );
         let mut stmt = self.db.prepare(
             "SELECT objects.id,json_extract(body,'$.contract.name'),json_extract(body,'$.contract.description'),active.version
              FROM objects LEFT JOIN active ON active.task=objects.id
@@ -344,7 +354,10 @@ impl Store {
         let mut next_after = None;
         while let Some(row) = rows.next()? {
             if tasks.len() == 100 {
-                next_after = tasks.last().and_then(|v: &Value| v["task"].as_str()).map(str::to_owned);
+                next_after = tasks
+                    .last()
+                    .and_then(|v: &Value| v["task"].as_str())
+                    .map(str::to_owned);
                 break;
             }
             let task = json!({"task":row.get::<_,String>(0)?,"name":row.get::<_,String>(1)?,"description":row.get::<_,String>(2)?,"active":row.get::<_,Option<String>>(3)?});
@@ -355,25 +368,17 @@ impl Store {
         Ok(json!({"tasks":tasks,"next_after":next_after}))
     }
     pub fn inspect(&self, id: &str) -> Result<Value> {
-        let (kind, body): (String, String) =
-            self.db
-                .query_row("SELECT kind,body FROM objects WHERE id=?1", [id], |r| {
-                    Ok((r.get(0)?, r.get(1)?))
-                })?;
-        let value: Value = serde_json::from_str(&body)?;
-        ensure!(digest(&value)? == id, "stored object digest mismatch");
-        let evaluation: Option<String> = self
-            .db
-            .query_row(
-                "SELECT report FROM evaluations WHERE version=?1 AND engine=?2",
-                params![id, ENGINE],
-                |r| r.get(0),
-            )
-            .optional()?;
-        Ok(
-            json!({"id":id,"kind":kind,"object":value,"evaluation":evaluation.map(|s|serde_json::from_str::<Value>(&s)).transpose()?,"active":self.active(id)?}),
-        )
+        let kind: String = self.db.query_row(
+            "SELECT kind FROM objects WHERE id=?1", [id], |r| r.get(0),
+        )?;
+        let value: Value = self.get(&kind, id)?;
+        let evaluation = self.evaluation(id)?.map(|report| json!({
+            "version":id,"engine":ENGINE,"accepted":report["accepted"],
+            "case_count":report["cases"].as_array().map(Vec::len),
+        }));
+        Ok(json!({"id":id,"kind":kind,"object":value,"evaluation":evaluation,"active":self.active(id)?}))
     }
+
     pub fn runs(&self) -> Result<Value> {
         self.runs_page(None)
     }

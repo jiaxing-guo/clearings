@@ -226,14 +226,76 @@ fn task_discovery_pages_large_descriptions_without_losing_tasks() {
         let page = s.list_page(after.as_deref()).unwrap();
         assert!(serde_json::to_vec(&page).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
         let tasks = page["tasks"].as_array().unwrap();
-        assert_eq!(tasks.len(),100);
+        assert_eq!(tasks.len(), 100);
         for task in tasks {
             assert!(seen.insert(task["task"].as_str().unwrap().to_owned()));
-            assert_eq!(task["description"].as_str().unwrap().len(),4096);
+            assert_eq!(task["description"].as_str().unwrap().len(), 4096);
         }
         after = page["next_after"].as_str().map(str::to_owned);
-        if after.is_none() { break; }
+        if after.is_none() {
+            break;
+        }
     }
-    assert_eq!(seen,expected);
+    assert_eq!(seen, expected);
     assert!(s.list_page(Some("invalid cursor")).is_err());
+}
+
+#[test]
+fn built_in_fixtures_match_live_file_shapes() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let valid = json!({"root":"repo","path":"."});
+    for (name, result) in [
+        ("files.read", json!({"text":"hello"})),
+        ("files.list", json!({"entries":["a","b"]})),
+    ] {
+        let mut t = task();
+        t.contract.capabilities = vec![name.into()];
+        t.cases[0].calls = vec![
+            serde_json::from_value(json!({"name":name,"input":valid,"result":result})).unwrap(),
+        ];
+        assert!(s.prepare_task(&t).is_ok());
+        for input in [
+            json!({"nope":true}),
+            json!({"root":"r","path":3}),
+            json!({"root":"r","path":"../escape"}),
+        ] {
+            t.cases[0].calls[0].input = input;
+            assert!(s.prepare_task(&t).is_err());
+        }
+        t.cases[0].calls[0].input = valid.clone();
+        for result in [
+            json!(null),
+            json!({"text":3}),
+            json!({"entries":[3]}),
+            json!({"entries":["b","a"]}),
+            json!({"entries":["a","a"]}),
+            json!({"entries":["../a"]}),
+        ] {
+            t.cases[0].calls[0].result = result;
+            assert!(s.prepare_task(&t).is_err());
+        }
+    }
+}
+
+#[test]
+fn accepted_objects_remain_inspectable_with_large_evaluations() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut t = task();
+    t.contract.output_schema = json!({});
+    t.contract.limits.output_bytes = 1024 * 1024;
+    t.cases.truncate(1);
+    t.cases[0].expected = clearings::contract::Outcome::Completed { output: json!("x".repeat(3_000_000)) };
+    assert!(s.prepare_task(&t).unwrap_err().to_string().contains("inspect byte limit"));
+    t.cases[0].expected = clearings::contract::Outcome::Completed { output: json!("x".repeat(900_000)) };
+    let task = s.prepare_task(&t).unwrap();
+    assert!(serde_json::to_vec(&s.inspect(&task).unwrap()).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
+    let version = s.submit(exe(), &task, "export default async function(){return {status:'completed',output:'x'.repeat(900_000)};}".into()).unwrap();
+    assert_eq!(s.evaluate(exe(), &version).unwrap()["accepted"], true);
+    let inspected = s.inspect(&version).unwrap();
+    assert_eq!(inspected["evaluation"]["case_count"], 1);
+    assert_eq!(inspected["evaluation"]["accepted"], true);
+    assert!(inspected["evaluation"].get("cases").is_none());
+    assert!(serde_json::to_vec(&inspected).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
 }

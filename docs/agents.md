@@ -52,3 +52,5 @@ A useful first instruction is: “Make this repeated task reusable with Clearing
 ## What has been checked
 
 The CLI/MCP transport tests exercise initialization, task preparation, rejection before evaluation, activation, fresh input reuse, explicit handoff, and refusal of policy arguments supplied by a tool caller. These are deterministic integration tests, not a claim that a hosted Codex or Claude conversation has been run. Token savings require observed usage from real agent sessions; missing usage stays unknown.
+
+Task and version objects are rejected before storage if they exceed the inspection budget (about 1.3 MiB). `inspect` returns the complete object and a compact evaluation summary; `evaluate` returns the immutable full evaluation report. This keeps accepted requirements inspectable through the same CLI/MCP interface.

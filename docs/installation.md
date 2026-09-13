@@ -1,6 +1,6 @@
 # Installation and packages
 
-Clearings is one Rust executable containing its TypeScript transformer, JavaScript engine and SQLite support. Installed users do not need Node, Python, npm or a Rust compiler. This initial implementation supports Linux x86-64/aarch64 and macOS at the isolation layer; CI builds and tests the actual Linux and macOS runner architectures. Windows isolation is not implemented.
+Clearings is one Rust executable containing its TypeScript transformer, JavaScript engine and SQLite support. Installed users do not need Node, Python, npm or a Rust compiler. Validated platforms are Linux x86-64 and the macOS architecture exercised by CI. Linux aarch64 remains an unvalidated target; it is not yet advertised as supported. Windows isolation is not implemented.
 
 ## Review builds
 
