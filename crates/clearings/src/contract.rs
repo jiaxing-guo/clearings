@@ -147,9 +147,18 @@ pub enum Outcome {
 
 impl Outcome {
     pub fn failed(code: &str, error: impl std::fmt::Display) -> Self {
+        let mut message = error.to_string();
+        if message.len() > 4096 {
+            let mut end = 4096;
+            while !message.is_char_boundary(end) {
+                end -= 1;
+            }
+            message.truncate(end);
+            message.push_str(" [truncated]");
+        }
         Self::Failed {
             code: code.into(),
-            message: error.to_string(),
+            message,
         }
     }
 }

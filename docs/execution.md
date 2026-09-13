@@ -36,3 +36,5 @@ Each run returns an outcome, elapsed milliseconds, a capability request count an
 - [Capability-scoped filesystem API](https://docs.rs/cap-std/latest/cap_std/fs/struct.Dir.html)
 
 The invocation deadline also bounds writes to worker pipes. Blocking I/O uses a fixed four-worker pool with four queued jobs; timeout releases the caller, and a stalled operation can occupy only a bounded slot. CLI file loading and host-policy construction are setup operations outside the invocation's `wall_ms` limit.
+
+Worker request serialization runs inside the same bounded write operation. Host-generated failure diagnostics are limited to a 4 KiB UTF-8 prefix with an explicit truncation marker, so a rejected large input cannot inflate the returned or stored run report.
