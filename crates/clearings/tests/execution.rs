@@ -229,3 +229,64 @@ fn failing_after_a_call_retains_accounting() {
     assert!(matches!(result.outcome, Outcome::Failed { .. }));
     assert_eq!(result.capability_calls, 1);
 }
+
+#[test]
+fn caught_capability_errors_cannot_become_success_but_can_handoff() {
+    for args in [json!({"root":"missing","path":"a"}), json!({"root":"data","path":"missing"})] {
+        let temp = tempfile::tempdir().unwrap();
+        let policy = Policy { roots: [("data".into(), temp.path().into())].into(), ..Policy::default() };
+        for status in ["completed", "needs_agent", "not_applicable"] {
+            let source = format!("export default async function(x){{try{{await clearings.call('files.read',x)}}catch{{}}return {{status:'{status}',{} }};}}", match status {
+                "completed" => "output:true", "needs_agent" => "reason:'source unavailable',context:{}", _ => "reason:'source unavailable'"
+            });
+            let result = run(&source, args.clone(), policy.clone(), contract());
+            assert_eq!(result.capability_calls, 1);
+            match status {
+                "completed" => assert!(matches!(result.outcome, Outcome::Failed { .. })),
+                "needs_agent" => assert!(matches!(result.outcome, Outcome::NeedsAgent { .. })),
+                _ => assert!(matches!(result.outcome, Outcome::NotApplicable { .. })),
+            }
+        }
+    }
+}
+
+#[test]
+fn unsafe_handoff_numbers_are_rejected() {
+    let result = run("export default async function(){return {status:'needs_agent',reason:'large ID',context:{id:9007199254740992}};}",json!({}),Policy::default(),contract());
+    assert!(matches!(result.outcome, Outcome::Failed { .. }));
+}
+
+#[cfg(unix)]
+#[test]
+fn directory_listing_is_sorted_bounded_and_confined() {
+    use clearings::capabilities::Broker;
+    use std::os::unix::{ffi::OsStringExt, fs::symlink};
+    use std::time::Duration;
+    let temp = tempfile::tempdir().unwrap();
+    std::fs::write(temp.path().join("z"), "").unwrap();
+    std::fs::write(temp.path().join("a"), "").unwrap();
+    std::fs::create_dir(temp.path().join("nested")).unwrap();
+    std::fs::write(temp.path().join("nested/hidden"), "").unwrap();
+    let policy = Policy { roots: [("data".into(), temp.path().into())].into(), ..Policy::default() };
+    let mut broker = LocalBroker::new(&contract(), &policy).unwrap();
+    let call = |broker: &mut LocalBroker, root: &str, path: &str| broker.call("files.list", json!({"root":root,"path":path}), Duration::from_secs(2));
+    assert_eq!(call(&mut broker,"data",".").unwrap(), json!({"entries":["a","nested","z"]}));
+    let outside = tempfile::tempdir().unwrap();
+    symlink(outside.path(), temp.path().join("escape")).unwrap();
+    for (root,path) in [("data","../"),("data","/"),("data","escape"),("missing",".")] {
+        assert!(call(&mut broker,root,path).is_err());
+    }
+    let mut c = contract(); c.limits.output_bytes = 1;
+    assert!(call(&mut LocalBroker::new(&c,&policy).unwrap(),"data",".").unwrap_err().to_string().contains("byte limit"));
+    let invalid = temp.path().join(std::ffi::OsString::from_vec(vec![0xff]));
+    // Some supported filesystems refuse invalid UTF-8 names at creation.
+    if std::fs::write(&invalid, "").is_ok() {
+        assert!(call(&mut broker,"data",".").unwrap_err().to_string().contains("non-UTF-8"));
+        std::fs::remove_file(invalid).unwrap();
+    }
+    std::fs::create_dir(temp.path().join("many")).unwrap();
+    for n in 0..1000 { std::fs::write(temp.path().join(format!("many/{n}")), "").unwrap(); }
+    assert_eq!(call(&mut broker,"data","many").unwrap()["entries"].as_array().unwrap().len(),1000);
+    std::fs::write(temp.path().join("many/extra"), "").unwrap();
+    assert!(call(&mut broker,"data","many").unwrap_err().to_string().contains("entry limit"));
+}

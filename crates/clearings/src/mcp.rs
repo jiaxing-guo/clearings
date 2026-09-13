@@ -31,7 +31,7 @@ pub fn tools() -> Value {
         tool("activate","Activate a passing candidate after reviewing its scope. Supply null for first activation or the previous active version to replace it.",json!({"version":id,"expected_active":{"type":["string","null"]}}),json!(["version","expected_active"]),false),
         tool("deactivate","Stop reusing the currently active version; preserve its source and history.",json!({"task":id,"expected_active":id}),json!(["task","expected_active"]),false),
         tool("run","Execute the active routine on fresh input using this server's fixed grants. needs_agent and not_applicable return control to you.",json!({"task":id,"input":{}}),json!(["task","input"]),false),
-        tool("runs","Inspect the last 100 local execution records. Unknown model usage is not zero.",json!({}),json!([]),true)
+        tool("runs","Inspect a bounded page of up to 100 execution records. Pass next_before as before to continue. Unknown model usage is not zero.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true)
     ]})
 }
 
@@ -152,19 +152,41 @@ pub fn serve(mut api: Api) -> Result<()> {
             Ok(result) => json!({"jsonrpc":"2.0","id":id,"result":result}),
             Err((code, message)) => error(id, code, message),
         };
-        // Oversized inspection results become an explicit tool error, never a partial message.
-        if serde_json::to_vec(&response)?.len() > crate::contract::MAX_WIRE_BYTES {
-            write_message(
-                &mut output,
-                &error(
-                    response["id"].clone(),
-                    -32000,
-                    "Response exceeds transport limit; inspect through the CLI",
-                ),
-            )?;
-        } else {
-            write_message(&mut output, &response)?;
-        }
+        write_response(&mut output, &response)?;
     }
     Ok(())
+}
+
+fn write_response(output: &mut impl std::io::Write, response: &Value) -> Result<()> {
+    // The newline is part of the wire limit, including at the exact boundary.
+    if serde_json::to_vec(response)?.len() >= crate::contract::MAX_WIRE_BYTES {
+        let mut bounded = error(response["id"].clone(), -32000, "Response exceeds transport limit");
+        if serde_json::to_vec(&bounded)?.len() >= crate::contract::MAX_WIRE_BYTES {
+            bounded["id"] = Value::Null;
+        }
+        write_message(output, &bounded)
+    } else {
+        write_message(output, response)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn exact_wire_boundary_returns_error_and_keeps_transport_writable() {
+        let empty = json!({"jsonrpc":"2.0","id":1,"result":{"padding":""}});
+        let overhead = serde_json::to_vec(&empty).unwrap().len();
+        for body_bytes in [crate::contract::MAX_WIRE_BYTES - 1, crate::contract::MAX_WIRE_BYTES, crate::contract::MAX_WIRE_BYTES + 1] {
+            let mut response = empty.clone();
+            response["result"]["padding"] = json!("x".repeat(body_bytes - overhead));
+            let mut wire = Vec::new();
+            write_response(&mut wire,&response).unwrap();
+            assert!(wire.len() <= crate::contract::MAX_WIRE_BYTES);
+            let parsed: Value = serde_json::from_slice(&wire).unwrap();
+            assert_eq!(parsed.get("error").is_some(),body_bytes >= crate::contract::MAX_WIRE_BYTES);
+            write_response(&mut wire,&json!({"jsonrpc":"2.0","id":2,"result":{}})).unwrap();
+            assert_eq!(wire.iter().filter(|b| **b == b'\n').count(),2);
+        }
+    }
 }

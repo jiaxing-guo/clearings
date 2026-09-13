@@ -57,6 +57,7 @@ fn exchange(
         }
     });
     let deadline = Instant::now() + Duration::from_millis(limits.wall_ms);
+    let mut capability_failure = None;
     let result = (|| -> Result<Event> {
         write_message(&mut input, request)?;
         loop {
@@ -85,9 +86,16 @@ fn exchange(
                         .context("worker deadline exceeded")?;
                     let response = match broker.call(&name, arguments, remaining) {
                         Ok(value) => json!({"ok":true,"value":value}),
-                        Err(error) => json!({"ok":false,"error":error.to_string()}),
+                        Err(error) => {
+                            let message = error.to_string();
+                            capability_failure.get_or_insert_with(|| message.clone());
+                            json!({"ok":false,"error":message})
+                        },
                     };
                     write_message(&mut input, &response)?;
+                }
+                Event::Finished { outcome: Outcome::Completed { .. } } if capability_failure.is_some() => {
+                    bail!("capability failed: {}", capability_failure.as_ref().unwrap());
                 }
                 terminal => return Ok(terminal),
             }

@@ -1,4 +1,5 @@
 pub mod api;
+mod file_io;
 pub mod capabilities;
 pub mod contract;
 pub mod execute;

@@ -91,12 +91,15 @@ impl Contract {
             check_json(output)?;
             validate_schema(&self.output_schema, output)?;
         }
+        if let Outcome::NeedsAgent { context, .. } = outcome {
+            check_json(context)?;
+        }
         Ok(())
     }
 }
 
 // Schema references are local to this document. Validation must never fetch a URL.
-fn compile_schema(schema: &Value) -> Result<jsonschema::Validator> {
+pub(crate) fn compile_schema(schema: &Value) -> Result<jsonschema::Validator> {
     fn refs(value: &Value) -> Result<()> {
         match value {
             Value::Object(map) => {

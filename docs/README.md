@@ -4,7 +4,7 @@ Clearings turns user-selected repeated agent work into reusable TypeScript routi
 
 ## Current status
 
-The embedded execution boundary supports parameterized TypeScript, JSON schemas, bounded file capabilities and explicit handoff outcomes. Routine persistence and coding-agent integration are planned next. Oxc removes TypeScript syntax; it does not perform full type checking. Token savings remain unmeasured.
+The embedded execution boundary supports parameterized TypeScript, JSON schemas, bounded file capabilities and explicit handoff outcomes. Immutable routine storage, evaluation, activation and configured HTTP GET bindings are implemented through the Rust API. The CLI and MCP expose that lifecycle, with Codex and Claude Code skill plugins. Oxc removes TypeScript syntax; it does not perform full type checking. Token savings remain unmeasured.
 
 | Read                               | Purpose                                          |
 | ---------------------------------- | ------------------------------------------------ |
@@ -12,3 +12,7 @@ The embedded execution boundary supports parameterized TypeScript, JSON schemas,
 | [Execution](execution.md)          | Implemented runtime, capabilities and limits     |
 | [Development](development.md)      | Build and check the repository                   |
 | [History](history.md)              | Retrieve earlier implementations and experiments |
+
+- [Reusable routine versions](routines.md): immutable tasks, evaluation, activation and execution records.
+
+- [Agent integration](agents.md): CLI, MCP and teaching/reuse plugins.

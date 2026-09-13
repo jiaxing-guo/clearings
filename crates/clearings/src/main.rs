@@ -3,12 +3,12 @@ use clap::{Parser, Subcommand};
 use clearings::{
     api::{Api, Operation},
     capabilities::LocalBroker,
-    contract::{Contract, Policy},
+    contract::{Contract, Outcome, Policy},
     execute,
     store::Store,
 };
 use serde::de::DeserializeOwned;
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -69,7 +69,11 @@ enum Action {
         #[arg(long)]
         policy: PathBuf,
     },
-    Runs,
+    Runs {
+        /// Continue with next_before from the preceding history page.
+        #[arg(long)]
+        before: Option<i64>,
+    },
     /// Serve MCP over stdio with fixed grants. No background daemon or model calls.
     Mcp {
         #[arg(long)]
@@ -107,10 +111,9 @@ fn main() -> Result<()> {
             let prepared = execute::prepare(&executable, &std::fs::read_to_string(source)?)?;
             let mut broker = LocalBroker::new(&contract, &policy)?;
             let run = execute::run(&executable, &contract, &prepared, read(input)?, &mut broker);
-            let value = json!({"run":run});
-            println!("{}", serde_json::to_string_pretty(&value)?);
+            println!("{}", serde_json::to_string_pretty(&run)?);
             anyhow::ensure!(
-                !clearings::api::failed(&value),
+                !matches!(run.outcome, Outcome::Failed { .. }),
                 "routine failed; see JSON result"
             );
             Ok(())
@@ -163,7 +166,7 @@ fn main() -> Result<()> {
                         input: read::<Value>(input)?,
                     }
                 }
-                Action::Runs => Operation::Runs,
+                Action::Runs { before } => Operation::Runs { before },
                 _ => unreachable!(),
             };
             let value = api.call(operation)?;

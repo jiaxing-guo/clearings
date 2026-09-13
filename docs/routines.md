@@ -39,3 +39,7 @@ The matching routine requests `tickets.list` in its contract and calls `clearing
 Runs retain the selected version, input digest, outcome, elapsed execution time and capability-call count. Policy failures and runtime failures remain visible. Input bodies and credentials are not recorded; returned output and handoff context are recorded and may contain sensitive data. Keep the database in a private directory. It is local to the user and is not uploaded.
 
 `model_usage: null` means no measured model usage is attached. It does not mean the surrounding coding-agent turn cost zero tokens. Routine reuse is executable reuse; results are read and computed again for each invocation.
+
+HTTP endpoints and output schemas are validated during policy construction, before any request. One redirect-disabled client reuses its connection pool for that broker; each request has the remaining invocation timeout. Fixture inputs and results must both fit the JSON numeric range.
+
+The execution identity includes a semantics revision. Versions prepared under the previous identity must be resubmitted and evaluated before activation.
