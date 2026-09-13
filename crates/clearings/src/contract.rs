@@ -197,6 +197,10 @@ pub enum Request {
     Prepare {
         source: String,
     },
+    Validate {
+        contract: Contract,
+        boundary: Validation,
+    },
     Run {
         prepared: Prepared,
         input: Value,
@@ -205,10 +209,19 @@ pub enum Request {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Validation {
+    Input(Value),
+    Outcome(Outcome),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Event {
     Prepared { prepared: Prepared },
     Call { name: String, input: Value },
+    CallError { message: String },
+    Validated,
     Finished { outcome: Outcome },
     Error { message: String },
 }
