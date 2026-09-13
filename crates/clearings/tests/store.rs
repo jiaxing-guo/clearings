@@ -408,7 +408,10 @@ fn malformed_call_cannot_hide_in_an_expected_handoff() {
     let report = s.evaluate(exe(), &version).unwrap();
     assert_eq!(report["accepted"], false);
     assert_eq!(report["cases"][0]["run"]["capability_calls"], 1);
-    assert_eq!(report["cases"][0]["run"]["outcome"]["status"], "needs_agent");
+    assert_eq!(
+        report["cases"][0]["run"]["outcome"]["status"],
+        "needs_agent"
+    );
     assert!(s.activate(&version, None).is_err());
 }
 
