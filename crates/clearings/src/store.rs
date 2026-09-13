@@ -13,7 +13,7 @@ use std::{path::Path, time::Duration};
 // Change this when preparation or execution semantics change. Old versions require re-submission.
 const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
 
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-6";
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-7";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -46,7 +46,7 @@ pub struct Task {
 }
 impl Task {
     fn validate(&self) -> Result<()> {
-        self.contract.validate()?;
+        let (input_schema, output_schema) = self.contract.checked_schemas()?;
         ensure!(
             !self.cases.is_empty() && self.cases.len() <= 100,
             "a task needs 1 to 100 acceptance cases"
@@ -63,8 +63,20 @@ impl Task {
                 !case.name.is_empty() && names.insert(&case.name),
                 "case names must be nonempty and unique"
             );
-            self.contract.check_input(&case.input)?;
-            self.contract.check_outcome(&case.expected)?;
+            crate::contract::check_json(&case.input)?;
+            input_schema
+                .validate(&case.input)
+                .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
+            match &case.expected {
+                Outcome::Completed { output } => {
+                    crate::contract::check_json(output)?;
+                    output_schema
+                        .validate(output)
+                        .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
+                }
+                Outcome::NeedsAgent { context, .. } => crate::contract::check_json(context)?,
+                _ => {}
+            }
             ensure!(
                 serde_json::to_vec(&case.expected)?.len() <= self.contract.limits.output_bytes,
                 "expected outcome exceeds run output byte limit"

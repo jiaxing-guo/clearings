@@ -28,3 +28,4 @@ jobs:
       - run: npm --prefix website ci --ignore-scripts
       - run: npm run docs:build
       - run: npm run docs:check
+      - run: npm run sdk:check
