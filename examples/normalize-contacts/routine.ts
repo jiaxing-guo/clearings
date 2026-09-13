@@ -11,7 +11,7 @@ export default async function (input: { rows: { name?: unknown; email?: unknown 
     }
     const name = row.name.trim();
     const email = row.email.trim().toLowerCase();
-    if (!name || !email.includes('@'))
+    if (!name || !/^[^\s@]+@[^\s@]+$/.test(email))
       return {
         status: 'needs_agent',
         reason: 'Review contact fields',

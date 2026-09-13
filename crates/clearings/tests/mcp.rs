@@ -112,6 +112,21 @@ fn stdio_teach_reuse_and_handoff_with_fixed_grants() {
             request("clearings_list", json!({"action":"runs"}))["result"]["isError"],
             true
         );
+        let page = request("clearings_runs", json!({}));
+        assert_eq!(
+            page["result"]["structuredContent"]["runs"]
+                .as_array()
+                .unwrap()
+                .len(),
+            2
+        );
+        assert!(page["result"]["structuredContent"]["next_before"].is_null());
+        let page = request("clearings_runs", json!({"before":2}));
+        assert_eq!(page["result"]["structuredContent"]["runs"][0]["id"], 1);
+        assert_eq!(
+            request("clearings_runs", json!({"before":0}))["result"]["isError"],
+            true
+        );
     }
     drop(input);
     assert!(child.wait().unwrap().success());
@@ -129,4 +144,50 @@ fn failed_cli_runs_exit_unsuccessfully() {
         .output()
         .unwrap();
     assert!(!output.status.success());
+}
+
+#[test]
+fn run_source_preserves_top_level_run_and_failed_exit_status() {
+    let temp = tempfile::tempdir().unwrap();
+    std::fs::write(
+        temp.path().join("contract.json"),
+        json!({"abi":1,"name":"shape","description":"shape","input_schema":{},"output_schema":{}})
+            .to_string(),
+    )
+    .unwrap();
+    std::fs::write(temp.path().join("input.json"), "null").unwrap();
+    std::fs::write(temp.path().join("policy.json"), "{}").unwrap();
+    for status in ["completed", "failed"] {
+        let outcome = if status == "completed" {
+            json!({"status":status,"output":42})
+        } else {
+            json!({"status":status,"code":"EXPECTED","message":"test failure"})
+        };
+        std::fs::write(
+            temp.path().join("routine.ts"),
+            format!("export default async function(){{return {outcome};}}"),
+        )
+        .unwrap();
+        let output = Command::new(env!("CARGO_BIN_EXE_clearings"))
+            .current_dir(temp.path())
+            .args([
+                "run-source",
+                "--source",
+                "routine.ts",
+                "--contract",
+                "contract.json",
+                "--input",
+                "input.json",
+                "--policy",
+                "policy.json",
+            ])
+            .output()
+            .unwrap();
+        assert_eq!(output.status.success(), status == "completed");
+        let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(result["outcome"]["status"], status);
+        assert!(result.get("run").is_none());
+        assert!(result["elapsed_ms"].is_number());
+        assert_eq!(result["capability_calls"], 0);
+    }
 }

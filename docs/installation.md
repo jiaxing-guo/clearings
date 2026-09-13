@@ -25,4 +25,4 @@ rustup show
 cargo build --release --locked --workspace
 ```
 
-The Node-based documentation toolchain is separate from the installed runtime. See [Development](development.md) for repository checks, [Workflows](workflows.md) for the first routine, and [Agent integration](agents.md) to connect Codex or Claude Code.
+The Node-based documentation toolchain is separate from the installed runtime. See [Development](development.md) for repository checks, [Workflows](workflows.md) for the three example routines, and [Agent integration](agents.md) to connect Codex or Claude Code.

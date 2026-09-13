@@ -2,6 +2,7 @@ pub mod api;
 pub mod capabilities;
 pub mod contract;
 pub mod execute;
+mod file_io;
 mod isolation;
 pub mod mcp;
 pub mod store;

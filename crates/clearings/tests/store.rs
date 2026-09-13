@@ -79,3 +79,91 @@ fn fixture_mismatch_cannot_be_swallowed() {
     let v=s.submit(exe(),&id,"export default async function(x){try{await clearings.call('files.read',{root:'x',path:'y'});}catch{}return {status:'completed',output:x*2};}".into()).unwrap();
     assert_eq!(s.evaluate(exe(), &v).unwrap()["accepted"], false);
 }
+
+#[test]
+fn acceptance_rejects_unsafe_fixture_input_and_handoff_context() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut t = task();
+    t.contract.capabilities = vec!["lookup".into()];
+    t.cases[0].calls = vec![
+        serde_json::from_value(
+            json!({"name":"lookup","input":{"id":9007199254740993u64},"result":null}),
+        )
+        .unwrap(),
+    ];
+    assert!(
+        s.prepare_task(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("safe range")
+    );
+    t.cases[0].calls[0].input = json!({"id":"9007199254740993"});
+    assert!(s.prepare_task(&t).is_ok());
+    t.cases[0].expected = serde_json::from_value(
+        json!({"status":"needs_agent","reason":"ID","context":{"id":9007199254740993u64}}),
+    )
+    .unwrap();
+    assert!(
+        s.prepare_task(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("safe range")
+    );
+}
+
+#[test]
+fn large_history_is_paged_before_loading_reports() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("history.db");
+    let s = Store::open(&path).unwrap();
+    let id = s.prepare_task(&task()).unwrap();
+    let version = s.submit(exe(), &id, GOOD.into()).unwrap();
+    let mut db = rusqlite::Connection::open(&path).unwrap();
+    let transaction = db.transaction().unwrap();
+    let report = json!({"outcome":{"status":"completed","output":"x".repeat(1_000_000)},"elapsed_ms":1,"capability_calls":0,"model_usage":null}).to_string();
+    for _ in 0..100 {
+        transaction
+            .execute(
+                "INSERT INTO runs(version,input_digest,report) VALUES(?1,?2,?3)",
+                rusqlite::params![version, "a".repeat(64), report],
+            )
+            .unwrap();
+    }
+    transaction.commit().unwrap();
+    let mut before = None;
+    let mut expected = 100;
+    loop {
+        let page = s.runs_page(before).unwrap();
+        assert!(serde_json::to_vec(&page).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
+        let rows = page["runs"].as_array().unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["id"], expected);
+        expected -= 1;
+        before = page["next_before"].as_i64();
+        if before.is_none() {
+            break;
+        }
+    }
+    assert_eq!(expected, 0);
+    assert!(s.runs_page(Some(0)).is_err());
+    assert!(
+        s.runs_page(Some(1)).unwrap()["runs"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    // An oversized row is rejected before its malformed JSON is decoded.
+    db.execute(
+        "UPDATE runs SET report=?1 WHERE id=100",
+        ["!".repeat(clearings::contract::MAX_WIRE_BYTES)],
+    )
+    .unwrap();
+    assert!(
+        s.runs()
+            .unwrap_err()
+            .to_string()
+            .contains("history page limit")
+    );
+    assert_eq!(s.runs_page(Some(100)).unwrap()["runs"][0]["id"], 99);
+}

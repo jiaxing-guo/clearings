@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 use std::{path::Path, time::Duration};
 
 // Change this when preparation or execution semantics change. Old versions require re-submission.
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13";
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-2";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -72,6 +72,7 @@ impl Task {
                     self.contract.capabilities.contains(&call.name),
                     "fixture capability was not declared"
                 );
+                crate::contract::check_json(&call.input)?;
                 crate::contract::check_json(&call.result)?;
             }
         }
@@ -333,23 +334,38 @@ impl Store {
         )
     }
     pub fn runs(&self) -> Result<Value> {
+        self.runs_page(None)
+    }
+
+    pub fn runs_page(&self, before: Option<i64>) -> Result<Value> {
+        const PAGE_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
+        ensure!(
+            before.is_none_or(|id| id > 0),
+            "before must be a positive run ID"
+        );
         let mut stmt = self.db.prepare(
-            "SELECT id,version,input_digest,report,created_at FROM runs ORDER BY id DESC LIMIT 100",
+            "SELECT id,version,input_digest,length(CAST(report AS BLOB)),
+             CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at
+             FROM runs WHERE (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
         )?;
-        let rows = stmt.query_map([], |r| {
-            Ok((
-                r.get::<_, i64>(0)?,
-                r.get::<_, String>(1)?,
-                r.get::<_, String>(2)?,
-                r.get::<_, String>(3)?,
-                r.get::<_, String>(4)?,
-            ))
-        })?;
+        let mut rows = stmt.query(params![before, PAGE_BYTES])?;
         let mut runs = Vec::new();
-        for row in rows {
-            let (id, version, input_digest, report, created_at) = row?;
-            runs.push(json!({"id":id,"version":version,"input_digest":input_digest,"run":serde_json::from_str::<Value>(&report)?,"created_at":created_at}));
+        let mut bytes = 64;
+        let mut next_before = None;
+        while let Some(row) = rows.next()? {
+            let id: i64 = row.get(0)?;
+            let length: usize = row.get(3)?;
+            if runs.len() == 100 || bytes + length + 256 > PAGE_BYTES {
+                ensure!(!runs.is_empty(), "run {id} exceeds the history page limit");
+                next_before = runs.last().and_then(|v: &Value| v["id"].as_i64());
+                break;
+            }
+            let report: String = row.get(4)?;
+            let entry = json!({"id":id,"version":row.get::<_,String>(1)?,"input_digest":row.get::<_,String>(2)?,"run":serde_json::from_str::<Value>(&report)?,"created_at":row.get::<_,String>(5)?});
+            bytes += serde_json::to_vec(&entry)?.len() + 1;
+            ensure!(bytes <= PAGE_BYTES, "history page exceeds byte limit");
+            runs.push(entry);
         }
-        Ok(json!({"runs":runs}))
+        Ok(json!({"runs":runs,"next_before":next_before}))
     }
 }

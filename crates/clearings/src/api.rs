@@ -36,7 +36,9 @@ pub enum Operation {
         task: String,
         input: Value,
     },
-    Runs,
+    Runs {
+        before: Option<i64>,
+    },
     Sdk,
 }
 pub struct Api {
@@ -72,7 +74,7 @@ impl Api {
                 self.store
                     .run(&self.executable, &task, input, &self.policy)?
             }
-            Operation::Runs => self.store.runs()?,
+            Operation::Runs { before } => self.store.runs_page(before)?,
             Operation::Sdk => {
                 json!({"typescript":include_str!("../../../sdk/clearings.d.ts"),"task_example":{
                     "contract":{"abi":1,"name":"double","description":"Double an integer","input_schema":{"type":"integer"},"output_schema":{"type":"integer"},"capabilities":[]},

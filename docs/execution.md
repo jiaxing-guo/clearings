@@ -2,7 +2,7 @@
 
 ## Interface
 
-`clearings run-source` reads a source file, contract, input and host policy. Source preparation and execution each start a fresh internal worker. Preparation returns generated JavaScript and a source map; the source-running command prepares on each invocation. Saved prepared versions belong to the following persistence change.
+`clearings run-source` reads a source file, contract, input and host policy. Source preparation and execution each start a fresh internal worker. Preparation returns generated JavaScript and a source map; the source-running command prepares on each invocation. The [routine store](routines.md) saves prepared versions and reuses them through the Rust API and [CLI/MCP lifecycle](agents.md).
 
 The routine default-exports an async function. Its result is one of the four outcomes in the [product requirements](product.md). JSON schemas validate inputs and completed outputs. Numbers must be finite and within JavaScript's safe numeric magnitude; use strings for large identifiers. Undefined values, functions and symbols are outside the interchange contract.
 
@@ -12,6 +12,8 @@ The routine default-exports an async function. Its result is one of the four out
 
 The routine's `capabilities` list is a request. The caller independently supplies a policy mapping root names to local directories. `files.read` accepts `{root, path}` and returns `{text}`. `files.list` accepts the same input and returns sorted immediate entry names. Paths must be relative and contain no parent traversal. Capability-scoped directory handles prevent symlinks from escaping the granted root. Only regular UTF-8 files are read; nonblocking opens prevent a named pipe from blocking the broker.
 
+A caught capability error cannot be turned into a completed run; an explicit handoff or non-applicable outcome remains available.
+
 Reads and directory listings are bounded by output bytes; directories also have an entry limit. No project scripts are executed. Grants are supplied per invocation and never stored inside generated source.
 
 ## Process boundary
@@ -20,7 +22,7 @@ The host launches its own executable in worker mode with a cleared environment a
 
 QuickJS heap and stack limits supplement parent-enforced wall deadlines and protocol/output limits. Linux applies an address-space limit to the worker; macOS does not claim an equivalent whole-process memory limit. The supervisor kills and reaps its worker on completion or failure. OS isolation and library correctness require platform-specific tests; merely using Rust or a subprocess is not a sandbox.
 
-Capability calls cross the pipe to the broker. The initial implementation services calls serially, including calls written through `Promise.all`; it does not yet claim concurrent dispatch or batching. The host applies the declaration and its own grants independently for each operation.
+Capability calls cross the pipe to the broker. File operations use a process-wide pool of four I/O threads with at most four queued requests. Waiting for a result respects the remaining invocation deadline. An operating-system file call already in progress may outlive its caller; its pool slot remains occupied until it returns. Saturation fails explicitly, and queued work whose deadline has expired is skipped. This bounds lingering read-only work without creating a thread for every timed-out call. Opening granted roots during policy construction is setup work outside the invocation deadline. The initial implementation services calls serially, including calls written through `Promise.all`; it does not yet claim concurrent dispatch or batching. The host applies the declaration and its own grants independently for each operation.
 
 ## Measurement
 

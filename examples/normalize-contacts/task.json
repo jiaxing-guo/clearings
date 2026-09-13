@@ -116,6 +116,120 @@
         }
       },
       "calls": []
+    },
+    {
+      "name": "empty halves",
+      "input": {
+        "rows": [
+          {
+            "name": "Ada",
+            "email": "@"
+          }
+        ]
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Review contact fields",
+        "context": {
+          "row": 1
+        }
+      },
+      "calls": []
+    },
+    {
+      "name": "empty domain",
+      "input": {
+        "rows": [
+          {
+            "name": "Ada",
+            "email": "alice@"
+          }
+        ]
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Review contact fields",
+        "context": {
+          "row": 1
+        }
+      },
+      "calls": []
+    },
+    {
+      "name": "empty local",
+      "input": {
+        "rows": [
+          {
+            "name": "Ada",
+            "email": "@example.com"
+          }
+        ]
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Review contact fields",
+        "context": {
+          "row": 1
+        }
+      },
+      "calls": []
+    },
+    {
+      "name": "multiple separators",
+      "input": {
+        "rows": [
+          {
+            "name": "Ada",
+            "email": "a@@example.com"
+          }
+        ]
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Review contact fields",
+        "context": {
+          "row": 1
+        }
+      },
+      "calls": []
+    },
+    {
+      "name": "local whitespace",
+      "input": {
+        "rows": [
+          {
+            "name": "Ada",
+            "email": "a b@example.com"
+          }
+        ]
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Review contact fields",
+        "context": {
+          "row": 1
+        }
+      },
+      "calls": []
+    },
+    {
+      "name": "domain whitespace",
+      "input": {
+        "rows": [
+          {
+            "name": "Ada",
+            "email": "a@exam ple.com"
+          }
+        ]
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Review contact fields",
+        "context": {
+          "row": 1
+        }
+      },
+      "calls": []
     }
   ]
 }

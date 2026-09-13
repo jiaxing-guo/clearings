@@ -17,7 +17,9 @@ clearings --store /absolute/private/state.db run TASK_ID --input input.json --po
 clearings --store /absolute/private/state.db runs
 ```
 
-Use the IDs returned by the previous commands. `list` discovers tasks, `inspect ID` shows requirements or version source and evaluation, and `sdk` prints the TypeScript declarations. Replacing an active version requires `activate VERSION_ID --expected-active PREVIOUS_VERSION_ID`. `deactivate TASK_ID --expected-active VERSION_ID` stops reuse while preserving history. JSON results remain visible on failure; failed execution and rejected evaluation also return a nonzero exit status.
+Use the IDs returned by the previous commands. `list` discovers tasks, `inspect ID` shows requirements or version source and evaluation, and `sdk` prints the TypeScript declarations. Replacing an active version requires `activate VERSION_ID --expected-active PREVIOUS_VERSION_ID`. `deactivate TASK_ID --expected-active VERSION_ID` stops reuse while preserving history. Failed execution and rejected evaluation print their JSON result and return a nonzero exit status. Argument, configuration and lifecycle errors return a nonzero exit status with a diagnostic on stderr; they do not promise JSON on stdout. `run-source` retains its top-level run fields (`outcome`, `elapsed_ms`, `capability_calls`, `model_usage`); stored `run` results include the record metadata and a nested `run` object.
+
+History returns up to 100 records per page, with a byte budget applied while reading the database. When `next_before` is non-null, continue with `runs --before ID` or `clearings_runs` arguments `{"before": ID}`. A record larger than the page budget produces an explicit error; its ID can be used as `before` to retrieve earlier records. The MCP transport includes the terminating newline in its 4 MiB limit.
 
 ## MCP
 
