@@ -113,6 +113,62 @@ fn acceptance_rejects_unsafe_fixture_input_and_handoff_context() {
 }
 
 #[test]
+fn large_history_is_paged_before_loading_reports() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("history.db");
+    let s = Store::open(&path).unwrap();
+    let id = s.prepare_task(&task()).unwrap();
+    let version = s.submit(exe(), &id, GOOD.into()).unwrap();
+    let mut db = rusqlite::Connection::open(&path).unwrap();
+    let transaction = db.transaction().unwrap();
+    let report = json!({"outcome":{"status":"completed","output":"x".repeat(1_000_000)},"elapsed_ms":1,"capability_calls":0,"model_usage":null}).to_string();
+    for _ in 0..100 {
+        transaction
+            .execute(
+                "INSERT INTO runs(version,input_digest,report) VALUES(?1,?2,?3)",
+                rusqlite::params![version, "a".repeat(64), report],
+            )
+            .unwrap();
+    }
+    transaction.commit().unwrap();
+    let mut before = None;
+    let mut expected = 100;
+    loop {
+        let page = s.runs_page(before).unwrap();
+        assert!(serde_json::to_vec(&page).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
+        let rows = page["runs"].as_array().unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0]["id"], expected);
+        expected -= 1;
+        before = page["next_before"].as_i64();
+        if before.is_none() {
+            break;
+        }
+    }
+    assert_eq!(expected, 0);
+    assert!(s.runs_page(Some(0)).is_err());
+    assert!(
+        s.runs_page(Some(1)).unwrap()["runs"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    // An oversized row is rejected before its malformed JSON is decoded.
+    db.execute(
+        "UPDATE runs SET report=?1 WHERE id=100",
+        ["!".repeat(clearings::contract::MAX_WIRE_BYTES)],
+    )
+    .unwrap();
+    assert!(
+        s.runs()
+            .unwrap_err()
+            .to_string()
+            .contains("history page limit")
+    );
+    assert_eq!(s.runs_page(Some(100)).unwrap()["runs"][0]["id"], 99);
+}
+
+#[test]
 fn repeated_evaluation_returns_the_original_without_a_worker() {
     let temp = tempfile::tempdir().unwrap();
     let s = Store::open(&temp.path().join("state.db")).unwrap();
@@ -154,6 +210,37 @@ fn aggregate_evaluation_overflow_is_rejected_before_persistence() {
 }
 
 #[test]
+fn task_discovery_pages_large_descriptions_without_losing_tasks() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut expected = std::collections::BTreeSet::new();
+    for n in 0..1000 {
+        let mut t = task();
+        t.contract.name = format!("task-{n}");
+        t.contract.description = "x".repeat(4096);
+        expected.insert(s.prepare_task(&t).unwrap());
+    }
+    let mut after = None;
+    let mut seen = std::collections::BTreeSet::new();
+    loop {
+        let page = s.list_page(after.as_deref()).unwrap();
+        assert!(serde_json::to_vec(&page).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
+        let tasks = page["tasks"].as_array().unwrap();
+        assert_eq!(tasks.len(), 100);
+        for task in tasks {
+            assert!(seen.insert(task["task"].as_str().unwrap().to_owned()));
+            assert_eq!(task["description"].as_str().unwrap().len(), 4096);
+        }
+        after = page["next_after"].as_str().map(str::to_owned);
+        if after.is_none() {
+            break;
+        }
+    }
+    assert_eq!(seen, expected);
+    assert!(s.list_page(Some("invalid cursor")).is_err());
+}
+
+#[test]
 fn built_in_fixtures_match_live_file_shapes() {
     let temp = tempfile::tempdir().unwrap();
     let s = Store::open(&temp.path().join("state.db")).unwrap();
@@ -189,4 +276,42 @@ fn built_in_fixtures_match_live_file_shapes() {
             assert!(s.prepare_task(&t).is_err());
         }
     }
+}
+
+#[test]
+fn accepted_objects_remain_inspectable_with_large_evaluations() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut t = task();
+    t.contract.output_schema = json!({});
+    t.contract.limits.output_bytes = 1024 * 1024;
+    t.cases.truncate(1);
+    t.cases[0].expected = clearings::contract::Outcome::Completed {
+        output: json!("x".repeat(3_000_000)),
+    };
+    assert!(
+        s.prepare_task(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("inspect byte limit")
+    );
+    t.cases[0].expected = clearings::contract::Outcome::Completed {
+        output: json!("x".repeat(900_000)),
+    };
+    let task = s.prepare_task(&t).unwrap();
+    assert!(
+        serde_json::to_vec(&s.inspect(&task).unwrap())
+            .unwrap()
+            .len()
+            < clearings::contract::MAX_WIRE_BYTES / 3
+    );
+    let version = s.submit(exe(), &task, "export default async function(){return {status:'completed',output:'x'.repeat(900_000)};}".into()).unwrap();
+    assert_eq!(s.evaluate(exe(), &version).unwrap()["accepted"], true);
+    let inspected = s.inspect(&version).unwrap();
+    assert_eq!(inspected["evaluation"]["case_count"], 1);
+    assert_eq!(inspected["evaluation"]["accepted"], true);
+    assert!(inspected["evaluation"].get("cases").is_none());
+    assert!(
+        serde_json::to_vec(&inspected).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3
+    );
 }

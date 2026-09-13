@@ -1,0 +1,18 @@
+{
+  "name": "clearings",
+  "version": "0.1.0",
+  "description": "Teach and reuse user-selected routines with the local Clearings runtime.",
+  "author": {
+    "name": "Clearings contributors"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Clearings",
+    "shortDescription": "Reuse repeated agent work.",
+    "longDescription": "Prepare user-selected routines, check their acceptance cases, and reuse them through the local Clearings executable or MCP server.",
+    "developerName": "Clearings contributors",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Turn this repeated task into a Clearings routine."
+  }
+}

@@ -8,7 +8,7 @@ The native Rust executable embeds the TypeScript transformer and JavaScript engi
 
 ## Status
 
-Isolated TypeScript execution, scoped file and HTTP GET capabilities, immutable routine storage, fixture evaluation, explicit activation and run records are implemented through the Rust API. The source-running CLI is available; CLI/MCP lifecycle operations, agent integrations and complete teach-and-reuse examples follow in the [product requirements](docs/product.md).
+Isolated TypeScript execution, scoped file and HTTP capabilities, immutable routine versions, evaluation, activation and run records are implemented. The CLI and MCP expose the lifecycle, with small Codex and Claude Code skill plugins. Complete workflows and native review packages follow separately. See [agent integration](docs/agents.md).
 
 The implementation is under development. Passing runtime tests does not establish general-purpose task correctness or token savings. See [execution](docs/execution.md) for the supported boundary and [development](docs/development.md) for checks.
 

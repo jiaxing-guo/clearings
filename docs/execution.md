@@ -2,7 +2,7 @@
 
 ## Interface
 
-`clearings run-source` reads a source file, contract, input and host policy. Source preparation, execution, and input/output validation use isolated internal workers. Preparation returns generated JavaScript and a source map; the source-running command prepares on each invocation. The [routine store](routines.md) saves prepared versions and reuses them through the Rust API; CLI/MCP lifecycle commands follow separately.
+`clearings run-source` reads a source file, contract, input and host policy. Source preparation, execution, and input/output validation use isolated internal workers. Preparation returns generated JavaScript and a source map; the source-running command prepares on each invocation. The [routine store](routines.md) saves prepared versions and reuses them through the Rust API and [CLI/MCP lifecycle](agents.md).
 
 The routine default-exports an async function. Its result is one of the four outcomes in the [product requirements](product.md). JSON schemas validate inputs and completed outputs. The worker converts JSON values directly without invoking JSON.stringify or custom toJSON methods. Non-finite numbers and non-JSON values are rejected before they can become null or disappear. Numbers must be finite and within JavaScript's safe numeric magnitude; use strings for large identifiers. Undefined values, functions and symbols are outside the interchange contract.
 
