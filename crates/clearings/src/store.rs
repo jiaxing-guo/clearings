@@ -11,7 +11,9 @@ use sha2::{Digest, Sha256};
 use std::{path::Path, time::Duration};
 
 // Change this when preparation or execution semantics change. Old versions require re-submission.
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-2";
+const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
+
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-3";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -175,9 +177,11 @@ impl Store {
     }
     pub fn evaluate(&self, executable: &Path, id: &str) -> Result<Value> {
         let version = self.version(id)?;
+        if let Some(report) = self.evaluation(id)? { return Ok(report); }
         let task: Task = self.get("task", &version.task)?;
         task.validate()?;
         let mut cases = Vec::new();
+        let mut report_bytes = 1024;
         for case in task.cases {
             let mut fixture = Fixtures {
                 calls: &case.calls,
@@ -194,21 +198,31 @@ impl Store {
             let accepted = run.outcome == case.expected
                 && fixture.position == fixture.calls.len()
                 && !fixture.mismatch;
-            cases.push(json!({"name":case.name,"accepted":accepted,"run":run}));
+            let result = json!({"name":case.name,"accepted":accepted,"run":run});
+            report_bytes += serde_json::to_vec(&result)?.len() + 1;
+            ensure!(report_bytes <= REPORT_BYTES, "evaluation report exceeds byte limit; no evaluation was recorded");
+            cases.push(result);
         }
         let accepted = cases.iter().all(|c| c["accepted"] == true);
         let report = json!({"version":id,"task":version.task,"engine":ENGINE,"accepted":accepted,"cases":cases});
+        ensure!(serde_json::to_vec(&report)?.len() <= REPORT_BYTES, "evaluation report exceeds byte limit");
         // First evaluation is immutable. A fresh candidate gets a fresh version if source changes.
         self.db.execute(
             "INSERT OR IGNORE INTO evaluations(version,engine,report) VALUES(?1,?2,?3)",
             params![id, ENGINE, serde_json::to_string(&report)?],
         )?;
-        let recorded: String = self.db.query_row(
-            "SELECT report FROM evaluations WHERE version=?1 AND engine=?2",
-            params![id, ENGINE],
-            |r| r.get(0),
-        )?;
-        Ok(serde_json::from_str(&recorded)?)
+        self.evaluation(id)?.context("evaluation was not recorded")
+    }
+
+    fn evaluation(&self, id: &str) -> Result<Option<Value>> {
+        let row: Option<(usize, Option<String>)> = self.db.query_row(
+            "SELECT length(CAST(report AS BLOB)), CASE WHEN length(CAST(report AS BLOB)) <= ?3 THEN report END FROM evaluations WHERE version=?1 AND engine=?2",
+            params![id, ENGINE, REPORT_BYTES], |r| Ok((r.get(0)?,r.get(1)?)),
+        ).optional()?;
+        row.map(|(bytes,body)| {
+            ensure!(bytes <= REPORT_BYTES, "stored evaluation exceeds byte limit");
+            Ok(serde_json::from_str(&body.context("missing evaluation body")?)?)
+        }).transpose()
     }
     pub fn active(&self, task: &str) -> Result<Option<String>> {
         Ok(self
