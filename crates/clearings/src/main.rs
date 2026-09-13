@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use clearings::{
     capabilities::LocalBroker,
-    contract::{Contract, Policy, MAX_SOURCE_BYTES, MAX_WIRE_BYTES},
+    contract::{Contract, MAX_SOURCE_BYTES, MAX_WIRE_BYTES, Policy},
     execute,
 };
 use serde::de::DeserializeOwned;
@@ -42,7 +42,10 @@ enum Action {
 }
 
 fn read<T: DeserializeOwned>(path: PathBuf) -> Result<T> {
-    Ok(serde_json::from_slice(&read_bytes(path, MAX_WIRE_BYTES - 1)?)?)
+    Ok(serde_json::from_slice(&read_bytes(
+        path,
+        MAX_WIRE_BYTES - 1,
+    )?)?)
 }
 
 fn read_bytes(path: PathBuf, limit: usize) -> Result<Vec<u8>> {
@@ -79,7 +82,10 @@ fn main() -> Result<()> {
             let contract: Contract = read(contract)?;
             let policy: Policy = read(policy)?;
             let input: Value = read(input)?;
-            let prepared = execute::prepare(&executable, &String::from_utf8(read_bytes(source, MAX_SOURCE_BYTES)?)?)?;
+            let prepared = execute::prepare(
+                &executable,
+                &String::from_utf8(read_bytes(source, MAX_SOURCE_BYTES)?)?,
+            )?;
             let mut broker = LocalBroker::new(&contract, &policy)?;
             let run = execute::run(&executable, &contract, &prepared, input, &mut broker);
             println!("{}", serde_json::to_string_pretty(&run)?);
@@ -104,6 +110,11 @@ mod tests {
         assert_eq!(read::<Value>(path.clone()).unwrap(), Value::Null);
         let file = std::fs::File::create(&path).unwrap();
         file.set_len(2 * 1024 * 1024 * 1024).unwrap();
-        assert!(read::<Value>(path).unwrap_err().to_string().contains("byte limit"));
+        assert!(
+            read::<Value>(path)
+                .unwrap_err()
+                .to_string()
+                .contains("byte limit")
+        );
     }
 }
