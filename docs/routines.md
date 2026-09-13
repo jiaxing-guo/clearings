@@ -51,3 +51,5 @@ HTTP bindings ignore ambient proxy variables and connect directly to the granted
 User-named capabilities currently use HTTP GET bindings, so their fixture inputs must be objects of string query values. Fixture preparation and live execution share this shape check; endpoint-specific permitted keys remain host policy.
 
 Task validation compiles its input and output schemas once and reuses them across acceptance cases. Other `files.*` names are reserved and rejected. SDK types enforce the supported file names and string-valued HTTP query objects; the documentation CI workflow runs the corresponding positive and negative type checks.
+
+Stored tasks and versions each have a byte budget below one third of the worker message limit. This reserves room for acceptance inputs and prepared code to travel together and keeps inspection responses bounded. Oversized objects are rejected before persistence and are not loaded from storage.

@@ -14,7 +14,7 @@ use std::{path::Path, time::Duration};
 const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
 const OBJECT_BYTES: usize = REPORT_BYTES - 4096;
 
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-7";
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-8";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -225,6 +225,7 @@ impl Store {
                 &mut fixture,
             );
             let accepted = run.outcome == case.expected
+                && run.capability_calls == fixture.calls.len()
                 && fixture.position == fixture.calls.len()
                 && !fixture.mismatch;
             let result = json!({"name":case.name,"accepted":accepted,"run":run});
