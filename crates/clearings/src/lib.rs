@@ -1,3 +1,5 @@
+pub mod api;
+pub mod mcp;
 pub mod capabilities;
 pub mod contract;
 pub mod execute;
