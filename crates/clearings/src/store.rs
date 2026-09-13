@@ -77,7 +77,10 @@ impl Task {
                 crate::contract::check_json(&call.input)?;
                 crate::contract::check_json(&call.result)?;
                 crate::capabilities::validate_file_fixture(
-                    &call.name, &call.input, &call.result, self.contract.limits.output_bytes,
+                    &call.name,
+                    &call.input,
+                    &call.result,
+                    self.contract.limits.output_bytes,
                 )?;
             }
         }

@@ -158,17 +158,33 @@ fn built_in_fixtures_match_live_file_shapes() {
     let temp = tempfile::tempdir().unwrap();
     let s = Store::open(&temp.path().join("state.db")).unwrap();
     let valid = json!({"root":"repo","path":"."});
-    for (name, result) in [("files.read",json!({"text":"hello"})),("files.list",json!({"entries":["a","b"]}))] {
+    for (name, result) in [
+        ("files.read", json!({"text":"hello"})),
+        ("files.list", json!({"entries":["a","b"]})),
+    ] {
         let mut t = task();
         t.contract.capabilities = vec![name.into()];
-        t.cases[0].calls = vec![serde_json::from_value(json!({"name":name,"input":valid,"result":result})).unwrap()];
+        t.cases[0].calls = vec![
+            serde_json::from_value(json!({"name":name,"input":valid,"result":result})).unwrap(),
+        ];
         assert!(s.prepare_task(&t).is_ok());
-        for input in [json!({"nope":true}),json!({"root":"r","path":3}),json!({"root":"r","path":"../escape"})] {
+        for input in [
+            json!({"nope":true}),
+            json!({"root":"r","path":3}),
+            json!({"root":"r","path":"../escape"}),
+        ] {
             t.cases[0].calls[0].input = input;
             assert!(s.prepare_task(&t).is_err());
         }
         t.cases[0].calls[0].input = valid.clone();
-        for result in [json!(null),json!({"text":3}),json!({"entries":[3]}),json!({"entries":["b","a"]}),json!({"entries":["a","a"]}),json!({"entries":["../a"]})] {
+        for result in [
+            json!(null),
+            json!({"text":3}),
+            json!({"entries":[3]}),
+            json!({"entries":["b","a"]}),
+            json!({"entries":["a","a"]}),
+            json!({"entries":["../a"]}),
+        ] {
             t.cases[0].calls[0].result = result;
             assert!(s.prepare_task(&t).is_err());
         }
