@@ -1,9 +1,9 @@
 pub mod api;
-pub mod mcp;
 pub mod capabilities;
 pub mod contract;
 pub mod execute;
 mod isolation;
+pub mod mcp;
 pub mod store;
 mod transform;
 mod worker;
