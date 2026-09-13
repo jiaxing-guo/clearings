@@ -211,7 +211,12 @@ pub enum Request {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "kind", content = "value", rename_all = "snake_case", deny_unknown_fields)]
+#[serde(
+    tag = "kind",
+    content = "value",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
 pub enum Validation {
     Input(Value),
     Outcome(Outcome),

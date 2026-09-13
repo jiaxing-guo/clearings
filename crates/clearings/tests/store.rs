@@ -117,9 +117,13 @@ fn repeated_evaluation_returns_the_original_without_a_worker() {
     let temp = tempfile::tempdir().unwrap();
     let s = Store::open(&temp.path().join("state.db")).unwrap();
     let task = s.prepare_task(&task()).unwrap();
-    let version = s.submit(exe(),&task,GOOD.into()).unwrap();
-    let report = s.evaluate(exe(),&version).unwrap();
-    assert_eq!(s.evaluate(Path::new("/no-such-clearings-worker"),&version).unwrap(),report);
+    let version = s.submit(exe(), &task, GOOD.into()).unwrap();
+    let report = s.evaluate(exe(), &version).unwrap();
+    assert_eq!(
+        s.evaluate(Path::new("/no-such-clearings-worker"), &version)
+            .unwrap(),
+        report
+    );
 }
 
 #[test]
@@ -133,8 +137,18 @@ fn aggregate_evaluation_overflow_is_rejected_before_persistence() {
     t.cases = (0..100).map(|n| serde_json::from_value(json!({"name":format!("case-{n}"),"input":n,"expected":{"status":"completed","output":""}})).unwrap()).collect();
     let task = s.prepare_task(&t).unwrap();
     let version = s.submit(exe(),&task,"export default async function(){return {status:'completed',output:'x'.repeat(1_000_000)};}".into()).unwrap();
-    assert!(s.evaluate(exe(),&version).unwrap_err().to_string().contains("report exceeds byte limit"));
-    assert!(s.activate(&version,None).is_err());
+    assert!(
+        s.evaluate(exe(), &version)
+            .unwrap_err()
+            .to_string()
+            .contains("report exceeds byte limit")
+    );
+    assert!(s.activate(&version, None).is_err());
     let db = rusqlite::Connection::open(path).unwrap();
-    assert_eq!(db.query_row("SELECT count(*) FROM evaluations",[],|r|r.get::<_,i64>(0)).unwrap(),0);
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM evaluations", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
 }

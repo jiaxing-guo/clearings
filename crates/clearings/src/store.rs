@@ -177,7 +177,9 @@ impl Store {
     }
     pub fn evaluate(&self, executable: &Path, id: &str) -> Result<Value> {
         let version = self.version(id)?;
-        if let Some(report) = self.evaluation(id)? { return Ok(report); }
+        if let Some(report) = self.evaluation(id)? {
+            return Ok(report);
+        }
         let task: Task = self.get("task", &version.task)?;
         task.validate()?;
         let mut cases = Vec::new();
@@ -200,12 +202,18 @@ impl Store {
                 && !fixture.mismatch;
             let result = json!({"name":case.name,"accepted":accepted,"run":run});
             report_bytes += serde_json::to_vec(&result)?.len() + 1;
-            ensure!(report_bytes <= REPORT_BYTES, "evaluation report exceeds byte limit; no evaluation was recorded");
+            ensure!(
+                report_bytes <= REPORT_BYTES,
+                "evaluation report exceeds byte limit; no evaluation was recorded"
+            );
             cases.push(result);
         }
         let accepted = cases.iter().all(|c| c["accepted"] == true);
         let report = json!({"version":id,"task":version.task,"engine":ENGINE,"accepted":accepted,"cases":cases});
-        ensure!(serde_json::to_vec(&report)?.len() <= REPORT_BYTES, "evaluation report exceeds byte limit");
+        ensure!(
+            serde_json::to_vec(&report)?.len() <= REPORT_BYTES,
+            "evaluation report exceeds byte limit"
+        );
         // First evaluation is immutable. A fresh candidate gets a fresh version if source changes.
         self.db.execute(
             "INSERT OR IGNORE INTO evaluations(version,engine,report) VALUES(?1,?2,?3)",
@@ -219,10 +227,16 @@ impl Store {
             "SELECT length(CAST(report AS BLOB)), CASE WHEN length(CAST(report AS BLOB)) <= ?3 THEN report END FROM evaluations WHERE version=?1 AND engine=?2",
             params![id, ENGINE, REPORT_BYTES], |r| Ok((r.get(0)?,r.get(1)?)),
         ).optional()?;
-        row.map(|(bytes,body)| {
-            ensure!(bytes <= REPORT_BYTES, "stored evaluation exceeds byte limit");
-            Ok(serde_json::from_str(&body.context("missing evaluation body")?)?)
-        }).transpose()
+        row.map(|(bytes, body)| {
+            ensure!(
+                bytes <= REPORT_BYTES,
+                "stored evaluation exceeds byte limit"
+            );
+            Ok(serde_json::from_str(
+                &body.context("missing evaluation body")?,
+            )?)
+        })
+        .transpose()
     }
     pub fn active(&self, task: &str) -> Result<Option<String>> {
         Ok(self

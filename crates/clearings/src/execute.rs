@@ -1,5 +1,7 @@
 use crate::capabilities::Broker;
-use crate::contract::{Contract, Event, Limits, Outcome, Prepared, Request, Validation, require_source};
+use crate::contract::{
+    Contract, Event, Limits, Outcome, Prepared, Request, Validation, require_source,
+};
 use crate::worker::{read_message, write_message};
 use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
@@ -71,7 +73,10 @@ fn exchange(
             match message {
                 Event::CallError { message } => {
                     *calls += 1;
-                    ensure!(*calls <= limits.capability_calls, "capability call budget exhausted");
+                    ensure!(
+                        *calls <= limits.capability_calls,
+                        "capability call budget exhausted"
+                    );
                     capability_failure.get_or_insert_with(|| message.clone());
                     write_message(&mut input, &json!({"ok":false,"error":message}))?;
                 }
@@ -150,7 +155,12 @@ pub fn run(
     let result = (|| -> Result<Outcome> {
         contract.limits.validate()?;
         let deadline = start + Duration::from_millis(contract.limits.wall_ms);
-        validate(executable, contract, Validation::Input(input.clone()), deadline)?;
+        validate(
+            executable,
+            contract,
+            Validation::Input(input.clone()),
+            deadline,
+        )?;
         let request = Request::Run {
             prepared: prepared.clone(),
             input,
@@ -166,7 +176,12 @@ pub fn run(
         )?;
         match event {
             Event::Finished { outcome } => {
-                validate(executable, contract, Validation::Outcome(outcome.clone()), deadline)?;
+                validate(
+                    executable,
+                    contract,
+                    Validation::Outcome(outcome.clone()),
+                    deadline,
+                )?;
                 Ok(outcome)
             }
             Event::Error { message } => Ok(Outcome::failed("EXECUTION", message)),
@@ -185,8 +200,23 @@ pub fn run(
     }
 }
 
-fn validate(executable: &Path, contract: &Contract, boundary: Validation, deadline: Instant) -> Result<()> {
-    match exchange(executable, &Request::Validate { contract: contract.clone(), boundary }, &contract.limits, None, &mut 0, deadline)? {
+fn validate(
+    executable: &Path,
+    contract: &Contract,
+    boundary: Validation,
+    deadline: Instant,
+) -> Result<()> {
+    match exchange(
+        executable,
+        &Request::Validate {
+            contract: contract.clone(),
+            boundary,
+        },
+        &contract.limits,
+        None,
+        &mut 0,
+        deadline,
+    )? {
         Event::Validated => Ok(()),
         Event::Error { message } => bail!("{message}"),
         _ => bail!("invalid validation result"),
