@@ -193,7 +193,7 @@ fn repeated_http_calls_reuse_the_connection() {
 }
 
 #[test]
-fn host_credentials_cannot_be_overridden_or_forwarded_on_redirect() {
+fn host_credentials_ignore_proxies_and_cannot_be_overridden_or_redirected() {
     let target = TcpListener::bind("127.0.0.1:0").unwrap();
     target.set_nonblocking(true).unwrap();
     for redirect in [false, true] {
@@ -213,6 +213,12 @@ fn host_credentials_cannot_be_overridden_or_forwarded_on_redirect() {
         let invoke = || {
             std::process::Command::new(env!("CARGO_BIN_EXE_clearings"))
                 .env("CLEARINGS_TEST_HTTP_TOKEN", "host-test-token")
+                .env("HTTP_PROXY", format!("http://{}", target.local_addr().unwrap()))
+                .env("http_proxy", format!("http://{}", target.local_addr().unwrap()))
+                .env("ALL_PROXY", format!("http://{}", target.local_addr().unwrap()))
+                .env("all_proxy", format!("http://{}", target.local_addr().unwrap()))
+                .env("NO_PROXY", "")
+                .env("no_proxy", "")
                 .current_dir(temp.path())
                 .args([
                     "run-source",

@@ -1,7 +1,7 @@
 pub mod capabilities;
 pub mod contract;
 pub mod execute;
-mod file_io;
+mod blocking_io;
 mod isolation;
 pub mod store;
 mod transform;

@@ -45,3 +45,5 @@ HTTP endpoints and output schemas are validated during policy construction, befo
 The execution identity includes a semantics revision. Versions prepared under the previous identity must be resubmitted and evaluated before activation.
 
 Repeated evaluation of a version returns its immutable existing report without running cases again. New evaluations enforce an aggregate report budget while collecting cases; exceeding it returns an explicit error and does not persist or activate a partial evaluation. The SDK retains input/output types for built-in file operations, with JSON input/output for user-named operations. SDK type checking uses TypeScript 5.4 or later.
+
+HTTP bindings ignore ambient proxy variables and connect directly to the granted endpoint. The bounded blocking-I/O pool covers the request, JSON parsing and response-schema validation under the remaining invocation deadline. A timed-out operation may occupy a pool slot until it returns; capacity remains fixed. Acceptance preparation rejects fixture responses and expected outcomes that exceed their corresponding live byte limits.

@@ -21,10 +21,11 @@ pub struct LocalBroker {
     client: Option<reqwest::blocking::Client>,
 }
 
+#[derive(Clone)]
 struct ValidatedHttpBinding {
     url: reqwest::Url,
     query_keys: Vec<String>,
-    output: jsonschema::Validator,
+    output: Arc<jsonschema::Validator>,
     bearer_token_env: Option<String>,
 }
 
@@ -50,7 +51,7 @@ impl LocalBroker {
                 ValidatedHttpBinding {
                     url,
                     query_keys: binding.query_keys.clone(),
-                    output: compile_schema(&binding.output_schema)?,
+                    output: Arc::new(compile_schema(&binding.output_schema)?),
                     bearer_token_env: binding.bearer_token_env.clone(),
                 },
             );
@@ -60,6 +61,7 @@ impl LocalBroker {
         } else {
             Some(
                 reqwest::blocking::Client::builder()
+                    .no_proxy()
                     .redirect(reqwest::redirect::Policy::none())
                     .build()?,
             )
@@ -114,6 +116,7 @@ pub(crate) fn validate_file_fixture(
     max_bytes: usize,
 ) -> Result<()> {
     if !matches!(name, "files.read" | "files.list") {
+        ensure!(serde_json::to_vec(result)?.len() <= max_bytes, "capability fixture exceeds response byte limit");
         return Ok(());
     }
     file_input(input.clone())?;
@@ -168,6 +171,10 @@ impl Broker for LocalBroker {
             "capability was not declared: {name}"
         );
         if let Some(binding) = self.http.get(name) {
+            let binding = binding.clone();
+            let client = self.client.as_ref().context("HTTP client unavailable")?.clone();
+            let max_bytes = self.max_bytes;
+            return crate::blocking_io::call(remaining, move || {
             let mut url = binding.url.clone();
             let args = input
                 .as_object()
@@ -177,11 +184,7 @@ impl Broker for LocalBroker {
                 url.query_pairs_mut()
                     .append_pair(key, value.as_str().context("query values must be strings")?);
             }
-            let mut request = self
-                .client
-                .as_ref()
-                .context("HTTP client unavailable")?
-                .get(url)
+            let mut request = client.get(url)
                 .timeout(remaining);
             if let Some(env) = &binding.bearer_token_env {
                 request = request.bearer_auth(
@@ -199,11 +202,11 @@ impl Broker for LocalBroker {
             );
             let mut body = Vec::new();
             response
-                .take(self.max_bytes as u64 + 1)
+                .take(max_bytes as u64 + 1)
                 .read_to_end(&mut body)
                 .map_err(|_| anyhow::anyhow!("HTTP body read failed"))?;
             ensure!(
-                body.len() <= self.max_bytes,
+                body.len() <= max_bytes,
                 "HTTP response exceeds byte limit"
             );
             let value: Value = serde_json::from_slice(&body)?;
@@ -212,7 +215,8 @@ impl Broker for LocalBroker {
                 .output
                 .validate(&value)
                 .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
-            return Ok(value);
+            Ok(value)
+            });
         }
         let args = file_input(input)?;
         let path = Path::new(&args.path);
@@ -224,7 +228,7 @@ impl Broker for LocalBroker {
         let name = name.to_owned();
         let path = path.to_owned();
         let max_bytes = self.max_bytes;
-        crate::file_io::call(remaining, move || match name.as_str() {
+        crate::blocking_io::call(remaining, move || match name.as_str() {
             "files.read" => {
                 let mut options = cap_std::fs::OpenOptions::new();
                 options.read(true);

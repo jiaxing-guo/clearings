@@ -34,3 +34,5 @@ Each run returns an outcome, elapsed milliseconds, a capability request count an
 - [rquickjs embedding](https://docs.rs/rquickjs/latest/rquickjs/)
 - [QuickJS runtime controls](https://bellard.org/quickjs/quickjs.html)
 - [Capability-scoped filesystem API](https://docs.rs/cap-std/latest/cap_std/fs/struct.Dir.html)
+
+The invocation deadline also bounds writes to worker pipes. Blocking I/O uses a fixed four-worker pool with four queued jobs; timeout releases the caller, and a stalled operation can occupy only a bounded slot. CLI file loading and host-policy construction are setup operations outside the invocation's `wall_ms` limit.
