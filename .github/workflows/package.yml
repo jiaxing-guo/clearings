@@ -1,0 +1,38 @@
+name: Packages
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check package source selection
+        run: python3 -m unittest discover -s tests -p test_package_sources.py
+      - run: rustup show
+      - name: Check dependency license material
+        run: python3 scripts/package.py target/release/clearings "$RUNNER_TEMP/clearings-package" --licenses-only
+      - run: cargo build --release --locked --workspace
+      - name: Package executable and licenses
+        run: python3 scripts/package.py target/release/clearings "$RUNNER_TEMP/clearings-package"
+      - name: Verify extracted artifact without language runtimes
+        run: |
+          mkdir "$RUNNER_TEMP/clearings-installed"
+          tar -xzf "$RUNNER_TEMP/clearings-package/clearings.tar.gz" -C "$RUNNER_TEMP/clearings-installed"
+          python3 scripts/verify-package.py "$RUNNER_TEMP/clearings-installed/clearings"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: clearings-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/clearings-package/clearings.tar.gz
+            ${{ runner.temp }}/clearings-package/SHA256SUMS

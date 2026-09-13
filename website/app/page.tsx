@@ -38,9 +38,8 @@ export default function Home() {
           ))}
         </div>
         <p className="home-note">
-          Isolated execution, immutable routine storage, evaluation and activation are implemented.
-          CLI/MCP lifecycle operations and agent integrations are available; complete workflows and
-          review packages follow separately. Token savings remain to be measured.
+          The local runtime includes routine versions, acceptance checks, CLI and MCP interfaces,
+          and three complete examples. Token savings remain to be measured.
         </p>
       </main>
     </HomeLayout>
