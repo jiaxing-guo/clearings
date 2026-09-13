@@ -10,6 +10,12 @@ async function checkCapabilityTypes() {
   await clearings.call('files.list', { root: 'data', path: 2 });
   // @ts-expect-error Built-in return types remain specific.
   const wrong: number = read.text;
+  // @ts-expect-error HTTP query arguments must be an object of strings.
+  await clearings.call('data.get', null);
+  // @ts-expect-error Numeric query values are rejected by the live broker.
+  await clearings.call('data.get', { status: 1 });
+  // @ts-expect-error Other names in the files namespace are unsupported.
+  await clearings.call('files.write', { root: 'data', path: 'a' });
   return { text, names, external, wrong };
 }
 void checkCapabilityTypes;

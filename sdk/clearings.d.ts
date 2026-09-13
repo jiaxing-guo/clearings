@@ -8,7 +8,9 @@ type Outcome<T extends Json = Json> =
 
 type CapabilityInput<Name extends string> = Name extends 'files.read' | 'files.list'
   ? { root: string; path: string }
-  : Json;
+  : Name extends `files.${string}`
+    ? never
+    : Record<string, string>;
 type CapabilityOutput<Name extends string> = Name extends 'files.read'
   ? { text: string }
   : Name extends 'files.list'
