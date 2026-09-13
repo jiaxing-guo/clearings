@@ -46,7 +46,14 @@ fn user_defined_workflows_share_one_runtime_and_revisions_preserve_history() {
             let record = format!("{}\n", json!({"level":"info","message":"x".repeat(80)}));
             std::fs::write(&path, record.repeat(5001)).unwrap();
             policy.roots.insert("logs".into(), temp.path().into());
-            let result = store.run(exe, &id, json!({"root":"logs","path":"oversized.jsonl"}), &policy).unwrap();
+            let result = store
+                .run(
+                    exe,
+                    &id,
+                    json!({"root":"logs","path":"oversized.jsonl"}),
+                    &policy,
+                )
+                .unwrap();
             assert_eq!(result["run"]["outcome"]["status"], "needs_agent");
             assert_eq!(result["run"]["capability_calls"], 1);
         }
