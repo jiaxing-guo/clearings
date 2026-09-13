@@ -1,0 +1,152 @@
+{
+  "contract": {
+    "abi": 1,
+    "name": "group-logs",
+    "description": "Group nonblank JSON lines by exact level and message, sorted by the JSON tuple key. Return unfamiliar formats to the agent.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": ["root", "path"],
+      "additionalProperties": false
+    },
+    "output_schema": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": ["level", "message", "count"],
+        "additionalProperties": false
+      }
+    },
+    "capabilities": ["files.read"]
+  },
+  "cases": [
+    {
+      "name": "groups repeated events",
+      "input": {
+        "root": "logs",
+        "path": "sample.jsonl"
+      },
+      "expected": {
+        "status": "completed",
+        "output": [
+          {
+            "level": "error",
+            "message": "database timeout",
+            "count": 2
+          },
+          {
+            "level": "info",
+            "message": "ready",
+            "count": 1
+          }
+        ]
+      },
+      "calls": [
+        {
+          "name": "files.read",
+          "input": {
+            "root": "logs",
+            "path": "sample.jsonl"
+          },
+          "result": {
+            "text": "{\"level\": \"error\", \"message\": \"database timeout\"}\n{\"level\": \"info\", \"message\": \"ready\"}\n{\"level\": \"error\", \"message\": \"database timeout\"}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty log",
+      "input": {
+        "root": "logs",
+        "path": "sample.jsonl"
+      },
+      "expected": {
+        "status": "completed",
+        "output": []
+      },
+      "calls": [
+        {
+          "name": "files.read",
+          "input": {
+            "root": "logs",
+            "path": "sample.jsonl"
+          },
+          "result": {
+            "text": "\n"
+          }
+        }
+      ]
+    },
+    {
+      "name": "malformed record",
+      "input": {
+        "root": "logs",
+        "path": "sample.jsonl"
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Invalid log record",
+        "context": {
+          "record": 1
+        }
+      },
+      "calls": [
+        {
+          "name": "files.read",
+          "input": {
+            "root": "logs",
+            "path": "sample.jsonl"
+          },
+          "result": {
+            "text": "not json"
+          }
+        }
+      ]
+    },
+    {
+      "name": "unsupported shape",
+      "input": {
+        "root": "logs",
+        "path": "sample.jsonl"
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Unsupported log shape",
+        "context": {
+          "record": 1
+        }
+      },
+      "calls": [
+        {
+          "name": "files.read",
+          "input": {
+            "root": "logs",
+            "path": "sample.jsonl"
+          },
+          "result": {
+            "text": "{\"severity\":\"warn\"}"
+          }
+        }
+      ]
+    }
+  ]
+}

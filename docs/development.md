@@ -63,3 +63,9 @@ This removes the named documentation outputs, generated content and type caches.
 ## Scope of future code
 
 Keep one Rust application crate with concrete runtime, capability, routine, storage and interface modules. Add CLI/MCP operations and thin host integrations with their callers. Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer. Runtime tests must exercise the process and authorization boundaries as well as valid execution.
+
+## Packages and complete workflows
+
+`cargo test --locked --workspace` includes the three examples and the CLI/MCP transport. The Packages workflow builds release executables, collects dependency licenses and checks the extracted artifact. The installed binary is exercised with an empty `PATH`. The packaging scripts use Python only in development and CI; Python is not shipped or required by the product.
+
+`python3 scripts/package.py target/release/clearings /path/to/new/package-output` creates a package from an existing release build. `python3 scripts/verify-package.py /path/to/extracted/clearings` checks it. Use a fresh output directory for each package.

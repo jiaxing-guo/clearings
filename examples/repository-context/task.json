@@ -1,0 +1,162 @@
+{
+  "contract": {
+    "abi": 1,
+    "name": "repository-context",
+    "description": "Read explicitly selected files once each in first-seen order. Return their current text; ask for judgment above 20 unique files.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "type": "string"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": ["root", "paths"],
+      "additionalProperties": false
+    },
+    "output_schema": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["path", "text"],
+        "additionalProperties": false
+      }
+    },
+    "capabilities": ["files.read"]
+  },
+  "cases": [
+    {
+      "name": "deduplicate selected files",
+      "input": {
+        "root": "repo",
+        "paths": ["README.md", "config.json", "README.md"]
+      },
+      "expected": {
+        "status": "completed",
+        "output": [
+          {
+            "path": "README.md",
+            "text": "# Demo"
+          },
+          {
+            "path": "config.json",
+            "text": "{}"
+          }
+        ]
+      },
+      "calls": [
+        {
+          "name": "files.read",
+          "input": {
+            "root": "repo",
+            "path": "README.md"
+          },
+          "result": {
+            "text": "# Demo"
+          }
+        },
+        {
+          "name": "files.read",
+          "input": {
+            "root": "repo",
+            "path": "config.json"
+          },
+          "result": {
+            "text": "{}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty selection",
+      "input": {
+        "root": "repo",
+        "paths": []
+      },
+      "expected": {
+        "status": "completed",
+        "output": []
+      },
+      "calls": []
+    },
+    {
+      "name": "different root and path",
+      "input": {
+        "root": "docs",
+        "paths": ["guide.md"]
+      },
+      "expected": {
+        "status": "completed",
+        "output": [
+          {
+            "path": "guide.md",
+            "text": "Guide"
+          }
+        ]
+      },
+      "calls": [
+        {
+          "name": "files.read",
+          "input": {
+            "root": "docs",
+            "path": "guide.md"
+          },
+          "result": {
+            "text": "Guide"
+          }
+        }
+      ]
+    },
+    {
+      "name": "large selection returns to agent",
+      "input": {
+        "root": "repo",
+        "paths": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11",
+          "12",
+          "13",
+          "14",
+          "15",
+          "16",
+          "17",
+          "18",
+          "19",
+          "20"
+        ]
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Choose at most 20 context files",
+        "context": {
+          "count": 21
+        }
+      },
+      "calls": []
+    }
+  ]
+}

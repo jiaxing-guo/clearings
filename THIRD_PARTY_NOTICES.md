@@ -27,3 +27,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Embedded runtime
+
+Review packages include license texts collected from the locked Rust dependencies and their bundled native sources, plus a `dependencies.json` inventory. These include Oxc, rquickjs/QuickJS, SQLite through rusqlite, JSON Schema validation, cap-std, and reqwest/rustls. The package build fails when dependency license material is missing; consult the included texts for redistribution terms. The website dependency inventory above is separate from the native runtime.

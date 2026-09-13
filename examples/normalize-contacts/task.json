@@ -1,0 +1,121 @@
+{
+  "contract": {
+    "abi": 1,
+    "name": "normalize-contacts",
+    "description": "Trim names and lowercase trimmed emails. Keep the first name for each email, sort by email, and return missing or visibly invalid fields to the agent. This is not an email deliverability validator.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "maxItems": 10000
+        }
+      },
+      "required": ["rows"],
+      "additionalProperties": false
+    },
+    "output_schema": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": ["name", "email"],
+        "additionalProperties": false
+      }
+    },
+    "capabilities": []
+  },
+  "cases": [
+    {
+      "name": "normalize and deduplicate",
+      "input": {
+        "rows": [
+          {
+            "name": " Ada ",
+            "email": " ADA@example.com "
+          },
+          {
+            "name": "Different",
+            "email": "ada@example.com"
+          },
+          {
+            "name": " Bob",
+            "email": "bob@example.com"
+          }
+        ]
+      },
+      "expected": {
+        "status": "completed",
+        "output": [
+          {
+            "name": "Ada",
+            "email": "ada@example.com"
+          },
+          {
+            "name": "Bob",
+            "email": "bob@example.com"
+          }
+        ]
+      },
+      "calls": []
+    },
+    {
+      "name": "empty list",
+      "input": {
+        "rows": []
+      },
+      "expected": {
+        "status": "completed",
+        "output": []
+      },
+      "calls": []
+    },
+    {
+      "name": "missing name",
+      "input": {
+        "rows": [
+          {
+            "email": "a@b.test"
+          }
+        ]
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Missing contact fields",
+        "context": {
+          "row": 1
+        }
+      },
+      "calls": []
+    },
+    {
+      "name": "invalid email",
+      "input": {
+        "rows": [
+          {
+            "name": "Ada",
+            "email": "ada"
+          }
+        ]
+      },
+      "expected": {
+        "status": "needs_agent",
+        "reason": "Review contact fields",
+        "context": {
+          "row": 1
+        }
+      },
+      "calls": []
+    }
+  ]
+}
