@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 use std::io::Read;
 use std::path::{Component, Path};
 use std::time::Duration;
+use std::sync::Arc;
 
 pub trait Broker {
     fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value>;
@@ -14,7 +15,7 @@ pub trait Broker {
 
 pub struct LocalBroker {
     capabilities: Vec<String>,
-    roots: BTreeMap<String, Dir>,
+    roots: BTreeMap<String, Arc<Dir>>,
     max_bytes: usize,
 }
 
@@ -26,8 +27,8 @@ impl LocalBroker {
             .map(|(name, root)| {
                 Ok((
                     name.clone(),
-                    Dir::open_ambient_dir(root, ambient_authority())
-                        .with_context(|| format!("cannot open granted root {name}"))?,
+                    Arc::new(Dir::open_ambient_dir(root, ambient_authority())
+                        .with_context(|| format!("cannot open granted root {name}"))?),
                 ))
             })
             .collect::<Result<_>>()?;
@@ -47,7 +48,7 @@ struct FileInput {
 }
 
 impl Broker for LocalBroker {
-    fn call(&mut self, name: &str, input: Value, _remaining: Duration) -> Result<Value> {
+    fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value> {
         ensure!(
             self.capabilities.iter().any(|c| c == name),
             "capability was not declared: {name}"
@@ -61,8 +62,11 @@ impl Broker for LocalBroker {
                     .all(|c| matches!(c, Component::Normal(_) | Component::CurDir)),
             "only relative paths within a granted root are allowed"
         );
-        let dir = self.roots.get(&args.root).context("root is not granted")?;
-        match name {
+        let dir = self.roots.get(&args.root).context("root is not granted")?.clone();
+        let name = name.to_owned();
+        let path = path.to_owned();
+        let max_bytes = self.max_bytes;
+        crate::file_io::call(remaining, move || match name.as_str() {
             "files.read" => {
                 let mut options = cap_std::fs::OpenOptions::new();
                 options.read(true);
@@ -71,17 +75,17 @@ impl Broker for LocalBroker {
                     use cap_std::fs::OpenOptionsExt;
                     options.custom_flags(libc::O_NONBLOCK);
                 }
-                let file = dir.open_with(path, &options)?;
+                let file = dir.open_with(&path, &options)?;
                 ensure!(file.metadata()?.is_file(), "only regular files can be read");
                 let mut bytes = Vec::new();
-                file.take(self.max_bytes as u64 + 1)
+                file.take(max_bytes as u64 + 1)
                     .read_to_end(&mut bytes)?;
-                ensure!(bytes.len() <= self.max_bytes, "file exceeds read limit");
+                ensure!(bytes.len() <= max_bytes, "file exceeds read limit");
                 Ok(json!({"text": String::from_utf8(bytes)?}))
             }
             "files.list" => {
                 let mut entries = Vec::new();
-                for entry in dir.read_dir(path)? {
+                for entry in dir.read_dir(&path)? {
                     ensure!(entries.len() < 1000, "directory exceeds entry limit");
                     let entry = entry?;
                     entries.push(
@@ -94,12 +98,12 @@ impl Broker for LocalBroker {
                 entries.sort();
                 let value = json!({"entries": entries});
                 ensure!(
-                    serde_json::to_vec(&value)?.len() <= self.max_bytes,
+                    serde_json::to_vec(&value)?.len() <= max_bytes,
                     "listing exceeds byte limit"
                 );
                 Ok(value)
             }
             _ => bail!("unsupported capability: {name}"),
-        }
+        })
     }
 }

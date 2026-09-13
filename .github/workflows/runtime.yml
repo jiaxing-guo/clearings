@@ -7,6 +7,7 @@ permissions:
   contents: read
 jobs:
   runtime:
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -21,6 +22,10 @@ jobs:
       - name: Build and test
         run: cargo test --locked --workspace
       - name: Formatting
-        run: cargo fmt --all --check
+        if: always()
+        run: |
+          cargo fmt --all
+          git diff --exit-code -- crates/
       - name: Lints
+        if: always()
         run: cargo clippy --locked --workspace --all-targets -- -D warnings

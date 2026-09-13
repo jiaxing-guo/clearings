@@ -91,6 +91,9 @@ impl Contract {
             check_json(output)?;
             validate_schema(&self.output_schema, output)?;
         }
+        if let Outcome::NeedsAgent { context, .. } = outcome {
+            check_json(context)?;
+        }
         Ok(())
     }
 }
