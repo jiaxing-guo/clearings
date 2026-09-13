@@ -1,6 +1,19 @@
 # Development
 
-The active build produces documentation. There is no service runtime package or executable CLI to install yet.
+The active build includes the Rust routine runtime and the documentation site. Runtime execution and documentation validation are separate gates.
+
+## Runtime development
+
+Install Rustup and a C compiler. `rust-toolchain.toml` selects the compiler, formatter and Clippy versions. Build and validate from the repository root:
+
+```sh
+cargo build --locked --workspace
+cargo fmt --all --check
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo test --locked --workspace
+```
+
+QuickJS and the TypeScript transformer are compiled into the binary. Installed users do not need either development toolchain. See [execution](execution.md) for platform isolation and supported interfaces.
 
 ## Setup
 
@@ -49,4 +62,4 @@ This removes the named documentation outputs, generated content and type caches.
 
 ## Scope of future code
 
-Add SDKs, adapters, a runtime and CLI/MCP implementations with their actual callers and behavior checks. Python and runtime CI should arrive with real packages. The runtime language and process boundary remain open. Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer.
+Keep one Rust application crate with concrete runtime, capability, routine, storage and interface modules. Add CLI/MCP operations and thin host integrations with their callers. Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer. Runtime tests must exercise the process and authorization boundaries as well as valid execution.

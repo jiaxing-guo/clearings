@@ -27,7 +27,7 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
           </p>
           <p>
             See <Link href="/docs/history">project history</Link> for retrieval instructions, or the{' '}
-            <Link href="/docs">current documentation</Link> for the planned backend runtime.
+            <Link href="/docs">current documentation</Link> for the local agent runtime.
           </p>
         </DocsBody>
       </DocsPage>

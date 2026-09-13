@@ -2,7 +2,7 @@
   "name": "clearings",
   "version": "0.0.1",
   "private": true,
-  "description": "Product requirements and documentation for the Clearings backend execution runtime",
+  "description": "Documentation tooling for the Clearings agent routine runtime",
   "type": "module",
   "engines": {
     "node": ">=24 <25"

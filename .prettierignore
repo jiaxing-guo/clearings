@@ -1,4 +1,7 @@
 node_modules/
+target/
+dist/
+Cargo.lock
 website/.next/
 website/out/
 website/.source/

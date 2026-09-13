@@ -1,6 +1,6 @@
 # Contributing to Clearings
 
-Start with the [product requirements](docs/product.md). Clearings is preparing a managed execution runtime for backend operations; the runtime and SDKs are not implemented yet.
+Start with the [product requirements](docs/product.md). Clearings turns repeated coding-agent work into reusable TypeScript routines executed by an isolated native runtime. Follow the README's implementation status; the teaching and persistence interfaces are introduced by their own changes.
 
 The [development guide](docs/development.md) contains setup commands, validation and documentation conventions. The [historical revision](docs/history.md) preserves the earlier implementation and its evidence.
 

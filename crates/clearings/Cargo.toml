@@ -1,0 +1,28 @@
+[package]
+name = "clearings"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+license = "Apache-2.0"
+description = "Execute reusable TypeScript routines learned with coding agents"
+publish = false
+
+[dependencies]
+anyhow = "1.0"
+cap-std = "3.4"
+clap = { version = "4.5", features = ["derive"] }
+jsonschema = { version = "0.33", default-features = false }
+libc = "0.2"
+oxc_allocator = "=0.140.0"
+oxc_parser = "=0.140.0"
+oxc_span = "=0.140.0"
+oxc_semantic = "=0.140.0"
+oxc_transformer = "=0.140.0"
+oxc_codegen = "=0.140.0"
+rquickjs = { version = "=0.13.0", features = ["loader"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+tempfile = "3.20"
+

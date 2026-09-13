@@ -1,0 +1,8 @@
+[workspace]
+members = ["crates/clearings"]
+resolver = "3"
+
+[profile.release]
+lto = "thin"
+strip = true
+

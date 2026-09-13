@@ -3,6 +3,7 @@ import { rmSync } from 'node:fs';
 if (process.argv.length !== 2) throw new Error('Usage: npm run clean');
 // Named build outputs only; source, installed dependencies and saved records are retained.
 const generated = [
+  'target',
   'website/.next',
   'website/out',
   'website/.source',
