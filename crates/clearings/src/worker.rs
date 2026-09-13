@@ -1,8 +1,11 @@
-use crate::{contract::{ABI, Event, MAX_WIRE_BYTES, Outcome, Request}, isolation, transform};
+use crate::{
+    contract::{ABI, Event, MAX_WIRE_BYTES, Outcome, Request},
+    isolation, transform,
+};
 use anyhow::{Context as _, Result, bail, ensure};
 use rquickjs::{Context, Function, Module, Promise, Runtime};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use std::io::{BufRead, Write};
 use std::time::{Duration, Instant};
@@ -11,19 +14,33 @@ pub(crate) fn read_message<T: DeserializeOwned>(reader: &mut impl BufRead) -> Re
     let mut line = Vec::new();
     loop {
         let buffer = reader.fill_buf()?;
-        ensure!(!buffer.is_empty(), "worker channel closed before a complete message");
-        let length = buffer.iter().position(|b| *b == b'\n').map_or(buffer.len(), |n| n + 1);
-        ensure!(line.len() + length <= MAX_WIRE_BYTES, "message exceeds protocol byte limit");
+        ensure!(
+            !buffer.is_empty(),
+            "worker channel closed before a complete message"
+        );
+        let length = buffer
+            .iter()
+            .position(|b| *b == b'\n')
+            .map_or(buffer.len(), |n| n + 1);
+        ensure!(
+            line.len() + length <= MAX_WIRE_BYTES,
+            "message exceeds protocol byte limit"
+        );
         line.extend_from_slice(&buffer[..length]);
         reader.consume(length);
-        if line.last() == Some(&b'\n') { break; }
+        if line.last() == Some(&b'\n') {
+            break;
+        }
     }
     Ok(serde_json::from_slice(&line)?)
 }
 
 pub(crate) fn write_message(writer: &mut impl Write, value: &impl Serialize) -> Result<()> {
     let bytes = serde_json::to_vec(value)?;
-    ensure!(bytes.len() < MAX_WIRE_BYTES, "message exceeds protocol byte limit");
+    ensure!(
+        bytes.len() < MAX_WIRE_BYTES,
+        "message exceeds protocol byte limit"
+    );
     writer.write_all(&bytes)?;
     writer.write_all(b"\n")?;
     writer.flush()?;
@@ -35,15 +52,23 @@ pub fn worker_main() -> Result<()> {
     let request: Request = read_message(&mut std::io::stdin().lock())?;
     let event = match work(request) {
         Ok(event) => event,
-        Err(error) => Event::Error { message: format!("{error:#}") },
+        Err(error) => Event::Error {
+            message: format!("{error:#}"),
+        },
     };
     write_message(&mut std::io::stdout().lock(), &event)
 }
 
 fn work(request: Request) -> Result<Event> {
     match request {
-        Request::Prepare { source } => Ok(Event::Prepared { prepared: transform::prepare(&source)? }),
-        Request::Run { prepared, input, limits } => {
+        Request::Prepare { source } => Ok(Event::Prepared {
+            prepared: transform::prepare(&source)?,
+        }),
+        Request::Run {
+            prepared,
+            input,
+            limits,
+        } => {
             ensure!(prepared.abi == ABI, "unsupported prepared routine ABI");
             limits.validate()?;
             let runtime = Runtime::new()?;
@@ -89,9 +114,10 @@ fn work(request: Request) -> Result<Event> {
                 ensure!(encoded.len() <= limits.output_bytes, "routine output exceeds byte limit");
                 Ok(serde_json::from_str(&encoded)?)
             })?;
-            if runtime.is_job_pending() { bail!("routine left unfinished jobs"); }
+            if runtime.is_job_pending() {
+                bail!("routine left unfinished jobs");
+            }
             Ok(Event::Finished { outcome })
         }
     }
 }
-

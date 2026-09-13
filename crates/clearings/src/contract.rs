@@ -19,15 +19,29 @@ pub struct Limits {
 
 impl Default for Limits {
     fn default() -> Self {
-        Self { wall_ms: 5_000, heap_bytes: 32 * 1024 * 1024, output_bytes: 256 * 1024, capability_calls: 64 }
+        Self {
+            wall_ms: 5_000,
+            heap_bytes: 32 * 1024 * 1024,
+            output_bytes: 256 * 1024,
+            capability_calls: 64,
+        }
     }
 }
 
 impl Limits {
     pub fn validate(&self) -> Result<()> {
-        ensure!((10..=60_000).contains(&self.wall_ms), "wall_ms must be between 10 and 60000");
-        ensure!((1024 * 1024..=128 * 1024 * 1024).contains(&self.heap_bytes), "heap_bytes outside supported range");
-        ensure!((1..=1024 * 1024).contains(&self.output_bytes), "output_bytes outside supported range");
+        ensure!(
+            (10..=60_000).contains(&self.wall_ms),
+            "wall_ms must be between 10 and 60000"
+        );
+        ensure!(
+            (1024 * 1024..=128 * 1024 * 1024).contains(&self.heap_bytes),
+            "heap_bytes outside supported range"
+        );
+        ensure!(
+            (1..=1024 * 1024).contains(&self.output_bytes),
+            "output_bytes outside supported range"
+        );
         ensure!(self.capability_calls <= 1024, "too many capability calls");
         Ok(())
     }
@@ -50,7 +64,15 @@ pub struct Contract {
 impl Contract {
     pub fn validate(&self) -> Result<()> {
         ensure!(self.abi == ABI, "unsupported routine ABI");
-        ensure!(!self.name.is_empty() && self.name.len() <= 80 && self.name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_'), "invalid routine name");
+        ensure!(
+            !self.name.is_empty()
+                && self.name.len() <= 80
+                && self
+                    .name
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_'),
+            "invalid routine name"
+        );
         ensure!(self.description.len() <= 4096, "description too long");
         ensure!(self.capabilities.len() <= 64, "too many capabilities");
         self.limits.validate()?;
@@ -77,13 +99,22 @@ impl Contract {
 fn compile_schema(schema: &Value) -> Result<jsonschema::Validator> {
     fn refs(value: &Value) -> Result<()> {
         match value {
-            Value::Object(map) => for (key, value) in map {
-                if key == "$ref" || key == "$dynamicRef" {
-                    ensure!(value.as_str().is_some_and(|s| s.starts_with('#')), "only local schema references are supported");
+            Value::Object(map) => {
+                for (key, value) in map {
+                    if key == "$ref" || key == "$dynamicRef" {
+                        ensure!(
+                            value.as_str().is_some_and(|s| s.starts_with('#')),
+                            "only local schema references are supported"
+                        );
+                    }
+                    refs(value)?;
                 }
-                refs(value)?;
-            },
-            Value::Array(values) => for value in values { refs(value)?; },
+            }
+            Value::Array(values) => {
+                for value in values {
+                    refs(value)?;
+                }
+            }
             _ => {}
         }
         Ok(())
@@ -93,17 +124,32 @@ fn compile_schema(schema: &Value) -> Result<jsonschema::Validator> {
 }
 
 pub fn validate_schema(schema: &Value, value: &Value) -> Result<()> {
-    compile_schema(schema)?.validate(value).map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))
+    compile_schema(schema)?
+        .validate(value)
+        .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))
 }
 
 pub fn check_json(value: &Value) -> Result<()> {
     match value {
         Value::Number(n) => {
-            let n = n.as_f64().ok_or_else(|| anyhow::anyhow!("invalid number"))?;
-            ensure!(n.is_finite() && n.abs() <= 9_007_199_254_740_991.0, "numbers must fit the JavaScript safe range; encode large IDs as strings");
+            let n = n
+                .as_f64()
+                .ok_or_else(|| anyhow::anyhow!("invalid number"))?;
+            ensure!(
+                n.is_finite() && n.abs() <= 9_007_199_254_740_991.0,
+                "numbers must fit the JavaScript safe range; encode large IDs as strings"
+            );
         }
-        Value::Array(values) => for v in values { check_json(v)?; },
-        Value::Object(values) => for v in values.values() { check_json(v)?; },
+        Value::Array(values) => {
+            for v in values {
+                check_json(v)?;
+            }
+        }
+        Value::Object(values) => {
+            for v in values.values() {
+                check_json(v)?;
+            }
+        }
         _ => {}
     }
     Ok(())
@@ -120,7 +166,10 @@ pub enum Outcome {
 
 impl Outcome {
     pub fn failed(code: &str, error: impl std::fmt::Display) -> Self {
-        Self::Failed { code: code.into(), message: error.to_string() }
+        Self::Failed {
+            code: code.into(),
+            message: error.to_string(),
+        }
     }
 }
 
@@ -142,8 +191,14 @@ pub struct Prepared {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Request {
-    Prepare { source: String },
-    Run { prepared: Prepared, input: Value, limits: Limits },
+    Prepare {
+        source: String,
+    },
+    Run {
+        prepared: Prepared,
+        input: Value,
+        limits: Limits,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -156,7 +211,8 @@ pub enum Event {
 }
 
 pub fn require_source(source: &str) -> Result<()> {
-    if source.len() > MAX_SOURCE_BYTES { bail!("routine source exceeds 256 KiB"); }
+    if source.len() > MAX_SOURCE_BYTES {
+        bail!("routine source exceeds 256 KiB");
+    }
     Ok(())
 }
-

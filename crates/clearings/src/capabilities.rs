@@ -20,23 +20,47 @@ pub struct LocalBroker {
 
 impl LocalBroker {
     pub fn new(contract: &Contract, policy: &Policy) -> Result<Self> {
-        let roots = policy.roots.iter().map(|(name, root)| {
-            Ok((name.clone(), Dir::open_ambient_dir(root, ambient_authority()).with_context(|| format!("cannot open granted root {name}"))?))
-        }).collect::<Result<_>>()?;
-        Ok(Self { capabilities: contract.capabilities.clone(), roots, max_bytes: contract.limits.output_bytes })
+        let roots = policy
+            .roots
+            .iter()
+            .map(|(name, root)| {
+                Ok((
+                    name.clone(),
+                    Dir::open_ambient_dir(root, ambient_authority())
+                        .with_context(|| format!("cannot open granted root {name}"))?,
+                ))
+            })
+            .collect::<Result<_>>()?;
+        Ok(Self {
+            capabilities: contract.capabilities.clone(),
+            roots,
+            max_bytes: contract.limits.output_bytes,
+        })
     }
 }
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct FileInput { root: String, path: String }
+struct FileInput {
+    root: String,
+    path: String,
+}
 
 impl Broker for LocalBroker {
     fn call(&mut self, name: &str, input: Value, _remaining: Duration) -> Result<Value> {
-        ensure!(self.capabilities.iter().any(|c| c == name), "capability was not declared: {name}");
+        ensure!(
+            self.capabilities.iter().any(|c| c == name),
+            "capability was not declared: {name}"
+        );
         let args: FileInput = serde_json::from_value(input)?;
         let path = Path::new(&args.path);
-        ensure!(!path.is_absolute() && path.components().all(|c| matches!(c, Component::Normal(_) | Component::CurDir)), "only relative paths within a granted root are allowed");
+        ensure!(
+            !path.is_absolute()
+                && path
+                    .components()
+                    .all(|c| matches!(c, Component::Normal(_) | Component::CurDir)),
+            "only relative paths within a granted root are allowed"
+        );
         let dir = self.roots.get(&args.root).context("root is not granted")?;
         match name {
             "files.read" => {
@@ -50,7 +74,8 @@ impl Broker for LocalBroker {
                 let file = dir.open_with(path, &options)?;
                 ensure!(file.metadata()?.is_file(), "only regular files can be read");
                 let mut bytes = Vec::new();
-                file.take(self.max_bytes as u64 + 1).read_to_end(&mut bytes)?;
+                file.take(self.max_bytes as u64 + 1)
+                    .read_to_end(&mut bytes)?;
                 ensure!(bytes.len() <= self.max_bytes, "file exceeds read limit");
                 Ok(json!({"text": String::from_utf8(bytes)?}))
             }
@@ -59,15 +84,22 @@ impl Broker for LocalBroker {
                 for entry in dir.read_dir(path)? {
                     ensure!(entries.len() < 1000, "directory exceeds entry limit");
                     let entry = entry?;
-                    entries.push(entry.file_name().into_string().map_err(|_| anyhow::anyhow!("non-UTF-8 filename"))?);
+                    entries.push(
+                        entry
+                            .file_name()
+                            .into_string()
+                            .map_err(|_| anyhow::anyhow!("non-UTF-8 filename"))?,
+                    );
                 }
                 entries.sort();
                 let value = json!({"entries": entries});
-                ensure!(serde_json::to_vec(&value)?.len() <= self.max_bytes, "listing exceeds byte limit");
+                ensure!(
+                    serde_json::to_vec(&value)?.len() <= self.max_bytes,
+                    "listing exceeds byte limit"
+                );
                 Ok(value)
             }
             _ => bail!("unsupported capability: {name}"),
         }
     }
 }
-
