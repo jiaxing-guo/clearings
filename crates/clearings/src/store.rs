@@ -14,7 +14,7 @@ use std::{path::Path, time::Duration};
 const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
 const OBJECT_BYTES: usize = REPORT_BYTES - 4096;
 
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-4";
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-5";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -66,6 +66,10 @@ impl Task {
             );
             self.contract.check_input(&case.input)?;
             self.contract.check_outcome(&case.expected)?;
+            ensure!(
+                serde_json::to_vec(&case.expected)?.len() <= self.contract.limits.output_bytes,
+                "expected outcome exceeds run output byte limit"
+            );
             ensure!(
                 case.calls.len() <= self.contract.limits.capability_calls,
                 "fixture exceeds call budget"

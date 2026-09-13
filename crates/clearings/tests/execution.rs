@@ -424,3 +424,30 @@ fn literal_reference_names_are_valid_schema_data() {
             .is_err()
     );
 }
+
+#[cfg(unix)]
+#[test]
+fn stalled_worker_input_cannot_block_the_supervisor_deadline() {
+    use std::os::unix::fs::PermissionsExt;
+    let temp = tempfile::tempdir().unwrap();
+    let worker = temp.path().join("stalled-worker");
+    std::fs::write(&worker, "#!/bin/sh\nexec /bin/sleep 5\n").unwrap();
+    std::fs::set_permissions(&worker, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let mut c = contract();
+    c.limits.wall_ms = 100;
+    let prepared = clearings::contract::Prepared {
+        abi: 1,
+        javascript: String::new(),
+        source_map: None,
+    };
+    let mut broker = LocalBroker::new(&c, &Policy::default()).unwrap();
+    let result = execute::run(
+        &worker,
+        &c,
+        &prepared,
+        json!({"padding":"x".repeat(512_000)}),
+        &mut broker,
+    );
+    assert!(matches!(result.outcome, Outcome::Failed { .. }));
+    assert!(result.elapsed_ms < 2000);
+}
