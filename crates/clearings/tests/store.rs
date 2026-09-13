@@ -364,6 +364,9 @@ fn custom_fixture_inputs_match_live_query_arguments() {
     }
     t.cases[0].calls[0].input = json!({"status":"open"});
     assert!(s.prepare_task(&t).is_ok());
+    t.contract.capabilities = vec!["files.write".into()];
+    t.cases[0].calls[0].name = "files.write".into();
+    assert!(s.prepare_task(&t).is_err());
 }
 
 #[test]

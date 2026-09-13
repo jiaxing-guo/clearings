@@ -49,3 +49,5 @@ Repeated evaluation of a version returns its immutable existing report without r
 HTTP bindings ignore ambient proxy variables and connect directly to the granted endpoint. The bounded blocking-I/O pool covers the request, JSON parsing and response-schema validation under the remaining invocation deadline. A timed-out operation may occupy a pool slot until it returns; capacity remains fixed. Acceptance preparation rejects fixture responses and expected outcomes that exceed their corresponding live byte limits.
 
 User-named capabilities currently use HTTP GET bindings, so their fixture inputs must be objects of string query values. Fixture preparation and live execution share this shape check; endpoint-specific permitted keys remain host policy.
+
+Task validation compiles its input and output schemas once and reuses them across acceptance cases. Other `files.*` names are reserved and rejected. SDK types enforce the supported file names and string-valued HTTP query objects; the documentation CI workflow runs the corresponding positive and negative type checks.
