@@ -90,12 +90,17 @@ fn exchange(
                             let message = error.to_string();
                             capability_failure.get_or_insert_with(|| message.clone());
                             json!({"ok":false,"error":message})
-                        },
+                        }
                     };
                     write_message(&mut input, &response)?;
                 }
-                Event::Finished { outcome: Outcome::Completed { .. } } if capability_failure.is_some() => {
-                    bail!("capability failed: {}", capability_failure.as_ref().unwrap());
+                Event::Finished {
+                    outcome: Outcome::Completed { .. },
+                } if capability_failure.is_some() => {
+                    bail!(
+                        "capability failed: {}",
+                        capability_failure.as_ref().unwrap()
+                    );
                 }
                 terminal => return Ok(terminal),
             }
