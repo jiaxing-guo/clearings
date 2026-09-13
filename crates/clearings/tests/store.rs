@@ -79,3 +79,17 @@ fn fixture_mismatch_cannot_be_swallowed() {
     let v=s.submit(exe(),&id,"export default async function(x){try{await clearings.call('files.read',{root:'x',path:'y'});}catch{}return {status:'completed',output:x*2};}".into()).unwrap();
     assert_eq!(s.evaluate(exe(), &v).unwrap()["accepted"], false);
 }
+
+#[test]
+fn acceptance_rejects_unsafe_fixture_input_and_handoff_context() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut t = task();
+    t.contract.capabilities = vec!["lookup".into()];
+    t.cases[0].calls = vec![serde_json::from_value(json!({"name":"lookup","input":{"id":9007199254740993u64},"result":null})).unwrap()];
+    assert!(s.prepare_task(&t).unwrap_err().to_string().contains("safe range"));
+    t.cases[0].calls[0].input = json!({"id":"9007199254740993"});
+    assert!(s.prepare_task(&t).is_ok());
+    t.cases[0].expected = serde_json::from_value(json!({"status":"needs_agent","reason":"ID","context":{"id":9007199254740993u64}})).unwrap();
+    assert!(s.prepare_task(&t).unwrap_err().to_string().contains("safe range"));
+}

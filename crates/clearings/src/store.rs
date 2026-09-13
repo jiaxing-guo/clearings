@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 use std::{path::Path, time::Duration};
 
 // Change this when preparation or execution semantics change. Old versions require re-submission.
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13";
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-2";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -72,6 +72,7 @@ impl Task {
                     self.contract.capabilities.contains(&call.name),
                     "fixture capability was not declared"
                 );
+                crate::contract::check_json(&call.input)?;
                 crate::contract::check_json(&call.result)?;
             }
         }
