@@ -10,7 +10,7 @@ use std::path::PathBuf;
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
-    List,
+    List { after: Option<String> },
     Inspect {
         id: String,
     },
@@ -49,7 +49,7 @@ pub struct Api {
 impl Api {
     pub fn call(&mut self, op: Operation) -> Result<Value> {
         Ok(match op {
-            Operation::List => self.store.list()?,
+            Operation::List { after } => self.store.list_page(after.as_deref())?,
             Operation::Inspect { id } => self.store.inspect(&id)?,
             Operation::PrepareTask { task } => json!({"task":self.store.prepare_task(&task)?}),
             Operation::Submit { task, source } => {

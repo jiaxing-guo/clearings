@@ -43,3 +43,5 @@ Runs retain the selected version, input digest, outcome, elapsed execution time 
 HTTP endpoints and output schemas are validated during policy construction, before any request. One redirect-disabled client reuses its connection pool for that broker; each request has the remaining invocation timeout. Fixture inputs and results must both fit the JSON numeric range.
 
 The execution identity includes a semantics revision. Versions prepared under the previous identity must be resubmitted and evaluated before activation.
+
+Repeated evaluation of a version returns its immutable existing report without running cases again. New evaluations enforce an aggregate report budget while collecting cases; exceeding it returns an explicit error and does not persist or activate a partial evaluation. The SDK retains input/output types for built-in file operations, with JSON input/output for user-named operations. SDK type checking uses TypeScript 5.4 or later.

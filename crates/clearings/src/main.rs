@@ -36,7 +36,11 @@ enum Action {
         policy: PathBuf,
     },
     Sdk,
-    List,
+    List {
+        /// Continue with next_after from the preceding task page.
+        #[arg(long)]
+        after: Option<String>,
+    },
     Inspect {
         id: String,
     },
@@ -133,7 +137,7 @@ fn main() -> Result<()> {
                     api.policy = read(policy)?;
                     return clearings::mcp::serve(api);
                 }
-                Action::List => Operation::List,
+                Action::List { after } => Operation::List { after },
                 Action::Inspect { id } => Operation::Inspect { id },
                 Action::PrepareTask { file } => Operation::PrepareTask { task: read(file)? },
                 Action::Submit { task, source } => Operation::Submit {
