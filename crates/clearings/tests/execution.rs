@@ -362,7 +362,7 @@ fn lossy_json_values_and_custom_stringification_are_rejected() {
         assert!(
             matches!(
                 run(&source, json!({}), Policy::default(), contract()).outcome,
-                Outcome::Failed { .. }
+                Outcome::Failed { ref code, .. } if code == "EXECUTION"
             ),
             "{value}"
         );

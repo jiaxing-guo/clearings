@@ -92,14 +92,15 @@ fn work(request: Request) -> Result<Event> {
                 // crosses to the parent, which independently applies actual grants.
                 let object_prototype: Object = ctx.eval("Object.prototype")?;
                 let bridge_failed = std::rc::Rc::new(std::cell::Cell::new(false));
-                let call = bridge(ctx.clone(), object_prototype.clone(), bridge_failed.clone())?;
+                let call = bridge(ctx.clone(), bridge_failed.clone())?;
                 // Capture the bridge and parser before generated code can replace globals.
                 let factory: Function = ctx.eval(
                     r#"(bridge => {
                     const parse = JSON.parse;
+                    const prototype = Object.prototype;
                     const Failure = Error;
                     return Object.freeze({ call: async (name, input) => {
-                        const result = parse(bridge(name, input));
+                        const result = parse(bridge(name, input, prototype));
                         if (!result.ok) throw new Failure(result.error);
                         return result.value;
                     }});
@@ -201,33 +202,36 @@ fn json_value<'js>(
     bail!("unsupported non-JSON value")
 }
 
-fn bridge<'js>(ctx: rquickjs::Ctx<'js>, input_prototype: Object<'js>, failed: std::rc::Rc<std::cell::Cell<bool>>) -> Result<Function<'js>> {
-Ok(Function::new(
-                    ctx,
-                    move |name: rquickjs::Value<'js>, input: rquickjs::Value<'js>| -> String {
-                        let event = (|| -> Result<Event> {
-                            let name = name
-                                .as_string()
-                                .context("capability name must be a string")?
-                                .to_string()?;
-                            let mut bytes = MAX_WIRE_BYTES;
-                            let input = json_value(input, &input_prototype, 0, &mut bytes)?;
-                            Ok(Event::Call { name, input })
-                        })();
-                        let event = event.unwrap_or_else(|e| Event::CallError {
-                            message: e.to_string(),
-                        });
-                        let result = (|| -> Result<Value> {
-                            write_message(&mut std::io::stdout().lock(), &event)?;
-                            read_message(&mut std::io::stdin().lock())
-                        })();
-                        match result {
-                            Ok(v) => v.to_string(),
-                            Err(e) => {
-                                failed.set(true);
-                                json!({"ok":false,"error":e.to_string()}).to_string()
-                            }
-                        }
-                    },
-                )?)
+fn bridge<'js>(
+    ctx: rquickjs::Ctx<'js>,
+    failed: std::rc::Rc<std::cell::Cell<bool>>,
+) -> Result<Function<'js>> {
+    Ok(Function::new(
+        ctx,
+        move |name: rquickjs::Value<'js>, input: rquickjs::Value<'js>, input_prototype: Object<'js>| -> String {
+            let event = (|| -> Result<Event> {
+                let name = name
+                    .as_string()
+                    .context("capability name must be a string")?
+                    .to_string()?;
+                let mut bytes = MAX_WIRE_BYTES;
+                let input = json_value(input, &input_prototype, 0, &mut bytes)?;
+                Ok(Event::Call { name, input })
+            })();
+            let event = event.unwrap_or_else(|e| Event::CallError {
+                message: e.to_string(),
+            });
+            let result = (|| -> Result<Value> {
+                write_message(&mut std::io::stdout().lock(), &event)?;
+                read_message(&mut std::io::stdin().lock())
+            })();
+            match result {
+                Ok(v) => v.to_string(),
+                Err(e) => {
+                    failed.set(true);
+                    json!({"ok":false,"error":e.to_string()}).to_string()
+                }
+            }
+        },
+    )?)
 }
