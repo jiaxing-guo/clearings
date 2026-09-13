@@ -286,16 +286,32 @@ fn accepted_objects_remain_inspectable_with_large_evaluations() {
     t.contract.output_schema = json!({});
     t.contract.limits.output_bytes = 1024 * 1024;
     t.cases.truncate(1);
-    t.cases[0].expected = clearings::contract::Outcome::Completed { output: json!("x".repeat(3_000_000)) };
-    assert!(s.prepare_task(&t).unwrap_err().to_string().contains("inspect byte limit"));
-    t.cases[0].expected = clearings::contract::Outcome::Completed { output: json!("x".repeat(900_000)) };
+    t.cases[0].expected = clearings::contract::Outcome::Completed {
+        output: json!("x".repeat(3_000_000)),
+    };
+    assert!(
+        s.prepare_task(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("inspect byte limit")
+    );
+    t.cases[0].expected = clearings::contract::Outcome::Completed {
+        output: json!("x".repeat(900_000)),
+    };
     let task = s.prepare_task(&t).unwrap();
-    assert!(serde_json::to_vec(&s.inspect(&task).unwrap()).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
+    assert!(
+        serde_json::to_vec(&s.inspect(&task).unwrap())
+            .unwrap()
+            .len()
+            < clearings::contract::MAX_WIRE_BYTES / 3
+    );
     let version = s.submit(exe(), &task, "export default async function(){return {status:'completed',output:'x'.repeat(900_000)};}".into()).unwrap();
     assert_eq!(s.evaluate(exe(), &version).unwrap()["accepted"], true);
     let inspected = s.inspect(&version).unwrap();
     assert_eq!(inspected["evaluation"]["case_count"], 1);
     assert_eq!(inspected["evaluation"]["accepted"], true);
     assert!(inspected["evaluation"].get("cases").is_none());
-    assert!(serde_json::to_vec(&inspected).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3);
+    assert!(
+        serde_json::to_vec(&inspected).unwrap().len() < clearings::contract::MAX_WIRE_BYTES / 3
+    );
 }
