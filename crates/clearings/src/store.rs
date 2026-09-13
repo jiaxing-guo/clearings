@@ -136,7 +136,10 @@ impl Store {
     }
     fn put(&self, kind: &str, value: &impl Serialize) -> Result<String> {
         let body = serde_json::to_string(value)?;
-        ensure!(body.len() <= OBJECT_BYTES, "stored object exceeds inspect byte limit");
+        ensure!(
+            body.len() <= OBJECT_BYTES,
+            "stored object exceeds inspect byte limit"
+        );
         let id = digest(value)?;
         self.db.execute(
             "INSERT OR IGNORE INTO objects(id,kind,body) VALUES(?1,?2,?3)",
@@ -149,7 +152,10 @@ impl Store {
             "SELECT length(CAST(body AS BLOB)),CASE WHEN length(CAST(body AS BLOB)) <= ?3 THEN body END FROM objects WHERE id=?1 AND kind=?2",
             params![id, kind, OBJECT_BYTES], |r| Ok((r.get(0)?,r.get(1)?)),
         ).context("object not found")?;
-        ensure!(bytes <= OBJECT_BYTES, "stored object exceeds inspect byte limit");
+        ensure!(
+            bytes <= OBJECT_BYTES,
+            "stored object exceeds inspect byte limit"
+        );
         let body = body.context("missing stored object")?;
         let value: T = serde_json::from_str(&body)?;
         ensure!(digest(&value)? == id, "stored object digest mismatch");
@@ -368,15 +374,19 @@ impl Store {
         Ok(json!({"tasks":tasks,"next_after":next_after}))
     }
     pub fn inspect(&self, id: &str) -> Result<Value> {
-        let kind: String = self.db.query_row(
-            "SELECT kind FROM objects WHERE id=?1", [id], |r| r.get(0),
-        )?;
+        let kind: String =
+            self.db
+                .query_row("SELECT kind FROM objects WHERE id=?1", [id], |r| r.get(0))?;
         let value: Value = self.get(&kind, id)?;
-        let evaluation = self.evaluation(id)?.map(|report| json!({
-            "version":id,"engine":ENGINE,"accepted":report["accepted"],
-            "case_count":report["cases"].as_array().map(Vec::len),
-        }));
-        Ok(json!({"id":id,"kind":kind,"object":value,"evaluation":evaluation,"active":self.active(id)?}))
+        let evaluation = self.evaluation(id)?.map(|report| {
+            json!({
+                "version":id,"engine":ENGINE,"accepted":report["accepted"],
+                "case_count":report["cases"].as_array().map(Vec::len),
+            })
+        });
+        Ok(
+            json!({"id":id,"kind":kind,"object":value,"evaluation":evaluation,"active":self.active(id)?}),
+        )
     }
 
     pub fn runs(&self) -> Result<Value> {
