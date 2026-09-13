@@ -387,3 +387,42 @@ fn large_validation_failures_remain_readable_in_history() {
         assert_eq!(s.runs().unwrap()["runs"][0]["run"], report["run"]);
     }
 }
+
+#[test]
+fn malformed_call_cannot_hide_in_an_expected_handoff() {
+    let temp = tempfile::tempdir().unwrap();
+    let mut s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut t = task();
+    t.cases[0].expected = serde_json::from_value(json!({
+        "status": "needs_agent", "reason": "zero", "context": 0
+    }))
+    .unwrap();
+    let task = s.prepare_task(&t).unwrap();
+    let source = concat!(
+        "export default async function(x){",
+        "if(x===0){try{await clearings.call(1,{});}catch{}",
+        "return {status:'needs_agent',reason:'zero',context:0};}",
+        "return {status:'completed',output:x*2};}"
+    );
+    let version = s.submit(exe(), &task, source.into()).unwrap();
+    let report = s.evaluate(exe(), &version).unwrap();
+    assert_eq!(report["accepted"], false);
+    assert_eq!(report["cases"][0]["run"]["capability_calls"], 1);
+    assert_eq!(report["cases"][0]["run"]["outcome"]["status"], "needs_agent");
+    assert!(s.activate(&version, None).is_err());
+}
+
+#[test]
+fn task_size_reserves_space_for_prepared_code() {
+    let temp = tempfile::tempdir().unwrap();
+    let s = Store::open(&temp.path().join("state.db")).unwrap();
+    let mut t = task();
+    t.contract.input_schema = json!({});
+    t.cases[0].input = json!("x".repeat(4 * 1024 * 1024 - 4096));
+    assert!(
+        s.prepare_task(&t)
+            .unwrap_err()
+            .to_string()
+            .contains("stored object exceeds")
+    );
+}
