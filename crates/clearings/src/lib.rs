@@ -1,8 +1,8 @@
 pub mod capabilities;
 pub mod contract;
 pub mod execute;
-pub mod store;
 mod isolation;
+pub mod store;
 mod transform;
 mod worker;
 
