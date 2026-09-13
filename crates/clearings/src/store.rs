@@ -13,7 +13,7 @@ use std::{path::Path, time::Duration};
 // Change this when preparation or execution semantics change. Old versions require re-submission.
 const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
 
-pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-3";
+pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-4";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
     Ok(format!(
@@ -76,6 +76,9 @@ impl Task {
                 );
                 crate::contract::check_json(&call.input)?;
                 crate::contract::check_json(&call.result)?;
+                crate::capabilities::validate_file_fixture(
+                    &call.name, &call.input, &call.result, self.contract.limits.output_bytes,
+                )?;
             }
         }
         Ok(())
