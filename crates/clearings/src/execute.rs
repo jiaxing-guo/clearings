@@ -36,6 +36,10 @@ fn exchange(
     calls: &mut usize,
     deadline: Instant,
 ) -> Result<Event> {
+    ensure!(
+        Instant::now() < deadline,
+        "worker deadline exceeded before startup"
+    );
     let mut child = Guard(
         Command::new(executable)
             .arg("__worker")
