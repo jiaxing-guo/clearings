@@ -231,9 +231,8 @@ fn custom_fixture_inputs_match_live_query_arguments() {
     let s = Store::open(&temp.path().join("state.db")).unwrap();
     let mut t = task();
     t.contract.capabilities = vec!["lookup".into()];
-    t.cases[0].calls = vec![
-        serde_json::from_value(json!({"name":"lookup","input":{},"result":null})).unwrap(),
-    ];
+    t.cases[0].calls =
+        vec![serde_json::from_value(json!({"name":"lookup","input":{},"result":null})).unwrap()];
     for input in [json!(null), json!([]), json!({"status":1})] {
         t.cases[0].calls[0].input = input;
         assert!(s.prepare_task(&t).is_err());
