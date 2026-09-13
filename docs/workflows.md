@@ -2,11 +2,13 @@
 
 These examples use the same task format, TypeScript worker and capability interface. None is built into the runtime. Their behavior is deliberately small enough to review before reuse.
 
-| Example              | Repeated work replaced                                                | Varying inputs                            | Boundary                                                     |
-| -------------------- | --------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------ |
-| `repository-context` | Read selected files, deduplicate paths and collect their current text | Granted root and file paths               | More than 20 unique files returns to the agent               |
-| `group-logs`         | Parse JSON lines and count repeated level/message pairs               | Granted log file and its current contents | Unsupported records or oversized samples return to the agent |
-| `normalize-contacts` | Trim fields, normalize email casing, deduplicate and sort             | Contact rows                              | Missing or visibly invalid fields return to the agent        |
+| Example              | Repeated work replaced                                                | Varying inputs                            | Boundary                                                                   |
+| -------------------- | --------------------------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------------------- |
+| `repository-context` | Read selected files, deduplicate paths and collect their current text | Granted root and file paths               | More than 20 unique files returns to the agent                             |
+| `group-logs`         | Parse JSON lines and count repeated level/message pairs               | Granted log file and its current contents | Unsupported records, read failures or over 5,000 lines return to the agent |
+| `normalize-contacts` | Trim fields, normalize email casing, deduplicate and sort             | Contact rows                              | Missing or visibly invalid fields return to the agent                      |
+
+The context example hands off above 20 unique files. The log example hands off for read failures and its stated record/line boundaries. Other configured resource limits, including an oversized combined context result, return an explicit `failed` outcome without partial output; the examples do not duplicate the runtime's byte-budget enforcement.
 
 Each example directory contains `task.json`, `routine.ts`, `input.json` and `policy.json`. The task records acceptance inputs and independent expected outcomes. File-reading examples include fixtures for evaluation and sample data for live runs. Tests also exercise input changes after activation, handoff, version replacement and restoration of an earlier version.
 
