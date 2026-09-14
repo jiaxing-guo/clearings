@@ -1,5 +1,7 @@
 # Project authorization
 
+MCP advertises operations available in the selected session. Its initial grant policy stays fixed: if project grants change, operational calls require restarting the session with the current policy; project status remains readable. Project run history is available through `runs` and is filtered to the selected project.
+
 Configure a project once through the host CLI. The saved identity uses the canonical project directory. A rename keeps that identity. Settings updates require the current revision, so concurrent changes cannot silently overwrite each other.
 
 ```sh
@@ -15,4 +17,4 @@ Project authorization covers reuse within the selected scope. It does not author
 
 The database migration preserves existing tasks, versions, evaluations and run history. Use a private directory for the database and settings. Credentials stay in the host environment rather than routine source or stored settings.
 
-This authorization foundation exposes project status and the SDK. Project-scoped routine operations fail closed until the named lifecycle is available; selecting a project never falls back to the global routine registry.
+Project-bound tasks require their owning project on every CLI/MCP operation. The unscoped interface lists and operates on legacy tasks only.

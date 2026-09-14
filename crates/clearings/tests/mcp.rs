@@ -198,7 +198,10 @@ fn tool_annotations_describe_state_replacement() {
         let name = tool["name"].as_str().unwrap();
         assert_eq!(
             tool["annotations"]["destructiveHint"],
-            matches!(name, "clearings_activate" | "clearings_deactivate")
+            matches!(
+                name,
+                "clearings_activate" | "clearings_deactivate" | "clearings_save"
+            )
         );
     }
 }

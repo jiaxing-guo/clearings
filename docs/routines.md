@@ -53,3 +53,11 @@ User-named capabilities currently use HTTP GET bindings, so their fixture inputs
 Task validation compiles its input and output schemas once and reuses them across acceptance cases. Other `files.*` names are reserved and rejected. SDK types enforce the supported file names and string-valued HTTP query objects; the documentation CI workflow runs the corresponding positive and negative type checks.
 
 Stored tasks and versions each have a byte budget below one third of the worker message limit. This reserves room for acceptance inputs and prepared code to travel together and keeps inspection responses bounded. Oversized objects are rejected before persistence and are not loaded from storage.
+
+## Named project routines
+
+With a configured `--project`, prepare requirements once with `prepare-task`, then use `save NAME --source routine.ts` to prepare, evaluate and activate the candidate. A failed evaluation leaves the previous active version in place. To revise source, pass `--expected-active VERSION`. Use `discover`, `inspect` and `reuse NAME --input input.json` in later sessions. Identical requirements in different projects have separate task identities and active versions. Changed requirements need a new name; existing acceptance cases remain immutable.
+
+The corresponding MCP tools are `clearings_discover`, `clearings_save` and `clearings_reuse`. The agent decides when existing authorization covers saving; these tools do not add a mandatory confirmation to every workflow.
+
+Tasks default to `exact_calls` evaluation. Explicit `evaluation: "read_only_behavior"` permits reordering, repetition or omission of recorded file reads while requiring the same outcome on every acceptance case. Unrecorded reads, malformed calls, and conflicting responses for the same read are rejected. This mode only supports `files.read` and `files.list`. It demonstrates agreement on the recorded cases, not correctness for all future inputs.

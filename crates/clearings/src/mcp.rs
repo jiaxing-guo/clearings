@@ -17,16 +17,19 @@ fn tool(
     required: Value,
     read_only: bool,
 ) -> Value {
-    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"),"openWorldHint":name=="run"}})
+    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"),"openWorldHint":matches!(name,"run"|"reuse")}})
 }
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("discover", "Find saved routines by readable names in this project. Use next_after to continue.", json!({"after":{"type":"string"}}), json!([]), true),
+        tool("save", "Save or revise a routine whose requirements were prepared first. Evaluates and activates only on success. Supply the previous active version for revision.", json!({"name":{"type":"string"},"source":{"type":"string","maxLength":262144},"expected_active":{"type":["string","null"]}}), json!(["name","source","expected_active"]), false),
+        tool("reuse", "Run a named saved routine on fresh input. A handoff or failure means continue ordinary agent work.", json!({"name":{"type":"string"},"input":{}}), json!(["name","input"]), false),
         tool("project_status", "Inspect this server's project authorization and current settings. Settings can only be changed through the host CLI.", json!({}), json!([]), true),
-        tool("list","List a bounded task page and active versions. Pass next_after as after to continue.",json!({"after":id}),json!([]),true),
+        tool("list","List project routine names or legacy task IDs. Pass next_after as after to continue.",json!({"after":{"type":"string","minLength":1,"maxLength":80}}),json!([]),true),
         tool("inspect","Inspect a task or version, source and recorded evaluation.",json!({"id":id}),json!(["id"]),true),
         tool("sdk","Read the bundled TypeScript interface and a task document example before authoring.",json!({}),json!([]),true),
-        tool("prepare_task","Record requirements and independent acceptance cases before writing source. task contains contract and cases; use sdk for its shape.",json!({"task":{"type":"object","required":["contract","cases"],"properties":{"contract":{"type":"object"},"cases":{"type":"array","minItems":1,"maxItems":100}},"additionalProperties":false}}),json!(["task"]),false),
+        tool("prepare_task","Record requirements and independent acceptance cases before writing source. task contains contract and cases; use sdk for its shape.",json!({"task":{"type":"object","required":["contract","cases"],"properties":{"contract":{"type":"object"},"cases":{"type":"array","minItems":1,"maxItems":100},"evaluation":{"enum":["exact_calls","read_only_behavior"]}},"additionalProperties":false}}),json!(["task"]),false),
         tool("submit","Prepare a candidate for an existing task. Does not change requirements or activate it.",json!({"task":id,"source":{"type":"string","maxLength":262144}}),json!(["task","source"]),false),
         tool("evaluate","Evaluate a candidate against the task's recorded fixture cases, without live grants.",json!({"version":id}),json!(["version"]),false),
         tool("activate","Activate a passing candidate after reviewing its scope. Supply null for first activation or the previous active version to replace it.",json!({"version":id,"expected_active":{"type":["string","null"]}}),json!(["version","expected_active"]),false),
@@ -39,14 +42,22 @@ pub fn tools() -> Value {
 pub fn tools_for_project(project_selected: bool) -> Value {
     let mut catalog = tools();
     catalog["tools"].as_array_mut().unwrap().retain(|tool| {
-        if project_selected {
-            matches!(
+        project_selected
+            || matches!(
                 tool["name"].as_str(),
-                Some("clearings_project_status" | "clearings_sdk")
+                Some(
+                    "clearings_list"
+                        | "clearings_inspect"
+                        | "clearings_sdk"
+                        | "clearings_prepare_task"
+                        | "clearings_submit"
+                        | "clearings_evaluate"
+                        | "clearings_activate"
+                        | "clearings_deactivate"
+                        | "clearings_run"
+                        | "clearings_runs"
+                )
             )
-        } else {
-            tool["name"] != "clearings_project_status"
-        }
     });
     catalog
 }

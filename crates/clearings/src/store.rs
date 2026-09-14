@@ -42,12 +42,49 @@ pub struct Case {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Task {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project: Option<String>,
+    #[serde(default, skip_serializing_if = "EvaluationMode::is_exact")]
+    pub evaluation: EvaluationMode,
     pub contract: Contract,
     pub cases: Vec<Case>,
 }
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EvaluationMode {
+    #[default]
+    ExactCalls,
+    ReadOnlyBehavior,
+}
+impl EvaluationMode {
+    fn is_exact(&self) -> bool {
+        *self == Self::ExactCalls
+    }
+}
 impl Task {
-    fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         let (input_schema, output_schema) = self.contract.checked_schemas()?;
+        if self.evaluation == EvaluationMode::ReadOnlyBehavior {
+            ensure!(
+                self.contract
+                    .capabilities
+                    .iter()
+                    .all(|c| matches!(c.as_str(), "files.read" | "files.list")),
+                "behavior evaluation only supports read-only file operations"
+            );
+            for case in &self.cases {
+                for (index, call) in case.calls.iter().enumerate() {
+                    ensure!(
+                        !case.calls[..index]
+                            .iter()
+                            .any(|other| other.name == call.name
+                                && other.input == call.input
+                                && other.result != call.result),
+                        "behavior fixtures require stable results for identical reads"
+                    );
+                }
+            }
+        }
         ensure!(
             !self.cases.is_empty() && self.cases.len() <= 100,
             "a task needs 1 to 100 acceptance cases"
@@ -115,12 +152,19 @@ pub struct Version {
 
 struct Fixtures<'a> {
     calls: &'a [FixtureCall],
+    mode: &'a EvaluationMode,
     position: usize,
     mismatch: bool,
 }
 impl Broker for Fixtures<'_> {
     fn call(&mut self, name: &str, input: Value, _: Duration) -> Result<Value> {
-        let call = self.calls.get(self.position);
+        let call = if *self.mode == EvaluationMode::ReadOnlyBehavior {
+            self.calls
+                .iter()
+                .find(|c| c.name == name && c.input == input)
+        } else {
+            self.calls.get(self.position)
+        };
         self.position += 1;
         let matched = call.is_some_and(|c| c.name == name && c.input == input);
         self.mismatch |= !matched;
@@ -216,6 +260,7 @@ impl Store {
         for case in task.cases {
             let mut fixture = Fixtures {
                 calls: &case.calls,
+                mode: &task.evaluation,
                 position: 0,
                 mismatch: false,
             };
@@ -227,8 +272,9 @@ impl Store {
                 &mut fixture,
             );
             let accepted = run.outcome == case.expected
-                && run.capability_calls == fixture.calls.len()
-                && fixture.position == fixture.calls.len()
+                && run.capability_calls == fixture.position
+                && (task.evaluation == EvaluationMode::ReadOnlyBehavior
+                    || fixture.position == fixture.calls.len())
                 && !fixture.mismatch;
             let result = json!({"name":case.name,"accepted":accepted,"run":run});
             report_bytes += serde_json::to_vec(&result)?.len() + 1;
@@ -334,6 +380,17 @@ impl Store {
             "active version belongs to a different task"
         );
         let task: Task = self.get("task", task_id)?;
+        if let Some(project) = &task.project {
+            ensure!(
+                self.named_task(project, &task.contract.name, true)? == task_id,
+                "task is not the registered routine"
+            );
+            ensure!(
+                serde_json::to_value(crate::project::normalize_grants(policy.clone())?)?
+                    == serde_json::to_value(self.project(project)?.settings.grants)?,
+                "project grants are fixed"
+            );
+        }
         let input_digest = digest(&input)?;
         let run = match LocalBroker::new(&task.contract, policy) {
             Ok(mut broker) => execute::run(
@@ -371,7 +428,7 @@ impl Store {
         let mut stmt = self.db.prepare(
             "SELECT objects.id,json_extract(body,'$.contract.name'),json_extract(body,'$.contract.description'),active.version
              FROM objects LEFT JOIN active ON active.task=objects.id
-             WHERE kind='task' AND (?1 IS NULL OR objects.id > ?1) ORDER BY objects.id LIMIT 101",
+             WHERE kind='task' AND json_extract(body,'$.project') IS NULL AND (?1 IS NULL OR objects.id > ?1) ORDER BY objects.id LIMIT 101",
         )?;
         let mut rows = stmt.query([after])?;
         let mut tasks = Vec::new();
@@ -413,6 +470,14 @@ impl Store {
     }
 
     pub fn runs_page(&self, before: Option<i64>) -> Result<Value> {
+        self.runs_page_for_project(None, before)
+    }
+
+    pub fn runs_page_for_project(
+        &self,
+        project: Option<&str>,
+        before: Option<i64>,
+    ) -> Result<Value> {
         const PAGE_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
         ensure!(
             before.is_none_or(|id| id > 0),
@@ -421,9 +486,9 @@ impl Store {
         let mut stmt = self.db.prepare(
             "SELECT id,version,input_digest,length(CAST(report AS BLOB)),
              CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at
-             FROM runs WHERE (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
+             FROM runs WHERE EXISTS (SELECT 1 FROM objects v JOIN objects t ON t.id=json_extract(v.body,'$.task') WHERE v.id=runs.version AND json_extract(t.body,'$.project') IS ?3 AND (?3 IS NULL OR EXISTS (SELECT 1 FROM project_routines p WHERE p.project=?3 AND p.task=t.id))) AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
         )?;
-        let mut rows = stmt.query(params![before, PAGE_BYTES])?;
+        let mut rows = stmt.query(params![before, PAGE_BYTES, project])?;
         let mut runs = Vec::new();
         let mut bytes = 64;
         let mut next_before = None;

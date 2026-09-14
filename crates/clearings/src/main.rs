@@ -40,6 +40,22 @@ enum Action {
         expected_revision: Option<u64>,
     },
     ProjectStatus,
+    Discover {
+        #[arg(long)]
+        after: Option<String>,
+    },
+    Save {
+        name: String,
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(long)]
+        expected_active: Option<String>,
+    },
+    Reuse {
+        name: String,
+        #[arg(long)]
+        input: PathBuf,
+    },
     RunSource {
         #[arg(long)]
         source: PathBuf,
@@ -204,6 +220,20 @@ fn main() -> Result<()> {
                     }
                     return clearings::mcp::serve(api);
                 }
+                Action::Discover { after } => Operation::Discover { after },
+                Action::Save {
+                    name,
+                    source,
+                    expected_active,
+                } => Operation::Save {
+                    name,
+                    source: String::from_utf8(read_bytes(source, MAX_SOURCE_BYTES)?)?,
+                    expected_active,
+                },
+                Action::Reuse { name, input } => Operation::Reuse {
+                    name,
+                    input: read(input)?,
+                },
                 Action::ProjectStatus => Operation::ProjectStatus,
                 Action::List { after } => Operation::List { after },
                 Action::Inspect { id } => Operation::Inspect { id },

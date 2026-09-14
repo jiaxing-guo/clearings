@@ -1,0 +1,3 @@
+# Tests share the deliberately bounded host I/O pool within each test process.
+[env]
+RUST_TEST_THREADS = "4"

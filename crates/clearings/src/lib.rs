@@ -6,6 +6,7 @@ pub mod execute;
 mod isolation;
 pub mod mcp;
 pub mod project;
+pub mod reuse;
 pub mod store;
 mod transform;
 mod worker;
