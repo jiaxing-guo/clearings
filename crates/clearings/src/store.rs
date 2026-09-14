@@ -42,12 +42,49 @@ pub struct Case {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Task {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project: Option<String>,
+    #[serde(default, skip_serializing_if = "EvaluationMode::is_exact")]
+    pub evaluation: EvaluationMode,
     pub contract: Contract,
     pub cases: Vec<Case>,
 }
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EvaluationMode {
+    #[default]
+    ExactCalls,
+    ReadOnlyBehavior,
+}
+impl EvaluationMode {
+    fn is_exact(&self) -> bool {
+        *self == Self::ExactCalls
+    }
+}
 impl Task {
-    fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         let (input_schema, output_schema) = self.contract.checked_schemas()?;
+        if self.evaluation == EvaluationMode::ReadOnlyBehavior {
+            ensure!(
+                self.contract
+                    .capabilities
+                    .iter()
+                    .all(|c| matches!(c.as_str(), "files.read" | "files.list")),
+                "behavior evaluation only supports read-only file operations"
+            );
+            for case in &self.cases {
+                for (index, call) in case.calls.iter().enumerate() {
+                    ensure!(
+                        !case.calls[..index]
+                            .iter()
+                            .any(|other| other.name == call.name
+                                && other.input == call.input
+                                && other.result != call.result),
+                        "behavior fixtures require stable results for identical reads"
+                    );
+                }
+            }
+        }
         ensure!(
             !self.cases.is_empty() && self.cases.len() <= 100,
             "a task needs 1 to 100 acceptance cases"
@@ -115,12 +152,19 @@ pub struct Version {
 
 struct Fixtures<'a> {
     calls: &'a [FixtureCall],
+    mode: &'a EvaluationMode,
     position: usize,
     mismatch: bool,
 }
 impl Broker for Fixtures<'_> {
     fn call(&mut self, name: &str, input: Value, _: Duration) -> Result<Value> {
-        let call = self.calls.get(self.position);
+        let call = if *self.mode == EvaluationMode::ReadOnlyBehavior {
+            self.calls
+                .iter()
+                .find(|c| c.name == name && c.input == input)
+        } else {
+            self.calls.get(self.position)
+        };
         self.position += 1;
         let matched = call.is_some_and(|c| c.name == name && c.input == input);
         self.mismatch |= !matched;
@@ -216,6 +260,7 @@ impl Store {
         for case in task.cases {
             let mut fixture = Fixtures {
                 calls: &case.calls,
+                mode: &task.evaluation,
                 position: 0,
                 mismatch: false,
             };
@@ -227,8 +272,9 @@ impl Store {
                 &mut fixture,
             );
             let accepted = run.outcome == case.expected
-                && run.capability_calls == fixture.calls.len()
-                && fixture.position == fixture.calls.len()
+                && run.capability_calls == fixture.position
+                && (task.evaluation == EvaluationMode::ReadOnlyBehavior
+                    || fixture.position == fixture.calls.len())
                 && !fixture.mismatch;
             let result = json!({"name":case.name,"accepted":accepted,"run":run});
             report_bytes += serde_json::to_vec(&result)?.len() + 1;
@@ -334,6 +380,9 @@ impl Store {
             "active version belongs to a different task"
         );
         let task: Task = self.get("task", task_id)?;
+        if let Some(project) = &task.project {
+            self.named_task(project, &task.contract.name, true)?;
+        }
         let input_digest = digest(&input)?;
         let run = match LocalBroker::new(&task.contract, policy) {
             Ok(mut broker) => execute::run(

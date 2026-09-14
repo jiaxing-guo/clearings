@@ -11,6 +11,18 @@ use std::path::PathBuf;
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
     ProjectStatus,
+    Discover {
+        after: Option<String>,
+    },
+    Save {
+        name: String,
+        source: String,
+        expected_active: Option<String>,
+    },
+    Reuse {
+        name: String,
+        input: Value,
+    },
     List {
         after: Option<String>,
     },
@@ -52,7 +64,58 @@ pub struct Api {
 }
 impl Api {
     pub fn call(&mut self, op: Operation) -> Result<Value> {
+        if let Some(project) = &self.project {
+            self.store.project(project)?;
+            match &op {
+                Operation::Submit { task, .. }
+                | Operation::Run { task, .. }
+                | Operation::Deactivate { task, .. } => self.store.owns_task(project, task)?,
+                Operation::Evaluate { version } | Operation::Activate { version, .. } => {
+                    self.store.owns_version(project, version)?
+                }
+                Operation::Inspect { id } => {
+                    let inspected = self.store.inspect(id)?;
+                    if inspected["kind"] == "version" {
+                        self.store.owns_version(project, id)?;
+                    } else {
+                        self.store.owns_task(project, id)?;
+                    }
+                }
+                Operation::Runs { .. } => {
+                    anyhow::bail!("use project performance records for project-scoped history")
+                }
+                _ => {}
+            }
+        }
         Ok(match op {
+            Operation::Discover { after } => self.store.named_list(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                after.as_deref(),
+            )?,
+            Operation::Save {
+                name,
+                source,
+                expected_active,
+            } => self.store.save_named(
+                &self.executable,
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                &name,
+                source,
+                expected_active.as_deref(),
+            )?,
+            Operation::Reuse { name, input } => self.store.reuse_named(
+                &self.executable,
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                &name,
+                input,
+                &self.policy,
+            )?,
             Operation::ProjectStatus => serde_json::to_value(
                 self.store.project(
                     self.project
@@ -60,9 +123,17 @@ impl Api {
                         .ok_or_else(|| anyhow::anyhow!("select --project"))?,
                 )?,
             )?,
-            Operation::List { after } => self.store.list_page(after.as_deref())?,
+            Operation::List { after } => {
+                if let Some(project) = &self.project {
+                    self.store.named_list(project, after.as_deref())?
+                } else {
+                    self.store.list_page(after.as_deref())?
+                }
+            }
             Operation::Inspect { id } => self.store.inspect(&id)?,
-            Operation::PrepareTask { task } => json!({"task":self.store.prepare_task(&task)?}),
+            Operation::PrepareTask { task } => {
+                json!({"task": if let Some(project) = &self.project { self.store.prepare_named(project, task, "user")? } else { self.store.prepare_task(&task)? }})
+            }
             Operation::Submit { task, source } => {
                 json!({"version":self.store.submit(&self.executable,&task,source)?})
             }
