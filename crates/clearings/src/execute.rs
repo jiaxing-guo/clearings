@@ -12,6 +12,15 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
+#[derive(Debug)]
+struct CapabilityBudgetExhausted;
+impl std::fmt::Display for CapabilityBudgetExhausted {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("capability call budget exhausted")
+    }
+}
+impl std::error::Error for CapabilityBudgetExhausted {}
+
 struct Guard(Child);
 impl Drop for Guard {
     fn drop(&mut self) {
@@ -80,10 +89,7 @@ fn exchange(
             match message {
                 Event::CallError { message } => {
                     *calls += 1;
-                    ensure!(
-                        *calls <= limits.capability_calls,
-                        "capability call budget exhausted"
-                    );
+                    ensure!(*calls <= limits.capability_calls, CapabilityBudgetExhausted);
                     capability_failure.get_or_insert_with(|| message.clone());
                     send(&input, json!({"ok":false,"error":message}), deadline)?;
                 }
@@ -92,10 +98,7 @@ fn exchange(
                     input: arguments,
                 } => {
                     *calls += 1;
-                    ensure!(
-                        *calls <= limits.capability_calls,
-                        "capability call budget exhausted"
-                    );
+                    ensure!(*calls <= limits.capability_calls, CapabilityBudgetExhausted);
                     let broker = broker
                         .as_deref_mut()
                         .context("capabilities are unavailable during preparation")?;
@@ -232,7 +235,10 @@ pub(crate) fn run_with_candidate_failure(
     })();
     let outcome = match result {
         Ok(v) => v,
-        Err(error) => Outcome::failed("RUNTIME", error),
+        Err(error) => {
+            candidate_failure |= error.is::<CapabilityBudgetExhausted>();
+            Outcome::failed("RUNTIME", error)
+        }
     };
     (
         Run {

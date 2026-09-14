@@ -190,12 +190,17 @@ impl Broker for Fixtures<'_> {
 
 struct FailureTrackingBroker {
     inner: LocalBroker,
-    failed: bool,
+    environment_failed: bool,
+    candidate_failed: bool,
 }
 impl Broker for FailureTrackingBroker {
     fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value> {
         let result = self.inner.call(name, input, remaining);
-        self.failed |= result.is_err();
+        if let Err(error) = &result {
+            let invalid_call = error.is::<crate::capabilities::InvalidCall>();
+            self.candidate_failed |= invalid_call;
+            self.environment_failed |= !invalid_call;
+        }
         result
     }
 }
@@ -220,6 +225,9 @@ impl Store {
             CREATE TABLE IF NOT EXISTS project_routines (project TEXT NOT NULL REFERENCES projects(id), name TEXT NOT NULL, task TEXT NOT NULL REFERENCES objects(id), origin TEXT NOT NULL, paused INTEGER NOT NULL DEFAULT 0, excluded INTEGER NOT NULL DEFAULT 0, previous TEXT, PRIMARY KEY(project,name), UNIQUE(project,task));
             CREATE TABLE IF NOT EXISTS trace_checkpoints(project TEXT NOT NULL REFERENCES projects(id), path TEXT NOT NULL, body TEXT NOT NULL, PRIMARY KEY(project,path));
             CREATE TABLE IF NOT EXISTS activity(seq INTEGER PRIMARY KEY, project TEXT NOT NULL REFERENCES projects(id), id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(project,id));
+            CREATE TABLE IF NOT EXISTS trace_scan(project TEXT NOT NULL REFERENCES projects(id), source TEXT NOT NULL, next INTEGER NOT NULL, PRIMARY KEY(project,source));
+            CREATE INDEX IF NOT EXISTS activity_page ON activity(project,seq DESC);
+            CREATE INDEX IF NOT EXISTS activity_expiration ON activity(project,created_at);
             CREATE TABLE IF NOT EXISTS schedule(project TEXT PRIMARY KEY REFERENCES projects(id),next_due INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS background_jobs(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),revision INTEGER NOT NULL,started INTEGER NOT NULL,status TEXT NOT NULL,cancelled INTEGER NOT NULL DEFAULT 0,report TEXT NOT NULL DEFAULT '{}');
             CREATE TABLE IF NOT EXISTS budgets(project TEXT NOT NULL REFERENCES projects(id),day INTEGER NOT NULL,reserved INTEGER NOT NULL,PRIMARY KEY(project,day));
@@ -463,7 +471,8 @@ impl Store {
             Ok(inner) => {
                 let mut broker = FailureTrackingBroker {
                     inner,
-                    failed: false,
+                    environment_failed: false,
+                    candidate_failed: false,
                 };
                 let (run, execution_failure) = execute::run_with_candidate_failure(
                     executable,
@@ -472,7 +481,8 @@ impl Store {
                     input,
                     &mut broker,
                 );
-                let candidate_failure = !broker.failed && execution_failure;
+                let candidate_failure =
+                    !broker.environment_failed && (execution_failure || broker.candidate_failed);
                 (run, candidate_failure)
             }
             Err(error) => (

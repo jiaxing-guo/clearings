@@ -92,10 +92,9 @@ impl Store {
                     |r| Ok((r.get(0)?,r.get(1)?,r.get(2)?)),
                 )
                 .optional()?;
-            if previous
-                .as_ref()
-                .is_some_and(|(status, _, attempts)| status == "created" || *attempts >= 2)
-            {
+            if previous.as_ref().is_some_and(|(status, _, attempts)| {
+                matches!(status.as_str(), "created" | "rejected") || *attempts >= 2
+            }) {
                 continue;
             }
             let task = if let Some((_, id, _)) = &previous {
@@ -204,7 +203,13 @@ impl Store {
                 Err(e) => {
                     let requested: bool = self.db.query_row("SELECT EXISTS(SELECT 1 FROM model_requests WHERE project=?1 AND job=?2 AND purpose='create')",params![project,job],|r|r.get(0))?;
                     (
-                        if requested { "failed" } else { "deferred" },
+                        if e.is::<crate::model::RequestTooLarge>() {
+                            "rejected"
+                        } else if requested {
+                            "failed"
+                        } else {
+                            "deferred"
+                        },
                         json!({"error":e.to_string(),"task":task_id,"candidate":candidate_details}),
                     )
                 }
