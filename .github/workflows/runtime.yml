@@ -20,6 +20,10 @@ jobs:
       - name: Install pinned Rust
         run: rustup show
       - name: Build and test
+        env:
+          # Keep timing measurements independent of other test workloads.
+          # Concurrency tests create their own threads and processes.
+          RUST_TEST_THREADS: '1'
         run: cargo test --locked --workspace
       - name: Formatting
         if: always()

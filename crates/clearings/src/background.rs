@@ -58,6 +58,7 @@ impl Store {
         let _lock = ProjectLock::acquire(self, project)?;
         self.db.execute("UPDATE model_requests SET status='interrupted' WHERE project=?1 AND status='reserved' AND job IN (SELECT id FROM background_jobs WHERE project=?1 AND status='running')", [project])?;
         self.db.execute("UPDATE background_jobs SET status='interrupted',report=?2 WHERE project=?1 AND status='running'",params![project,json!({"error":"worker interrupted before completion"}).to_string()])?;
+        self.db.execute("UPDATE improvement_trials SET status='interrupted' WHERE project=?1 AND status='measuring'",[project])?;
         let settings = self.project(project)?;
         if !settings.settings.automatic {
             return Ok(json!({"status":"disabled"}));
@@ -123,15 +124,24 @@ impl Store {
             return Ok(json!({"observation":observation}));
         }
         let learning = self.learn(project, job, executable)?;
+        let improvement = if learning["status"] == "no_eligible_observations" {
+            self.improve(project, job, executable)?
+        } else {
+            json!({"status":"deferred_after_creation"})
+        };
         self.check_job(project, job)?;
-        Ok(json!({"observation":observation,"learning":learning}))
+        Ok(json!({"observation":observation,"learning":learning,"improvement":improvement}))
     }
     pub(crate) fn check_job(&self, project: &str, job: i64) -> Result<()> {
-        let (revision, cancelled, status): (u64, bool, String) = self.db.query_row(
-            "SELECT revision,cancelled,status FROM background_jobs WHERE id=?1 AND project=?2",
+        let (revision, cancelled, status, started): (u64, bool, String, i64) = self.db.query_row(
+            "SELECT revision,cancelled,status,started FROM background_jobs WHERE id=?1 AND project=?2",
             params![job, project],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
         )?;
+        ensure!(
+            now()? <= started + 120,
+            "background cycle time budget exhausted"
+        );
         let current = self.project(project)?;
         ensure!(
             !cancelled
@@ -210,7 +220,7 @@ impl Store {
         let tx = self
             .db
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
-        let budget: u64=tx.query_row("SELECT json_extract(projects.body,'$.settings.daily_budget_microusd') FROM projects JOIN background_jobs ON projects.id=background_jobs.project WHERE projects.id=?1 AND background_jobs.id=?2 AND projects.revision=background_jobs.revision AND background_jobs.cancelled=0 AND background_jobs.status='running' AND json_extract(projects.body,'$.settings.automatic')=1",params![project,job],|r|r.get(0)).context("background job cancelled or project authorization changed before reservation")?;
+        let budget: u64=tx.query_row("SELECT json_extract(projects.body,'$.settings.daily_budget_microusd') FROM projects JOIN background_jobs ON projects.id=background_jobs.project WHERE projects.id=?1 AND background_jobs.id=?2 AND projects.revision=background_jobs.revision AND background_jobs.cancelled=0 AND background_jobs.status='running' AND json_extract(projects.body,'$.settings.automatic')=1 AND background_jobs.started+120>=?3",params![project,job,now()?],|r|r.get(0)).context("background job cancelled or project authorization changed before reservation")?;
         let day = now()? / 86400;
         tx.execute(
             "INSERT OR IGNORE INTO budgets(project,day,reserved) VALUES(?1,?2,0)",
@@ -349,7 +359,7 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let (mut s, p) = configured(d.path());
         s.db.execute(
-            "INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,1,0,'running')",
+            "INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,1,CAST(strftime('%s','now') AS INTEGER),'running')",
             [&p],
         )
         .unwrap();
@@ -419,5 +429,25 @@ mod tests {
         let long = Store::open(&d.path().join(format!("{}.db", "x".repeat(200)))).unwrap();
         assert!(ProjectLock::acquire(&long, &p).is_ok());
         drop(held);
+    }
+    #[test]
+    fn expired_jobs_fail_before_subsequent_work_or_reservation() {
+        let d = tempfile::tempdir().unwrap();
+        let (mut s, p) = configured(d.path());
+        s.db.execute("INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,1,?2,'running')",params![p,now().unwrap()-121]).unwrap();
+        let job = s.db.last_insert_rowid();
+        assert!(
+            s.background_cycle(&p, job, Path::new("unused"))
+                .unwrap_err()
+                .to_string()
+                .contains("time budget")
+        );
+        assert!(s.reserve_request(&p, job, "test", 1).is_err());
+        assert_eq!(
+            s.db.query_row("SELECT count(*) FROM model_requests", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
     }
 }

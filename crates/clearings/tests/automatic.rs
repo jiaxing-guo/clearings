@@ -478,6 +478,294 @@ fn cancellation_propagates_to_job_and_preserves_request_usage() {
 }
 
 #[test]
+fn measured_replacement_reduces_reads_and_live_regression_restores_previous_version() {
+    check_candidate_regression("throw Error('regression')");
+}
+
+#[test]
+fn invalid_candidate_output_restores_previous_version() {
+    check_candidate_regression("return {status:'completed',output:7}");
+}
+
+#[test]
+fn candidate_call_budget_exhaustion_restores_previous_version() {
+    check_candidate_regression("{for(let i=0;i<65;i++)await clearings.call('files.read',x)}");
+}
+
+#[test]
+fn candidate_undeclared_call_restores_previous_version() {
+    check_candidate_regression("await clearings.call('files.list',x)");
+}
+
+#[test]
+fn candidate_malformed_call_restores_previous_version() {
+    check_candidate_regression("await clearings.call('files.read',{root:7,path:x.path})");
+}
+
+fn check_candidate_regression(fresh_failure: &str) {
+    use clearings::store::Task;
+    let d = tempfile::tempdir().unwrap();
+    let source = String::from(
+        "export default async x=>{if(x.path==='authored-failure')return {status:'failed',code:'EXECUTION',message:'expected domain failure'};if(x.path==='fresh')throw Error('regression');return {status:'completed',output:(await clearings.call('files.read',x)).text}}",
+    );
+    let source = source.replace("throw Error('regression')", fresh_failure);
+    let (url, handle) = model(&source);
+    let mut settings = settings(url);
+    settings.improve = true;
+    settings.grants.roots.insert("data".into(), d.path().into());
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings, None)
+        .unwrap();
+    let cases:Vec<Value>=(1..=3).map(|i|{let input=json!({"root":"data","path":i.to_string()});let call=json!({"name":"files.read","input":input,"result":{"text":i.to_string()}});json!({"name":i.to_string(),"input":input,"expected":{"status":"completed","output":i.to_string()},"calls":vec![call;32]})}).collect();
+    let task:Task=serde_json::from_value(json!({"evaluation":"read_only_behavior","contract":{"abi":1,"name":"read","description":"Read the requested file","input_schema":{"type":"object"},"output_schema":{"type":"string"},"capabilities":["files.read"]},"cases":cases})).unwrap();
+    let task_id = store.prepare_named(&p.id, task, "user").unwrap();
+    // Make the fixture benefit large enough to distinguish it from worker startup noise.
+    let baseline=store.save_named(exe(),&p.id,"read","export default async x=>{for(let i=0;i<31;i++)await clearings.call('files.read',x);return {status:'completed',output:(await clearings.call('files.read',x)).text}}".into(),None).unwrap()["version"].as_str().unwrap().to_owned();
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    handle.join().unwrap();
+    assert_eq!(
+        result["report"]["improvement"]["status"], "improved",
+        "{result}"
+    );
+    assert_ne!(
+        store.active(&task_id).unwrap().as_deref(),
+        Some(baseline.as_str())
+    );
+    let optimized = store.active(&task_id).unwrap();
+    let authored = store
+        .reuse_named(
+            exe(),
+            &p.id,
+            "read",
+            json!({"root":"data","path":"authored-failure"}),
+            &p.settings.grants,
+        )
+        .unwrap();
+    assert_eq!(authored["run"]["outcome"]["code"], "EXECUTION");
+    assert!(authored["recovery"].is_null());
+    assert_eq!(store.active(&task_id).unwrap(), optimized);
+    let unavailable = store
+        .reuse_named(
+            exe(),
+            &p.id,
+            "read",
+            json!({"root":"data","path":"missing-file"}),
+            &p.settings.grants,
+        )
+        .unwrap();
+    assert_eq!(unavailable["run"]["outcome"]["status"], "failed");
+    assert!(unavailable["recovery"].is_null());
+    assert_eq!(store.active(&task_id).unwrap(), optimized);
+    let unavailable_worker = store
+        .reuse_named(
+            Path::new("/missing-clearings-worker"),
+            &p.id,
+            "read",
+            json!({"root":"data","path":"missing-file"}),
+            &p.settings.grants,
+        )
+        .unwrap();
+    assert_eq!(unavailable_worker["run"]["outcome"]["status"], "failed");
+    assert!(unavailable_worker["recovery"].is_null());
+    assert_eq!(store.active(&task_id).unwrap(), optimized);
+    std::fs::write(d.path().join("fresh"), "current data").unwrap();
+    let failure = store
+        .reuse_named(
+            exe(),
+            &p.id,
+            "read",
+            json!({"root":"data","path":"fresh"}),
+            &p.settings.grants,
+        )
+        .unwrap();
+    assert_eq!(failure["run"]["outcome"]["status"], "failed");
+    assert_eq!(failure["recovery"]["restored_version"], baseline);
+    assert_eq!(
+        store
+            .reuse_named(
+                exe(),
+                &p.id,
+                "read",
+                json!({"root":"data","path":"fresh"}),
+                &p.settings.grants
+            )
+            .unwrap()["run"]["outcome"]["output"],
+        "current data"
+    );
+}
+
+#[test]
+fn interrupted_measurement_resumes_past_excluded_routines_without_a_model_request() {
+    use clearings::store::Task;
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let mut options = settings("http://127.0.0.1:9/chat".into());
+    options.improve = true;
+    options.exclusions = vec!["a-hidden".into()];
+    let p = store
+        .configure_project(d.path(), "P", options, None)
+        .unwrap();
+    let cases:Vec<_>=(1..=3).map(|x|json!({"name":x.to_string(),"input":x,"expected":{"status":"completed","output":x*2}})).collect();
+    let mut baseline = String::new();
+    let mut task_id = String::new();
+    let mut invalid_trial = None;
+    for name in [
+        "a-hidden",
+        "b-too-few",
+        "c-too-many",
+        "y-invalid",
+        "z-target",
+    ] {
+        let task_cases = match name {
+            "b-too-few" => cases[..1].to_vec(),
+            "c-too-many" => (1..=9).map(|x|json!({"name":x.to_string(),"input":x,"expected":{"status":"completed","output":x*2}})).collect(),
+            _ => cases.clone(),
+        };
+        let task:Task=serde_json::from_value(json!({"contract":{"abi":1,"name":name,"description":"double","input_schema":{"type":"integer"},"output_schema":{"type":"integer"}},"cases":task_cases})).unwrap();
+        let id = store.prepare_named(&p.id, task, "user").unwrap();
+        let saved = store
+            .save_named(
+                exe(),
+                &p.id,
+                name,
+                "export default async x=>({status:'completed',output:x*2})".into(),
+                None,
+            )
+            .unwrap();
+        if name == "y-invalid" {
+            let candidate = store
+                .submit(
+                    exe(),
+                    &id,
+                    "export default async x=>({status:'completed',output:0})".into(),
+                )
+                .unwrap();
+            invalid_trial = Some((saved["version"].as_str().unwrap().to_owned(), candidate));
+        }
+        if name == "z-target" {
+            task_id = id;
+            baseline = saved["version"].as_str().unwrap().into();
+        }
+    }
+    let candidate = store
+        .submit(
+            exe(),
+            &task_id,
+            "export default async x=>({status:'completed',output:2*x})".into(),
+        )
+        .unwrap();
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    let (invalid_baseline, invalid_candidate) = invalid_trial.unwrap();
+    conn.execute("INSERT INTO improvement_trials(project,baseline,candidate,status) VALUES(?1,?2,?3,'measuring')",rusqlite::params![p.id,invalid_baseline,invalid_candidate]).unwrap();
+    conn.execute("INSERT INTO improvement_trials(project,baseline,candidate,status) VALUES(?1,?2,?3,'measuring')",rusqlite::params![p.id,baseline,candidate]).unwrap();
+    conn.execute(
+        "INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,1,0,'running')",
+        [&p.id],
+    )
+    .unwrap();
+    let rejected = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        rejected["report"]["improvement"]["status"], "failed",
+        "{rejected}"
+    );
+    let status: String = conn
+        .query_row(
+            "SELECT status FROM improvement_trials WHERE baseline=?1",
+            [&invalid_baseline],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(status, "failed");
+    conn.execute("UPDATE schedule SET next_due=0", []).unwrap();
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(result["status"], "completed", "{result}");
+    assert!(
+        matches!(
+            result["report"]["improvement"]["status"].as_str(),
+            Some("improved" | "no_benefit")
+        ),
+        "{result}"
+    );
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM improvement_trials", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        2
+    );
+}
+#[test]
+fn expired_improvement_trials_are_terminal_and_do_not_request_again() {
+    use clearings::store::Task;
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let expire_db = db.clone();
+    let (url, handle) = model_with(
+        "export default async x=>({status:'completed',output:x+x})",
+        move || {
+            rusqlite::Connection::open(expire_db)
+                .unwrap()
+                .execute(
+                    "UPDATE background_jobs SET started=0 WHERE status='running'",
+                    [],
+                )
+                .unwrap();
+        },
+    );
+    let mut options = settings(url);
+    options.improve = true;
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", options, None)
+        .unwrap();
+    let task: Task = serde_json::from_value(json!({"evaluation":"read_only_behavior","contract":observation(1).contract,"cases":(1..=3).map(|i| { let mut case=observation(i).case; case.name=i.to_string(); case }).collect::<Vec<_>>()})).unwrap();
+    store.prepare_named(&p.id, task, "user").unwrap();
+    store
+        .save_named(
+            exe(),
+            &p.id,
+            "double",
+            "export default async x=>({status:'completed',output:x*2})".into(),
+            None,
+        )
+        .unwrap();
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    handle.join().unwrap();
+    assert_eq!(result["status"], "failed");
+    assert!(
+        result["report"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("time budget")
+    );
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    assert_eq!(
+        conn.query_row("SELECT status FROM improvement_trials", [], |r| r
+            .get::<_, String>(0))
+            .unwrap(),
+        "failed"
+    );
+    conn.execute("UPDATE schedule SET next_due=0", []).unwrap();
+    assert_eq!(
+        store.background_tick(&p.id, exe()).unwrap()["report"]["improvement"]["status"],
+        "no_candidate"
+    );
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        1
+    );
+}
+
+#[test]
 fn invalid_proposals_keep_source_diagnostics_without_a_version() {
     let d = tempfile::tempdir().unwrap();
     let source = "export default async ( => {";
@@ -556,6 +844,80 @@ fn oversized_creation_requests_are_terminal_without_spending_attempts() {
     let next = store.background_tick(&p.id, exe()).unwrap();
     handle.join().unwrap();
     assert_eq!(next["report"]["learning"]["status"], "created", "{next}");
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        1
+    );
+}
+
+#[test]
+fn oversized_improvement_requests_do_not_starve_later_routines() {
+    use clearings::store::Task;
+    let d = tempfile::tempdir().unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let db = d.path().join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let mut options = settings(url);
+    options.improve = true;
+    let p = store
+        .configure_project(d.path(), "P", options, None)
+        .unwrap();
+    let cases: Vec<Value> = (1..=3).map(|i| json!({"name":i.to_string(),"input":format!("{}{i}","x".repeat(300 * 1024)),"expected":{"status":"completed","output":300 * 1024 + 1}})).collect();
+    let task: Task = serde_json::from_value(json!({"contract":{"abi":1,"name":"a-large","description":"Length","input_schema":{"type":"string"},"output_schema":{"type":"integer"}},"cases":cases})).unwrap();
+    store.prepare_named(&p.id, task, "user").unwrap();
+    store
+        .save_named(
+            exe(),
+            &p.id,
+            "a-large",
+            "export default async x=>({status:'completed',output:x.length})".into(),
+            None,
+        )
+        .unwrap();
+    let cases: Vec<_> = (1..=3)
+        .map(|i| {
+            let mut case = observation(i).case;
+            case.name = i.to_string();
+            case
+        })
+        .collect();
+    let mut contract = observation(1).contract;
+    contract.name = "z-small".into();
+    let task: Task = serde_json::from_value(json!({"contract":contract,"cases":cases})).unwrap();
+    store.prepare_named(&p.id, task, "user").unwrap();
+    store
+        .save_named(
+            exe(),
+            &p.id,
+            "z-small",
+            "export default async x=>({status:'completed',output:x+x})".into(),
+            None,
+        )
+        .unwrap();
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["improvement"]["status"], "failed",
+        "{result}"
+    );
+    assert!(
+        result["report"]["improvement"]["report"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("request exceeds byte limit")
+    );
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        0
+    );
+    conn.execute("UPDATE schedule SET next_due=0", []).unwrap();
+    store.background_tick(&p.id, exe()).unwrap();
+    let prompt = handle.join().unwrap();
+    assert!(prompt.to_string().contains("z-small"));
     assert_eq!(
         conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
             .get::<_, u64>(0))

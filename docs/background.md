@@ -22,18 +22,32 @@ Acceptance cases are stored before requesting source. One recorded example is wi
 
 A workflow has at most two authoring attempts, using the same frozen cases, across scheduled cycles. Failed attempts and their budget reservations remain visible. Model responses cannot change grants, acceptance cases or host settings. A configuration change, cancellation, concurrent manual replacement, pause or exclusion prevents automatic promotion.
 
+## Measured improvement and recovery
+
+With `improve` enabled, cycles without an eligible new workflow consider one existing active routine. The optimizer uses the same immutable task and capability requirements. It evaluates a source proposal, then runs three alternating baseline/candidate measurement pairs. Replacement requires fewer capability calls in every pair without a material median latency increase, or equal calls with at least 20 percent and more than 2 ms improvement in every pair. This is local fixture evidence; it is not a claim about end-to-end agent cost.
+
+Each active version gets one terminal improvement trial. Interrupted measurements resume the stored candidate when available; otherwise a resumed proposal needs a new budget reservation. Budget refusal remains retryable. The next improved version can receive a later trial. A cycle has a 120-second phase budget, checked between bounded operations and individual measurement cases. Current bounded work can finish after cancellation or the phase deadline. Candidate creation and improvements share the same daily model budget.
+
+Promotion checks the current project revision, cancellation, task identity, activation state and pause/exclusion controls in one database transaction. The previous active version remains available. A candidate execution failure after automatic replacement restores that previous version for subsequent runs and returns the failed result with recovery details. It does not conceal the failure or silently rerun the task. Intentional handoffs, failed capability operations, invalid inputs, host policy and worker-runtime failures do not trigger automatic rollback. No cross-routine call graph exists in the current runtime; dependency checks concern the engine, immutable task and configured capability bindings.
+
 Observation scans retain a cursor across bounded cycles so older groups remain reachable. Budget refusal does not consume an authoring attempt. `background-jobs` includes request reservations, status and reported usage. Cancellation or changed authorization fails the job explicitly.
 
 MCP observation tools use one host-generated session identity per server connection; the caller cannot supply it. Transcript imports and the host CLI retain host-supplied session identities. These are provenance boundaries, not proof that supplied observations are true or that sessions are statistically independent.
 
 Reconfiguration resets the due time, disabled ticks reconcile interrupted work, and failed `background --once` jobs return an unsuccessful exit status.
 
-Learning groups matching contracts before applying its scan cursor, so unrelated records cannot split a workflow across pages. Each cycle reads at most 500 contract groups and 8 MiB of observations; each group supplies at most 500 records and 4 MiB. Groups without any completed case remain observations and cannot become acceptance tasks.
+Learning groups observations by contract before applying its scan cursor, so unrelated records cannot split a workflow across pages. Each cycle reads at most 500 contract groups and 8 MiB of observations; each group supplies at most 500 records and 4 MiB. Groups without any completed case remain observations and cannot become acceptance tasks.
+
+Improvement selection skips tasks outside the supported 3-to-8-case range. Automatic rollback distinguishes an actual worker error from an authored `failed` outcome, even when authored code uses the same public failure-code text.
 
 Oversized or otherwise invalid combined acceptance groups are reported and skipped before storage. A group that cannot reserve a model request yields to other eligible groups, so a cheaper request can still fit the remaining budget. No attempt is consumed before reservation.
+
+A resumed candidate that fails validation or measurement is recorded as a terminal failed trial, so it cannot repeatedly block later routines. Trials that exhaust the cycle time budget also fail terminally. Other cancellations remain resumable; requests that were never reserved can remain deferred.
 
 Background coordination supports processes that share the same canonical database path within one filesystem namespace. Symlink aliases resolve to that path; hard-linked database files are rejected. Exposing one database through different bind-mount paths or filesystem namespaces is not a supported storage layout.
 
 Observation sampling represents distinct input/outcome pairs and session identities within the existing per-group record and byte limits. Failed proposals retain bounded source diagnostics even when TypeScript preparation fails before a version is created.
 
 An assembled model request above 512 KiB is rejected permanently for that frozen workflow without spending an authoring attempt. Later cycles skip the rejected group and continue considering other work. Budget refusal remains retryable.
+
+Improvement trials with oversized model requests are terminal; actual budget refusals remain retryable. Live recovery also recognizes call-count exhaustion, undeclared capabilities and malformed capability arguments as candidate failures. Missing resources, unavailable workers and endpoint failures do not cause automatic rollback.

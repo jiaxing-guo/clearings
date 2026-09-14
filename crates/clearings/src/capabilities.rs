@@ -9,6 +9,15 @@ use std::path::{Component, Path};
 use std::sync::Arc;
 use std::time::Duration;
 
+#[derive(Debug)]
+pub(crate) struct InvalidCall(String);
+impl std::fmt::Display for InvalidCall {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+impl std::error::Error for InvalidCall {}
+
 pub trait Broker {
     fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value>;
 }
@@ -193,9 +202,16 @@ impl Broker for LocalBroker {
     fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value> {
         ensure!(
             self.capabilities.iter().any(|c| c == name),
-            "capability was not declared: {name}"
+            InvalidCall(format!("capability was not declared: {name}"))
         );
         if let Some(binding) = self.http.get(name) {
+            let args = query_input(&input)
+                .map_err(|e| InvalidCall(e.to_string()))?
+                .clone();
+            ensure!(
+                args.keys().all(|key| binding.query_keys.contains(key)),
+                InvalidCall("query key is not granted".into())
+            );
             let binding = binding.clone();
             let client = self
                 .client
@@ -205,9 +221,7 @@ impl Broker for LocalBroker {
             let max_bytes = self.max_bytes;
             return crate::blocking_io::call(remaining, move || {
                 let mut url = binding.url.clone();
-                let args = query_input(&input)?;
-                for (key, value) in args {
-                    ensure!(binding.query_keys.contains(key), "query key is not granted");
+                for (key, value) in &args {
                     url.query_pairs_mut()
                         .append_pair(key, value.as_str().context("query values must be strings")?);
                 }
@@ -241,7 +255,7 @@ impl Broker for LocalBroker {
                 Ok(value)
             });
         }
-        let args = file_input(input)?;
+        let args = file_input(input).map_err(|e| InvalidCall(e.to_string()))?;
         let path = Path::new(&args.path);
         let dir = self
             .roots

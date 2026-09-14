@@ -45,7 +45,7 @@ Project-scoped observation scheduling and structured-observation synthesis are i
 
 The active host agent supplies selected task evidence and authors source using a bundled SDK. Clearings provides the execution and evaluation lifecycle through the same interface in each host. Historical transcript access is limited to user-selected available evidence. Reconstructed summaries are not exact tool recordings.
 
-On-demand teaching and explicitly authorized background component creation are available. Background generation requires a configured model connection and conservative spending cap. Measured improvement is supplied by the next dependent change; remote workers and routine distribution remain outside this version. No separate model API key is needed merely to submit source authored by the existing agent.
+On-demand teaching needs no separate model connection. Authorized background cycles import selected records, create components and measure candidate improvements. Remote workers and cross-project routine distribution remain outside this version.
 
 ## Success and limits
 

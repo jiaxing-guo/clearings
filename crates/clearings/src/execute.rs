@@ -12,6 +12,15 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
+#[derive(Debug)]
+struct CapabilityBudgetExhausted;
+impl std::fmt::Display for CapabilityBudgetExhausted {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("capability call budget exhausted")
+    }
+}
+impl std::error::Error for CapabilityBudgetExhausted {}
+
 struct Guard(Child);
 impl Drop for Guard {
     fn drop(&mut self) {
@@ -80,10 +89,7 @@ fn exchange(
             match message {
                 Event::CallError { message } => {
                     *calls += 1;
-                    ensure!(
-                        *calls <= limits.capability_calls,
-                        "capability call budget exhausted"
-                    );
+                    ensure!(*calls <= limits.capability_calls, CapabilityBudgetExhausted);
                     capability_failure.get_or_insert_with(|| message.clone());
                     send(&input, json!({"ok":false,"error":message}), deadline)?;
                 }
@@ -92,10 +98,7 @@ fn exchange(
                     input: arguments,
                 } => {
                     *calls += 1;
-                    ensure!(
-                        *calls <= limits.capability_calls,
-                        "capability call budget exhausted"
-                    );
+                    ensure!(*calls <= limits.capability_calls, CapabilityBudgetExhausted);
                     let broker = broker
                         .as_deref_mut()
                         .context("capabilities are unavailable during preparation")?;
@@ -176,8 +179,19 @@ pub fn run(
     input: Value,
     broker: &mut dyn Broker,
 ) -> Run {
+    run_with_candidate_failure(executable, contract, prepared, input, broker).0
+}
+
+pub(crate) fn run_with_candidate_failure(
+    executable: &Path,
+    contract: &Contract,
+    prepared: &Prepared,
+    input: Value,
+    broker: &mut dyn Broker,
+) -> (Run, bool) {
     let start = Instant::now();
     let mut capability_calls = 0;
+    let mut candidate_failure = false;
     let result = (|| -> Result<Outcome> {
         contract.limits.validate()?;
         let deadline = start + Duration::from_millis(contract.limits.wall_ms);
@@ -186,6 +200,7 @@ pub fn run(
             contract,
             Validation::Input(input.clone()),
             deadline,
+            &mut false,
         )?;
         let request = Request::Run {
             prepared: prepared.clone(),
@@ -207,23 +222,33 @@ pub fn run(
                     contract,
                     Validation::Outcome(outcome.clone()),
                     deadline,
+                    &mut candidate_failure,
                 )?;
                 Ok(outcome)
             }
-            Event::Error { message } => Ok(Outcome::failed("EXECUTION", message)),
+            Event::Error { message } => {
+                candidate_failure = true;
+                Ok(Outcome::failed("EXECUTION", message))
+            }
             _ => bail!("invalid execution result"),
         }
     })();
     let outcome = match result {
         Ok(v) => v,
-        Err(error) => Outcome::failed("RUNTIME", error),
+        Err(error) => {
+            candidate_failure |= error.is::<CapabilityBudgetExhausted>();
+            Outcome::failed("RUNTIME", error)
+        }
     };
-    Run {
-        outcome,
-        elapsed_ms: start.elapsed().as_millis(),
-        capability_calls,
-        model_usage: None,
-    }
+    (
+        Run {
+            outcome,
+            elapsed_ms: start.elapsed().as_millis(),
+            capability_calls,
+            model_usage: None,
+        },
+        candidate_failure,
+    )
 }
 
 fn validate(
@@ -231,6 +256,7 @@ fn validate(
     contract: &Contract,
     boundary: Validation,
     deadline: Instant,
+    invalid_value: &mut bool,
 ) -> Result<()> {
     match exchange(
         executable,
@@ -244,7 +270,10 @@ fn validate(
         deadline,
     )? {
         Event::Validated => Ok(()),
-        Event::Error { message } => bail!("{message}"),
+        Event::Error { message } => {
+            *invalid_value = true;
+            bail!("{message}")
+        }
         _ => bail!("invalid validation result"),
     }
 }

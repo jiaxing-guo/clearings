@@ -188,6 +188,23 @@ impl Broker for Fixtures<'_> {
     }
 }
 
+struct FailureTrackingBroker {
+    inner: LocalBroker,
+    environment_failed: bool,
+    candidate_failed: bool,
+}
+impl Broker for FailureTrackingBroker {
+    fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value> {
+        let result = self.inner.call(name, input, remaining);
+        if let Err(error) = &result {
+            let invalid_call = error.is::<crate::capabilities::InvalidCall>();
+            self.candidate_failed |= invalid_call;
+            self.environment_failed |= !invalid_call;
+        }
+        result
+    }
+}
+
 pub struct Store {
     pub(crate) db: Connection,
 }
@@ -198,7 +215,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 5, "store was created by a newer version");
+        ensure!(schema <= 6, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -219,7 +236,8 @@ impl Store {
             CREATE TABLE IF NOT EXISTS learning_scan(project TEXT PRIMARY KEY REFERENCES projects(id),before_seq INTEGER);
             CREATE TABLE IF NOT EXISTS learning_groups(project TEXT NOT NULL REFERENCES projects(id),fingerprint TEXT NOT NULL,task TEXT NOT NULL REFERENCES objects(id),status TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,report TEXT NOT NULL DEFAULT '{}',PRIMARY KEY(project,fingerprint));
             CREATE TABLE IF NOT EXISTS component_changes(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),task TEXT NOT NULL REFERENCES objects(id),version TEXT NOT NULL REFERENCES objects(id),previous TEXT,reason TEXT NOT NULL,job INTEGER REFERENCES background_jobs(id),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
-            PRAGMA user_version=5;")?;
+            CREATE TABLE IF NOT EXISTS improvement_trials(project TEXT NOT NULL REFERENCES projects(id),baseline TEXT NOT NULL REFERENCES objects(id),candidate TEXT,status TEXT NOT NULL,report TEXT NOT NULL DEFAULT '{}',PRIMARY KEY(project,baseline));
+            PRAGMA user_version=6;")?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {
@@ -290,15 +308,32 @@ impl Store {
         Ok(version)
     }
     pub fn evaluate(&self, executable: &Path, id: &str) -> Result<Value> {
-        let version = self.version(id)?;
+        self.version(id)?;
         if let Some(report) = self.evaluation(id)? {
             return Ok(report);
         }
+        let report = self.evaluate_fresh(executable, id, || Ok(()))?;
+        // First evaluation is immutable. A fresh candidate gets a fresh version if source changes.
+        self.db.execute(
+            "INSERT OR IGNORE INTO evaluations(version,engine,report) VALUES(?1,?2,?3)",
+            params![id, ENGINE, serde_json::to_string(&report)?],
+        )?;
+        self.evaluation(id)?.context("evaluation was not recorded")
+    }
+
+    pub(crate) fn evaluate_fresh(
+        &self,
+        executable: &Path,
+        id: &str,
+        guard: impl Fn() -> Result<()>,
+    ) -> Result<Value> {
+        let version = self.version(id)?;
         let task: Task = self.get("task", &version.task)?;
         task.validate()?;
         let mut cases = Vec::new();
         let mut report_bytes = 1024;
         for case in task.cases {
+            guard()?;
             let mut fixture = Fixtures {
                 calls: &case.calls,
                 mode: &task.evaluation,
@@ -331,12 +366,7 @@ impl Store {
             serde_json::to_vec(&report)?.len() <= REPORT_BYTES,
             "evaluation report exceeds byte limit"
         );
-        // First evaluation is immutable. A fresh candidate gets a fresh version if source changes.
-        self.db.execute(
-            "INSERT OR IGNORE INTO evaluations(version,engine,report) VALUES(?1,?2,?3)",
-            params![id, ENGINE, serde_json::to_string(&report)?],
-        )?;
-        self.evaluation(id)?.context("evaluation was not recorded")
+        Ok(report)
     }
 
     fn evaluation(&self, id: &str) -> Result<Option<Value>> {
@@ -392,6 +422,10 @@ impl Store {
             "active version changed; inspect it before replacing it"
         );
         tx.execute("INSERT INTO active(task,version) VALUES(?1,?2) ON CONFLICT(task) DO UPDATE SET version=excluded.version",params![version.task,id])?;
+        tx.execute(
+            "UPDATE project_routines SET previous=NULL WHERE task=?1",
+            [&version.task],
+        )?;
         tx.commit()?;
         Ok(())
     }
@@ -433,27 +467,46 @@ impl Store {
             );
         }
         let input_digest = digest(&input)?;
-        let run = match LocalBroker::new(&task.contract, policy) {
-            Ok(mut broker) => execute::run(
-                executable,
-                &task.contract,
-                &version.prepared,
-                input,
-                &mut broker,
+        let (run, candidate_failure) = match LocalBroker::new(&task.contract, policy) {
+            Ok(inner) => {
+                let mut broker = FailureTrackingBroker {
+                    inner,
+                    environment_failed: false,
+                    candidate_failed: false,
+                };
+                let (run, execution_failure) = execute::run_with_candidate_failure(
+                    executable,
+                    &task.contract,
+                    &version.prepared,
+                    input,
+                    &mut broker,
+                );
+                let candidate_failure =
+                    !broker.environment_failed && (execution_failure || broker.candidate_failed);
+                (run, candidate_failure)
+            }
+            Err(error) => (
+                Run {
+                    outcome: Outcome::failed("POLICY", error),
+                    elapsed_ms: 0,
+                    capability_calls: 0,
+                    model_usage: None,
+                },
+                false,
             ),
-            Err(error) => Run {
-                outcome: Outcome::failed("POLICY", error),
-                elapsed_ms: 0,
-                capability_calls: 0,
-                model_usage: None,
-            },
         };
         self.db.execute(
             "INSERT INTO runs(version,input_digest,report) VALUES(?1,?2,?3)",
             params![id, input_digest, serde_json::to_string(&run)?],
         )?;
+        let run_id = self.db.last_insert_rowid();
+        let recovery = if candidate_failure {
+            self.recover_regression(task_id, &id)?
+        } else {
+            None
+        };
         Ok(
-            json!({"id":self.db.last_insert_rowid(),"version":id,"input_digest":input_digest,"run":run}),
+            json!({"id":run_id,"version":id,"input_digest":input_digest,"run":run,"recovery":recovery}),
         )
     }
     pub fn list(&self) -> Result<Value> {
