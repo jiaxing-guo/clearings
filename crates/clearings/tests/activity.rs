@@ -6,6 +6,109 @@ use serde_json::json;
 use std::io::Write;
 
 #[test]
+fn appended_headless_streams_require_fresh_project_metadata() {
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("headless.jsonl");
+    std::fs::write(&path, "").unwrap();
+    let append = |records: Vec<serde_json::Value>| {
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&path)
+            .unwrap();
+        for record in records {
+            writeln!(file, "{record}").unwrap();
+        }
+    };
+    let meta = |session| json!({"type":"clearings_session","session_id":session,"cwd":d.path()});
+    let start = |session| json!({"type":"thread.started","thread_id":session});
+    let usage =
+        |input| json!({"type":"turn.completed","usage":{"input_tokens":input,"output_tokens":1}});
+    append(vec![
+        meta("one"),
+        start("one"),
+        usage(10),
+        start("two"),
+        usage(20),
+    ]);
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(
+            d.path(),
+            "P",
+            Settings {
+                trace_sources: vec![TraceSource {
+                    adapter: "codex".into(),
+                    path: path.clone(),
+                }],
+                ..Default::default()
+            },
+            None,
+        )
+        .unwrap();
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    append(vec![meta("two"), usage(30)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    append(vec![start("two"), usage(40)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
+    append(vec![meta("three"), start("three"), usage(50)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    append(vec![
+        json!({"type":"clearings_session","session_id":"four"}),
+        usage(60),
+    ]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
+    assert_eq!(
+        store.activity(&p.id, None).unwrap()["events"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+}
+
+#[test]
+fn replacement_with_a_shared_header_replays_records_before_the_old_offset() {
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("session.jsonl");
+    let header = json!({"type":"session_meta","payload":{"id":"same-session","cwd":d.path()},"padding":"x".repeat(5000)}).to_string();
+    let event = |input| {
+        json!({"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":input,"output_tokens":2}}}}).to_string()
+    };
+    let original = format!("{header}\n{}\n", event(10));
+    std::fs::write(&path, &original).unwrap();
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(
+            d.path(),
+            "P",
+            Settings {
+                trace_sources: vec![TraceSource {
+                    adapter: "codex".into(),
+                    path: path.clone(),
+                }],
+                ..Default::default()
+            },
+            None,
+        )
+        .unwrap();
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    let replacement = format!("{header}\n{}\n{}\n", event(20), event(30));
+    assert!(replacement.len() > original.len());
+    assert_eq!(&replacement[..4096], &original[..4096]);
+    let replacement_path = d.path().join("replacement.jsonl");
+    std::fs::write(&replacement_path, replacement).unwrap();
+    std::fs::rename(replacement_path, path).unwrap();
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 2);
+    assert_eq!(
+        store.activity(&p.id, None).unwrap()["events"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+}
+
+#[test]
 fn observations_retain_all_outcomes_without_weakening_task_acceptance() {
     let d = tempfile::tempdir().unwrap();
     let path = d.path().join("outcomes.jsonl");

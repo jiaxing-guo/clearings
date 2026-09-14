@@ -21,3 +21,5 @@ A configured project's `model-usage` reports background response counters when p
 Imports expire raw project activity using the configured retention period. Checkpoints include adapter identity, so changing adapters replays the selected file. File traversal and reads use held directory/file handles and reject symlinks. Structured workflow records require their own nonempty session, working-directory and event identifiers.
 
 `performance NAME --after VERSION` continues the preceding `next_after` cursor. Each version reports separate completed, handoff (`needs_agent`), not-applicable and failed counts.
+
+For Codex headless streams, supply a `clearings_session` record after `thread.started` and before usage, or immediately before it with the matching `session_id`. Each new stream requires its own project metadata. A changed session ID also clears any inherited working directory.

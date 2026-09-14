@@ -53,7 +53,11 @@ impl Store {
         let groups = self.observation_groups(project)?;
         let mut skipped = vec![];
         let mut blocked_groups = 0;
+        let mut rejected_groups = 0;
+        let mut deferred_groups = 0;
+        let mut deferred_result = None;
         for (fingerprint, group) in groups {
+            self.check_job(project, job)?;
             if group.observations.len() < p.settings.min_occurrences {
                 continue;
             }
@@ -137,7 +141,20 @@ impl Store {
             if let Some((_, id, _)) = &previous {
                 task = self.get("task", id)?;
             }
-            task.validate()?;
+            let validation = (|| -> Result<()> {
+                ensure!(
+                    serde_json::to_vec(&task)?.len() <= crate::store::OBJECT_BYTES,
+                    "observed acceptance exceeds the task object byte limit"
+                );
+                task.validate()
+            })();
+            if let Err(error) = validation {
+                rejected_groups += 1;
+                if skipped.len() < 32 {
+                    skipped.push(json!({"name":task.contract.name,"status":"rejected","error":error.to_string()}));
+                }
+                continue;
+            }
             let task_id = self.prepare_task(&task)?;
             self.db.execute("INSERT INTO learning_groups(project,fingerprint,task,status,attempts) VALUES(?1,?2,?3,'pending',0) ON CONFLICT(project,fingerprint) DO NOTHING",params![project,fingerprint,task_id])?;
             if !task.cases.iter().flat_map(|c| &c.calls).all(|call| {
@@ -176,24 +193,28 @@ impl Store {
             let (status, value) = match result {
                 Ok(v) => ("created", v),
                 Err(e) => {
-                    let attempts: u32 = self.db.query_row(
-                        "SELECT attempts FROM learning_groups WHERE project=?1 AND fingerprint=?2",
-                        params![project, fingerprint],
-                        |r| r.get(0),
-                    )?;
+                    let requested: bool = self.db.query_row("SELECT EXISTS(SELECT 1 FROM model_requests WHERE project=?1 AND job=?2 AND purpose='create')",params![project,job],|r|r.get(0))?;
                     (
-                        if attempts == 0 { "deferred" } else { "failed" },
+                        if requested { "failed" } else { "deferred" },
                         json!({"error":e.to_string(),"task":task_id}),
                     )
                 }
             };
             self.db.execute("UPDATE learning_groups SET status=?3,report=?4 WHERE project=?1 AND fingerprint=?2",params![project,fingerprint,status,value.to_string()])?;
+            if status == "deferred" {
+                deferred_groups += 1;
+                if skipped.len() < 32 {
+                    skipped.push(json!({"name":task.contract.name,"status":"deferred","error":value["error"]}));
+                }
+                deferred_result = Some(value);
+                continue;
+            }
             return Ok(
-                json!({"status":status,"result":value,"blocked_groups":blocked_groups,"skipped":skipped}),
+                json!({"status":status,"result":value,"blocked_groups":blocked_groups,"rejected_groups":rejected_groups,"deferred_groups":deferred_groups,"skipped":skipped}),
             );
         }
         Ok(
-            json!({"status":"no_eligible_observations","blocked_groups":blocked_groups,"skipped":skipped}),
+            json!({"status":if deferred_result.is_some() {"deferred"} else {"no_eligible_observations"},"result":deferred_result,"blocked_groups":blocked_groups,"rejected_groups":rejected_groups,"deferred_groups":deferred_groups,"skipped":skipped}),
         )
     }
     fn observation_groups(&self, project: &str) -> Result<BTreeMap<String, Group>> {

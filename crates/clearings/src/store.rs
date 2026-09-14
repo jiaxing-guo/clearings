@@ -12,7 +12,7 @@ use std::{path::Path, time::Duration};
 
 // Change this when preparation or execution semantics change. Old versions require re-submission.
 const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
-const OBJECT_BYTES: usize = REPORT_BYTES - 4096;
+pub(crate) const OBJECT_BYTES: usize = REPORT_BYTES - 4096;
 
 pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-8";
 
@@ -207,6 +207,7 @@ pub struct Store {
 }
 impl Store {
     pub fn open(path: &Path) -> Result<Self> {
+        Self::check_database_links(path)?;
         let db = Connection::open(path)?;
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
@@ -232,6 +233,21 @@ impl Store {
             CREATE TABLE IF NOT EXISTS improvement_trials(project TEXT NOT NULL REFERENCES projects(id),baseline TEXT NOT NULL REFERENCES objects(id),candidate TEXT,status TEXT NOT NULL,report TEXT NOT NULL DEFAULT '{}',PRIMARY KEY(project,baseline));
             PRAGMA user_version=6;")?;
         Ok(Self { db })
+    }
+    pub(crate) fn check_database_links(path: &Path) -> Result<()> {
+        #[cfg(unix)]
+        match std::fs::metadata(path) {
+            Ok(metadata) => {
+                use std::os::unix::fs::MetadataExt;
+                ensure!(
+                    metadata.nlink() == 1,
+                    "hard-linked databases are unsupported; use one database file path"
+                );
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+        Ok(())
     }
     fn put(&self, kind: &str, value: &impl Serialize) -> Result<String> {
         let body = serde_json::to_string(value)?;

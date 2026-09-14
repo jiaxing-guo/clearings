@@ -30,6 +30,10 @@ impl Observation {
 }
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct Checkpoint {
+    #[serde(default)]
+    identity: Option<(u64, u64)>,
+    #[serde(default)]
+    headless_metadata: bool,
     offset: u64,
     prefix: String,
     prefix_len: usize,
@@ -196,11 +200,21 @@ impl Store {
             .map(|s| serde_json::from_str(&s))
             .transpose()?
             .unwrap_or_default();
-        if file.metadata()?.len() < cp.offset
+        let metadata = file.metadata()?;
+        #[cfg(unix)]
+        let identity = {
+            use std::os::unix::fs::MetadataExt;
+            Some((metadata.dev(), metadata.ino()))
+        };
+        #[cfg(not(unix))]
+        let identity = None;
+        if cp.identity != identity
+            || metadata.len() < cp.offset
             || (!cp.prefix.is_empty() && prefix(&mut file, cp.prefix_len)? != cp.prefix)
         {
             cp = Checkpoint::default();
         }
+        cp.identity = identity;
         file.seek(SeekFrom::Start(cp.offset))?;
         let mut bytes = vec![];
         let budget = IMPORT_BYTES.min(*remaining);
@@ -217,8 +231,14 @@ impl Store {
         {
             let value: Value = serde_json::from_slice(line)
                 .context("malformed complete trace line; repair it before retrying")?;
+            let metadata_ready = cp.headless_metadata;
+            cp.headless_metadata = false;
             if value["type"] == "thread.started" {
-                cp.session = value["thread_id"].as_str().unwrap_or_default().into();
+                let session = value["thread_id"].as_str().unwrap_or_default();
+                if !metadata_ready || cp.session != session {
+                    cp.cwd.clear();
+                }
+                cp.session = session.into();
             }
             if value["type"] == "clearings_workflow" {
                 for field in ["session_id", "cwd", "event_id"] {
@@ -240,10 +260,22 @@ impl Store {
                 .as_str()
                 .or_else(|| value["session_id"].as_str())
             {
+                if cp.session != s {
+                    cp.cwd.clear();
+                }
                 cp.session = s.into();
             }
             if let Some(s) = value["cwd"].as_str() {
                 cp.cwd = s.into();
+            }
+            if value["type"] == "clearings_session" {
+                cp.session = value["session_id"].as_str().unwrap_or_default().into();
+                cp.cwd = value["cwd"]
+                    .as_str()
+                    .filter(|cwd| Path::new(cwd).is_absolute())
+                    .unwrap_or_default()
+                    .into();
+                cp.headless_metadata = !cp.session.is_empty() && !cp.cwd.is_empty();
             }
             if cp.session.is_empty()
                 || cp.cwd.is_empty()
