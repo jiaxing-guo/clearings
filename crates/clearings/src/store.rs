@@ -383,7 +383,15 @@ impl Store {
         );
         let task: Task = self.get("task", task_id)?;
         if let Some(project) = &task.project {
-            self.named_task(project, &task.contract.name, true)?;
+            ensure!(
+                self.named_task(project, &task.contract.name, true)? == task_id,
+                "task is not the registered routine"
+            );
+            ensure!(
+                serde_json::to_value(crate::project::normalize_grants(policy.clone())?)?
+                    == serde_json::to_value(self.project(project)?.settings.grants)?,
+                "project grants are fixed"
+            );
         }
         let input_digest = digest(&input)?;
         let run = match LocalBroker::new(&task.contract, policy) {
@@ -422,7 +430,7 @@ impl Store {
         let mut stmt = self.db.prepare(
             "SELECT objects.id,json_extract(body,'$.contract.name'),json_extract(body,'$.contract.description'),active.version
              FROM objects LEFT JOIN active ON active.task=objects.id
-             WHERE kind='task' AND (?1 IS NULL OR objects.id > ?1) ORDER BY objects.id LIMIT 101",
+             WHERE kind='task' AND json_extract(body,'$.project') IS NULL AND (?1 IS NULL OR objects.id > ?1) ORDER BY objects.id LIMIT 101",
         )?;
         let mut rows = stmt.query([after])?;
         let mut tasks = Vec::new();
@@ -472,7 +480,7 @@ impl Store {
         let mut stmt = self.db.prepare(
             "SELECT id,version,input_digest,length(CAST(report AS BLOB)),
              CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at
-             FROM runs WHERE (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
+             FROM runs WHERE EXISTS (SELECT 1 FROM objects v JOIN objects t ON t.id=json_extract(v.body,'$.task') WHERE v.id=runs.version AND json_extract(t.body,'$.project') IS NULL) AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
         )?;
         let mut rows = stmt.query(params![before, PAGE_BYTES])?;
         let mut runs = Vec::new();

@@ -47,6 +47,8 @@ enum Action {
     },
     Performance {
         name: String,
+        #[arg(long)]
+        after: Option<String>,
     },
     Discover {
         #[arg(long)]
@@ -218,7 +220,9 @@ fn main() -> Result<()> {
                     let supplied: Policy = read(policy)?;
                     if selected.is_some() {
                         anyhow::ensure!(
-                            serde_json::to_value(&supplied)? == serde_json::to_value(&api.policy)?,
+                            serde_json::to_value(clearings::project::normalize_grants(
+                                supplied.clone()
+                            )?)? == serde_json::to_value(&api.policy)?,
                             "project grants are fixed; use the configured grants file"
                         );
                     } else {
@@ -242,7 +246,7 @@ fn main() -> Result<()> {
                 },
                 Action::Observe => Operation::Observe,
                 Action::Activity { before } => Operation::Activity { before },
-                Action::Performance { name } => Operation::Performance { name },
+                Action::Performance { name, after } => Operation::Performance { name, after },
                 Action::ProjectStatus => Operation::ProjectStatus,
                 Action::List { after } => Operation::List { after },
                 Action::Inspect { id } => Operation::Inspect { id },
@@ -274,7 +278,9 @@ fn main() -> Result<()> {
                     let supplied: Policy = read(policy)?;
                     if selected.is_some() {
                         anyhow::ensure!(
-                            serde_json::to_value(&supplied)? == serde_json::to_value(&api.policy)?,
+                            serde_json::to_value(clearings::project::normalize_grants(
+                                supplied.clone()
+                            )?)? == serde_json::to_value(&api.policy)?,
                             "project grants are fixed; use the configured grants file"
                         );
                     } else {
