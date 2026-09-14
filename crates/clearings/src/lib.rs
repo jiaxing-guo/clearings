@@ -5,6 +5,7 @@ pub mod contract;
 pub mod execute;
 mod isolation;
 pub mod mcp;
+pub mod project;
 pub mod store;
 mod transform;
 mod worker;
