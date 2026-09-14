@@ -174,10 +174,11 @@ impl Store {
                 let source =
                     self.propose_source(project, job, "create", packet, Some(&fingerprint))?;
                 self.check_job(project, job)?;
-                let version = self.submit(executable, &task_id, source.clone())?;
                 candidate_details = Some(
-                    json!({"version":version,"source_preview":source.chars().take(16_384).collect::<String>(),"source_truncated":source.chars().count()>16_384}),
+                    json!({"version":null,"source_preview":source.chars().take(16_384).collect::<String>(),"source_truncated":source.chars().count()>16_384}),
                 );
+                let version = self.submit(executable, &task_id, source)?;
+                candidate_details.as_mut().unwrap()["version"] = json!(version);
                 let report = self.evaluate(executable, &version)?;
                 let cases: Vec<Value> = report["cases"].as_array().context("missing evaluation cases")?.iter().map(|case| {
                     let outcome = case["run"]["outcome"].to_string();
@@ -237,7 +238,7 @@ impl Store {
             .flatten();
         let mut contracts = self.db.prepare("SELECT json_extract(body,'$.observation.contract'),MAX(seq) FROM activity WHERE project=?1 AND json_extract(body,'$.observation.contract') IS NOT NULL GROUP BY json_extract(body,'$.observation.contract') HAVING (?2 IS NULL OR MAX(seq)<?2) ORDER BY MAX(seq) DESC LIMIT 501")?;
         let mut selected = contracts.query(params![project, before])?;
-        let mut records = self.db.prepare("SELECT id,body FROM activity WHERE project=?1 AND json_extract(body,'$.observation.contract')=?2 ORDER BY seq DESC LIMIT 500")?;
+        let mut records = self.db.prepare("WITH ranked AS (SELECT id,body,seq,ROW_NUMBER() OVER (PARTITION BY body->'$.observation.case.input',body->'$.observation.case.expected' ORDER BY seq DESC) AS case_rank,ROW_NUMBER() OVER (PARTITION BY json_extract(body,'$.session') ORDER BY seq DESC) AS session_rank FROM activity WHERE project=?1 AND json_extract(body,'$.observation.contract')=?2), sampled AS (SELECT id,body,seq,ROW_NUMBER() OVER (ORDER BY case_rank,seq DESC) AS case_position,ROW_NUMBER() OVER (ORDER BY session_rank,seq DESC) AS session_position FROM ranked) SELECT id,body FROM sampled WHERE case_position<=250 OR session_position<=250 ORDER BY min(case_position,session_position),seq DESC LIMIT 500")?;
         let mut groups: BTreeMap<String, Group> = BTreeMap::new();
         let mut last = None;
         let mut more = false;

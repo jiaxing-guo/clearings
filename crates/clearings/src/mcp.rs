@@ -17,7 +17,7 @@ fn tool(
     required: Value,
     read_only: bool,
 ) -> Value {
-    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"background_cancel"),"openWorldHint":matches!(name,"run"|"reuse")}})
+    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"background_cancel"|"observe"|"activity"),"openWorldHint":matches!(name,"run"|"reuse")}})
 }
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
@@ -25,8 +25,8 @@ pub fn tools() -> Value {
         tool("record_observation","Record supplied workflow evidence only when automatic and record_conversations authorization are enabled. The host assigns this connection's session identity.",json!({"observation":{"type":"object"}}),json!(["observation"]),false),
         tool("background_cancel","Cancel current project background work at its next bounded phase boundary.",json!({}),json!([]),false),
         tool("background_jobs","Inspect background progress, errors and interruptions.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
-        tool("observe","Import new records only from host-authorized project trace sources.",json!({}),json!([]),false),
-        tool("activity","Inspect a page of imported project records, retaining unknown usage and provenance.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
+        tool("observe","Import new records from host-authorized project trace sources and expire old activity.",json!({}),json!([]),false),
+        tool("activity","Expire old activity, then inspect a page of imported project records with usage provenance.",json!({"before":{"type":"integer","minimum":1}}),json!([]),false),
         tool("performance","Inspect paged version outcomes and costs. Pass next_after as after; unknown savings remain unknown.",json!({"name":{"type":"string"},"after":id}),json!(["name"]),true),
         tool("discover", "Find saved routines by readable names in this project. Use next_after to continue.", json!({"after":{"type":"string"}}), json!([]), true),
         tool("save", "Save or revise a routine whose requirements were prepared first. Evaluates and activates only on success. Supply the previous active version for revision.", json!({"name":{"type":"string"},"source":{"type":"string","maxLength":262144},"expected_active":{"type":["string","null"]}}), json!(["name","source","expected_active"]), false),
