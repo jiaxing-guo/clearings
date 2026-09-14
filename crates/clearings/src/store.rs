@@ -90,6 +90,8 @@ impl Case {
 #[serde(deny_unknown_fields)]
 pub struct Task {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub evidence: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub project: Option<String>,
     #[serde(default, skip_serializing_if = "EvaluationMode::is_exact")]
     pub evaluation: EvaluationMode,
@@ -283,6 +285,13 @@ impl Store {
         Ok(value)
     }
     pub fn prepare_task(&self, task: &Task) -> Result<String> {
+        ensure!(
+            task.evidence.is_none(),
+            "observation evidence is host-owned"
+        );
+        self.prepare_host_task(task)
+    }
+    pub(crate) fn prepare_host_task(&self, task: &Task) -> Result<String> {
         task.validate()?;
         self.put("task", task)
     }

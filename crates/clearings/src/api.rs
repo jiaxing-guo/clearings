@@ -11,6 +11,24 @@ use std::path::PathBuf;
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
     ProjectStatus,
+    Routine {
+        name: String,
+    },
+    Manage {
+        name: String,
+        control: crate::management::Control,
+        expected_active: Option<String>,
+    },
+    Digest {
+        after: Option<i64>,
+    },
+    ModelUsage {
+        before: Option<i64>,
+    },
+    Prune {
+        #[serde(default)]
+        apply: bool,
+    },
     RecordObservation {
         session: String,
         observation: crate::activity::Observation,
@@ -114,6 +132,42 @@ impl Api {
             _ => {}
         }
         Ok(match op {
+            Operation::Routine { name } => self.store.inspect_named(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                &name,
+            )?,
+            Operation::Manage {
+                name,
+                control,
+                expected_active,
+            } => self.store.manage(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                &name,
+                control,
+                expected_active.as_deref(),
+            )?,
+            Operation::Digest { after } => self.store.digest_page(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                after,
+            )?,
+            Operation::ModelUsage { before } => self.store.model_usage(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                before,
+            )?,
+            Operation::Prune { apply } => self.store.prune(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                apply,
+            )?,
             Operation::RecordObservation {
                 session,
                 observation,
@@ -234,6 +288,7 @@ impl Api {
     }
 }
 pub fn failed(value: &Value) -> bool {
-    value.get("accepted") == Some(&Value::Bool(false))
+    value.get("status").and_then(Value::as_str) == Some("failed")
+        || value.get("accepted") == Some(&Value::Bool(false))
         || value["run"]["outcome"]["status"] == "failed"
 }

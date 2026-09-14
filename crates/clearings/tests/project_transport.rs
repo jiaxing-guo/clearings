@@ -375,6 +375,24 @@ fn named_mcp_lifecycle_and_name_cursor_round_trip() {
             .status
             .success()
     );
+    forged.as_object_mut().unwrap().remove("project");
+    forged["contract"]["name"] = json!("forged-evidence");
+    forged["evidence"] = json!({"kind":"supplied_observations","source_records":[{"id":"invented","provenance":"selected_session_record"}]});
+    std::fs::write(d.path().join("forged.json"), forged.to_string()).unwrap();
+    assert!(
+        !cli(d.path(), &["prepare-task", "forged.json"])
+            .status
+            .success()
+    );
+    assert!(
+        !cli(
+            d.path(),
+            &["--project", &p.id, "prepare-task", "forged.json"]
+        )
+        .status
+        .success()
+    );
+    assert!(store.named_task(&p.id, "forged-evidence", false).is_err());
 }
 
 #[test]

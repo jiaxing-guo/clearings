@@ -13,6 +13,8 @@ cargo clippy --locked --workspace --all-targets -- -D warnings
 cargo test --locked --workspace
 ```
 
+Release builds use one code generation unit with thin LTO. This avoids the undefined hidden generic symbols observed with the pinned compiler when linking the expanded runtime across multiple units.
+
 QuickJS and the TypeScript transformer are compiled into the binary. Installed users do not need either development toolchain. See [execution](execution.md) for platform isolation and supported interfaces.
 
 ## Setup
@@ -62,7 +64,7 @@ This removes the named documentation outputs, generated content and type caches.
 
 ## Scope of future code
 
-Keep one Rust application crate with concrete runtime, capability, routine, storage and interface modules. Add CLI/MCP operations and thin host integrations with their callers. Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer. Runtime tests must exercise the process and authorization boundaries as well as valid execution.
+Keep one Rust application crate with concrete runtime, capability, routine, storage and interface modules. Add CLI/MCP operations and thin host integrations with their callers. Avoid empty packages, compatibility shims for unrelated old APIs and shared utilities without a consumer. The repository sets `RUST_TEST_THREADS=4` because tests in one process share the deliberately bounded I/O pool; high-core machines must not exhaust that pool through unrelated test concurrency. Runtime tests must exercise the process and authorization boundaries as well as valid execution.
 
 ## Packages and complete workflows
 

@@ -17,11 +17,16 @@ fn tool(
     required: Value,
     read_only: bool,
 ) -> Value {
-    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"background_cancel"|"observe"|"activity"),"openWorldHint":matches!(name,"run"|"reuse")}})
+    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"manage"|"prune"|"background_cancel"|"observe"|"activity"),"openWorldHint":matches!(name,"run"|"reuse")}})
 }
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("routine","Inspect a named routine, source, requirements, acceptance and controls.",json!({"name":{"type":"string"}}),json!(["name"]),true),
+        tool("manage","Pause, resume, exclude, include, retire or roll back a named routine. Retire and rollback require the current expected_active version. Retirement keeps a tombstone and immutable evidence.",json!({"name":{"type":"string"},"control":{"enum":["pause","resume","exclude","include","retire","rollback"]},"expected_active":{"type":["string","null"]}}),json!(["name","control"]),false),
+        tool("digest","Read a bounded digest of background component changes and latest job status.",json!({"after":{"type":"integer","minimum":1}}),json!([]),true),
+        tool("model_usage","Inspect recorded provider usage, request status and conservative budget reservations. Never infer savings from missing usage.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
+        tool("prune","Preview expired observation and run record counts; apply deletion only when requested. Preserves immutable component evidence and budget accounting.",json!({"apply":{"type":"boolean"}}),json!([]),false),
         tool("record_observation","Record supplied workflow evidence only when automatic and record_conversations authorization are enabled. The host assigns this connection's session identity.",json!({"observation":{"type":"object"}}),json!(["observation"]),false),
         tool("background_cancel","Cancel current project background work at its next bounded phase boundary.",json!({}),json!([]),false),
         tool("background_jobs","Inspect background progress, errors and interruptions.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),

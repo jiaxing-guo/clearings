@@ -701,6 +701,138 @@ fn interrupted_measurement_resumes_past_excluded_routines_without_a_model_reques
         2
     );
 }
+
+#[test]
+fn cancellation_during_model_request_preserves_usage_without_promoting() {
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let cancel_db = db.clone();
+    let (url, handle) = model_with(
+        "export default async x=>({status:'completed',output:x*2})",
+        move || {
+            let conn = rusqlite::Connection::open(cancel_db).unwrap();
+            conn.execute(
+                "UPDATE background_jobs SET cancelled=1 WHERE status='running'",
+                [],
+            )
+            .unwrap();
+        },
+    );
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    for i in 1..=3 {
+        store
+            .record_observation(&p.id, &format!("session-{i}"), observation(i))
+            .unwrap();
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    handle.join().unwrap();
+    assert_eq!(result["status"], "failed");
+    assert!(store.named_task(&p.id, "double", false).is_err());
+    let usage = store.model_usage(&p.id, None).unwrap();
+    assert!(usage["reserved_microusd"].as_u64().unwrap() > 0);
+    assert_eq!(
+        usage["requests"][0]["usage"]["provenance"],
+        "provider_reported"
+    );
+}
+
+#[test]
+fn stale_ungranted_group_does_not_block_learning_or_retention() {
+    use clearings::store::digest;
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let mut s = Store::open(&db).unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let p = s
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    let valid_fingerprint = digest(&observation(1).contract).unwrap();
+    let mut bad:Observation=serde_json::from_value(json!({"contract":{"abi":1,"name":"stale","description":"stale read","input_schema":{},"output_schema":{},"capabilities":["files.read"]},"case":{"name":"one","input":1,"expected":{"status":"completed","output":1},"calls":[{"name":"files.read","input":{"root":"removed","path":"file"},"result":{"text":"x"}}]}})).unwrap();
+    for i in 0..10000 {
+        bad.contract.name = format!("stale-{i}");
+        if digest(&bad.contract).unwrap() < valid_fingerprint {
+            break;
+        }
+    }
+    assert!(digest(&bad.contract).unwrap() < valid_fingerprint);
+    for i in 1..=3 {
+        bad.case.input = json!(i);
+        bad.case.expected =
+            serde_json::from_value(json!({"status":"completed","output":i})).unwrap();
+        s.record_observation(&p.id, &format!("bad{i}"), bad.clone())
+            .unwrap();
+        s.record_observation(&p.id, &format!("good{i}"), observation(i))
+            .unwrap();
+    }
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    conn.execute(
+        "INSERT INTO activity(project,id,body,created_at) VALUES(?1,'expired','{}','2000-01-01')",
+        [&p.id],
+    )
+    .unwrap();
+    let result = s.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(result["status"], "completed", "{result}");
+    assert_eq!(result["report"]["learning"]["status"], "created");
+    assert_eq!(result["report"]["learning"]["blocked_groups"], 1);
+    handle.join().unwrap();
+    assert_eq!(
+        conn.query_row(
+            "SELECT count(*) FROM activity WHERE id='expired'",
+            [],
+            |r| r.get::<_, i64>(0)
+        )
+        .unwrap(),
+        0
+    );
+    assert_eq!(
+        conn.query_row(
+            "SELECT attempts FROM learning_groups WHERE status='blocked'",
+            [],
+            |r| r.get::<_, i64>(0)
+        )
+        .unwrap(),
+        0
+    );
+}
+#[test]
+fn acceptance_provenance_matches_the_distinct_cases_actually_frozen() {
+    let d = tempfile::tempdir().unwrap();
+    let mut s = Store::open(&d.path().join("state.db")).unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let p = s
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    for i in [2, 3] {
+        s.record_observation(&p.id, &format!("older{i}"), observation(i))
+            .unwrap();
+    }
+    for i in 0..6 {
+        s.record_observation(&p.id, &format!("duplicate{i}"), observation(1))
+            .unwrap();
+    }
+    let result = s.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["learning"]["status"], "created",
+        "{result}"
+    );
+    handle.join().unwrap();
+    let task = s.inspect_named(&p.id, "double").unwrap()["task"]["object"].clone();
+    let cases = task["cases"].as_array().unwrap();
+    let records = task["evidence"]["source_records"].as_array().unwrap();
+    assert_eq!(cases.len(), 3);
+    assert_eq!(records.len(), cases.len());
+    for (case, record) in cases.iter().zip(records) {
+        assert_eq!(record["case"], case["name"]);
+        assert_eq!(
+            case["name"],
+            format!("observed-{}", &record["id"].as_str().unwrap()[..12])
+        );
+    }
+}
+
 #[test]
 fn expired_improvement_trials_are_terminal_and_do_not_request_again() {
     use clearings::store::Task;

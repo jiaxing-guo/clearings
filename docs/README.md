@@ -16,3 +16,10 @@ The embedded execution boundary supports parameterized TypeScript, JSON schemas,
 | [Workflows](workflows.md)          | Three complete examples                          |
 | [Installation](installation.md)    | Packaged binaries and source builds              |
 | [History](history.md)              | Retrieve earlier implementations and experiments |
+
+## Project automation
+
+- [Project authorization](projects.md): identity, scope, model settings and spending limits.
+- [Activity records](activity.md): selected Codex/Claude usage and structured observations.
+- [Background execution](background.md): automatic creation, measured improvement and recovery.
+- [Management](management.md): inspection, controls, digests, retention and model usage.

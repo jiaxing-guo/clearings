@@ -32,6 +32,10 @@ impl Observation {
 struct Checkpoint {
     #[serde(default)]
     identity: Option<(u64, u64)>,
+    #[serde(default)]
+    headless_metadata: bool,
+    #[serde(default)]
+    headless_thread: Option<String>,
     offset: u64,
     prefix: String,
     prefix_len: usize,
@@ -146,7 +150,11 @@ fn usage(adapter: &str, value: &Value) -> Option<Value> {
     {
         (&value["payload"]["info"]["total_token_usage"], true)
     } else if adapter == "claude" {
-        (&value["message"]["usage"], false)
+        if value["type"] == "result" {
+            (&value["usage"], true)
+        } else {
+            (&value["message"]["usage"], false)
+        }
     } else {
         (&value["usage"], false)
     };
@@ -156,7 +164,7 @@ fn usage(adapter: &str, value: &Value) -> Option<Value> {
         return None;
     }
     Some(
-        json!({"input_tokens":input,"output_tokens":output,"cached_input_tokens":raw.get("cached_input_tokens").or_else(|| raw.get("cache_read_input_tokens")),"cache_creation_input_tokens":raw.get("cache_creation_input_tokens"),"reasoning_output_tokens":raw.get("reasoning_output_tokens"),"cumulative":cumulative,"provenance":"host_reported","adapter":adapter}),
+        json!({"input_tokens":input,"output_tokens":output,"cached_input_tokens":raw.get("cached_input_tokens").or_else(|| raw.get("cache_read_input_tokens")),"cache_creation_input_tokens":raw.get("cache_creation_input_tokens"),"reasoning_output_tokens":raw.get("reasoning_output_tokens"),"cumulative":cumulative,"provenance":"host_reported","adapter":adapter,"reported_cost_usd":value.get("total_cost_usd"),"reported_cost_kind":if value.get("total_cost_usd").is_some(){Some("client_estimate")}else{None},"model_breakdown":value.get("modelUsage")}),
     )
 }
 impl Store {
@@ -296,6 +304,16 @@ impl Store {
             }
             let value: Value = serde_json::from_slice(line)
                 .context("malformed complete trace line; repair it before retrying")?;
+            let metadata_ready = cp.headless_metadata;
+            cp.headless_metadata = false;
+            if value["type"] == "thread.started" {
+                let session = value["thread_id"].as_str().unwrap_or_default();
+                cp.headless_thread = Some(session.into());
+                if !metadata_ready || cp.session != session {
+                    cp.cwd.clear();
+                }
+                cp.session = session.into();
+            }
             if value["type"] == "clearings_workflow" {
                 for field in ["session_id", "cwd", "event_id"] {
                     ensure!(
@@ -309,6 +327,7 @@ impl Store {
                 );
             }
             if value["type"] == "session_meta" {
+                cp.headless_thread = None;
                 cp.session = value["payload"]["id"].as_str().unwrap_or_default().into();
                 cp.cwd = value["payload"]["cwd"].as_str().unwrap_or_default().into();
             }
@@ -316,10 +335,22 @@ impl Store {
                 .as_str()
                 .or_else(|| value["session_id"].as_str())
             {
+                if cp.session != s {
+                    cp.cwd.clear();
+                }
                 cp.session = s.into();
             }
             if let Some(s) = value["cwd"].as_str() {
                 cp.cwd = s.into();
+            }
+            if value["type"] == "clearings_session" {
+                cp.session = value["session_id"].as_str().unwrap_or_default().into();
+                cp.cwd = value["cwd"]
+                    .as_str()
+                    .filter(|cwd| Path::new(cwd).is_absolute())
+                    .unwrap_or_default()
+                    .into();
+                cp.headless_metadata = !cp.session.is_empty() && !cp.cwd.is_empty();
             }
             if cp.session.is_empty()
                 || cp.cwd.is_empty()
@@ -338,7 +369,16 @@ impl Store {
             } else {
                 None
             };
-            let usage = usage(&source.adapter, &value);
+            let usage = if source.adapter == "codex"
+                && cp
+                    .headless_thread
+                    .as_ref()
+                    .is_some_and(|thread| thread != &cp.session)
+            {
+                None
+            } else {
+                usage(&source.adapter, &value)
+            };
             if observation.is_none() && usage.is_none() {
                 continue;
             }

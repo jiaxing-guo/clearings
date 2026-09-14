@@ -6,6 +6,71 @@ use serde_json::json;
 use std::io::Write;
 
 #[test]
+fn appended_headless_streams_require_fresh_project_metadata() {
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("headless.jsonl");
+    std::fs::write(&path, "").unwrap();
+    let append = |records: Vec<serde_json::Value>| {
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&path)
+            .unwrap();
+        for record in records {
+            writeln!(file, "{record}").unwrap();
+        }
+    };
+    let meta = |session| json!({"type":"clearings_session","session_id":session,"cwd":d.path()});
+    let start = |session| json!({"type":"thread.started","thread_id":session});
+    let usage =
+        |input| json!({"type":"turn.completed","usage":{"input_tokens":input,"output_tokens":1}});
+    append(vec![
+        meta("one"),
+        start("one"),
+        usage(10),
+        start("two"),
+        usage(20),
+    ]);
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(
+            d.path(),
+            "P",
+            Settings {
+                trace_sources: vec![TraceSource {
+                    adapter: "codex".into(),
+                    path: path.clone(),
+                }],
+                ..Default::default()
+            },
+            None,
+        )
+        .unwrap();
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    append(vec![meta("two"), usage(30)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    append(vec![start("two"), usage(40)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
+    append(vec![meta("three"), start("three"), usage(50)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    append(vec![start("five"), meta("wrong-thread"), usage(99)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
+    append(vec![meta("five"), usage(80)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    append(vec![
+        json!({"type":"clearings_session","session_id":"four"}),
+        usage(60),
+    ]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
+    assert_eq!(
+        store.activity(&p.id, None).unwrap()["events"]
+            .as_array()
+            .unwrap()
+            .len(),
+        4
+    );
+}
+
+#[test]
 fn replacement_with_a_shared_header_replays_records_before_the_old_offset() {
     let d = tempfile::tempdir().unwrap();
     let path = d.path().join("session.jsonl");
@@ -296,6 +361,34 @@ fn performance_preserves_each_outcome_and_pages_all_versions() {
         .unwrap();
     assert_eq!(next["versions"].as_array().unwrap().len(), 1);
     assert!(next["next_after"].is_null());
+}
+
+#[test]
+fn documented_headless_usage_requires_project_metadata_and_keeps_estimated_cost_separate() {
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("headless.jsonl");
+    let meta = json!({"type":"clearings_session","session_id":"s","cwd":d.path()});
+    let result = json!({"type":"result","session_id":"s","usage":{"input_tokens":100,"output_tokens":10},"total_cost_usd":0.02});
+    std::fs::write(&path, format!("{result}\n{meta}\n{result}\n")).unwrap();
+    let mut s = Store::open(&d.path().join("state.db")).unwrap();
+    let p = s
+        .configure_project(
+            d.path(),
+            "P",
+            Settings {
+                trace_sources: vec![TraceSource {
+                    adapter: "claude".into(),
+                    path,
+                }],
+                ..Default::default()
+            },
+            None,
+        )
+        .unwrap();
+    assert_eq!(s.observe(&p.id).unwrap()["imported"], 1);
+    let usage = s.activity(&p.id, None).unwrap()["events"][0]["event"]["usage"].clone();
+    assert_eq!(usage["cumulative"], true);
+    assert_eq!(usage["reported_cost_kind"], "client_estimate");
 }
 
 #[test]

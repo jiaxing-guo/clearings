@@ -26,3 +26,11 @@ cargo build --release --locked --workspace
 ```
 
 The Node-based documentation toolchain is separate from the installed runtime. See [Development](development.md) for repository checks, [Workflows](workflows.md) for the three example routines, and [Agent integration](agents.md) to connect Codex or Claude Code.
+
+## Background process setup
+
+The same executable provides `background` and `background --once`; no additional language runtime is needed. Configure a project first, including the model endpoint and its credential environment variable. A service manager must supply that variable itself; it does not inherit an interactive shell's environment automatically.
+
+An editable [systemd user-service example](../integrations/services/clearings.service.example) is included in packages. Replace every path and `PROJECT_ID` before using it. On macOS, use a LaunchAgent with the same argument vector, or schedule `background --once` through an existing timer. Creating a package does not install or enable a service. Start one foreground cycle first and inspect `background-jobs`, `digest` and `model-usage` before enabling unattended runs.
+
+The repository does not publish a package or install client configuration as part of these checks. See [project settings](projects.md) and [management](management.md) for operation and recovery.

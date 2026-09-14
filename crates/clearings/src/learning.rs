@@ -12,7 +12,7 @@ use std::{
     path::Path,
 };
 struct Group {
-    observations: Vec<(String, String, Observation)>,
+    observations: Vec<(String, String, Observation, Value)>,
 }
 impl Store {
     pub fn record_observation(
@@ -69,6 +69,7 @@ impl Store {
         self.check_job(project, job)?;
         let groups = self.observation_groups(project)?;
         let mut skipped = vec![];
+        let mut blocked_groups = 0;
         let mut rejected_groups = 0;
         let mut deferred_groups = 0;
         let mut deferred_result = None;
@@ -103,11 +104,13 @@ impl Store {
                 if group.observations.len() < p.settings.min_occurrences {
                     continue;
                 }
-                let sessions: BTreeSet<_> = group.observations.iter().map(|(s, _, _)| s).collect();
+                let sessions: BTreeSet<_> =
+                    group.observations.iter().map(|(s, _, _, _)| s).collect();
                 if sessions.len() < p.settings.min_occurrences {
                     continue;
                 }
                 let mut task = Task {
+                    evidence: None,
                     project: Some(project.into()),
                     evaluation: EvaluationMode::ReadOnlyBehavior,
                     contract: first.contract.clone(),
@@ -124,7 +127,8 @@ impl Store {
                 task.contract.limits.wall_ms = task.contract.limits.wall_ms.min(5000);
                 let mut inputs = BTreeMap::new();
                 let mut conflict = false;
-                for (_, id, o) in &group.observations {
+                let mut source_records = vec![];
+                for (_, id, o, provenance) in &group.observations {
                     let key = digest(&o.case.input)?;
                     if let Some(old) = inputs.insert(key, o.case.expected.clone()) {
                         if old != o.case.expected {
@@ -137,6 +141,8 @@ impl Store {
                     if task.cases.len() < 8 {
                         let mut case = o.case.clone();
                         case.name = format!("observed-{}", &id[..12]);
+                        source_records
+                            .push(json!({"id":id,"provenance":provenance,"case":case.name}));
                         task.cases.push(case);
                     }
                 }
@@ -149,6 +155,9 @@ impl Store {
                     continue;
                 }
                 // Freeze all cases first. Source author receives no held-out input or expected result.
+                task.evidence = Some(
+                    json!({"kind":"supplied_observations","source_records":source_records,"withheld_case":task.cases.last().map(|c|&c.name),"claim":"Agreement on supplied cases, not authenticated or universal correctness."}),
+                );
                 task
             };
             let validation = (|| -> Result<()> {
@@ -165,8 +174,22 @@ impl Store {
                 }
                 continue;
             }
-            let task_id = self.prepare_task(&task)?;
+            let task_id = self.prepare_host_task(&task)?;
             self.db.execute("INSERT INTO learning_groups(project,fingerprint,task,status,attempts) VALUES(?1,?2,?3,'pending',0) ON CONFLICT(project,fingerprint) DO NOTHING",params![project,fingerprint,task_id])?;
+            if !task.cases.iter().flat_map(|c| &c.calls).all(|call| {
+                call.input["root"]
+                    .as_str()
+                    .is_some_and(|root| p.settings.grants.roots.contains_key(root))
+            }) {
+                let report = json!({"name":task.contract.name,"reason":"observed workflow requires an ungranted file root"});
+                self.db.execute("UPDATE learning_groups SET status='blocked',report=?3 WHERE project=?1 AND fingerprint=?2",params![project,fingerprint,report.to_string()])?;
+                blocked_groups += 1;
+                if skipped.len() < 32 {
+                    skipped.push(report);
+                }
+                continue;
+            }
+
             let mut candidate_details = None;
             let result = (|| -> Result<Value> {
                 let packet = json!({"contract":task.contract,"examples":&task.cases[..task.cases.len()-1],"purpose":"Create a parameterized routine; one additional recorded case is withheld."});
@@ -224,11 +247,11 @@ impl Store {
                 continue;
             }
             return Ok(
-                json!({"status":status,"result":value,"rejected_groups":rejected_groups,"deferred_groups":deferred_groups,"skipped":skipped}),
+                json!({"status":status,"result":value,"blocked_groups":blocked_groups,"rejected_groups":rejected_groups,"deferred_groups":deferred_groups,"skipped":skipped}),
             );
         }
         Ok(
-            json!({"status":if deferred_result.is_some() {"deferred"} else {"no_eligible_observations"},"result":deferred_result,"rejected_groups":rejected_groups,"deferred_groups":deferred_groups,"skipped":skipped}),
+            json!({"status":if deferred_result.is_some() {"deferred"} else {"no_eligible_observations"},"result":deferred_result,"blocked_groups":blocked_groups,"rejected_groups":rejected_groups,"deferred_groups":deferred_groups,"skipped":skipped}),
         )
     }
     fn observation_groups(&self, project: &str) -> Result<BTreeMap<String, Group>> {
@@ -284,6 +307,7 @@ impl Store {
                             .into(),
                         row.get(0)?,
                         o,
+                        v["provenance"].clone(),
                     ));
             }
             last = Some(contract.get::<_, i64>(1)?);

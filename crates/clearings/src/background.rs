@@ -115,13 +115,14 @@ impl Store {
         executable: &std::path::Path,
     ) -> Result<Value> {
         self.check_job(project, job)?;
+        let retention = self.prune(project, true)?;
         let observation = self.observe(project)?;
         self.check_job(project, job)?;
         if observation["errors"]
             .as_array()
             .is_some_and(|errors| !errors.is_empty())
         {
-            return Ok(json!({"observation":observation}));
+            return Ok(json!({"observation":observation,"retention":retention}));
         }
         let learning = self.learn(project, job, executable)?;
         let improvement = if learning["status"] == "no_eligible_observations" {
@@ -130,7 +131,9 @@ impl Store {
             json!({"status":"deferred_after_creation"})
         };
         self.check_job(project, job)?;
-        Ok(json!({"observation":observation,"learning":learning,"improvement":improvement}))
+        Ok(
+            json!({"observation":observation,"learning":learning,"improvement":improvement,"retention":retention}),
+        )
     }
     pub(crate) fn check_job(&self, project: &str, job: i64) -> Result<()> {
         let (revision, cancelled, status, started): (u64, bool, String, i64) = self.db.query_row(
