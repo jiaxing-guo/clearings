@@ -1,0 +1,16 @@
+{
+  "rows": [
+    {
+      "name": " Ada ",
+      "email": " ADA@example.com "
+    },
+    {
+      "name": "Different",
+      "email": "ada@example.com"
+    },
+    {
+      "name": " Bob",
+      "email": "bob@example.com"
+    }
+  ]
+}

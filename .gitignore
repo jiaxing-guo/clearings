@@ -19,3 +19,4 @@ website/public/reference.json
 .clearings/
 runs/
 benchmark-checkouts/
+__pycache__/
