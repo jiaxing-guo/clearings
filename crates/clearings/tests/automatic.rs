@@ -379,6 +379,14 @@ fn budget_refusal_preserves_attempts_until_an_authorized_request_is_reserved() {
             .unwrap(),
         0
     );
+    let frozen: String = conn
+        .query_row("SELECT task FROM learning_groups", [], |r| r.get(0))
+        .unwrap();
+    // New duplicate inputs displace the original cases from the bounded live sample.
+    for i in 0..500 {
+        s.record_observation(&p.id, &format!("duplicate-{i}"), observation(1))
+            .unwrap();
+    }
     options.daily_budget_microusd = 10000;
     s.configure_project(d.path(), "P", options, Some(1))
         .unwrap();
@@ -386,6 +394,12 @@ fn budget_refusal_preserves_attempts_until_an_authorized_request_is_reserved() {
     assert_eq!(
         result["report"]["learning"]["status"], "created",
         "{result}"
+    );
+    assert_eq!(
+        conn.query_row("SELECT task FROM learning_groups", [], |r| r
+            .get::<_, String>(0))
+            .unwrap(),
+        frozen
     );
     handle.join().unwrap();
     assert_eq!(
