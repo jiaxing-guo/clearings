@@ -22,6 +22,7 @@ fn tool(
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("project_status", "Inspect this server's project authorization and current settings. Settings can only be changed through the host CLI.", json!({}), json!([]), true),
         tool("list","List a bounded task page and active versions. Pass next_after as after to continue.",json!({"after":id}),json!([]),true),
         tool("inspect","Inspect a task or version, source and recorded evaluation.",json!({"id":id}),json!(["id"]),true),
         tool("sdk","Read the bundled TypeScript interface and a task document example before authoring.",json!({}),json!([]),true),

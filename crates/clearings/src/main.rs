@@ -21,11 +21,25 @@ struct Cli {
     /// Local SQLite file. Use a private directory; MCP requires this flag explicitly.
     #[arg(long, global = true)]
     store: Option<PathBuf>,
+    /// Select a project configured with project-configure.
+    #[arg(long, global = true)]
+    project: Option<String>,
     #[command(subcommand)]
     command: Action,
 }
 #[derive(Subcommand)]
 enum Action {
+    ProjectConfigure {
+        #[arg(long)]
+        root: PathBuf,
+        #[arg(long)]
+        name: String,
+        #[arg(long)]
+        settings: PathBuf,
+        #[arg(long)]
+        expected_revision: Option<u64>,
+    },
+    ProjectStatus,
     RunSource {
         #[arg(long)]
         source: PathBuf,
@@ -145,20 +159,50 @@ fn main() -> Result<()> {
             Ok(())
         }
         action => {
-            let store =
+            let mut store =
                 Store::open(&cli.store.ok_or_else(|| {
                     anyhow::anyhow!("provide --store /path/to/private/state.db")
                 })?)?;
+            if let Action::ProjectConfigure {
+                root,
+                name,
+                settings,
+                expected_revision,
+            } = action
+            {
+                let result =
+                    store.configure_project(&root, &name, read(settings)?, expected_revision)?;
+                println!("{}", serde_json::to_string_pretty(&result)?);
+                return Ok(());
+            }
+            let selected = cli
+                .project
+                .as_deref()
+                .map(|id| store.project(id))
+                .transpose()?;
             let mut api = Api {
                 store,
-                policy: Policy::default(),
+                policy: selected
+                    .as_ref()
+                    .map(|p| p.settings.grants.clone())
+                    .unwrap_or_default(),
+                project: cli.project,
                 executable,
             };
             let operation = match action {
                 Action::Mcp { policy } => {
-                    api.policy = read(policy)?;
+                    let supplied: Policy = read(policy)?;
+                    if selected.is_some() {
+                        anyhow::ensure!(
+                            serde_json::to_value(&supplied)? == serde_json::to_value(&api.policy)?,
+                            "project grants are fixed; use the configured grants file"
+                        );
+                    } else {
+                        api.policy = supplied;
+                    }
                     return clearings::mcp::serve(api);
                 }
+                Action::ProjectStatus => Operation::ProjectStatus,
                 Action::List { after } => Operation::List { after },
                 Action::Inspect { id } => Operation::Inspect { id },
                 Action::PrepareTask { file } => Operation::PrepareTask { task: read(file)? },
@@ -186,7 +230,15 @@ fn main() -> Result<()> {
                     input,
                     policy,
                 } => {
-                    api.policy = read(policy)?;
+                    let supplied: Policy = read(policy)?;
+                    if selected.is_some() {
+                        anyhow::ensure!(
+                            serde_json::to_value(&supplied)? == serde_json::to_value(&api.policy)?,
+                            "project grants are fixed; use the configured grants file"
+                        );
+                    } else {
+                        api.policy = supplied;
+                    }
                     Operation::Run {
                         task,
                         input: read::<Value>(input)?,
