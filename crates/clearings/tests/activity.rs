@@ -79,3 +79,104 @@ fn claude_message_usage_is_deduplicated_and_missing_usage_is_not_zero() {
         10
     );
 }
+
+#[test]
+fn adapter_changes_replay_and_retention_and_cursors_are_scoped() {
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("trace.jsonl");
+    let event = json!({"sessionId":"s","cwd":d.path(),"message":{"id":"m","usage":{"input_tokens":3,"output_tokens":4}}});
+    std::fs::write(&path, format!("{event}\n")).unwrap();
+    let mut s = Store::open(&d.path().join("state.db")).unwrap();
+    let mut settings = Settings {
+        trace_sources: vec![TraceSource {
+            adapter: "codex".into(),
+            path: path.clone(),
+        }],
+        ..Default::default()
+    };
+    let p = s
+        .configure_project(d.path(), "P", settings.clone(), None)
+        .unwrap();
+    assert_eq!(s.observe(&p.id).unwrap()["imported"], 0);
+    settings.trace_sources[0].adapter = "claude".into();
+    s.configure_project(d.path(), "P", settings, Some(1))
+        .unwrap();
+    assert_eq!(s.observe(&p.id).unwrap()["imported"], 1);
+    assert!(s.activity(&p.id, Some(0)).is_err());
+    assert!(s.activity(&p.id, Some(-1)).is_err());
+    let conn = rusqlite::Connection::open(d.path().join("state.db")).unwrap();
+    conn.execute(
+        "UPDATE activity SET created_at='2000-01-01' WHERE project=?1",
+        [&p.id],
+    )
+    .unwrap();
+    assert_eq!(s.observe(&p.id).unwrap()["expired"], 1);
+    assert_eq!(s.activity(&p.id, None).unwrap()["events"], json!([]));
+    let observation = json!({"contract":{"abi":1,"name":"identity","description":"identity","input_schema":{},"output_schema":{}},"case":{"name":"case","input":1,"expected":{"status":"completed","output":1}}});
+    for field in ["session_id", "cwd", "event_id"] {
+        let mut workflow = json!({"type":"clearings_workflow","session_id":"s","cwd":d.path(),"event_id":"w","observation":observation});
+        workflow.as_object_mut().unwrap().remove(field);
+        std::fs::write(&path, format!("{event}\n{workflow}\n")).unwrap();
+        assert!(
+            !s.observe(&p.id).unwrap()["errors"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
+    }
+}
+
+#[test]
+fn performance_preserves_each_outcome_and_pages_all_versions() {
+    use clearings::store::Task;
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let mut s = Store::open(&db).unwrap();
+    let p = s
+        .configure_project(d.path(), "P", Settings::default(), None)
+        .unwrap();
+    let t:Task=serde_json::from_value(json!({"contract":{"abi":1,"name":"identity","description":"identity","input_schema":{},"output_schema":{}},"cases":[{"name":"case","input":1,"expected":{"status":"completed","output":1}}]})).unwrap();
+    let task = s.prepare_named(&p.id, t, "user").unwrap();
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    for i in 0..101 {
+        let version = format!("{i:064x}");
+        conn.execute(
+            "INSERT INTO objects(id,kind,body) VALUES(?1,'version',?2)",
+            rusqlite::params![version, json!({"task":task}).to_string()],
+        )
+        .unwrap();
+        for status in ["completed", "needs_agent", "not_applicable", "failed"] {
+            conn.execute(
+                "INSERT INTO runs(version,input_digest,report) VALUES(?1,'input',?2)",
+                rusqlite::params![
+                    version,
+                    json!({"outcome":{"status":status},"elapsed_ms":1,"capability_calls":2})
+                        .to_string()
+                ],
+            )
+            .unwrap();
+        }
+    }
+    let page = s.performance(&p.id, "identity").unwrap();
+    assert_eq!(page["versions"].as_array().unwrap().len(), 100);
+    for status in ["completed", "needs_agent", "not_applicable", "failed"] {
+        assert_eq!(page["versions"][0][status], 1);
+    }
+    let args = json!({"name":"identity","after":page["next_after"]});
+    let tools = clearings::mcp::tools();
+    let schema = &tools["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["name"] == "clearings_performance")
+        .unwrap()["inputSchema"];
+    jsonschema::validator_for(schema)
+        .unwrap()
+        .validate(&args)
+        .unwrap();
+    let next = s
+        .performance_page(&p.id, "identity", page["next_after"].as_str())
+        .unwrap();
+    assert_eq!(next["versions"].as_array().unwrap().len(), 1);
+    assert!(next["next_after"].is_null());
+}

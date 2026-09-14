@@ -84,3 +84,39 @@ fn behavior_evaluation_allows_fewer_reads_but_rejects_unrecorded_reads() {
     t.cases[0].calls[1].result = json!({"text":"changed"});
     assert!(s.prepare_task(&t).is_err());
 }
+
+#[test]
+fn concurrent_registration_returns_only_the_registered_requirements() {
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let mut s = Store::open(&db).unwrap();
+    let p = s
+        .configure_project(d.path(), "P", Settings::default(), None)
+        .unwrap();
+    let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
+    let handles: Vec<_> = (0..2)
+        .map(|i| {
+            let db = db.clone();
+            let id = p.id.clone();
+            let barrier = barrier.clone();
+            std::thread::spawn(move || {
+                let s = Store::open(&db).unwrap();
+                let mut t = task();
+                t.contract.description = format!("requirements {i}");
+                barrier.wait();
+                s.prepare_named(&id, t, "user")
+            })
+        })
+        .collect();
+    let results: Vec<_> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+    assert_eq!(results.iter().filter(|r| r.is_ok()).count(), 1);
+    let winner = results.into_iter().find_map(Result::ok).unwrap();
+    assert_eq!(s.named_task(&p.id, "Double", false).unwrap(), winner);
+    let mut forged = task();
+    forged.project = Some(p.id.clone());
+    forged.contract.description = "forged".into();
+    let id = s.prepare_task(&forged).unwrap();
+    assert!(s.owns_task(&p.id, &id).is_err());
+    assert!(s.check_task_scope(None, &winner).is_err());
+    assert_eq!(s.list().unwrap()["tasks"], json!([]));
+}

@@ -176,6 +176,18 @@ impl Broker for Fixtures<'_> {
     }
 }
 
+struct FailureTrackingBroker {
+    inner: LocalBroker,
+    failed: bool,
+}
+impl Broker for FailureTrackingBroker {
+    fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value> {
+        let result = self.inner.call(name, input, remaining);
+        self.failed |= result.is_err();
+        result
+    }
+}
+
 pub struct Store {
     pub(crate) db: Connection,
 }
@@ -199,6 +211,7 @@ impl Store {
             CREATE TABLE IF NOT EXISTS background_jobs(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),revision INTEGER NOT NULL,started INTEGER NOT NULL,status TEXT NOT NULL,cancelled INTEGER NOT NULL DEFAULT 0,report TEXT NOT NULL DEFAULT '{}');
             CREATE TABLE IF NOT EXISTS budgets(project TEXT NOT NULL REFERENCES projects(id),day INTEGER NOT NULL,reserved INTEGER NOT NULL,PRIMARY KEY(project,day));
             CREATE TABLE IF NOT EXISTS model_requests(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),job INTEGER NOT NULL REFERENCES background_jobs(id),purpose TEXT NOT NULL,reserved INTEGER NOT NULL,status TEXT NOT NULL,usage TEXT);
+            CREATE TABLE IF NOT EXISTS learning_scan(project TEXT PRIMARY KEY REFERENCES projects(id),before_seq INTEGER);
             CREATE TABLE IF NOT EXISTS learning_groups(project TEXT NOT NULL REFERENCES projects(id),fingerprint TEXT NOT NULL,task TEXT NOT NULL REFERENCES objects(id),status TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,report TEXT NOT NULL DEFAULT '{}',PRIMARY KEY(project,fingerprint));
             CREATE TABLE IF NOT EXISTS component_changes(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),task TEXT NOT NULL REFERENCES objects(id),version TEXT NOT NULL REFERENCES objects(id),previous TEXT,reason TEXT NOT NULL,job INTEGER REFERENCES background_jobs(id),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
             CREATE TABLE IF NOT EXISTS improvement_trials(project TEXT NOT NULL REFERENCES projects(id),baseline TEXT NOT NULL REFERENCES objects(id),candidate TEXT,status TEXT NOT NULL,report TEXT NOT NULL DEFAULT '{}',PRIMARY KEY(project,baseline));
@@ -406,30 +419,50 @@ impl Store {
         );
         let task: Task = self.get("task", task_id)?;
         if let Some(project) = &task.project {
-            self.named_task(project, &task.contract.name, true)?;
+            ensure!(
+                self.named_task(project, &task.contract.name, true)? == task_id,
+                "task is not the registered routine"
+            );
+            ensure!(
+                serde_json::to_value(crate::project::normalize_grants(policy.clone())?)?
+                    == serde_json::to_value(self.project(project)?.settings.grants)?,
+                "project grants are fixed"
+            );
         }
         let input_digest = digest(&input)?;
-        let run = match LocalBroker::new(&task.contract, policy) {
-            Ok(mut broker) => execute::run(
-                executable,
-                &task.contract,
-                &version.prepared,
-                input,
-                &mut broker,
+        let (run, candidate_failure) = match LocalBroker::new(&task.contract, policy) {
+            Ok(inner) => {
+                let mut broker = FailureTrackingBroker {
+                    inner,
+                    failed: false,
+                };
+                let run = execute::run(
+                    executable,
+                    &task.contract,
+                    &version.prepared,
+                    input,
+                    &mut broker,
+                );
+                let candidate_failure = !broker.failed
+                    && matches!(&run.outcome,Outcome::Failed{code,..} if code=="EXECUTION");
+                (run, candidate_failure)
+            }
+            Err(error) => (
+                Run {
+                    outcome: Outcome::failed("POLICY", error),
+                    elapsed_ms: 0,
+                    capability_calls: 0,
+                    model_usage: None,
+                },
+                false,
             ),
-            Err(error) => Run {
-                outcome: Outcome::failed("POLICY", error),
-                elapsed_ms: 0,
-                capability_calls: 0,
-                model_usage: None,
-            },
         };
         self.db.execute(
             "INSERT INTO runs(version,input_digest,report) VALUES(?1,?2,?3)",
             params![id, input_digest, serde_json::to_string(&run)?],
         )?;
         let run_id = self.db.last_insert_rowid();
-        let recovery = if matches!(run.outcome, Outcome::Failed { .. }) {
+        let recovery = if candidate_failure {
             self.recover_regression(task_id, &id)?
         } else {
             None
@@ -451,7 +484,7 @@ impl Store {
         let mut stmt = self.db.prepare(
             "SELECT objects.id,json_extract(body,'$.contract.name'),json_extract(body,'$.contract.description'),active.version
              FROM objects LEFT JOIN active ON active.task=objects.id
-             WHERE kind='task' AND (?1 IS NULL OR objects.id > ?1) ORDER BY objects.id LIMIT 101",
+             WHERE kind='task' AND json_extract(body,'$.project') IS NULL AND (?1 IS NULL OR objects.id > ?1) ORDER BY objects.id LIMIT 101",
         )?;
         let mut rows = stmt.query([after])?;
         let mut tasks = Vec::new();
@@ -501,7 +534,7 @@ impl Store {
         let mut stmt = self.db.prepare(
             "SELECT id,version,input_digest,length(CAST(report AS BLOB)),
              CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at
-             FROM runs WHERE (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
+             FROM runs WHERE EXISTS (SELECT 1 FROM objects v JOIN objects t ON t.id=json_extract(v.body,'$.task') WHERE v.id=runs.version AND json_extract(t.body,'$.project') IS NULL) AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
         )?;
         let mut rows = stmt.query(params![before, PAGE_BYTES])?;
         let mut runs = Vec::new();

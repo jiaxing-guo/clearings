@@ -25,6 +25,7 @@ pub enum Operation {
     },
     Performance {
         name: String,
+        after: Option<String>,
     },
     Discover {
         after: Option<String>,
@@ -80,27 +81,34 @@ pub struct Api {
 impl Api {
     pub fn call(&mut self, op: Operation) -> Result<Value> {
         if let Some(project) = &self.project {
-            self.store.project(project)?;
-            match &op {
-                Operation::Submit { task, .. }
-                | Operation::Run { task, .. }
-                | Operation::Deactivate { task, .. } => self.store.owns_task(project, task)?,
-                Operation::Evaluate { version } | Operation::Activate { version, .. } => {
-                    self.store.owns_version(project, version)?
-                }
-                Operation::Inspect { id } => {
-                    let inspected = self.store.inspect(id)?;
-                    if inspected["kind"] == "version" {
-                        self.store.owns_version(project, id)?;
-                    } else {
-                        self.store.owns_task(project, id)?;
-                    }
-                }
-                Operation::Runs { .. } => {
-                    anyhow::bail!("use project performance records for project-scoped history")
-                }
-                _ => {}
+            self.policy = self.store.project(project)?.settings.grants;
+        }
+        match &op {
+            Operation::Submit { task, .. }
+            | Operation::Run { task, .. }
+            | Operation::Deactivate { task, .. } => {
+                self.store.check_task_scope(self.project.as_deref(), task)?
             }
+            Operation::Evaluate { version } | Operation::Activate { version, .. } => self
+                .store
+                .check_version_scope(self.project.as_deref(), version)?,
+            Operation::Inspect { id } => {
+                let inspected = self.store.inspect(id)?;
+                if inspected["kind"] == "version" {
+                    self.store
+                        .check_version_scope(self.project.as_deref(), id)?;
+                } else {
+                    self.store.check_task_scope(self.project.as_deref(), id)?;
+                }
+            }
+            Operation::PrepareTask { task } => anyhow::ensure!(
+                task.project.is_none(),
+                "project ownership is host-assigned; omit project from task input"
+            ),
+            Operation::Runs { .. } if self.project.is_some() => {
+                anyhow::bail!("use project performance records for project-scoped history")
+            }
+            _ => {}
         }
         Ok(match op {
             Operation::RecordObservation {
@@ -135,11 +143,12 @@ impl Api {
                     .ok_or_else(|| anyhow::anyhow!("select --project"))?,
                 before,
             )?,
-            Operation::Performance { name } => self.store.performance(
+            Operation::Performance { name, after } => self.store.performance_page(
                 self.project
                     .as_deref()
                     .ok_or_else(|| anyhow::anyhow!("select --project"))?,
                 &name,
+                after.as_deref(),
             )?,
             Operation::Discover { after } => self.store.named_list(
                 self.project

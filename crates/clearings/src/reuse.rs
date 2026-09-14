@@ -9,12 +9,30 @@ use serde_json::{Value, json};
 use std::path::Path;
 
 impl Store {
+    pub fn check_task_scope(&self, project: Option<&str>, id: &str) -> Result<()> {
+        if let Some(project) = project {
+            return self.owns_task(project, id);
+        }
+        let task: Task = self.get("task", id)?;
+        ensure!(
+            task.project.is_none(),
+            "select the owning --project for this task"
+        );
+        Ok(())
+    }
+    pub fn check_version_scope(&self, project: Option<&str>, id: &str) -> Result<()> {
+        let version: Version = self.get("version", id)?;
+        self.check_task_scope(project, &version.task)
+    }
     pub fn prepare_named(&self, project: &str, mut task: Task, origin: &str) -> Result<String> {
         self.project(project)?;
         task.project = Some(project.to_owned());
         let id = self.prepare_task(&task)?;
-        let current: Option<String> = self
-            .db
+        let tx = rusqlite::Transaction::new_unchecked(
+            &self.db,
+            rusqlite::TransactionBehavior::Immediate,
+        )?;
+        let current: Option<String> = tx
             .query_row(
                 "SELECT task FROM project_routines WHERE project=?1 AND name=?2",
                 params![project, task.contract.name],
@@ -25,16 +43,22 @@ impl Store {
             current.as_deref().is_none_or(|v| v == id),
             "this name has different requirements; use a new name to preserve its existing behavior"
         );
-        self.db.execute(
+        tx.execute(
             "INSERT OR IGNORE INTO project_routines(project,name,task,origin) VALUES(?1,?2,?3,?4)",
             params![project, task.contract.name, id, origin],
         )?;
+        tx.commit()?;
         Ok(id)
     }
     pub fn owns_task(&self, project: &str, task: &str) -> Result<()> {
+        let registered: bool = self.db.query_row(
+            "SELECT EXISTS(SELECT 1 FROM project_routines WHERE project=?1 AND task=?2)",
+            params![project, task],
+            |r| r.get(0),
+        )?;
         let task: Task = self.get("task", task)?;
         ensure!(
-            task.project.as_deref() == Some(project),
+            registered && task.project.as_deref() == Some(project),
             "task belongs to a different project"
         );
         Ok(())

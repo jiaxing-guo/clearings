@@ -41,9 +41,11 @@ Executing a routine against fresh inputs is different from caching its output. C
 
 ## User-directed learning
 
+Project-scoped observation scheduling and structured-observation synthesis are implemented. A completed cycle reports whether learning created a component, deferred work or found no eligible observations.
+
 The active host agent supplies selected task evidence and authors source using a bundled SDK. Clearings provides the execution and evaluation lifecycle through the same interface in each host. Historical transcript access is limited to user-selected available evidence. Reconstructed summaries are not exact tool recordings.
 
-The initial product runs on demand. Always-on transcript scanning, scheduled background synthesis, remote workers and routine distribution are later extensions. No separate model API key is needed merely to submit source authored by the existing agent.
+On-demand teaching needs no separate model connection. Authorized background cycles import selected records, create components and measure candidate improvements. Remote workers and cross-project routine distribution remain outside this version.
 
 ## Success and limits
 
