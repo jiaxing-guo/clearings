@@ -15,3 +15,7 @@ For behavioral observation, an integration can append a `clearings_workflow` rec
 [Claude Code programmatic JSON output](https://code.claude.com/docs/en/headless) provides usage and client-estimated cost metadata; its stream JSON `result` usage is retained as cumulative. Message-level log counters are also supported, but their completeness depends on the client version. [Claude's usage documentation](https://code.claude.com/docs/en/costs) distinguishes local estimates from authoritative billing. Source records, direct model response counters and local budget reservations remain separate in Clearings.
 
 A configured project's `model-usage` reports background response counters when provided. If the surrounding host does not expose a token meter, Clearings leaves its conversation usage unknown.
+
+Imports expire raw project activity using the configured retention period. Checkpoints include adapter identity, so changing adapters replays the selected file. File traversal and reads use held directory/file handles and reject symlinks. Structured workflow records require their own nonempty session, working-directory and event identifiers.
+
+`performance NAME --after VERSION` continues the preceding `next_after` cursor. Each version reports separate completed, handoff (`needs_agent`), not-applicable and failed counts.

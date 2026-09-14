@@ -27,17 +27,17 @@ pub fn tools() -> Value {
         tool("digest","Read a bounded digest of background component changes and latest job status.",json!({"after":{"type":"integer","minimum":1}}),json!([]),true),
         tool("model_usage","Inspect recorded provider usage, request status and conservative budget reservations. Never infer savings from missing usage.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
         tool("prune","Preview expired observation and run record counts; apply deletion only when requested. Preserves immutable component evidence and budget accounting.",json!({"apply":{"type":"boolean"}}),json!([]),false),
-        tool("record_observation","Record completed, user-authorized project work for background reuse. Supply actual input/output and capability fixtures, never invented examples. Requires automatic project authorization. Does not save or activate a routine.",json!({"session":{"type":"string","maxLength":200},"observation":{"type":"object","required":["contract","case"],"properties":{"contract":{"type":"object"},"case":{"type":"object"}},"additionalProperties":false}}),json!(["session","observation"]),false),
+        tool("record_observation","Record supplied workflow evidence only when automatic and record_conversations authorization are enabled. The host assigns this connection's session identity.",json!({"observation":{"type":"object"}}),json!(["observation"]),false),
         tool("background_cancel","Cancel current project background work at its next bounded phase boundary.",json!({}),json!([]),false),
         tool("background_jobs","Inspect background progress, errors and interruptions.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
         tool("observe","Import new records only from host-authorized project trace sources.",json!({}),json!([]),false),
         tool("activity","Inspect a page of imported project records, retaining unknown usage and provenance.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
-        tool("performance","Inspect version-linked execution outcomes and costs; unknown savings remain unknown.",json!({"name":{"type":"string"}}),json!(["name"]),true),
+        tool("performance","Inspect paged version outcomes and costs. Pass next_after as after; unknown savings remain unknown.",json!({"name":{"type":"string"},"after":id}),json!(["name"]),true),
         tool("discover", "Find saved routines by readable names in this project. Use next_after to continue.", json!({"after":{"type":"string"}}), json!([]), true),
         tool("save", "Save or revise a routine whose requirements were prepared first. Evaluates and activates only on success. Supply the previous active version for revision.", json!({"name":{"type":"string"},"source":{"type":"string","maxLength":262144},"expected_active":{"type":["string","null"]}}), json!(["name","source","expected_active"]), false),
         tool("reuse", "Run a named saved routine on fresh input. A handoff or failure means continue ordinary agent work.", json!({"name":{"type":"string"},"input":{}}), json!(["name","input"]), false),
         tool("project_status", "Inspect this server's project authorization and current settings. Settings can only be changed through the host CLI.", json!({}), json!([]), true),
-        tool("list","List a bounded task page and active versions. Pass next_after as after to continue.",json!({"after":id}),json!([]),true),
+        tool("list","List project routine names or legacy task IDs. Pass next_after as after to continue.",json!({"after":{"type":"string","minLength":1,"maxLength":80}}),json!([]),true),
         tool("inspect","Inspect a task or version, source and recorded evaluation.",json!({"id":id}),json!(["id"]),true),
         tool("sdk","Read the bundled TypeScript interface and a task document example before authoring.",json!({}),json!([]),true),
         tool("prepare_task","Record requirements and independent acceptance cases before writing source. task contains contract and cases; use sdk for its shape.",json!({"task":{"type":"object","required":["contract","cases"],"properties":{"contract":{"type":"object"},"cases":{"type":"array","minItems":1,"maxItems":100},"evaluation":{"enum":["exact_calls","read_only_behavior"]}},"additionalProperties":false}}),json!(["task"]),false),
@@ -51,6 +51,12 @@ pub fn tools() -> Value {
 }
 
 pub fn serve(mut api: Api) -> Result<()> {
+    let session = crate::store::digest(&(
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos(),
+    ))?;
     let mut input = BufReader::new(std::io::stdin().lock());
     let mut output = std::io::stdout().lock();
     let mut initialized = false;
@@ -126,6 +132,9 @@ pub fn serve(mut api: Api) -> Result<()> {
                         if object.contains_key("action") {
                             Err(anyhow::anyhow!("action is not a tool argument"))
                         } else {
+                            if name == "clearings_record_observation" {
+                                object.insert("session".into(), json!(session));
+                            }
                             object.insert(
                                 "action".into(),
                                 json!(name.trim_start_matches("clearings_")),

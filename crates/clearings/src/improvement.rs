@@ -28,15 +28,15 @@ fn benefit(baseline: &[(u64, u64)], candidate: &[(u64, u64)]) -> bool {
     if baseline.len() != 3 || candidate.len() != 3 {
         return false;
     }
-    let b = baseline.iter().map(|m| m.0).max().unwrap();
-    let c = candidate.iter().map(|m| m.0).max().unwrap();
+    let fewer_calls = baseline.iter().zip(candidate).all(|(b, c)| c.0 < b.0);
+    let equal_calls = baseline.iter().zip(candidate).all(|(b, c)| c.0 == b.0);
     // Call reductions are deterministic evidence. Timing-only changes need separation across all pairs.
     let mut bt: Vec<_> = baseline.iter().map(|v| v.1).collect();
     bt.sort();
     let mut ct: Vec<_> = candidate.iter().map(|v| v.1).collect();
     ct.sort();
-    (c < b && ct[1] <= bt[1] * 125 / 100 + 2)
-        || (c == b
+    (fewer_calls && ct[1] <= bt[1] * 125 / 100 + 2)
+        || (equal_calls
             && baseline
                 .iter()
                 .zip(candidate)
@@ -49,14 +49,11 @@ impl Store {
             return Ok(json!({"status":"disabled"}));
         }
         self.check_job(project, job)?;
-        let found:Option<(String,String)>=self.db.query_row("SELECT project_routines.task,active.version FROM project_routines JOIN active ON active.task=project_routines.task LEFT JOIN improvement_trials ON improvement_trials.project=project_routines.project AND improvement_trials.baseline=active.version WHERE project_routines.project=?1 AND paused=0 AND excluded=0 AND improvement_trials.baseline IS NULL ORDER BY name LIMIT 1",[project],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
-        let Some((task_id, baseline)) = found else {
+        let found:Option<(String,String,Option<String>)>=self.db.query_row("SELECT project_routines.task,active.version,improvement_trials.candidate FROM project_routines JOIN active ON active.task=project_routines.task LEFT JOIN improvement_trials ON improvement_trials.project=project_routines.project AND improvement_trials.baseline=active.version WHERE project_routines.project=?1 AND paused=0 AND excluded=0 AND (improvement_trials.baseline IS NULL OR improvement_trials.status IN ('interrupted','deferred')) AND NOT EXISTS(SELECT 1 FROM json_each(?2) e WHERE project_routines.name=e.value OR substr(project_routines.name,1,length(e.value)+1)=e.value||'/') ORDER BY name LIMIT 1",params![project,serde_json::to_string(&p.settings.exclusions)?],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).optional()?;
+        let Some((task_id, baseline, saved_candidate)) = found else {
             return Ok(json!({"status":"no_candidate"}));
         };
         let task: Task = self.get("task", &task_id)?;
-        if p.settings.excludes(&task.contract.name) {
-            return Ok(json!({"status":"excluded"}));
-        }
         let version: Version = self.get("version", &baseline)?;
         ensure!(
             version.engine == ENGINE,
@@ -65,7 +62,7 @@ impl Store {
         LocalBroker::new(&task.contract, &p.settings.grants)
             .context("component capability dependency is unavailable")?;
         self.db.execute(
-            "INSERT INTO improvement_trials(project,baseline,status) VALUES(?1,?2,'measuring')",
+            "INSERT INTO improvement_trials(project,baseline,status) VALUES(?1,?2,'measuring') ON CONFLICT(project,baseline) DO UPDATE SET status='measuring'",
             params![project, baseline],
         )?;
         let result = (|| -> Result<Value> {
@@ -73,9 +70,18 @@ impl Store {
                 task.cases.len() >= 3 && task.cases.len() <= 8,
                 "improvement requires 3 to 8 recorded cases"
             );
-            let source=self.propose_source(project,job,"improve",json!({"contract":task.contract,"source":version.source,"examples":&task.cases[..task.cases.len()-1],"purpose":"Reduce redundant reads or execution time while preserving behavior. One recorded example is withheld."}))?;
-            self.check_job(project, job)?;
-            let candidate = self.submit(executable, &task_id, source)?;
+            let candidate = if let Some(candidate) = saved_candidate {
+                let stored: Version = self.get("version", &candidate)?;
+                ensure!(
+                    stored.task == task_id && stored.engine == ENGINE,
+                    "interrupted candidate dependency changed"
+                );
+                candidate
+            } else {
+                let source=self.propose_source(project,job,"improve",json!({"contract":task.contract,"source":version.source,"examples":&task.cases[..task.cases.len()-1],"purpose":"Reduce redundant reads or execution time while preserving behavior. One recorded example is withheld."}),None)?;
+                self.check_job(project, job)?;
+                self.submit(executable, &task_id, source)?
+            };
             ensure!(
                 candidate != baseline,
                 "model returned the existing component"
@@ -111,6 +117,10 @@ impl Store {
             }
             Ok(measurements)
         })();
+        if let Err(error) = self.check_job(project, job) {
+            self.db.execute("UPDATE improvement_trials SET status='interrupted',report=?3 WHERE project=?1 AND baseline=?2",params![project,baseline,json!({"error":error.to_string()}).to_string()])?;
+            return Err(error);
+        }
         let (status, report) = match result {
             Ok(v) => (
                 if v["accepted"] == true {
@@ -120,7 +130,13 @@ impl Store {
                 },
                 v,
             ),
-            Err(e) => ("failed", json!({"error":e.to_string()})),
+            Err(e) => {
+                let requested:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM model_requests WHERE project=?1 AND job=?2 AND purpose='improve')",params![project,job],|r|r.get(0))?;
+                (
+                    if requested { "failed" } else { "deferred" },
+                    json!({"error":e.to_string()}),
+                )
+            }
         };
         self.db.execute(
             "UPDATE improvement_trials SET status=?3,report=?4 WHERE project=?1 AND baseline=?2",
@@ -162,6 +178,8 @@ mod tests {
     use super::*;
     #[test]
     fn replacements_require_measured_call_reduction_or_consistent_time_improvement() {
+        assert!(!benefit(&[(10, 20), (1, 20), (1, 20)], &[(9, 10); 3]));
+        assert!(!benefit(&[(10, 20), (1, 20), (1, 20)], &[(10, 10); 3]));
         assert!(benefit(&[(6, 20); 3], &[(3, 20); 3]));
         assert!(benefit(&[(3, 20); 3], &[(3, 12); 3]));
         assert!(!benefit(&[(3, 20); 3], &[(3, 19); 3]));

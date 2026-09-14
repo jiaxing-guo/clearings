@@ -84,6 +84,8 @@ enum Action {
     },
     Performance {
         name: String,
+        #[arg(long)]
+        after: Option<String>,
     },
     Discover {
         #[arg(long)]
@@ -241,7 +243,12 @@ fn main() -> Result<()> {
                     .project
                     .ok_or_else(|| anyhow::anyhow!("select --project"))?;
                 if once {
-                    println!("{}", store.background_tick(&project, &executable)?);
+                    let result = store.background_tick(&project, &executable)?;
+                    println!("{}", result);
+                    anyhow::ensure!(
+                        result["status"] != "failed",
+                        "background job failed; see JSON result"
+                    );
                     return Ok(());
                 }
                 return clearings::background::serve(store, project, executable);
@@ -265,7 +272,9 @@ fn main() -> Result<()> {
                     let supplied: Policy = read(policy)?;
                     if selected.is_some() {
                         anyhow::ensure!(
-                            serde_json::to_value(&supplied)? == serde_json::to_value(&api.policy)?,
+                            serde_json::to_value(clearings::project::normalize_grants(
+                                supplied.clone()
+                            )?)? == serde_json::to_value(&api.policy)?,
                             "project grants are fixed; use the configured grants file"
                         );
                     } else {
@@ -289,7 +298,7 @@ fn main() -> Result<()> {
                 },
                 Action::Observe => Operation::Observe,
                 Action::Activity { before } => Operation::Activity { before },
-                Action::Performance { name } => Operation::Performance { name },
+                Action::Performance { name, after } => Operation::Performance { name, after },
                 Action::BackgroundCancel => Operation::BackgroundCancel,
                 Action::BackgroundJobs { before } => Operation::BackgroundJobs { before },
                 Action::RecordObservation { session, file } => Operation::RecordObservation {
@@ -340,7 +349,9 @@ fn main() -> Result<()> {
                     let supplied: Policy = read(policy)?;
                     if selected.is_some() {
                         anyhow::ensure!(
-                            serde_json::to_value(&supplied)? == serde_json::to_value(&api.policy)?,
+                            serde_json::to_value(clearings::project::normalize_grants(
+                                supplied.clone()
+                            )?)? == serde_json::to_value(&api.policy)?,
                             "project grants are fixed; use the configured grants file"
                         );
                     } else {

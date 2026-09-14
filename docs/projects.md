@@ -14,3 +14,5 @@ To update, repeat `project-configure` with `--expected-revision` from the status
 Project authorization covers reuse within the selected scope. It does not authorize unrelated tasks or new external effects. Missing sources or unavailable model credentials must remain explicit, and ordinary on-demand routine execution remains available.
 
 The database migration preserves existing tasks, versions, evaluations and run history. Use a private directory for the database and settings. Credentials stay in the host environment rather than routine source or stored settings.
+
+Project-bound tasks require their owning project on every CLI/MCP operation. The unscoped interface lists and operates on legacy tasks only.

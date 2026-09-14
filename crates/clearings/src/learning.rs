@@ -51,6 +51,8 @@ impl Store {
         let p = self.project(project)?;
         self.check_job(project, job)?;
         let groups = self.observation_groups(project)?;
+        let mut skipped = vec![];
+        let mut blocked_groups = 0;
         for (fingerprint, group) in groups {
             if group.observations.len() < p.settings.min_occurrences {
                 continue;
@@ -101,7 +103,8 @@ impl Store {
             task.contract.limits.wall_ms = task.contract.limits.wall_ms.min(5000);
             let mut inputs = BTreeMap::new();
             let mut conflict = false;
-            for (_, id, o, _) in &group.observations {
+            let mut source_records = vec![];
+            for (_, id, o, provenance) in &group.observations {
                 let key = digest(&o.case.input)?;
                 if let Some(old) = inputs.insert(key, o.case.expected.clone()) {
                     if old != o.case.expected {
@@ -114,36 +117,40 @@ impl Store {
                 if task.cases.len() < 8 {
                     let mut case = o.case.clone();
                     case.name = format!("observed-{}", &id[..12]);
+                    source_records.push(json!({"id":id,"provenance":provenance,"case":case.name}));
                     task.cases.push(case);
                 }
             }
             if conflict || task.cases.len() < 3 {
                 continue;
             }
-            ensure!(
-                task.cases
-                    .iter()
-                    .flat_map(|c| &c.calls)
-                    .all(|call| call.input["root"].as_str().is_some_and(|root| p
-                        .settings
-                        .grants
-                        .roots
-                        .contains_key(root))),
-                "observed workflow requires an ungranted file root; no candidate was created"
-            );
             // Freeze all cases first. Source author receives no held-out input or expected result.
             task.evidence = Some(
-                json!({"kind":"supplied_observations","source_records":group.observations.iter().take(8).map(|(_,id,_,provenance)|json!({"id":id,"provenance":provenance})).collect::<Vec<_>>(),"withheld_case":task.cases.last().map(|c|&c.name),"claim":"Agreement on supplied cases, not authenticated or universal correctness."}),
+                json!({"kind":"supplied_observations","source_records":source_records,"withheld_case":task.cases.last().map(|c|&c.name),"claim":"Agreement on supplied cases, not authenticated or universal correctness."}),
             );
             if let Some((_, id, _)) = &previous {
                 task = self.get("task", id)?;
             }
             task.validate()?;
             let task_id = self.prepare_task(&task)?;
-            self.db.execute("INSERT INTO learning_groups(project,fingerprint,task,status,attempts) VALUES(?1,?2,?3,'authoring',1) ON CONFLICT(project,fingerprint) DO UPDATE SET status='authoring',attempts=attempts+1",params![project,fingerprint,task_id])?;
+            self.db.execute("INSERT INTO learning_groups(project,fingerprint,task,status,attempts) VALUES(?1,?2,?3,'pending',0) ON CONFLICT(project,fingerprint) DO NOTHING",params![project,fingerprint,task_id])?;
+            if !task.cases.iter().flat_map(|c| &c.calls).all(|call| {
+                call.input["root"]
+                    .as_str()
+                    .is_some_and(|root| p.settings.grants.roots.contains_key(root))
+            }) {
+                let report = json!({"name":task.contract.name,"reason":"observed workflow requires an ungranted file root"});
+                self.db.execute("UPDATE learning_groups SET status='blocked',report=?3 WHERE project=?1 AND fingerprint=?2",params![project,fingerprint,report.to_string()])?;
+                blocked_groups += 1;
+                if skipped.len() < 32 {
+                    skipped.push(report);
+                }
+                continue;
+            }
             let result = (|| -> Result<Value> {
                 let packet = json!({"contract":task.contract,"examples":&task.cases[..task.cases.len()-1],"purpose":"Create a parameterized routine; one additional recorded case is withheld."});
-                let source = self.propose_source(project, job, "create", packet)?;
+                let source =
+                    self.propose_source(project, job, "create", packet, Some(&fingerprint))?;
                 self.check_job(project, job)?;
                 let version = self.submit(executable, &task_id, source)?;
                 let report = self.evaluate(executable, &version)?;
@@ -156,26 +163,59 @@ impl Store {
                     json!({"name":task.contract.name,"task":task_id,"version":version,"accepted":true,"evidence":"recorded-case agreement with one withheld example","savings":null}),
                 )
             })();
+            if let Err(error) = self.check_job(project, job) {
+                self.db.execute("UPDATE learning_groups SET status='interrupted',report=?3 WHERE project=?1 AND fingerprint=?2",params![project,fingerprint,json!({"error":error.to_string()}).to_string()])?;
+                return Err(error);
+            }
             let (status, value) = match result {
                 Ok(v) => ("created", v),
-                Err(e) => ("failed", json!({"error":e.to_string(),"task":task_id})),
+                Err(e) => {
+                    let attempts: u32 = self.db.query_row(
+                        "SELECT attempts FROM learning_groups WHERE project=?1 AND fingerprint=?2",
+                        params![project, fingerprint],
+                        |r| r.get(0),
+                    )?;
+                    (
+                        if attempts == 0 { "deferred" } else { "failed" },
+                        json!({"error":e.to_string(),"task":task_id}),
+                    )
+                }
             };
             self.db.execute("UPDATE learning_groups SET status=?3,report=?4 WHERE project=?1 AND fingerprint=?2",params![project,fingerprint,status,value.to_string()])?;
-            return Ok(json!({"status":status,"result":value}));
+            return Ok(
+                json!({"status":status,"result":value,"blocked_groups":blocked_groups,"skipped":skipped}),
+            );
         }
-        Ok(json!({"status":"no_eligible_observations"}))
+        Ok(
+            json!({"status":"no_eligible_observations","blocked_groups":blocked_groups,"skipped":skipped}),
+        )
     }
     fn observation_groups(&self, project: &str) -> Result<BTreeMap<String, Group>> {
-        let mut stmt=self.db.prepare("SELECT id,body FROM activity WHERE project=?1 AND json_extract(body,'$.observation') IS NOT NULL ORDER BY seq DESC LIMIT 500")?;
+        let before: Option<i64> = self
+            .db
+            .query_row(
+                "SELECT before_seq FROM learning_scan WHERE project=?1",
+                [project],
+                |r| r.get(0),
+            )
+            .optional()?
+            .flatten();
+        let mut stmt=self.db.prepare("SELECT id,body,seq FROM activity WHERE project=?1 AND json_extract(body,'$.observation') IS NOT NULL AND (?2 IS NULL OR seq<?2) ORDER BY seq DESC LIMIT 501")?;
         let mut groups: BTreeMap<String, Group> = BTreeMap::new();
-        let mut rows = stmt.query([project])?;
+        let mut rows = stmt.query(params![project, before])?;
+        let mut last = None;
+        let mut count = 0;
+        let mut more = false;
         let mut bytes = 0;
         while let Some(row) = rows.next()? {
             let body: String = row.get(1)?;
             bytes += body.len();
-            if bytes > 4 * 1024 * 1024 {
+            if bytes > 4 * 1024 * 1024 || count == 500 {
+                more = true;
                 break;
             }
+            last = Some(row.get::<_, i64>(2)?);
+            count += 1;
             let v: Value = serde_json::from_str(&body)?;
             let o: Observation = serde_json::from_value(v["observation"].clone())?;
             let fingerprint = digest(&o.contract)?;
@@ -195,6 +235,7 @@ impl Store {
                     v["provenance"].clone(),
                 ));
         }
+        self.db.execute("INSERT INTO learning_scan(project,before_seq) VALUES(?1,?2) ON CONFLICT(project) DO UPDATE SET before_seq=excluded.before_seq",params![project,if more {last} else {None}])?;
         Ok(groups)
     }
     pub(crate) fn promote_automatic(
@@ -207,8 +248,22 @@ impl Store {
     ) -> Result<()> {
         self.check_job(&project.id, job)?;
         let v: Version = self.get("version", version)?;
-        self.owns_task(&project.id, &v.task)?;
         let task: Task = self.get("task", &v.task)?;
+        ensure!(
+            task.project.as_deref() == Some(&project.id),
+            "candidate belongs to a different project"
+        );
+        // New candidates have a frozen learning record before their name is registered.
+        if expected.is_some() {
+            self.owns_task(&project.id, &v.task)?;
+        } else {
+            let frozen: bool = self.db.query_row(
+                "SELECT EXISTS(SELECT 1 FROM learning_groups WHERE project=?1 AND task=?2)",
+                params![project.id, v.task],
+                |r| r.get(0),
+            )?;
+            ensure!(frozen, "candidate has no host-frozen learning record");
+        }
         let report = self.inspect(version)?;
         ensure!(
             report["evaluation"]["accepted"] == true,

@@ -9,7 +9,7 @@ use rusqlite::{OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
-    fs::{File, OpenOptions},
+    fs::File,
     io::{Read, Seek, SeekFrom},
     path::{Path, PathBuf},
 };
@@ -42,48 +42,73 @@ struct Checkpoint {
     cwd: String,
 }
 
-fn files(source: &TraceSource) -> Result<Vec<PathBuf>> {
-    fn visit(path: &Path, depth: usize, out: &mut Vec<PathBuf>) -> Result<()> {
+#[cfg(unix)]
+fn open_child(dir: &cap_std::fs::Dir, name: &Path, directory: bool) -> Result<File> {
+    use cap_std::fs::{OpenOptions, OpenOptionsExt};
+    let mut options = OpenOptions::new();
+    options.read(true).custom_flags(
+        libc::O_NOFOLLOW | libc::O_NONBLOCK | if directory { libc::O_DIRECTORY } else { 0 },
+    );
+    Ok(dir.open_with(name, &options)?.into_std())
+}
+#[cfg(not(unix))]
+fn open_child(_dir: &cap_std::fs::Dir, _name: &Path, _directory: bool) -> Result<File> {
+    anyhow::bail!("safe trace opening is unsupported on this platform")
+}
+fn open_absolute(path: &Path) -> Result<File> {
+    use cap_std::{ambient_authority, fs::Dir};
+    use std::path::Component;
+    ensure!(path.is_absolute(), "authorized trace path must be absolute");
+    let mut dir = Dir::open_ambient_dir("/", ambient_authority())?;
+    let names: Vec<_> = path
+        .components()
+        .filter_map(|c| match c {
+            Component::Normal(n) => Some(n),
+            _ => None,
+        })
+        .collect();
+    ensure!(!names.is_empty(), "select a narrower trace source");
+    for name in &names[..names.len() - 1] {
+        dir = Dir::from_std_file(open_child(&dir, Path::new(name), true)?);
+    }
+    open_child(&dir, Path::new(names.last().unwrap()), false)
+}
+fn files(source: &TraceSource) -> Result<Vec<(PathBuf, File)>> {
+    fn visit(file: File, path: &Path, depth: usize, out: &mut Vec<(PathBuf, File)>) -> Result<()> {
         ensure!(
             depth <= 6 && out.len() < 256,
             "trace selection exceeds directory or file limit; select a narrower source"
         );
-        let meta = std::fs::symlink_metadata(path)?;
-        if meta.file_type().is_symlink() {
-            return Ok(());
-        }
-        if meta.is_file() {
+        let metadata = file.metadata()?;
+        if metadata.is_file() {
             if path.extension().is_some_and(|e| e == "jsonl") {
-                out.push(path.to_owned());
+                out.push((path.to_owned(), file));
             }
-        } else if meta.is_dir() {
-            let mut children = std::fs::read_dir(path)?
+        } else if metadata.is_dir() {
+            let dir = cap_std::fs::Dir::from_std_file(file);
+            let mut children = dir
+                .entries()?
                 .take(257)
-                .map(|r| r.map(|e| e.path()))
                 .collect::<std::io::Result<Vec<_>>>()?;
             ensure!(children.len() <= 256, "trace directory exceeds entry limit");
-            children.sort();
+            children.sort_by_key(|e| e.file_name());
             for child in children {
-                visit(&child, depth + 1, out)?;
+                let kind = child.file_type()?;
+                if kind.is_symlink() || !(kind.is_dir() || kind.is_file()) {
+                    continue;
+                }
+                let name = child.file_name();
+                let file = open_child(&dir, Path::new(&name), kind.is_dir())?;
+                visit(file, &path.join(name), depth + 1, out)?;
             }
+        } else {
+            anyhow::bail!("trace must be a regular file or directory");
         }
         Ok(())
     }
     let mut out = vec![];
-    visit(&source.path, 0, &mut out)?;
+    visit(open_absolute(&source.path)?, &source.path, 0, &mut out)?;
     Ok(out)
-}
-fn open(path: &Path) -> Result<File> {
-    let mut opts = OpenOptions::new();
-    opts.read(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        opts.custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW);
-    }
-    let file = opts.open(path)?;
-    ensure!(file.metadata()?.is_file(), "trace must be a regular file");
-    Ok(file)
 }
 fn prefix(file: &mut File, len: usize) -> Result<String> {
     file.seek(SeekFrom::Start(0))?;
@@ -124,11 +149,11 @@ impl Store {
         for source in &project.settings.trace_sources {
             match files(source) {
                 Ok(paths) => {
-                    for path in paths {
+                    for (path, file) in paths {
                         if remaining == 0 {
                             break;
                         }
-                        match self.import_file(&project, source, &path, &mut remaining) {
+                        match self.import_file(&project, source, &path, file, &mut remaining) {
                             Ok(n) => imported += n,
                             Err(e) => {
                                 if errors.len() < 32 {
@@ -141,21 +166,29 @@ impl Store {
                 Err(e) => errors.push(json!({"source":source.path,"error":e.to_string()})),
             }
         }
-        Ok(json!({"imported":imported,"errors":errors,"bytes_remaining":remaining}))
+        let expired = self.db.execute(
+            "DELETE FROM activity WHERE project=?1 AND created_at < datetime('now', ?2)",
+            params![
+                project_id,
+                format!("-{} days", project.settings.retention_days)
+            ],
+        )?;
+        Ok(
+            json!({"imported":imported,"expired":expired,"errors":errors,"bytes_remaining":remaining}),
+        )
     }
     fn import_file(
         &mut self,
         project: &Project,
         source: &TraceSource,
         path: &Path,
+        mut file: File,
         remaining: &mut usize,
     ) -> Result<usize> {
-        let key = path.to_str().context("trace path is not UTF-8")?;
-        ensure!(
-            path.canonicalize()?.starts_with(&source.path),
-            "trace moved outside selected source"
-        );
-        let mut file = open(path)?;
+        let key = digest(&(
+            path.to_str().context("trace path is not UTF-8")?,
+            &source.adapter,
+        ))?;
         let stored: Option<String> = self
             .db
             .query_row(
@@ -191,6 +224,18 @@ impl Store {
                 .context("malformed complete trace line; repair it before retrying")?;
             if value["type"] == "thread.started" {
                 cp.session = value["thread_id"].as_str().unwrap_or_default().into();
+            }
+            if value["type"] == "clearings_workflow" {
+                for field in ["session_id", "cwd", "event_id"] {
+                    ensure!(
+                        value[field].as_str().is_some_and(|s| !s.trim().is_empty()),
+                        "workflow record requires nonempty {field}"
+                    );
+                }
+                ensure!(
+                    Path::new(value["cwd"].as_str().unwrap()).is_absolute(),
+                    "workflow cwd must be absolute"
+                );
             }
             if value["type"] == "session_meta" {
                 cp.session = value["payload"]["id"].as_str().unwrap_or_default().into();
@@ -263,6 +308,10 @@ impl Store {
         Ok(inserted)
     }
     pub fn activity(&self, project: &str, before: Option<i64>) -> Result<Value> {
+        ensure!(
+            before.is_none_or(|id| id > 0),
+            "before must be a positive activity ID"
+        );
         let mut stmt=self.db.prepare("SELECT seq,id,body,created_at FROM activity WHERE project=?1 AND (?2 IS NULL OR seq<?2) ORDER BY seq DESC LIMIT 101")?;
         let mut rows = stmt.query(params![project, before])?;
         let mut values = vec![];
@@ -282,11 +331,55 @@ impl Store {
         )
     }
     pub fn performance(&self, project: &str, name: &str) -> Result<Value> {
+        self.performance_page(project, name, None)
+    }
+    pub fn performance_page(
+        &self,
+        project: &str,
+        name: &str,
+        after: Option<&str>,
+    ) -> Result<Value> {
+        ensure!(
+            after.is_none_or(|s| s.len() == 64
+                && s.bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))),
+            "after must be a version ID"
+        );
         let task = self.named_task(project, name, false)?;
-        let mut stmt=self.db.prepare("SELECT runs.version, count(*), SUM(CASE WHEN json_extract(report,'$.outcome.status')='completed' THEN 1 ELSE 0 END), SUM(json_extract(report,'$.elapsed_ms')), SUM(json_extract(report,'$.capability_calls')) FROM runs JOIN objects ON objects.id=runs.version WHERE json_extract(objects.body,'$.task')=?1 GROUP BY runs.version ORDER BY runs.version LIMIT 100")?;
-        let versions:Vec<Value>=stmt.query_map([task],|r|Ok(json!({"version":r.get::<_,String>(0)?,"runs":r.get::<_,u64>(1)?,"completed":r.get::<_,u64>(2)?,"elapsed_ms_total":r.get::<_,u64>(3)?,"capability_calls_total":r.get::<_,u64>(4)?,"model_usage":null,"savings":null})))?.collect::<rusqlite::Result<_>>()?;
+        let mut stmt=self.db.prepare("SELECT runs.version, count(*), SUM(json_extract(report,'$.outcome.status')='completed'), SUM(json_extract(report,'$.elapsed_ms')), SUM(json_extract(report,'$.capability_calls')), SUM(json_extract(report,'$.outcome.status')='needs_agent'), SUM(json_extract(report,'$.outcome.status')='not_applicable'), SUM(json_extract(report,'$.outcome.status')='failed') FROM runs JOIN objects ON objects.id=runs.version WHERE json_extract(objects.body,'$.task')=?1 AND (?2 IS NULL OR runs.version>?2) GROUP BY runs.version ORDER BY runs.version LIMIT 101")?;
+        let mut versions:Vec<Value>=stmt.query_map(params![task,after],|r|Ok(json!({"version":r.get::<_,String>(0)?,"runs":r.get::<_,u64>(1)?,"completed":r.get::<_,u64>(2)?,"elapsed_ms_total":r.get::<_,u64>(3)?,"capability_calls_total":r.get::<_,u64>(4)?,"needs_agent":r.get::<_,u64>(5)?,"not_applicable":r.get::<_,u64>(6)?,"failed":r.get::<_,u64>(7)?,"model_usage":null,"savings":null})))?.collect::<rusqlite::Result<_>>()?;
+        let next_after = if versions.len() > 100 {
+            versions.pop();
+            versions.last().map(|v| v["version"].clone())
+        } else {
+            None
+        };
         Ok(
-            json!({"name":name,"versions":versions,"usage_attribution":"Session usage is not automatically attributable to a routine invocation."}),
+            json!({"name":name,"versions":versions,"next_after":next_after,"usage_attribution":"Session usage is not automatically attributable to a routine invocation."}),
         )
+    }
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    #[test]
+    fn trace_handles_do_not_follow_replaced_intermediate_directories() {
+        let d = tempfile::tempdir().unwrap();
+        let root = d.path().canonicalize().unwrap();
+        let selected = root.join("selected");
+        let outside = root.join("outside");
+        std::fs::create_dir(&selected).unwrap();
+        std::fs::create_dir(&outside).unwrap();
+        std::fs::write(selected.join("event.jsonl"), "authorized").unwrap();
+        std::fs::write(outside.join("event.jsonl"), "outside").unwrap();
+        let held = cap_std::fs::Dir::from_std_file(open_absolute(&selected).unwrap());
+        std::fs::rename(&selected, root.join("old")).unwrap();
+        std::os::unix::fs::symlink(&outside, &selected).unwrap();
+        assert!(open_absolute(&selected.join("event.jsonl")).is_err());
+        let mut file = open_child(&held, Path::new("event.jsonl"), false).unwrap();
+        let mut text = String::new();
+        file.read_to_string(&mut text).unwrap();
+        assert_eq!(text, "authorized");
     }
 }

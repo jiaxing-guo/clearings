@@ -87,12 +87,32 @@ impl Store {
                     .context("no previous automatic version is available")?;
                 let version: Version = self.get("version", &previous)?;
                 ensure!(version.task == task, "rollback belongs to another task");
-                self.activate(&previous, expected_active)?;
+                ensure!(
+                    version.engine == crate::store::ENGINE
+                        && self.inspect(&previous)?["evaluation"]["accepted"] == true,
+                    "previous version requires a current passing evaluation"
+                );
+                let expected =
+                    expected_active.context("supply the current active version before rollback")?;
+                let tx = self
+                    .db
+                    .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+                ensure!(tx.execute("UPDATE active SET version=?2 WHERE task=?1 AND version=?3 AND EXISTS(SELECT 1 FROM project_routines WHERE project=?4 AND task=?1 AND previous=?2)",params![task,previous,expected,project])? == 1, "active or previous version changed; inspect before rollback");
+                tx.execute(
+                    "UPDATE project_routines SET previous=NULL WHERE project=?1 AND task=?2",
+                    params![project, task],
+                )?;
+                tx.execute("INSERT INTO component_changes(project,task,version,previous,reason) VALUES(?1,?2,?3,?4,'manual_rollback')",params![project,task,previous,expected])?;
+                tx.commit()?;
             }
         }
         Ok(json!({"name":name,"action":action,"active":self.active(&task)?}))
     }
     pub fn digest_page(&self, project: &str, after: Option<i64>) -> Result<Value> {
+        ensure!(
+            after.is_none_or(|id| id > 0),
+            "after must be a positive change ID"
+        );
         let mut stmt=self.db.prepare("SELECT id,task,version,previous,reason,created_at FROM component_changes WHERE project=?1 AND (?2 IS NULL OR id>?2) ORDER BY id LIMIT 101")?;
         let mut changes:Vec<Value>=stmt.query_map(params![project,after],|r|Ok(json!({"id":r.get::<_,i64>(0)?,"task":r.get::<_,String>(1)?,"version":r.get::<_,String>(2)?,"previous":r.get::<_,Option<String>>(3)?,"reason":r.get::<_,String>(4)?,"created_at":r.get::<_,String>(5)?})))?.collect::<rusqlite::Result<_>>()?;
         let more = changes.len() > 100;
@@ -100,12 +120,17 @@ impl Store {
             changes.pop();
         }
         let next = changes.last().map(|c| c["id"].clone());
-        let job:Option<Value>=self.db.query_row("SELECT id,status,report FROM background_jobs WHERE project=?1 ORDER BY id DESC LIMIT 1",[project],|r|{let report:String=r.get(2)?;Ok(json!({"job":r.get::<_,i64>(0)?,"status":r.get::<_,String>(1)?,"report":report}))}).optional()?;
+        let job:Option<(i64,String,String)>=self.db.query_row("SELECT id,status,report FROM background_jobs WHERE project=?1 ORDER BY id DESC LIMIT 1",[project],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).optional()?;
+        let job=job.map(|(id,status,report)|->Result<Value>{Ok(json!({"job":id,"status":status,"report":serde_json::from_str::<Value>(&report)?}))}).transpose()?;
         Ok(
             json!({"changes":changes,"next_after":next,"has_more":more,"latest_background_job":job,"savings":null}),
         )
     }
     pub fn model_usage(&self, project: &str, before: Option<i64>) -> Result<Value> {
+        ensure!(
+            before.is_none_or(|id| id > 0),
+            "before must be a positive request ID"
+        );
         let p = self.project(project)?;
         let day = crate::background::now()? / 86400;
         let reserved: u64 = self
