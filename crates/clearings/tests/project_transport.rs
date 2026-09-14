@@ -15,6 +15,27 @@ fn cli(dir: &Path, args: &[&str]) -> std::process::Output {
 }
 
 #[test]
+fn tool_discovery_matches_project_availability() {
+    let scoped = clearings::mcp::tools_for_project(true);
+    let names: Vec<_> = scoped["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(names, ["clearings_project_status", "clearings_sdk"]);
+    let unscoped = clearings::mcp::tools_for_project(false);
+    let names: Vec<_> = unscoped["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["name"].as_str().unwrap())
+        .collect();
+    assert!(!names.contains(&"clearings_project_status"));
+    assert!(names.contains(&"clearings_run"));
+}
+
+#[test]
 fn project_transport_normalizes_grants_and_rejects_scope_escape() {
     let d = tempfile::tempdir().unwrap();
     std::fs::create_dir(d.path().join("data")).unwrap();
@@ -122,7 +143,7 @@ fn project_transport_normalizes_grants_and_rejects_scope_escape() {
         if request_id == 2 {
             assert_eq!(result["result"]["structuredContent"]["id"], id);
         } else {
-            assert_eq!(result["result"]["isError"], true);
+            assert_eq!(result["error"]["code"], -32602);
         }
     }
     drop(input);
