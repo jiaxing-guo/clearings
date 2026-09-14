@@ -1,0 +1,8 @@
+{
+  "name": "clearings",
+  "version": "0.1.0",
+  "description": "Teach and reuse user-selected routines with the local Clearings runtime.",
+  "author": {
+    "name": "Clearings contributors"
+  }
+}
