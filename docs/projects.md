@@ -14,3 +14,5 @@ To update, repeat `project-configure` with `--expected-revision` from the status
 Project authorization covers reuse within the selected scope. It does not authorize unrelated tasks or new external effects. Missing sources or unavailable model credentials must remain explicit, and ordinary on-demand routine execution remains available.
 
 The database migration preserves existing tasks, versions, evaluations and run history. Use a private directory for the database and settings. Credentials stay in the host environment rather than routine source or stored settings.
+
+This authorization foundation exposes project status and the SDK. Project-scoped routine operations fail closed until the named lifecycle is available; selecting a project never falls back to the global routine registry.

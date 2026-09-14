@@ -52,6 +52,10 @@ pub struct Api {
 }
 impl Api {
     pub fn call(&mut self, op: Operation) -> Result<Value> {
+        anyhow::ensure!(
+            self.project.is_none() || matches!(op, Operation::ProjectStatus | Operation::Sdk),
+            "project routine access requires the named project lifecycle; unscoped routines are unavailable in a project session"
+        );
         Ok(match op {
             Operation::ProjectStatus => serde_json::to_value(
                 self.store.project(

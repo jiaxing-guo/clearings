@@ -194,7 +194,9 @@ fn main() -> Result<()> {
                     let supplied: Policy = read(policy)?;
                     if selected.is_some() {
                         anyhow::ensure!(
-                            serde_json::to_value(&supplied)? == serde_json::to_value(&api.policy)?,
+                            serde_json::to_value(clearings::project::normalize_grants(
+                                supplied.clone()
+                            )?)? == serde_json::to_value(&api.policy)?,
                             "project grants are fixed; use the configured grants file"
                         );
                     } else {
@@ -233,7 +235,9 @@ fn main() -> Result<()> {
                     let supplied: Policy = read(policy)?;
                     if selected.is_some() {
                         anyhow::ensure!(
-                            serde_json::to_value(&supplied)? == serde_json::to_value(&api.policy)?,
+                            serde_json::to_value(clearings::project::normalize_grants(
+                                supplied.clone()
+                            )?)? == serde_json::to_value(&api.policy)?,
                             "project grants are fixed; use the configured grants file"
                         );
                     } else {
