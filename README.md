@@ -1,48 +1,51 @@
 # Clearings
 
-**Make straightforward backend code run efficiently as workloads grow.**
+**Turn repeated agent work into reusable TypeScript routines.**
 
-Clearings is being designed to handle batching, scoped deduplication, concurrency and service limits underneath ordinary application logic. Engineers and coding agents describe operations and execution policies through TypeScript and Python SDKs, with reusable adapters connecting databases and services.
+Clearings gives Codex and Claude Code a local execution boundary for work that should not need to be rediscovered on every run. The agent writes a parameterized routine; Clearings prepares it, checks its behavior, and executes it through explicitly granted tool operations. Unfamiliar cases return to the agent with structured context.
+
+The native Rust executable embeds the TypeScript transformer and JavaScript engine. Installed users do not need Node, Python, npm, or a Rust compiler. The project being worked on can use any language.
 
 ## Status
 
-This repository contains the product requirements and documentation infrastructure. The managed runtime, SDKs, service adapters, CLI and MCP interface are **not implemented yet**. API examples in the requirements are proposals.
+The first implementation adds TypeScript preparation, isolated JavaScript execution, input/output schemas, scoped local-file capabilities, execution limits, and a source-running CLI. Routine persistence, evaluation and activation, agent integrations, and complete teach-and-reuse examples are the dependent implementation work described in the [product requirements](docs/product.md).
 
-The earlier repository analyzer, specification engine, Program IR and Rust compiler have been retired from the active tree. Their code, tests and recorded experiments remain available at a pinned historical revision. See [project history and retrieval instructions](docs/history.md).
+The implementation is under development. Passing runtime tests does not establish general-purpose task correctness or token savings. See [execution](docs/execution.md) for the supported boundary and [development](docs/development.md) for checks.
 
-## Direction
+## Build and run
 
-| Application supplies                      | Clearings is intended to manage              |
-| ----------------------------------------- | -------------------------------------------- |
-| Business logic and operation dependencies | Scheduling compatible work                   |
-| Adapter capabilities and result semantics | Batching and mapping results back to callers |
-| Explicit reuse and authorization scopes   | Eligible deduplication                       |
-| Resource policies and service limits      | Concurrency, admission and quota waiting     |
+Building from source requires Rust and a C toolchain; these are developer dependencies. Rustup selects the pinned toolchain.
 
-Execution policies are composable settings. Optional presets can provide defaults. The exact flow API, runtime implementation language and deployment boundary remain open.
+```sh
+cargo build --locked --release
+./target/release/clearings sdk
+./target/release/clearings run-source --source examples/read-file/routine.ts --contract examples/read-file/contract.json --input examples/read-file/input.json --policy examples/read-file/policy.json
+```
 
-Read the [product requirements](docs/product.md) for proposed scope, acceptance scenarios and unresolved decisions. Performance benefits remain to be demonstrated.
+Routines default-export an async function and return an explicit outcome:
 
-## Work on the documentation
+```typescript
+export default async function (input: { root: string; path: string }) {
+  const result = await clearings.call('files.read', input);
+  return { status: 'completed', output: result.text };
+}
+```
 
-Use Node.js 24 and npm 11.9.0. From the repository root:
+The host grants named directory roots separately from the routine contract. File access cannot escape those roots. The worker has no Node APIs, direct network access, or package installation. TypeScript transformation does not perform full type checking; runtime schemas and behavioral cases serve different checks.
+
+## Documentation
+
+Authored reference lives in `docs/`; Fumadocs renders it. Documentation development retains its existing Node toolchain, independently of the distributed runtime.
 
 ```sh
 npm ci --ignore-scripts
 npm --prefix website ci --ignore-scripts
 npm run docs:dev
-```
-
-Open the local address printed by the development server. Markdown in `docs/` is the authored reference; the Fumadocs site renders it through a generated projection.
-
-Run all current checks:
-
-```sh
 npm run check
 ```
 
-These checks cover formatting, the documentation build, types, links and static search. They do not test a service runtime. See the [development guide](docs/development.md) and [contribution guide](CONTRIBUTING.md).
+The earlier analyzer, Program IR and compiler remain at their [historical revision](docs/history.md). Their evidence does not describe the new runtime.
 
 ## License
 
-[Apache License 2.0](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md), including attribution for material in historical revisions.
+[Apache License 2.0](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md).

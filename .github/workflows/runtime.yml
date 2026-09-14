@@ -1,0 +1,31 @@
+name: Runtime
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  runtime:
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust
+        run: rustup show
+      - name: Build and test
+        run: cargo test --locked --workspace
+      - name: Formatting
+        if: always()
+        run: |
+          cargo fmt --all
+          git diff --exit-code -- crates/
+      - name: Lints
+        if: always()
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings

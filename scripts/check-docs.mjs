@@ -151,7 +151,7 @@ for (const page of reference.pages)
     navigation.includes(base + page.url),
     `Reference page is missing from navigation: ${page.url}`,
   );
-const queries = ['batching', 'adapters', 'TypeScript', 'Python', 'quota'];
+const queries = ['routine', 'TypeScript', 'capability', 'execution', 'handoff'];
 const searchFile = join(root, 'search-index.json');
 assert(existsSync(searchFile), 'Static search index missing.');
 const originalFetch = globalThis.fetch;
