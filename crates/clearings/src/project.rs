@@ -8,6 +8,16 @@ use rusqlite::{OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
+/// Normalize and validate grants identically at authorization and invocation.
+pub fn normalize_grants(mut policy: Policy) -> Result<Policy> {
+    for root in policy.roots.values_mut() {
+        *root = root.canonicalize().context("granted root must exist")?;
+        ensure!(root.is_dir(), "granted root must be a directory");
+    }
+    crate::capabilities::validate_http_policy(&policy)?;
+    Ok(policy)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TraceSource {
@@ -92,10 +102,7 @@ impl Settings {
                 .canonicalize()
                 .context("trace source must exist at authorization")?;
         }
-        for root in self.grants.roots.values_mut() {
-            *root = root.canonicalize().context("granted root must exist")?;
-            ensure!(root.is_dir(), "granted root must be a directory");
-        }
+        self.grants = normalize_grants(self.grants.clone())?;
         if let Some(model) = &self.model {
             let url = reqwest::Url::parse(&model.url)?;
             ensure!(
@@ -201,6 +208,7 @@ impl Store {
             settings,
         };
         tx.execute("INSERT INTO projects(id,revision,body) VALUES(?1,?2,?3) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,body=excluded.body", params![id,revision,serde_json::to_string(&project)?])?;
+        tx.execute("DELETE FROM schedule WHERE project=?1", [&id])?;
         tx.commit()?;
         Ok(project)
     }

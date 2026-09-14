@@ -23,7 +23,13 @@ impl ProjectLock {
                 .path()
                 .context("background work requires a persistent database")?,
         )
-        .with_extension(format!("{project}.lock"));
+        .canonicalize()?;
+        let mut filename = path
+            .file_name()
+            .context("database filename is missing")?
+            .to_os_string();
+        filename.push(format!(".{project}.lock"));
+        let path = path.with_file_name(filename);
         let file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -50,11 +56,14 @@ impl Store {
         project: &str,
         executable: &std::path::Path,
     ) -> Result<Value> {
+        self.project(project)?;
+        let _lock = ProjectLock::acquire(self, project)?;
+        self.db.execute("UPDATE model_requests SET status='interrupted' WHERE project=?1 AND status='reserved' AND job IN (SELECT id FROM background_jobs WHERE project=?1 AND status='running')", [project])?;
+        self.db.execute("UPDATE background_jobs SET status='interrupted',report=?2 WHERE project=?1 AND status='running'",params![project,json!({"error":"worker interrupted before completion"}).to_string()])?;
         let settings = self.project(project)?;
         if !settings.settings.automatic {
             return Ok(json!({"status":"disabled"}));
         }
-        let _lock = ProjectLock::acquire(self, project)?;
         let started = now()?;
         let due: Option<i64> = self
             .db
@@ -67,7 +76,6 @@ impl Store {
         if due.is_some_and(|n| n > started) {
             return Ok(json!({"status":"not_due","next_due":due}));
         }
-        self.db.execute("UPDATE background_jobs SET status='interrupted',report='{}' WHERE project=?1 AND status='running'",[project])?;
         self.db.execute("INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,?2,?3,'running')",params![project,settings.revision,started])?;
         let job = self.db.last_insert_rowid();
         let result = self.background_cycle(project, job, executable);
@@ -84,7 +92,7 @@ impl Store {
         )?;
         // Scheduling from completion coalesces missed periods into one catch-up cycle.
         let next = now()? + settings.settings.interval_seconds as i64;
-        self.db.execute("INSERT INTO schedule(project,next_due) VALUES(?1,?2) ON CONFLICT(project) DO UPDATE SET next_due=excluded.next_due",params![project,next])?;
+        self.db.execute("INSERT INTO schedule(project,next_due) SELECT ?1,?2 WHERE EXISTS(SELECT 1 FROM projects WHERE id=?1 AND revision=?3) ON CONFLICT(project) DO UPDATE SET next_due=excluded.next_due",params![project,next,settings.revision])?;
         Ok(json!({"job":job,"status":status,"report":report,"next_due":next}))
     }
     fn background_cycle(
@@ -124,6 +132,10 @@ impl Store {
         )
     }
     pub fn background_jobs(&self, project: &str, before: Option<i64>) -> Result<Value> {
+        ensure!(
+            before.is_none_or(|id| id > 0),
+            "before must be a positive job ID"
+        );
         let mut stmt=self.db.prepare("SELECT id,status,started,cancelled,report FROM background_jobs WHERE project=?1 AND (?2 IS NULL OR id<?2) ORDER BY id DESC LIMIT 101")?;
         let mut rows = stmt.query(params![project, before])?;
         let mut jobs = vec![];
@@ -149,12 +161,11 @@ impl Store {
         purpose: &str,
         amount: u64,
     ) -> Result<i64> {
-        self.check_job(project, job)?;
-        let budget = self.project(project)?.settings.daily_budget_microusd;
-        let day = now()? / 86400;
         let tx = self
             .db
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let budget: u64=tx.query_row("SELECT json_extract(projects.body,'$.settings.daily_budget_microusd') FROM projects JOIN background_jobs ON projects.id=background_jobs.project WHERE projects.id=?1 AND background_jobs.id=?2 AND projects.revision=background_jobs.revision AND background_jobs.cancelled=0 AND background_jobs.status='running' AND json_extract(projects.body,'$.settings.automatic')=1",params![project,job],|r|r.get(0)).context("background job cancelled or project authorization changed before reservation")?;
+        let day = now()? / 86400;
         tx.execute(
             "INSERT OR IGNORE INTO budgets(project,day,reserved) VALUES(?1,?2,0)",
             params![project, day],
@@ -252,5 +263,50 @@ mod tests {
         assert!(s.reserve_request(&p, job, "test", 4).is_err());
         s.cancel_background(&p).unwrap();
         assert!(s.reserve_request(&p, job, "test", 1).is_err());
+    }
+    #[test]
+    fn reconfiguration_reschedules_and_disabled_ticks_reconcile_crashes() {
+        let d = tempfile::tempdir().unwrap();
+        let (mut s, p) = configured(d.path());
+        assert_eq!(
+            s.background_tick(&p, Path::new("unused")).unwrap()["status"],
+            "completed"
+        );
+        let mut settings = s.project(&p).unwrap().settings;
+        settings.interval_seconds = 10;
+        s.configure_project(d.path(), "P", settings.clone(), Some(1))
+            .unwrap();
+        assert_eq!(
+            s.background_tick(&p, Path::new("unused")).unwrap()["status"],
+            "completed"
+        );
+        s.db.execute(
+            "INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,2,0,'running')",
+            [&p],
+        )
+        .unwrap();
+        settings.automatic = false;
+        s.configure_project(d.path(), "P", settings, Some(2))
+            .unwrap();
+        assert_eq!(
+            s.background_tick(&p, Path::new("unused")).unwrap()["status"],
+            "disabled"
+        );
+        assert_eq!(
+            s.background_jobs(&p, None).unwrap()["jobs"][0]["status"],
+            "interrupted"
+        );
+    }
+    #[test]
+    fn lock_identity_preserves_full_filename_and_resolves_database_aliases() {
+        let d = tempfile::tempdir().unwrap();
+        let (s, p) = configured(d.path());
+        let held = ProjectLock::acquire(&s, &p).unwrap();
+        std::os::unix::fs::symlink(d.path().join("state.db"), d.path().join("alias.db")).unwrap();
+        let alias = Store::open(&d.path().join("alias.db")).unwrap();
+        assert!(ProjectLock::acquire(&alias, &p).is_err());
+        let other = Store::open(&d.path().join("state.sqlite")).unwrap();
+        assert!(ProjectLock::acquire(&other, &p).is_ok());
+        drop(held);
     }
 }
