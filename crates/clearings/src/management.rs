@@ -73,6 +73,9 @@ impl Store {
                     "active version changed; inspect before retiring"
                 );
                 tx.execute("UPDATE project_routines SET paused=1,excluded=1,previous=NULL WHERE project=?1 AND name=?2",params![project,name])?;
+                if let Some(version) = actual {
+                    tx.execute("INSERT INTO component_changes(project,task,version,reason) VALUES(?1,?2,?3,'retired')", params![project,task,version])?;
+                }
                 tx.execute("DELETE FROM active WHERE task=?1", [&task])?;
                 tx.commit()?;
             }

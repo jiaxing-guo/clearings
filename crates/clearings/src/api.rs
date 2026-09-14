@@ -99,7 +99,13 @@ pub struct Api {
 impl Api {
     pub fn call(&mut self, op: Operation) -> Result<Value> {
         if let Some(project) = &self.project {
-            self.policy = self.store.project(project)?.settings.grants;
+            let grants = self.store.project(project)?.settings.grants;
+            if !matches!(op, Operation::ProjectStatus | Operation::Sdk) {
+                anyhow::ensure!(
+                    serde_json::to_value(&self.policy)? == serde_json::to_value(grants)?,
+                    "project grants changed; restart this session with the current policy"
+                );
+            }
         }
         match &op {
             Operation::Submit { task, .. }
@@ -123,9 +129,6 @@ impl Api {
                 task.project.is_none(),
                 "project ownership is host-assigned; omit project from task input"
             ),
-            Operation::Runs { .. } if self.project.is_some() => {
-                anyhow::bail!("use project performance records for project-scoped history")
-            }
             _ => {}
         }
         Ok(match op {
@@ -272,7 +275,9 @@ impl Api {
                 self.store
                     .run(&self.executable, &task, input, &self.policy)?
             }
-            Operation::Runs { before } => self.store.runs_page(before)?,
+            Operation::Runs { before } => self
+                .store
+                .runs_page_for_project(self.project.as_deref(), before)?,
             Operation::Sdk => {
                 json!({"typescript":include_str!("../../../sdk/clearings.d.ts"),"task_example":{
                     "contract":{"abi":1,"name":"double","description":"Double an integer","input_schema":{"type":"integer"},"output_schema":{"type":"integer"},"capabilities":[]},

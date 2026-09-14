@@ -24,3 +24,5 @@ Authorized background cycles apply the configured retention period to raw observ
 `model-usage` distinguishes provider-reported counters from conservative operator-priced budget reservations. A credential availability flag checks only whether the configured host environment variable exists. Session usage in `activity` remains separate because surrounding conversation tokens cannot reliably be assigned to a routine. Missing usage and total savings remain unknown.
 
 Rollback compares the current active and previous versions atomically, clears the consumed previous-version pointer and records the manual change in the digest. Digests expose job reports as structured JSON. Ungranted observation groups are reported as blocked while other eligible work and retention continue; evidence records identify the exact cases selected after deduplication.
+
+Retirement records the last active version in the component digest, so its source remains discoverable even without run history. Authorized background cycles apply retention before learning or improvement; a later optimization error remains explicit and cannot indefinitely block expiry.

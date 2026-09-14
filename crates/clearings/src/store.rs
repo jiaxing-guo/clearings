@@ -39,6 +39,53 @@ pub struct Case {
     #[serde(default)]
     pub calls: Vec<FixtureCall>,
 }
+impl Case {
+    pub(crate) fn validate(
+        &self,
+        contract: &Contract,
+        input_schema: &jsonschema::Validator,
+        output_schema: &jsonschema::Validator,
+    ) -> Result<()> {
+        ensure!(!self.name.is_empty(), "case names must be nonempty");
+        crate::contract::check_json(&self.input)?;
+        input_schema
+            .validate(&self.input)
+            .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
+        match &self.expected {
+            Outcome::Completed { output } => {
+                crate::contract::check_json(output)?;
+                output_schema
+                    .validate(output)
+                    .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
+            }
+            Outcome::NeedsAgent { context, .. } => crate::contract::check_json(context)?,
+            _ => {}
+        }
+        ensure!(
+            serde_json::to_vec(&self.expected)?.len() <= contract.limits.output_bytes,
+            "expected outcome exceeds run output byte limit"
+        );
+        ensure!(
+            self.calls.len() <= contract.limits.capability_calls,
+            "fixture exceeds call budget"
+        );
+        for call in &self.calls {
+            ensure!(
+                contract.capabilities.contains(&call.name),
+                "fixture capability was not declared"
+            );
+            crate::contract::check_json(&call.input)?;
+            crate::contract::check_json(&call.result)?;
+            crate::capabilities::validate_fixture(
+                &call.name,
+                &call.input,
+                &call.result,
+                contract.limits.output_bytes,
+            )?;
+        }
+        Ok(())
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Task {
@@ -103,42 +150,7 @@ impl Task {
                 !case.name.is_empty() && names.insert(&case.name),
                 "case names must be nonempty and unique"
             );
-            crate::contract::check_json(&case.input)?;
-            input_schema
-                .validate(&case.input)
-                .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
-            match &case.expected {
-                Outcome::Completed { output } => {
-                    crate::contract::check_json(output)?;
-                    output_schema
-                        .validate(output)
-                        .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
-                }
-                Outcome::NeedsAgent { context, .. } => crate::contract::check_json(context)?,
-                _ => {}
-            }
-            ensure!(
-                serde_json::to_vec(&case.expected)?.len() <= self.contract.limits.output_bytes,
-                "expected outcome exceeds run output byte limit"
-            );
-            ensure!(
-                case.calls.len() <= self.contract.limits.capability_calls,
-                "fixture exceeds call budget"
-            );
-            for call in &case.calls {
-                ensure!(
-                    self.contract.capabilities.contains(&call.name),
-                    "fixture capability was not declared"
-                );
-                crate::contract::check_json(&call.input)?;
-                crate::contract::check_json(&call.result)?;
-                crate::capabilities::validate_fixture(
-                    &call.name,
-                    &call.input,
-                    &call.result,
-                    self.contract.limits.output_bytes,
-                )?;
-            }
+            case.validate(&self.contract, &input_schema, &output_schema)?;
         }
         Ok(())
     }
@@ -213,6 +225,7 @@ impl Store {
             CREATE TABLE IF NOT EXISTS background_jobs(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),revision INTEGER NOT NULL,started INTEGER NOT NULL,status TEXT NOT NULL,cancelled INTEGER NOT NULL DEFAULT 0,report TEXT NOT NULL DEFAULT '{}');
             CREATE TABLE IF NOT EXISTS budgets(project TEXT NOT NULL REFERENCES projects(id),day INTEGER NOT NULL,reserved INTEGER NOT NULL,PRIMARY KEY(project,day));
             CREATE TABLE IF NOT EXISTS model_requests(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),job INTEGER NOT NULL REFERENCES background_jobs(id),purpose TEXT NOT NULL,reserved INTEGER NOT NULL,status TEXT NOT NULL,usage TEXT);
+            CREATE INDEX IF NOT EXISTS activity_contract ON activity(project,json_extract(body,'$.observation.contract'));
             CREATE TABLE IF NOT EXISTS learning_scan(project TEXT PRIMARY KEY REFERENCES projects(id),before_seq INTEGER);
             CREATE TABLE IF NOT EXISTS learning_groups(project TEXT NOT NULL REFERENCES projects(id),fingerprint TEXT NOT NULL,task TEXT NOT NULL REFERENCES objects(id),status TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,report TEXT NOT NULL DEFAULT '{}',PRIMARY KEY(project,fingerprint));
             CREATE TABLE IF NOT EXISTS component_changes(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),task TEXT NOT NULL REFERENCES objects(id),version TEXT NOT NULL REFERENCES objects(id),previous TEXT,reason TEXT NOT NULL,job INTEGER REFERENCES background_jobs(id),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
@@ -438,15 +451,14 @@ impl Store {
                     inner,
                     failed: false,
                 };
-                let run = execute::run(
+                let (run, worker_failure) = execute::run_with_worker_failure(
                     executable,
                     &task.contract,
                     &version.prepared,
                     input,
                     &mut broker,
                 );
-                let candidate_failure = !broker.failed
-                    && matches!(&run.outcome,Outcome::Failed{code,..} if code=="EXECUTION");
+                let candidate_failure = !broker.failed && worker_failure;
                 (run, candidate_failure)
             }
             Err(error) => (
@@ -528,6 +540,14 @@ impl Store {
     }
 
     pub fn runs_page(&self, before: Option<i64>) -> Result<Value> {
+        self.runs_page_for_project(None, before)
+    }
+
+    pub fn runs_page_for_project(
+        &self,
+        project: Option<&str>,
+        before: Option<i64>,
+    ) -> Result<Value> {
         const PAGE_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
         ensure!(
             before.is_none_or(|id| id > 0),
@@ -536,9 +556,9 @@ impl Store {
         let mut stmt = self.db.prepare(
             "SELECT id,version,input_digest,length(CAST(report AS BLOB)),
              CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at
-             FROM runs WHERE EXISTS (SELECT 1 FROM objects v JOIN objects t ON t.id=json_extract(v.body,'$.task') WHERE v.id=runs.version AND json_extract(t.body,'$.project') IS NULL) AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
+             FROM runs WHERE EXISTS (SELECT 1 FROM objects v JOIN objects t ON t.id=json_extract(v.body,'$.task') WHERE v.id=runs.version AND json_extract(t.body,'$.project') IS ?3 AND (?3 IS NULL OR EXISTS (SELECT 1 FROM project_routines p WHERE p.project=?3 AND p.task=t.id))) AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
         )?;
-        let mut rows = stmt.query(params![before, PAGE_BYTES])?;
+        let mut rows = stmt.query(params![before, PAGE_BYTES, project])?;
         let mut runs = Vec::new();
         let mut bytes = 64;
         let mut next_before = None;

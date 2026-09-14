@@ -1,5 +1,7 @@
 # Activity and performance records
 
+Individual observations may record any supported outcome, including handoffs, unsupported work and failures. They still require valid schemas, inputs and fixtures. Preparing an acceptance task additionally requires at least one completed case.
+
 `observe` imports complete JSONL lines from the project's selected sources. It filters sessions by their canonical working directory, stores checkpoints atomically with imported events, ignores partial final lines until completed, and deduplicates events after restart or rotation. Each poll has file, depth and byte limits. Missing files and malformed records produce explicit errors. No other project sessions are imported.
 
 Codex session metadata and cumulative `token_count` records are supported. Claude Code message usage records are deduplicated by message identity. Imported counters retain their host-reported provenance and whether they are cumulative. Do not sum cumulative counters. Cached input, cache creation and reasoning fields retain their own categories; they are not universally additive across providers. Unsupported or missing counters stay unknown.

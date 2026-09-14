@@ -205,6 +205,7 @@ fn tool_annotations_describe_state_replacement() {
                     | "clearings_save"
                     | "clearings_manage"
                     | "clearings_prune"
+                    | "clearings_background_cancel"
             )
         );
     }

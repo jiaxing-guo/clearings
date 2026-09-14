@@ -4,6 +4,53 @@ use clearings::{
 };
 use serde_json::json;
 use std::io::Write;
+
+#[test]
+fn observations_retain_all_outcomes_without_weakening_task_acceptance() {
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("outcomes.jsonl");
+    let contract = json!({"abi":1,"name":"identity","description":"identity","input_schema":{"type":"integer"},"output_schema":{"type":"integer"}});
+    let outcomes = [
+        json!({"status":"completed","output":1}),
+        json!({"status":"needs_agent","reason":"unknown format","context":{}}),
+        json!({"status":"not_applicable","reason":"unsupported"}),
+        json!({"status":"failed","code":"SOURCE","message":"unavailable"}),
+    ];
+    let records: Vec<_> = outcomes.iter().enumerate().map(|(i, expected)| json!({"type":"clearings_workflow","session_id":"s","cwd":d.path(),"event_id":format!("event-{i}"),"observation":{"contract":contract,"case":{"name":format!("case-{i}"),"input":1,"expected":expected}}}).to_string()).collect();
+    std::fs::write(&path, records.join("\n") + "\n").unwrap();
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(
+            d.path(),
+            "P",
+            Settings {
+                trace_sources: vec![TraceSource {
+                    adapter: "clearings".into(),
+                    path,
+                }],
+                ..Default::default()
+            },
+            None,
+        )
+        .unwrap();
+    let imported = store.observe(&p.id).unwrap();
+    assert_eq!(imported["imported"], 4);
+    assert_eq!(imported["errors"], json!([]));
+    let events = store.activity(&p.id, None).unwrap();
+    for expected in outcomes {
+        assert!(
+            events["events"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|e| e["event"]["observation"]["case"]["expected"] == expected)
+        );
+    }
+    let invalid: clearings::activity::Observation = serde_json::from_value(json!({"contract":contract,"case":{"name":"bad input","input":"wrong","expected":{"status":"failed","code":"SOURCE","message":"unavailable"}}})).unwrap();
+    assert!(invalid.validate().is_err());
+    let task: clearings::store::Task = serde_json::from_value(json!({"contract":contract,"cases":[{"name":"only handoff","input":1,"expected":{"status":"needs_agent","reason":"unsupported","context":{}}}]})).unwrap();
+    assert!(store.prepare_task(&task).is_err());
+}
 #[test]
 fn incremental_import_filters_projects_and_handles_partial_lines_and_rotation() {
     let d = tempfile::tempdir().unwrap();
