@@ -36,7 +36,7 @@ fn replacement_with_a_shared_header_replays_records_before_the_old_offset() {
     assert_eq!(&replacement[..4096], &original[..4096]);
     let replacement_path = d.path().join("replacement.jsonl");
     std::fs::write(&replacement_path, replacement).unwrap();
-    std::fs::rename(replacement_path, path).unwrap();
+    std::fs::rename(replacement_path, &path).unwrap();
     assert_eq!(store.observe(&p.id).unwrap()["imported"], 2);
     assert_eq!(
         store.activity(&p.id, None).unwrap()["events"]
@@ -45,6 +45,12 @@ fn replacement_with_a_shared_header_replays_records_before_the_old_offset() {
             .len(),
         3
     );
+    // Copy-truncate keeps the inode and header but rewrites the consumed boundary.
+    let rewritten = format!("{header}\n{}\n{}\n{}\n", event(40), event(50), event(60));
+    std::fs::write(&path, rewritten).unwrap();
+    let result = store.observe(&p.id).unwrap();
+    assert_eq!(result["errors"], json!([]));
+    assert_eq!(result["imported"], 3);
 }
 
 #[test]
@@ -59,7 +65,19 @@ fn observations_retain_all_outcomes_without_weakening_task_acceptance() {
         json!({"status":"failed","code":"SOURCE","message":"unavailable"}),
     ];
     let records: Vec<_> = outcomes.iter().enumerate().map(|(i, expected)| json!({"type":"clearings_workflow","session_id":"s","cwd":d.path(),"event_id":format!("event-{i}"),"observation":{"contract":contract,"case":{"name":format!("case-{i}"),"input":1,"expected":expected}}}).to_string()).collect();
-    std::fs::write(&path, records.join("\n") + "\n").unwrap();
+    let repeated: Vec<String> = records
+        .iter()
+        .map(|record| {
+            let mut value: serde_json::Value = serde_json::from_str(record).unwrap();
+            value["uuid"] = json!("another-envelope");
+            value.to_string()
+        })
+        .collect();
+    std::fs::write(
+        &path,
+        records.join("\n") + "\n" + &repeated.join("\n") + "\n",
+    )
+    .unwrap();
     let mut store = Store::open(&d.path().join("state.db")).unwrap();
     let p = store
         .configure_project(
@@ -138,11 +156,13 @@ fn incremental_import_filters_projects_and_handles_partial_lines_and_rotation() 
 fn claude_message_usage_is_deduplicated_and_missing_usage_is_not_zero() {
     let d = tempfile::tempdir().unwrap();
     let path = d.path().join("claude.jsonl");
-    let event = json!({"sessionId":"s","cwd":d.path(),"message":{"id":"msg1","usage":{"input_tokens":3,"output_tokens":4,"cache_read_input_tokens":10}}});
+    let event = json!({"uuid":"envelope-1","sessionId":"s","cwd":d.path(),"message":{"id":"msg1","usage":{"input_tokens":3,"output_tokens":4,"cache_read_input_tokens":10}}});
+    let mut repeated = event.clone();
+    repeated["uuid"] = json!("envelope-2");
     std::fs::write(
         &path,
         format!(
-            "{event}\n{event}\n{}\n",
+            "{event}\n{repeated}\n{}\n",
             json!({"sessionId":"s","cwd":d.path(),"message":{"id":"msg2"}})
         ),
     )
@@ -199,8 +219,16 @@ fn adapter_changes_replay_and_retention_and_cursors_are_scoped() {
         [&p.id],
     )
     .unwrap();
-    assert_eq!(s.observe(&p.id).unwrap()["expired"], 1);
     assert_eq!(s.activity(&p.id, None).unwrap()["events"], json!([]));
+    assert_eq!(
+        conn.query_row(
+            "SELECT count(*) FROM activity WHERE project=?1",
+            [&p.id],
+            |r| r.get::<_, u64>(0)
+        )
+        .unwrap(),
+        0
+    );
     let observation = json!({"contract":{"abi":1,"name":"identity","description":"identity","input_schema":{},"output_schema":{}},"case":{"name":"case","input":1,"expected":{"status":"completed","output":1}}});
     for field in ["session_id", "cwd", "event_id"] {
         let mut workflow = json!({"type":"clearings_workflow","session_id":"s","cwd":d.path(),"event_id":"w","observation":observation});
