@@ -165,23 +165,30 @@ impl Store {
         )
     }
     pub fn prune(&self, project: &str, apply: bool) -> Result<Value> {
+        let tx = rusqlite::Transaction::new_unchecked(
+            &self.db,
+            if apply {
+                rusqlite::TransactionBehavior::Immediate
+            } else {
+                rusqlite::TransactionBehavior::Deferred
+            },
+        )?;
         let days = self.project(project)?.settings.retention_days;
         let cutoff = format!("-{days} days");
-        let activity: u64 = self.db.query_row(
+        let activity: u64 = tx.query_row(
             "SELECT count(*) FROM activity WHERE project=?1 AND created_at<datetime('now',?2)",
             params![project, cutoff],
             |r| r.get(0),
         )?;
-        let runs:u64=self.db.query_row("SELECT count(*) FROM runs WHERE created_at<datetime('now',?2) AND version IN (SELECT id FROM objects WHERE kind='version' AND json_extract(body,'$.task') IN (SELECT task FROM project_routines WHERE project=?1))",params![project,cutoff],|r|r.get(0))?;
+        let runs:u64=tx.query_row("SELECT count(*) FROM runs WHERE created_at<datetime('now',?2) AND version IN (SELECT id FROM objects WHERE kind='version' AND json_extract(body,'$.task') IN (SELECT task FROM project_routines WHERE project=?1))",params![project,cutoff],|r|r.get(0))?;
         if apply {
-            let tx = self.db.unchecked_transaction()?;
             tx.execute(
                 "DELETE FROM activity WHERE project=?1 AND created_at<datetime('now',?2)",
                 params![project, cutoff],
             )?;
             tx.execute("DELETE FROM runs WHERE created_at<datetime('now',?2) AND version IN (SELECT id FROM objects WHERE kind='version' AND json_extract(body,'$.task') IN (SELECT task FROM project_routines WHERE project=?1))",params![project,cutoff])?;
-            tx.commit()?;
         }
+        tx.commit()?;
         Ok(
             json!({"applied":apply,"activity_records":activity,"run_records":runs,"retention_days":days,"preserved":"Immutable requirements, source, evaluations, budget reservations and component change history."}),
         )

@@ -144,7 +144,7 @@ impl Store {
             Err(e) => {
                 let requested:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM model_requests WHERE project=?1 AND job=?2 AND purpose='improve')",params![project,job],|r|r.get(0))?;
                 (
-                    if requested || resumed_candidate {
+                    if requested || resumed_candidate || e.is::<crate::model::RequestTooLarge>() {
                         "failed"
                     } else {
                         "deferred"

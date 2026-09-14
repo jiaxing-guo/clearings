@@ -288,3 +288,59 @@ fn digest_exposes_a_structured_job_report() {
         "created"
     );
 }
+
+#[test]
+fn pruning_waits_for_current_retention_settings_before_deleting() {
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", Settings::default(), None)
+        .unwrap();
+    let task: Task = serde_json::from_value(json!({"contract":{"abi":1,"name":"identity","description":"Identity","input_schema":{},"output_schema":{}},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":1}}]})).unwrap();
+    store.prepare_named(&p.id, task, "user").unwrap();
+    let saved = store
+        .save_named(
+            Path::new(env!("CARGO_BIN_EXE_clearings")),
+            &p.id,
+            "identity",
+            "export default async x=>({status:'completed',output:x})".into(),
+            None,
+        )
+        .unwrap();
+    let mut writer = rusqlite::Connection::open(&db).unwrap();
+    writer.execute("INSERT INTO activity(project,id,body,created_at) VALUES(?1,'event','{}',datetime('now','-100 days'))", [&p.id]).unwrap();
+    writer.execute("INSERT INTO runs(version,input_digest,report,created_at) VALUES(?1,'input','{}',datetime('now','-100 days'))", [saved["version"].as_str().unwrap()]).unwrap();
+    let tx = writer
+        .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+        .unwrap();
+    tx.execute("UPDATE projects SET body=json_set(body,'$.settings.retention_days',365),revision=revision+1 WHERE id=?1", [&p.id]).unwrap();
+    let (sender, receiver) = std::sync::mpsc::channel();
+    let project = p.id.clone();
+    let thread = std::thread::spawn(move || sender.send(store.prune(&project, true)).unwrap());
+    assert!(matches!(
+        receiver.recv_timeout(std::time::Duration::from_millis(100)),
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+    ));
+    tx.commit().unwrap();
+    let result = receiver
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .unwrap()
+        .unwrap();
+    thread.join().unwrap();
+    assert_eq!(result["retention_days"], 365);
+    assert_eq!(result["activity_records"], 0);
+    assert_eq!(result["run_records"], 0);
+    assert_eq!(
+        writer
+            .query_row("SELECT count(*) FROM activity", [], |r| r.get::<_, u64>(0))
+            .unwrap(),
+        1
+    );
+    assert_eq!(
+        writer
+            .query_row("SELECT count(*) FROM runs", [], |r| r.get::<_, u64>(0))
+            .unwrap(),
+        1
+    );
+}

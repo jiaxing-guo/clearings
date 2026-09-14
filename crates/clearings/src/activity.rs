@@ -174,16 +174,26 @@ impl Store {
         let mut errors = vec![];
         let mut remaining = 8 * IMPORT_BYTES;
         let mut remaining_records = 1000;
-        for source in &project.settings.trace_sources {
+        let sources = &project.settings.trace_sources;
+        let start = self.trace_scan_start(project_id, "", sources.len())?;
+        for position in 0..sources.len() {
             if remaining == 0 || remaining_records == 0 {
                 break;
             }
+            let index = (start + position) % sources.len();
+            let source = &sources[index];
+            self.advance_trace_scan(project_id, "", index + 1)?;
             match files(source) {
-                Ok(paths) => {
-                    for (path, file) in paths {
+                Ok(mut paths) => {
+                    let key = digest(&(&source.path, &source.adapter))?;
+                    let start = self.trace_scan_start(project_id, &key, paths.len())?;
+                    paths.rotate_left(start);
+                    let count = paths.len();
+                    for (position, (path, file)) in paths.into_iter().enumerate() {
                         if remaining == 0 || remaining_records == 0 {
                             break;
                         }
+                        self.advance_trace_scan(project_id, &key, (start + position + 1) % count)?;
                         match self.import_file(
                             &project,
                             source,
@@ -209,13 +219,25 @@ impl Store {
             json!({"imported":imported,"expired":expired,"errors":errors,"bytes_remaining":remaining,"records_remaining":remaining_records}),
         )
     }
+    fn trace_scan_start(&self, project: &str, source: &str, count: usize) -> Result<usize> {
+        let next: Option<usize> = self
+            .db
+            .query_row(
+                "SELECT next FROM trace_scan WHERE project=?1 AND source=?2",
+                params![project, source],
+                |r| r.get(0),
+            )
+            .optional()?;
+        Ok(next.unwrap_or(0) % count.max(1))
+    }
+    fn advance_trace_scan(&self, project: &str, source: &str, next: usize) -> Result<()> {
+        self.db.execute("INSERT INTO trace_scan(project,source,next) VALUES(?1,?2,?3) ON CONFLICT(project,source) DO UPDATE SET next=excluded.next", params![project,source,next])?;
+        Ok(())
+    }
     fn expire_activity(&self, project: &Project) -> Result<usize> {
         Ok(self.db.execute(
-            "DELETE FROM activity WHERE project=?1 AND created_at < datetime('now', ?2)",
-            params![
-                project.id,
-                format!("-{} days", project.settings.retention_days)
-            ],
+            "DELETE FROM activity WHERE project=?1 AND created_at < datetime('now', (SELECT '-' || json_extract(body,'$.settings.retention_days') || ' days' FROM projects WHERE id=?1))",
+            [&project.id],
         )?)
     }
     fn import_file(
@@ -405,7 +427,7 @@ impl Store {
             "before must be a positive activity ID"
         );
         self.expire_activity(&self.project(project)?)?;
-        let mut stmt=self.db.prepare("SELECT seq,id,body,created_at FROM activity WHERE project=?1 AND (?2 IS NULL OR seq<?2) ORDER BY seq DESC LIMIT 101")?;
+        let mut stmt=self.db.prepare("SELECT seq,id,body,created_at FROM activity WHERE project=?1 AND seq<COALESCE(?2,9223372036854775807) ORDER BY seq DESC LIMIT 101")?;
         let mut rows = stmt.query(params![project, before])?;
         let mut values = vec![];
         let mut size = 0;

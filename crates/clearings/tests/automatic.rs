@@ -487,6 +487,21 @@ fn invalid_candidate_output_restores_previous_version() {
     check_candidate_regression("return {status:'completed',output:7}");
 }
 
+#[test]
+fn candidate_call_budget_exhaustion_restores_previous_version() {
+    check_candidate_regression("{for(let i=0;i<65;i++)await clearings.call('files.read',x)}");
+}
+
+#[test]
+fn candidate_undeclared_call_restores_previous_version() {
+    check_candidate_regression("await clearings.call('files.list',x)");
+}
+
+#[test]
+fn candidate_malformed_call_restores_previous_version() {
+    check_candidate_regression("await clearings.call('files.read',{root:7,path:x.path})");
+}
+
 fn check_candidate_regression(fresh_failure: &str) {
     use clearings::store::Task;
     let d = tempfile::tempdir().unwrap();
@@ -904,4 +919,141 @@ fn invalid_proposals_keep_source_diagnostics_without_a_version() {
     assert_eq!(candidate["source_truncated"], false);
     assert!(candidate["version"].is_null());
     assert!(store.named_task(&p.id, "double", true).is_err());
+}
+
+#[test]
+fn oversized_creation_requests_are_terminal_without_spending_attempts() {
+    let d = tempfile::tempdir().unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let db = d.path().join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    let mut large = observation(1);
+    large.contract.name = "oversized".into();
+    large.contract.output_schema = json!({"type":"string"});
+    large.contract.limits.output_bytes = 1024 * 1024;
+    for i in 1..=3 {
+        large.case.input = json!(i);
+        large.case.expected = clearings::contract::Outcome::Completed {
+            output: json!("x".repeat(300 * 1024)),
+        };
+        store
+            .record_observation(&p.id, &format!("large-{i}"), large.clone())
+            .unwrap();
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["learning"]["status"], "rejected",
+        "{result}"
+    );
+    assert!(
+        result["report"]["learning"]["result"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("request exceeds byte limit")
+    );
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    assert_eq!(
+        conn.query_row("SELECT attempts FROM learning_groups", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        0
+    );
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        0
+    );
+    for i in 1..=3 {
+        store
+            .record_observation(&p.id, &format!("valid-{i}"), observation(i))
+            .unwrap();
+    }
+    conn.execute("UPDATE schedule SET next_due=0", []).unwrap();
+    let next = store.background_tick(&p.id, exe()).unwrap();
+    handle.join().unwrap();
+    assert_eq!(next["report"]["learning"]["status"], "created", "{next}");
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        1
+    );
+}
+
+#[test]
+fn oversized_improvement_requests_do_not_starve_later_routines() {
+    use clearings::store::Task;
+    let d = tempfile::tempdir().unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let db = d.path().join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let mut options = settings(url);
+    options.improve = true;
+    let p = store
+        .configure_project(d.path(), "P", options, None)
+        .unwrap();
+    let cases: Vec<Value> = (1..=3).map(|i| json!({"name":i.to_string(),"input":format!("{}{i}","x".repeat(300 * 1024)),"expected":{"status":"completed","output":300 * 1024 + 1}})).collect();
+    let task: Task = serde_json::from_value(json!({"contract":{"abi":1,"name":"a-large","description":"Length","input_schema":{"type":"string"},"output_schema":{"type":"integer"}},"cases":cases})).unwrap();
+    store.prepare_named(&p.id, task, "user").unwrap();
+    store
+        .save_named(
+            exe(),
+            &p.id,
+            "a-large",
+            "export default async x=>({status:'completed',output:x.length})".into(),
+            None,
+        )
+        .unwrap();
+    let cases: Vec<_> = (1..=3)
+        .map(|i| {
+            let mut case = observation(i).case;
+            case.name = i.to_string();
+            case
+        })
+        .collect();
+    let mut contract = observation(1).contract;
+    contract.name = "z-small".into();
+    let task: Task = serde_json::from_value(json!({"contract":contract,"cases":cases})).unwrap();
+    store.prepare_named(&p.id, task, "user").unwrap();
+    store
+        .save_named(
+            exe(),
+            &p.id,
+            "z-small",
+            "export default async x=>({status:'completed',output:x+x})".into(),
+            None,
+        )
+        .unwrap();
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["improvement"]["status"], "failed",
+        "{result}"
+    );
+    assert!(
+        result["report"]["improvement"]["report"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("request exceeds byte limit")
+    );
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        0
+    );
+    conn.execute("UPDATE schedule SET next_due=0", []).unwrap();
+    store.background_tick(&p.id, exe()).unwrap();
+    let prompt = handle.join().unwrap();
+    assert!(prompt.to_string().contains("z-small"));
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        1
+    );
 }
