@@ -40,6 +40,12 @@ enum Action {
         expected_revision: Option<u64>,
     },
     ProjectStatus,
+    RecordObservation {
+        #[arg(long)]
+        session: String,
+        #[arg(long)]
+        file: PathBuf,
+    },
     Background {
         #[arg(long)]
         once: bool,
@@ -273,6 +279,10 @@ fn main() -> Result<()> {
                 Action::Performance { name, after } => Operation::Performance { name, after },
                 Action::BackgroundCancel => Operation::BackgroundCancel,
                 Action::BackgroundJobs { before } => Operation::BackgroundJobs { before },
+                Action::RecordObservation { session, file } => Operation::RecordObservation {
+                    session,
+                    observation: read(file)?,
+                },
                 Action::ProjectStatus => Operation::ProjectStatus,
                 Action::List { after } => Operation::List { after },
                 Action::Inspect { id } => Operation::Inspect { id },

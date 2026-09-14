@@ -22,6 +22,7 @@ fn tool(
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("record_observation","Record supplied workflow evidence only when automatic and record_conversations authorization are enabled. The host assigns this connection's session identity.",json!({"observation":{"type":"object"}}),json!(["observation"]),false),
         tool("background_cancel","Cancel current project background work at its next bounded phase boundary.",json!({}),json!([]),false),
         tool("background_jobs","Inspect background progress, errors and interruptions.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
         tool("observe","Import new records from host-authorized project trace sources and expire old activity.",json!({}),json!([]),false),
@@ -68,6 +69,12 @@ pub fn tools_for_project(project_selected: bool) -> Value {
 }
 
 pub fn serve(mut api: Api) -> Result<()> {
+    let session = crate::store::digest(&(
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)?
+            .as_nanos(),
+    ))?;
     let catalog = tools_for_project(api.project.is_some());
     let mut input = BufReader::new(std::io::stdin().lock());
     let mut output = std::io::stdout().lock();
@@ -144,6 +151,9 @@ pub fn serve(mut api: Api) -> Result<()> {
                         if object.contains_key("action") {
                             Err(anyhow::anyhow!("action is not a tool argument"))
                         } else {
+                            if name == "clearings_record_observation" {
+                                object.insert("session".into(), json!(session));
+                            }
                             object.insert(
                                 "action".into(),
                                 json!(name.trim_start_matches("clearings_")),

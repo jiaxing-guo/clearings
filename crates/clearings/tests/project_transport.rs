@@ -420,3 +420,90 @@ fn cancelled_background_once_prints_failure_and_exits_unsuccessfully() {
         "failed"
     );
 }
+
+#[test]
+fn mcp_observation_identity_is_owned_by_the_host_connection() {
+    let d = tempfile::tempdir().unwrap();
+    let settings = json!({"automatic":true,"record_conversations":true,"daily_budget_microusd":100,"model":{"url":"http://127.0.0.1:9/chat","model":"test","max_output_tokens":100,"input_price":1,"output_price":1}});
+    std::fs::write(d.path().join("settings.json"), settings.to_string()).unwrap();
+    std::fs::write(d.path().join("policy.json"), "{}").unwrap();
+    let configured = cli(
+        d.path(),
+        &[
+            "project-configure",
+            "--root",
+            ".",
+            "--name",
+            "P",
+            "--settings",
+            "settings.json",
+        ],
+    );
+    assert!(configured.status.success());
+    let p: Value = serde_json::from_slice(&configured.stdout).unwrap();
+    let mut child = Command::new(env!("CARGO_BIN_EXE_clearings"))
+        .current_dir(d.path())
+        .args([
+            "--store",
+            "state.db",
+            "--project",
+            p["id"].as_str().unwrap(),
+            "mcp",
+            "--policy",
+            "policy.json",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut input = child.stdin.take().unwrap();
+    let mut output = BufReader::new(child.stdout.take().unwrap());
+    let mut line = String::new();
+    writeln!(input,"{}",json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}})).unwrap();
+    output.read_line(&mut line).unwrap();
+    writeln!(
+        input,
+        "{}",
+        json!({"jsonrpc":"2.0","method":"notifications/initialized"})
+    )
+    .unwrap();
+    for i in 0..4 {
+        let observation = json!({"contract":{"abi":1,"name":"identity","description":"identity","input_schema":{},"output_schema":{}},"case":{"name":"recorded","input":i,"expected":{"status":"completed","output":i}}});
+        let mut args = json!({"observation":observation});
+        if i == 0 {
+            args["session"] = json!("forged-session");
+        }
+        writeln!(input,"{}",json!({"jsonrpc":"2.0","id":i+2,"method":"tools/call","params":{"name":"clearings_record_observation","arguments":args}})).unwrap();
+        input.flush().unwrap();
+        line.clear();
+        output.read_line(&mut line).unwrap();
+        let result: Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(result["result"]["isError"], i == 0);
+    }
+    drop(input);
+    assert!(child.wait().unwrap().success());
+    let conn = rusqlite::Connection::open(d.path().join("state.db")).unwrap();
+    assert_eq!(
+        conn.query_row(
+            "SELECT count(DISTINCT json_extract(body,'$.session')) FROM activity",
+            [],
+            |r| r.get::<_, i64>(0)
+        )
+        .unwrap(),
+        1
+    );
+    let result = cli(
+        d.path(),
+        &[
+            "--project",
+            p["id"].as_str().unwrap(),
+            "background",
+            "--once",
+        ],
+    );
+    assert!(result.status.success());
+    assert_eq!(
+        serde_json::from_slice::<Value>(&result.stdout).unwrap()["report"]["learning"]["status"],
+        "no_eligible_observations"
+    );
+}

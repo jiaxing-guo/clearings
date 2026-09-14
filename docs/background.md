@@ -12,6 +12,28 @@ A kernel file lock prevents concurrent cycles for the same database and project.
 
 `background-jobs` reports completion, interruption and failures. Model requests reserve a conservative amount against a persisted UTC daily budget before sending. Reservations survive crashes and uncertain responses. A reservation is a local spending bound using configured prices, not a provider invoice. Unknown token usage remains unknown.
 
-This scheduling layer currently runs observation imports. Component generation and measured replacement are connected by the dependent learning changes; scheduling alone does not imply model work occurred. Failed `--once` jobs print their report and exit unsuccessfully. Reconfiguring a project resets its due time, and disabled projects still reconcile interrupted jobs.
+## Automatic component creation
+
+When `automatic` is enabled, each due cycle imports selected records and considers one eligible workflow. It requires at least three distinct inputs across at least `min_occurrences` distinct sessions, consistent outcomes, and a read-only file or pure transformation contract. It excludes configured names and existing named routines. Plain conversational text is not treated as behavioral evidence.
+
+An integration may supply structured records through the selected trace files. If the project also explicitly enables `record_conversations`, the active agent can call `clearings_record_observation` after completing work, using actual input, output and tool results. This records evidence without asking the user to save each workflow. Agent-supplied observations retain that provenance. General automatic reconstruction of arbitrary shell commands or free-text histories is not supported.
+
+Acceptance cases are stored before requesting source. One recorded example is withheld from the authoring request. The configured model returns a JSON source proposal; the isolated TypeScript runtime prepares and evaluates it. Passing candidates become discoverable and reusable in later project sessions. This establishes agreement on recorded cases, not general correctness or measured token savings.
+
+A workflow has at most two authoring attempts, using the same frozen cases, across scheduled cycles. Failed attempts and their budget reservations remain visible. Model responses cannot change grants, acceptance cases or host settings. A configuration change, cancellation, concurrent manual replacement, pause or exclusion prevents automatic promotion.
+
+Observation scans retain a cursor across bounded cycles so older groups remain reachable. Budget refusal does not consume an authoring attempt. `background-jobs` includes request reservations, status and reported usage. Cancellation or changed authorization fails the job explicitly.
+
+MCP observation tools use one host-generated session identity per server connection; the caller cannot supply it. Transcript imports and the host CLI retain host-supplied session identities. These are provenance boundaries, not proof that supplied observations are true or that sessions are statistically independent.
+
+Reconfiguration resets the due time, disabled ticks reconcile interrupted work, and failed `background --once` jobs return an unsuccessful exit status.
+
+Learning groups matching contracts before applying its scan cursor, so unrelated records cannot split a workflow across pages. Each cycle reads at most 500 contract groups and 8 MiB of observations; each group supplies at most 500 records and 4 MiB. Groups without any completed case remain observations and cannot become acceptance tasks.
+
+Oversized or otherwise invalid combined acceptance groups are reported and skipped before storage. A group that cannot reserve a model request yields to other eligible groups, so a cheaper request can still fit the remaining budget. No attempt is consumed before reservation.
 
 Background coordination supports processes that share the same canonical database path within one filesystem namespace. Symlink aliases resolve to that path; hard-linked database files are rejected. Exposing one database through different bind-mount paths or filesystem namespaces is not a supported storage layout.
+
+Observation sampling represents distinct input/outcome pairs and session identities within the existing per-group record and byte limits. Failed proposals retain bounded source diagnostics even when TypeScript preparation fails before a version is created.
+
+An assembled model request above 512 KiB is rejected permanently for that frozen workflow without spending an authoring attempt. Later cycles skip the rejected group and continue considering other work. Budget refusal remains retryable.

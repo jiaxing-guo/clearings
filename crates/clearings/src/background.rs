@@ -111,12 +111,20 @@ impl Store {
         &mut self,
         project: &str,
         job: i64,
-        _executable: &std::path::Path,
+        executable: &std::path::Path,
     ) -> Result<Value> {
         self.check_job(project, job)?;
         let observation = self.observe(project)?;
         self.check_job(project, job)?;
-        Ok(json!({"observation":observation}))
+        if observation["errors"]
+            .as_array()
+            .is_some_and(|errors| !errors.is_empty())
+        {
+            return Ok(json!({"observation":observation}));
+        }
+        let learning = self.learn(project, job, executable)?;
+        self.check_job(project, job)?;
+        Ok(json!({"observation":observation,"learning":learning}))
     }
     pub(crate) fn check_job(&self, project: &str, job: i64) -> Result<()> {
         let (revision, cancelled, status): (u64, bool, String) = self.db.query_row(
@@ -159,8 +167,24 @@ impl Store {
                 more = true;
                 break;
             }
-            bytes += report.len();
-            jobs.push(json!({"id":r.get::<_,i64>(0)?,"status":r.get::<_,String>(1)?,"started":r.get::<_,i64>(2)?,"cancelled":r.get::<_,bool>(3)?,"report":serde_json::from_str::<Value>(&report)?}));
+            let job_id: i64 = r.get(0)?;
+            let mut requests=self.db.prepare("SELECT id,purpose,reserved,status,usage FROM model_requests WHERE project=?1 AND job=?2 ORDER BY id DESC LIMIT 101")?;
+            let raw: Vec<(i64, String, u64, String, Option<String>)> = requests
+                .query_map(params![project, job_id], |r| {
+                    Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
+                })?
+                .collect::<rusqlite::Result<_>>()?;
+            let truncated = raw.len() > 100;
+            let requests:Vec<Value>=raw.into_iter().take(100).map(|(id,purpose,reserved,status,usage)|Ok(json!({"id":id,"purpose":purpose,"reserved_microusd":reserved,"status":status,"usage":usage.map(|s|serde_json::from_str::<Value>(&s)).transpose()?}))).collect::<Result<_>>()?;
+            let entry = json!({"id":job_id,"status":r.get::<_,String>(1)?,"started":r.get::<_,i64>(2)?,"cancelled":r.get::<_,bool>(3)?,"report":serde_json::from_str::<Value>(&report)?,"requests":requests,"requests_truncated":truncated});
+            let length = serde_json::to_vec(&entry)?.len();
+            if bytes + length > 1024 * 1024 {
+                ensure!(!jobs.is_empty(), "job report exceeds page byte limit");
+                more = true;
+                break;
+            }
+            bytes += length;
+            jobs.push(entry);
         }
         Ok(
             json!({"jobs":jobs,"next_before":if more {jobs.last().map(|j|j["id"].clone())} else {None}}),
@@ -172,6 +196,16 @@ impl Store {
         job: i64,
         purpose: &str,
         amount: u64,
+    ) -> Result<i64> {
+        self.reserve_request_with_group(project, job, purpose, amount, None)
+    }
+    pub(crate) fn reserve_request_with_group(
+        &mut self,
+        project: &str,
+        job: i64,
+        purpose: &str,
+        amount: u64,
+        group: Option<&str>,
     ) -> Result<i64> {
         let tx = self
             .db
@@ -185,6 +219,9 @@ impl Store {
         ensure!(tx.execute("UPDATE budgets SET reserved=reserved+?3 WHERE project=?1 AND day=?2 AND reserved+?3<=?4",params![project,day,amount,budget])?==1,"optimizer budget exhausted; continue ordinary work");
         tx.execute("INSERT INTO model_requests(project,job,purpose,reserved,status) VALUES(?1,?2,?3,?4,'reserved')",params![project,job,purpose,amount])?;
         let id = tx.last_insert_rowid();
+        if let Some(group) = group {
+            ensure!(tx.execute("UPDATE learning_groups SET status='authoring',attempts=attempts+1 WHERE project=?1 AND fingerprint=?2 AND attempts<2 AND status!='created'",params![project,group])? == 1, "learning attempts are exhausted or the group changed");
+        }
         tx.commit()?;
         Ok(id)
     }

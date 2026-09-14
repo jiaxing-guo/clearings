@@ -41,11 +41,11 @@ Executing a routine against fresh inputs is different from caching its output. C
 
 ## User-directed learning
 
-Project-scoped observation scheduling is implemented. Scheduled synthesis is a separate dependent capability and is not implied by a completed observation cycle.
+Project-scoped observation scheduling and structured-observation synthesis are implemented. A completed cycle reports whether learning created a component, deferred work or found no eligible observations.
 
 The active host agent supplies selected task evidence and authors source using a bundled SDK. Clearings provides the execution and evaluation lifecycle through the same interface in each host. Historical transcript access is limited to user-selected available evidence. Reconstructed summaries are not exact tool recordings.
 
-On-demand teaching and scheduled imports of selected project records are available. Scheduled source synthesis is supplied by the next dependent change; a completed observation cycle does not imply synthesis. Remote workers and routine distribution remain outside this version. No separate model API key is needed merely to submit source authored by the existing agent.
+On-demand teaching and explicitly authorized background component creation are available. Background generation requires a configured model connection and conservative spending cap. Measured improvement is supplied by the next dependent change; remote workers and routine distribution remain outside this version. No separate model API key is needed merely to submit source authored by the existing agent.
 
 ## Success and limits
 

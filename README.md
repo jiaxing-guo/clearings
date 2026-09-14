@@ -8,7 +8,7 @@ The native Rust executable embeds the TypeScript transformer and JavaScript engi
 
 ## Status
 
-Project activity imports can run on a persisted background schedule. This scheduling layer does not yet generate or optimize routines.
+Project activity imports and automatic component creation run on a persisted background schedule. Generation uses frozen structured observations and an explicitly authorized model connection.
 
 The implementation includes isolated TypeScript execution, scoped file and HTTP capabilities, immutable routine versions, acceptance checking, activation, run records, CLI and MCP interfaces, and small Codex/Claude Code skill plugins. Three user-defined examples exercise the complete teach-and-reuse flow. See [workflows](docs/workflows.md), [installation](docs/installation.md), and [agent integration](docs/agents.md).
 
