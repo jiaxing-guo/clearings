@@ -1,0 +1,89 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}
+:root {
+  --color-fd-primary: hsl(153 34% 29%);
+}
+.dark {
+  --color-fd-primary: hsl(145 35% 70%);
+}
+/* Reading surfaces share a restrained hierarchy in both themes. */
+.home-intro {
+  max-width: 68rem;
+  margin: auto;
+  padding: 3rem 1.5rem;
+}
+.home-intro > p {
+  max-width: 45rem;
+  margin: 1.25rem 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+.home-intro h1 {
+  max-width: 44rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+.eyebrow,
+.home-intro .eyebrow {
+  margin: 0 0 0.65rem;
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.reading-paths {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+.reading-path {
+  display: block;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.75rem;
+  padding: 1.4rem;
+  background: var(--color-fd-card);
+  transition: border-color 0.15s;
+}
+.reading-path:hover {
+  border-color: var(--color-fd-primary);
+}
+.reading-path:focus-visible {
+  outline: 2px solid var(--color-fd-primary);
+  outline-offset: 4px;
+}
+.reading-path h2 {
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+.reading-path h2 span {
+  float: right;
+  color: var(--color-fd-muted-foreground);
+}
+.home-intro .reading-path p {
+  margin: 0.7rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-fd-muted-foreground);
+}
+.home-intro .home-note {
+  font-size: 0.85rem;
+  color: var(--color-fd-muted-foreground);
+}
+.home-note a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .reading-paths {
+    grid-template-columns: 1fr;
+  }
+}

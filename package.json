@@ -1,0 +1,24 @@
+{
+  "name": "clearings",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Product requirements and documentation for the Clearings backend execution runtime",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "packageManager": "npm@11.9.0",
+  "scripts": {
+    "docs:dev": "node scripts/dev-docs.mjs",
+    "docs:build": "npm --prefix website run build",
+    "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs",
+    "check": "npm run format:check && npm run docs:build && npm run docs:check",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "node scripts/clean.mjs"
+  },
+  "devDependencies": {
+    "prettier": "3.9.6"
+  },
+  "license": "Apache-2.0"
+}
