@@ -39,8 +39,8 @@ export default function Home() {
         </div>
         <p className="home-note">
           Isolated execution, immutable routine storage, evaluation and activation are implemented.
-          CLI/MCP lifecycle operations and agent integrations are the next steps. Token savings
-          remain to be measured.
+          CLI/MCP lifecycle operations and agent integrations are available; complete workflows and
+          review packages follow separately. Token savings remain to be measured.
         </p>
       </main>
     </HomeLayout>
