@@ -306,6 +306,23 @@ fn candidate_failure_leaves_ordinary_work_available_and_does_not_activate() {
     }
     let result = store.background_tick(&p.id, exe()).unwrap();
     assert_eq!(result["report"]["learning"]["status"], "failed");
+    let candidate = &result["report"]["learning"]["result"]["candidate"];
+    assert!(candidate["version"].as_str().is_some());
+    assert!(
+        candidate["source_preview"]
+            .as_str()
+            .unwrap()
+            .contains("output:0")
+    );
+    assert_eq!(candidate["source_truncated"], false);
+    assert_eq!(candidate["evaluation"]["accepted"], false);
+    assert!(
+        candidate["evaluation"]["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|case| case["accepted"] == false && case["outcome_preview"].as_str().is_some())
+    );
     handle.join().unwrap();
     assert!(store.named_task(&p.id, "double", true).is_err());
 }

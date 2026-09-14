@@ -25,11 +25,8 @@ impl ProjectLock {
         )
         .canonicalize()?;
         Store::check_database_links(&path)?;
-        let mut filename = path
-            .file_name()
-            .context("database filename is missing")?
-            .to_os_string();
-        filename.push(format!(".{project}.lock"));
+        let identity = crate::store::digest(&(path.as_os_str().as_encoded_bytes(), project))?;
+        let filename = format!(".clearings-{identity}.lock");
         let path = path.with_file_name(filename);
         let file = OpenOptions::new()
             .read(true)
@@ -419,6 +416,8 @@ mod tests {
         assert!(ProjectLock::acquire(&alias, &p).is_err());
         let other = Store::open(&d.path().join("state.sqlite")).unwrap();
         assert!(ProjectLock::acquire(&other, &p).is_ok());
+        let long = Store::open(&d.path().join(format!("{}.db", "x".repeat(200)))).unwrap();
+        assert!(ProjectLock::acquire(&long, &p).is_ok());
         drop(held);
     }
 }
