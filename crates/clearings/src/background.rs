@@ -103,9 +103,13 @@ impl Store {
             params![job, status, report.to_string()],
         )?;
         // Scheduling from completion coalesces missed periods into one catch-up cycle.
-        let next = now()? + settings.settings.interval_seconds as i64;
-        self.db.execute("INSERT INTO schedule(project,next_due) SELECT ?1,?2 WHERE EXISTS(SELECT 1 FROM projects WHERE id=?1 AND revision=?3) ON CONFLICT(project) DO UPDATE SET next_due=excluded.next_due",params![project,next,settings.revision])?;
+        let next = self.schedule_next(&settings)?;
         Ok(json!({"job":job,"status":status,"report":report,"next_due":next}))
+    }
+    fn schedule_next(&self, settings: &crate::project::Project) -> Result<Option<i64>> {
+        let next = now()? + settings.settings.interval_seconds as i64;
+        let scheduled = self.db.execute("INSERT INTO schedule(project,next_due) SELECT ?1,?2 WHERE EXISTS(SELECT 1 FROM projects WHERE id=?1 AND revision=?3) ON CONFLICT(project) DO UPDATE SET next_due=excluded.next_due",params![settings.id,next,settings.revision])?;
+        Ok((scheduled == 1).then_some(next))
     }
     fn background_cycle(
         &mut self,
@@ -379,10 +383,21 @@ mod tests {
             s.background_tick(&p, Path::new("unused")).unwrap()["status"],
             "completed"
         );
-        let mut settings = s.project(&p).unwrap().settings;
+        let snapshot = s.project(&p).unwrap();
+        let mut settings = snapshot.settings.clone();
         settings.interval_seconds = 10;
         s.configure_project(d.path(), "P", settings.clone(), Some(1))
             .unwrap();
+        assert!(s.schedule_next(&snapshot).unwrap().is_none());
+        assert_eq!(
+            s.db.query_row(
+                "SELECT count(*) FROM schedule WHERE project=?1",
+                [&p],
+                |r| r.get::<_, u64>(0)
+            )
+            .unwrap(),
+            0
+        );
         assert_eq!(
             s.background_tick(&p, Path::new("unused")).unwrap()["status"],
             "completed"

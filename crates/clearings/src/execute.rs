@@ -176,10 +176,10 @@ pub fn run(
     input: Value,
     broker: &mut dyn Broker,
 ) -> Run {
-    run_with_worker_failure(executable, contract, prepared, input, broker).0
+    run_with_candidate_failure(executable, contract, prepared, input, broker).0
 }
 
-pub(crate) fn run_with_worker_failure(
+pub(crate) fn run_with_candidate_failure(
     executable: &Path,
     contract: &Contract,
     prepared: &Prepared,
@@ -188,7 +188,7 @@ pub(crate) fn run_with_worker_failure(
 ) -> (Run, bool) {
     let start = Instant::now();
     let mut capability_calls = 0;
-    let mut worker_failure = false;
+    let mut candidate_failure = false;
     let result = (|| -> Result<Outcome> {
         contract.limits.validate()?;
         let deadline = start + Duration::from_millis(contract.limits.wall_ms);
@@ -197,6 +197,7 @@ pub(crate) fn run_with_worker_failure(
             contract,
             Validation::Input(input.clone()),
             deadline,
+            &mut false,
         )?;
         let request = Request::Run {
             prepared: prepared.clone(),
@@ -218,11 +219,12 @@ pub(crate) fn run_with_worker_failure(
                     contract,
                     Validation::Outcome(outcome.clone()),
                     deadline,
+                    &mut candidate_failure,
                 )?;
                 Ok(outcome)
             }
             Event::Error { message } => {
-                worker_failure = true;
+                candidate_failure = true;
                 Ok(Outcome::failed("EXECUTION", message))
             }
             _ => bail!("invalid execution result"),
@@ -239,7 +241,7 @@ pub(crate) fn run_with_worker_failure(
             capability_calls,
             model_usage: None,
         },
-        worker_failure,
+        candidate_failure,
     )
 }
 
@@ -248,6 +250,7 @@ fn validate(
     contract: &Contract,
     boundary: Validation,
     deadline: Instant,
+    invalid_value: &mut bool,
 ) -> Result<()> {
     match exchange(
         executable,
@@ -261,7 +264,10 @@ fn validate(
         deadline,
     )? {
         Event::Validated => Ok(()),
-        Event::Error { message } => bail!("{message}"),
+        Event::Error { message } => {
+            *invalid_value = true;
+            bail!("{message}")
+        }
         _ => bail!("invalid validation result"),
     }
 }
