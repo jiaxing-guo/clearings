@@ -11,6 +11,13 @@ use std::path::PathBuf;
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
     ProjectStatus,
+    Observe,
+    Activity {
+        before: Option<i64>,
+    },
+    Performance {
+        name: String,
+    },
     Discover {
         after: Option<String>,
     },
@@ -88,6 +95,23 @@ impl Api {
             }
         }
         Ok(match op {
+            Operation::Observe => self.store.observe(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+            )?,
+            Operation::Activity { before } => self.store.activity(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                before,
+            )?,
+            Operation::Performance { name } => self.store.performance(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                &name,
+            )?,
             Operation::Discover { after } => self.store.named_list(
                 self.project
                     .as_deref()

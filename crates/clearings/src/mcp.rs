@@ -22,6 +22,9 @@ fn tool(
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("observe","Import new records only from host-authorized project trace sources.",json!({}),json!([]),false),
+        tool("activity","Inspect a page of imported project records, retaining unknown usage and provenance.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
+        tool("performance","Inspect version-linked execution outcomes and costs; unknown savings remain unknown.",json!({"name":{"type":"string"}}),json!(["name"]),true),
         tool("discover", "Find saved routines by readable names in this project. Use next_after to continue.", json!({"after":{"type":"string"}}), json!([]), true),
         tool("save", "Save or revise a routine whose requirements were prepared first. Evaluates and activates only on success. Supply the previous active version for revision.", json!({"name":{"type":"string"},"source":{"type":"string","maxLength":262144},"expected_active":{"type":["string","null"]}}), json!(["name","source","expected_active"]), false),
         tool("reuse", "Run a named saved routine on fresh input. A handoff or failure means continue ordinary agent work.", json!({"name":{"type":"string"},"input":{}}), json!(["name","input"]), false),

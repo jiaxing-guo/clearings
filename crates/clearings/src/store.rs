@@ -185,7 +185,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 2, "store was created by a newer version");
+        ensure!(schema <= 3, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -193,7 +193,9 @@ impl Store {
             CREATE TABLE IF NOT EXISTS runs (id INTEGER PRIMARY KEY, version TEXT NOT NULL, input_digest TEXT NOT NULL, report TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(version) REFERENCES objects(id));
             CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, revision INTEGER NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS project_routines (project TEXT NOT NULL REFERENCES projects(id), name TEXT NOT NULL, task TEXT NOT NULL REFERENCES objects(id), origin TEXT NOT NULL, paused INTEGER NOT NULL DEFAULT 0, excluded INTEGER NOT NULL DEFAULT 0, previous TEXT, PRIMARY KEY(project,name), UNIQUE(project,task));
-            PRAGMA user_version=2;")?;
+            CREATE TABLE IF NOT EXISTS trace_checkpoints(project TEXT NOT NULL REFERENCES projects(id), path TEXT NOT NULL, body TEXT NOT NULL, PRIMARY KEY(project,path));
+            CREATE TABLE IF NOT EXISTS activity(seq INTEGER PRIMARY KEY, project TEXT NOT NULL REFERENCES projects(id), id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(project,id));
+            PRAGMA user_version=3;")?;
         Ok(Self { db })
     }
     fn put(&self, kind: &str, value: &impl Serialize) -> Result<String> {

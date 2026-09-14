@@ -40,6 +40,14 @@ enum Action {
         expected_revision: Option<u64>,
     },
     ProjectStatus,
+    Observe,
+    Activity {
+        #[arg(long)]
+        before: Option<i64>,
+    },
+    Performance {
+        name: String,
+    },
     Discover {
         #[arg(long)]
         after: Option<String>,
@@ -232,6 +240,9 @@ fn main() -> Result<()> {
                     name,
                     input: read(input)?,
                 },
+                Action::Observe => Operation::Observe,
+                Action::Activity { before } => Operation::Activity { before },
+                Action::Performance { name } => Operation::Performance { name },
                 Action::ProjectStatus => Operation::ProjectStatus,
                 Action::List { after } => Operation::List { after },
                 Action::Inspect { id } => Operation::Inspect { id },
