@@ -1,5 +1,6 @@
 pub mod activity;
 pub mod api;
+pub mod background;
 mod blocking_io;
 pub mod capabilities;
 pub mod contract;

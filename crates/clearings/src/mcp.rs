@@ -22,6 +22,8 @@ fn tool(
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("background_cancel","Cancel current project background work at its next bounded phase boundary.",json!({}),json!([]),false),
+        tool("background_jobs","Inspect background progress, errors and interruptions.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
         tool("observe","Import new records only from host-authorized project trace sources.",json!({}),json!([]),false),
         tool("activity","Inspect a page of imported project records, retaining unknown usage and provenance.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
         tool("performance","Inspect version-linked execution outcomes and costs; unknown savings remain unknown.",json!({"name":{"type":"string"}}),json!(["name"]),true),
