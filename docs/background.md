@@ -13,3 +13,5 @@ A kernel file lock prevents concurrent cycles for the same database and project.
 `background-jobs` reports completion, interruption and failures. Model requests reserve a conservative amount against a persisted UTC daily budget before sending. Reservations survive crashes and uncertain responses. A reservation is a local spending bound using configured prices, not a provider invoice. Unknown token usage remains unknown.
 
 This scheduling layer currently runs observation imports. Component generation and measured replacement are connected by the dependent learning changes; scheduling alone does not imply model work occurred. Failed `--once` jobs print their report and exit unsuccessfully. Reconfiguring a project resets its due time, and disabled projects still reconcile interrupted jobs.
+
+Background coordination supports processes that share the same canonical database path within one filesystem namespace. Symlink aliases resolve to that path; hard-linked database files are rejected. Exposing one database through different bind-mount paths or filesystem namespaces is not a supported storage layout.

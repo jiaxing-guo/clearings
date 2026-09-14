@@ -297,3 +297,33 @@ fn performance_preserves_each_outcome_and_pages_all_versions() {
     assert_eq!(next["versions"].as_array().unwrap().len(), 1);
     assert!(next["next_after"].is_null());
 }
+
+#[test]
+fn tiny_records_are_bounded_and_resume_without_skipping_usage() {
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("tiny.jsonl");
+    let meta = json!({"type":"session_meta","payload":{"id":"one","cwd":d.path()}});
+    let usage = json!({"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":10,"output_tokens":2}}}});
+    std::fs::write(&path, format!("{meta}\n{}{usage}\n", "{}\n".repeat(1000))).unwrap();
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(
+            d.path(),
+            "P",
+            Settings {
+                trace_sources: vec![TraceSource {
+                    adapter: "codex".into(),
+                    path,
+                }],
+                ..Default::default()
+            },
+            None,
+        )
+        .unwrap();
+    let first = store.observe(&p.id).unwrap();
+    assert_eq!(first["records_remaining"], 0);
+    assert_eq!(first["imported"], 0);
+    assert_eq!(first["errors"], json!([]));
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
+}
