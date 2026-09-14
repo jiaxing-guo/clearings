@@ -24,6 +24,7 @@ impl ProjectLock {
                 .context("background work requires a persistent database")?,
         )
         .canonicalize()?;
+        Store::check_database_links(&path)?;
         let mut filename = path
             .file_name()
             .context("database filename is missing")?
@@ -275,6 +276,28 @@ mod tests {
         (store, p.id)
     }
     use std::path::Path;
+    #[test]
+    fn hard_linked_databases_are_rejected_before_alias_sidecars_are_created() {
+        let d = tempfile::tempdir().unwrap();
+        let (mut store, project) = configured(d.path());
+        let alias = d.path().join("alias.db");
+        std::fs::hard_link(d.path().join("state.db"), &alias).unwrap();
+        assert!(Store::open(&alias).is_err());
+        assert!(!d.path().join("alias.db-wal").exists());
+        assert!(!d.path().join("alias.db-shm").exists());
+        assert!(
+            store
+                .background_tick(&project, Path::new("unused"))
+                .is_err()
+        );
+        std::fs::remove_file(alias).unwrap();
+        assert_eq!(
+            store
+                .background_tick(&project, Path::new("unused"))
+                .unwrap()["status"],
+            "completed"
+        );
+    }
     #[test]
     fn incomplete_imports_fail_jobs_and_preserve_source_errors() {
         for malformed in [false, true] {

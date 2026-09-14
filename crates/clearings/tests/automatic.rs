@@ -80,6 +80,108 @@ fn observation(x: i64) -> Observation {
 }
 
 #[test]
+fn oversized_groups_are_reported_without_blocking_valid_work() {
+    let d = tempfile::tempdir().unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    let mut large = observation(1);
+    large.contract.output_schema = json!({"type":"string"});
+    large.contract.limits.output_bytes = 1024 * 1024;
+    let valid_fingerprint = clearings::store::digest(&observation(1).contract).unwrap();
+    let name = (0..100)
+        .find_map(|i| {
+            large.contract.name = format!("large-{i}");
+            (clearings::store::digest(&large.contract).unwrap() < valid_fingerprint)
+                .then(|| large.contract.name.clone())
+        })
+        .unwrap();
+    for i in 1..=3 {
+        large.case.input = json!(i);
+        large.case.expected = clearings::contract::Outcome::Completed {
+            output: json!("x".repeat(600 * 1024)),
+        };
+        store
+            .record_observation(&p.id, &format!("large-{i}"), large.clone())
+            .unwrap();
+        store
+            .record_observation(&p.id, &format!("valid-{i}"), observation(i))
+            .unwrap();
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["learning"]["status"], "created",
+        "{result}"
+    );
+    assert_eq!(result["report"]["learning"]["rejected_groups"], 1);
+    assert_eq!(result["report"]["learning"]["skipped"][0]["name"], name);
+    handle.join().unwrap();
+}
+
+#[test]
+fn unaffordable_groups_yield_to_smaller_requests_without_spending_attempts() {
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let mut options = settings(url);
+    options.daily_budget_microusd = 50;
+    options.model.as_mut().unwrap().input_price = 1000;
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", options, None)
+        .unwrap();
+    let mut expensive = observation(1);
+    expensive.contract.input_schema = json!({"type":"object"});
+    let valid_fingerprint = clearings::store::digest(&observation(1).contract).unwrap();
+    let fingerprint = (0..100)
+        .find_map(|i| {
+            expensive.contract.name = format!("expensive-{i}");
+            let fingerprint = clearings::store::digest(&expensive.contract).unwrap();
+            (fingerprint < valid_fingerprint).then_some(fingerprint)
+        })
+        .unwrap();
+    for i in 1..=3 {
+        expensive.case.input = json!({"number":i,"padding":"x".repeat(100_000)});
+        expensive.case.expected = clearings::contract::Outcome::Completed {
+            output: json!(i * 2),
+        };
+        store
+            .record_observation(&p.id, &format!("expensive-{i}"), expensive.clone())
+            .unwrap();
+        store
+            .record_observation(&p.id, &format!("valid-{i}"), observation(i))
+            .unwrap();
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["learning"]["status"], "created",
+        "{result}"
+    );
+    assert_eq!(result["report"]["learning"]["deferred_groups"], 1);
+    let request = handle.join().unwrap();
+    let packet: Value =
+        serde_json::from_str(request["messages"][1]["content"].as_str().unwrap()).unwrap();
+    assert_eq!(packet["packet"]["contract"]["name"], "double");
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    let group: (String, i64) = conn
+        .query_row(
+            "SELECT status,attempts FROM learning_groups WHERE fingerprint=?1",
+            [fingerprint],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(group, ("deferred".into(), 0));
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        1
+    );
+}
+
+#[test]
 fn observations_separated_by_other_work_form_one_eligible_group() {
     let d = tempfile::tempdir().unwrap();
     let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
@@ -446,7 +548,14 @@ fn interrupted_measurement_resumes_past_excluded_routines_without_a_model_reques
     let cases:Vec<_>=(1..=3).map(|x|json!({"name":x.to_string(),"input":x,"expected":{"status":"completed","output":x*2}})).collect();
     let mut baseline = String::new();
     let mut task_id = String::new();
-    for name in ["a-hidden", "b-too-few", "c-too-many", "z-target"] {
+    let mut invalid_trial = None;
+    for name in [
+        "a-hidden",
+        "b-too-few",
+        "c-too-many",
+        "y-invalid",
+        "z-target",
+    ] {
         let task_cases = match name {
             "b-too-few" => cases[..1].to_vec(),
             "c-too-many" => (1..=9).map(|x|json!({"name":x.to_string(),"input":x,"expected":{"status":"completed","output":x*2}})).collect(),
@@ -463,6 +572,16 @@ fn interrupted_measurement_resumes_past_excluded_routines_without_a_model_reques
                 None,
             )
             .unwrap();
+        if name == "y-invalid" {
+            let candidate = store
+                .submit(
+                    exe(),
+                    &id,
+                    "export default async x=>({status:'completed',output:0})".into(),
+                )
+                .unwrap();
+            invalid_trial = Some((saved["version"].as_str().unwrap().to_owned(), candidate));
+        }
         if name == "z-target" {
             task_id = id;
             baseline = saved["version"].as_str().unwrap().into();
@@ -476,12 +595,28 @@ fn interrupted_measurement_resumes_past_excluded_routines_without_a_model_reques
         )
         .unwrap();
     let conn = rusqlite::Connection::open(&db).unwrap();
+    let (invalid_baseline, invalid_candidate) = invalid_trial.unwrap();
+    conn.execute("INSERT INTO improvement_trials(project,baseline,candidate,status) VALUES(?1,?2,?3,'measuring')",rusqlite::params![p.id,invalid_baseline,invalid_candidate]).unwrap();
     conn.execute("INSERT INTO improvement_trials(project,baseline,candidate,status) VALUES(?1,?2,?3,'measuring')",rusqlite::params![p.id,baseline,candidate]).unwrap();
     conn.execute(
         "INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,1,0,'running')",
         [&p.id],
     )
     .unwrap();
+    let rejected = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        rejected["report"]["improvement"]["status"], "failed",
+        "{rejected}"
+    );
+    let status: String = conn
+        .query_row(
+            "SELECT status FROM improvement_trials WHERE baseline=?1",
+            [&invalid_baseline],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(status, "failed");
+    conn.execute("UPDATE schedule SET next_due=0", []).unwrap();
     let result = store.background_tick(&p.id, exe()).unwrap();
     assert_eq!(result["status"], "completed", "{result}");
     assert!(
@@ -501,6 +636,6 @@ fn interrupted_measurement_resumes_past_excluded_routines_without_a_model_reques
         conn.query_row("SELECT count(*) FROM improvement_trials", [], |r| r
             .get::<_, i64>(0))
             .unwrap(),
-        1
+        2
     );
 }

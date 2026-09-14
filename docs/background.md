@@ -1,5 +1,7 @@
 # Background execution
 
+Hard-linked database files are rejected before opening SQLite and before acquiring a background lock, because SQLite WAL sidecars belong to a single database path. Symlink aliases resolve to the same canonical database and lock.
+
 A cycle with observation errors is recorded as failed and retains the structured source errors, even when no records were imported. `background --once` returns an unsuccessful exit status for that result. A valid empty source can still complete successfully.
 
 After project authorization, run `clearings --store /private/state.db --project PROJECT_ID background`. It remains a foreground process suitable for a service manager. `background --once` executes one due cycle, which also makes it suitable for an external timer. Neither command installs or enables a system service.
@@ -37,3 +39,7 @@ Reconfiguration resets the due time, disabled ticks reconcile interrupted work, 
 Learning groups observations by contract before applying its scan cursor, so unrelated records cannot split a workflow across pages. Each cycle reads at most 500 contract groups and 8 MiB of observations; each group supplies at most 500 records and 4 MiB. Groups without any completed case remain observations and cannot become acceptance tasks.
 
 Improvement selection skips tasks outside the supported 3-to-8-case range. Automatic rollback distinguishes an actual worker error from an authored `failed` outcome, even when authored code uses the same public failure-code text.
+
+Oversized or otherwise invalid combined acceptance groups are reported and skipped before storage. A group that cannot reserve a model request yields to other eligible groups, so a cheaper request can still fit the remaining budget. No attempt is consumed before reservation.
+
+A resumed candidate that fails validation or measurement is recorded as a terminal failed trial, so it cannot repeatedly block later routines. Cancellation remains resumable; requests that were never reserved can remain deferred.
