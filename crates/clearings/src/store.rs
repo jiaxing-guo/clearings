@@ -467,14 +467,14 @@ impl Store {
                     inner,
                     failed: false,
                 };
-                let (run, worker_failure) = execute::run_with_worker_failure(
+                let (run, execution_failure) = execute::run_with_candidate_failure(
                     executable,
                     &task.contract,
                     &version.prepared,
                     input,
                     &mut broker,
                 );
-                let candidate_failure = !broker.failed && worker_failure;
+                let candidate_failure = !broker.failed && execution_failure;
                 (run, candidate_failure)
             }
             Err(error) => (

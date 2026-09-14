@@ -41,11 +41,28 @@ impl Store {
             serde_json::to_vec(&body)?.len() <= 1024 * 1024,
             "observation exceeds byte limit"
         );
-        let inserted = self.db.execute(
-            "INSERT OR IGNORE INTO activity(project,id,body) VALUES(?1,?2,?3)",
-            params![project, id, body.to_string()],
-        )?;
+        let inserted = self.insert_observation(&p, &id, &body)?;
         Ok(json!({"recorded":inserted==1,"id":id,"provenance":"agent_supplied_observation"}))
+    }
+    fn insert_observation(&self, project: &Project, id: &str, body: &Value) -> Result<usize> {
+        let tx = rusqlite::Transaction::new_unchecked(
+            &self.db,
+            rusqlite::TransactionBehavior::Immediate,
+        )?;
+        let authorized: bool = tx.query_row(
+            "SELECT EXISTS(SELECT 1 FROM projects WHERE id=?1 AND revision=?2 AND json_extract(body,'$.settings.automatic')=1 AND json_extract(body,'$.settings.record_conversations')=1)",
+            params![project.id, project.revision], |r| r.get(0),
+        )?;
+        ensure!(
+            authorized,
+            "project authorization changed before recording observation"
+        );
+        let inserted = tx.execute(
+            "INSERT OR IGNORE INTO activity(project,id,body) VALUES(?1,?2,?3)",
+            params![project.id, id, body.to_string()],
+        )?;
+        tx.commit()?;
+        Ok(inserted)
     }
     pub(crate) fn learn(&mut self, project: &str, job: i64, executable: &Path) -> Result<Value> {
         let p = self.project(project)?;
@@ -58,13 +75,6 @@ impl Store {
         let mut deferred_result = None;
         for (fingerprint, group) in groups {
             self.check_job(project, job)?;
-            if group.observations.len() < p.settings.min_occurrences {
-                continue;
-            }
-            let sessions: BTreeSet<_> = group.observations.iter().map(|(s, _, _, _)| s).collect();
-            if sessions.len() < p.settings.min_occurrences {
-                continue;
-            }
             let first = &group.observations[0].2;
             if p.settings.excludes(&first.contract.name) {
                 continue;
@@ -89,58 +99,68 @@ impl Store {
             {
                 continue;
             }
-            let mut task = Task {
-                evidence: None,
-                project: Some(project.into()),
-                evaluation: EvaluationMode::ReadOnlyBehavior,
-                contract: first.contract.clone(),
-                cases: vec![],
-            };
-            if task
-                .contract
-                .capabilities
-                .iter()
-                .any(|c| !matches!(c.as_str(), "files.read" | "files.list"))
-            {
-                continue;
-            }
-            task.contract.limits.wall_ms = task.contract.limits.wall_ms.min(5000);
-            let mut inputs = BTreeMap::new();
-            let mut conflict = false;
-            let mut source_records = vec![];
-            for (_, id, o, provenance) in &group.observations {
-                let key = digest(&o.case.input)?;
-                if let Some(old) = inputs.insert(key, o.case.expected.clone()) {
-                    if old != o.case.expected {
-                        conflict = true;
-                        break;
-                    } else {
-                        continue;
+            let task = if let Some((_, id, _)) = &previous {
+                self.get("task", id)?
+            } else {
+                if group.observations.len() < p.settings.min_occurrences {
+                    continue;
+                }
+                let sessions: BTreeSet<_> =
+                    group.observations.iter().map(|(s, _, _, _)| s).collect();
+                if sessions.len() < p.settings.min_occurrences {
+                    continue;
+                }
+                let mut task = Task {
+                    evidence: None,
+                    project: Some(project.into()),
+                    evaluation: EvaluationMode::ReadOnlyBehavior,
+                    contract: first.contract.clone(),
+                    cases: vec![],
+                };
+                if task
+                    .contract
+                    .capabilities
+                    .iter()
+                    .any(|c| !matches!(c.as_str(), "files.read" | "files.list"))
+                {
+                    continue;
+                }
+                task.contract.limits.wall_ms = task.contract.limits.wall_ms.min(5000);
+                let mut inputs = BTreeMap::new();
+                let mut conflict = false;
+                let mut source_records = vec![];
+                for (_, id, o, provenance) in &group.observations {
+                    let key = digest(&o.case.input)?;
+                    if let Some(old) = inputs.insert(key, o.case.expected.clone()) {
+                        if old != o.case.expected {
+                            conflict = true;
+                            break;
+                        } else {
+                            continue;
+                        }
+                    }
+                    if task.cases.len() < 8 {
+                        let mut case = o.case.clone();
+                        case.name = format!("observed-{}", &id[..12]);
+                        source_records
+                            .push(json!({"id":id,"provenance":provenance,"case":case.name}));
+                        task.cases.push(case);
                     }
                 }
-                if task.cases.len() < 8 {
-                    let mut case = o.case.clone();
-                    case.name = format!("observed-{}", &id[..12]);
-                    source_records.push(json!({"id":id,"provenance":provenance,"case":case.name}));
-                    task.cases.push(case);
+                if conflict
+                    || task.cases.len() < 3
+                    || !task.cases.iter().any(|case| {
+                        matches!(case.expected, crate::contract::Outcome::Completed { .. })
+                    })
+                {
+                    continue;
                 }
-            }
-            if conflict
-                || task.cases.len() < 3
-                || !task
-                    .cases
-                    .iter()
-                    .any(|case| matches!(case.expected, crate::contract::Outcome::Completed { .. }))
-            {
-                continue;
-            }
-            // Freeze all cases first. Source author receives no held-out input or expected result.
-            task.evidence = Some(
-                json!({"kind":"supplied_observations","source_records":source_records,"withheld_case":task.cases.last().map(|c|&c.name),"claim":"Agreement on supplied cases, not authenticated or universal correctness."}),
-            );
-            if let Some((_, id, _)) = &previous {
-                task = self.get("task", id)?;
-            }
+                // Freeze all cases first. Source author receives no held-out input or expected result.
+                task.evidence = Some(
+                    json!({"kind":"supplied_observations","source_records":source_records,"withheld_case":task.cases.last().map(|c|&c.name),"claim":"Agreement on supplied cases, not authenticated or universal correctness."}),
+                );
+                task
+            };
             let validation = (|| -> Result<()> {
                 ensure!(
                     serde_json::to_vec(&task)?.len() <= crate::store::OBJECT_BYTES,
@@ -342,5 +362,83 @@ impl Store {
         tx.execute("INSERT INTO component_changes(project,task,version,previous,reason,job) VALUES(?1,?2,?3,?4,?5,?6)",params![project.id,v.task,version,expected,reason,job])?;
         tx.commit()?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::project::{ModelConnection, Settings, TraceSource};
+
+    #[test]
+    fn recording_rechecks_authorization_after_validation() {
+        for disable_automatic in [false, true] {
+            let d = tempfile::tempdir().unwrap();
+            let db = d.path().join("state.db");
+            let trace = d.path().join("trace.jsonl");
+            std::fs::write(&trace, "").unwrap();
+            let mut store = Store::open(&db).unwrap();
+            let settings = Settings {
+                automatic: true,
+                record_conversations: true,
+                trace_sources: vec![TraceSource {
+                    adapter: "clearings".into(),
+                    path: trace,
+                }],
+                daily_budget_microusd: 1,
+                model: Some(ModelConnection {
+                    url: "http://127.0.0.1:9/chat".into(),
+                    model: "fixture".into(),
+                    bearer_token_env: None,
+                    max_output_tokens: 10,
+                    input_price: 1,
+                    output_price: 1,
+                }),
+                ..Default::default()
+            };
+            let snapshot = store
+                .configure_project(d.path(), "P", settings, None)
+                .unwrap();
+            let observation: Observation = serde_json::from_value(json!({"contract":{"abi":1,"name":"identity","description":"identity","input_schema":{},"output_schema":{}},"case":{"name":"one","input":1,"expected":{"status":"completed","output":1}}})).unwrap();
+            store
+                .record_observation(&snapshot.id, "first", observation.clone())
+                .unwrap();
+            let body: String = store
+                .db
+                .query_row("SELECT body FROM activity", [], |r| r.get(0))
+                .unwrap();
+            // The validation snapshot is stale after a separate connection revokes consent.
+            let mut changed = snapshot.settings.clone();
+            if disable_automatic {
+                changed.automatic = false;
+            } else {
+                changed.record_conversations = false;
+            }
+            Store::open(&db)
+                .unwrap()
+                .configure_project(d.path(), "P", changed, Some(snapshot.revision))
+                .unwrap();
+            assert!(
+                store
+                    .insert_observation(
+                        &snapshot,
+                        "new-event",
+                        &serde_json::from_str(&body).unwrap()
+                    )
+                    .is_err()
+            );
+            assert!(
+                store
+                    .record_observation(&snapshot.id, "second", observation)
+                    .is_err()
+            );
+            assert_eq!(
+                store
+                    .db
+                    .query_row("SELECT count(*) FROM activity", [], |r| r.get::<_, u64>(0))
+                    .unwrap(),
+                1
+            );
+        }
     }
 }

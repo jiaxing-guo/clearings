@@ -379,6 +379,14 @@ fn budget_refusal_preserves_attempts_until_an_authorized_request_is_reserved() {
             .unwrap(),
         0
     );
+    let frozen: String = conn
+        .query_row("SELECT task FROM learning_groups", [], |r| r.get(0))
+        .unwrap();
+    // New duplicate inputs displace the original cases from the bounded live sample.
+    for i in 0..500 {
+        s.record_observation(&p.id, &format!("duplicate-{i}"), observation(1))
+            .unwrap();
+    }
     options.daily_budget_microusd = 10000;
     s.configure_project(d.path(), "P", options, Some(1))
         .unwrap();
@@ -386,6 +394,12 @@ fn budget_refusal_preserves_attempts_until_an_authorized_request_is_reserved() {
     assert_eq!(
         result["report"]["learning"]["status"], "created",
         "{result}"
+    );
+    assert_eq!(
+        conn.query_row("SELECT task FROM learning_groups", [], |r| r
+            .get::<_, String>(0))
+            .unwrap(),
+        frozen
     );
     handle.join().unwrap();
     assert_eq!(
@@ -443,11 +457,22 @@ fn cancellation_propagates_to_job_and_preserves_request_usage() {
 
 #[test]
 fn measured_replacement_reduces_reads_and_live_regression_restores_previous_version() {
+    check_candidate_regression("throw Error('regression')");
+}
+
+#[test]
+fn invalid_candidate_output_restores_previous_version() {
+    check_candidate_regression("return {status:'completed',output:7}");
+}
+
+fn check_candidate_regression(fresh_failure: &str) {
     use clearings::store::Task;
     let d = tempfile::tempdir().unwrap();
-    let (url, handle) = model(
+    let source = String::from(
         "export default async x=>{if(x.path==='authored-failure')return {status:'failed',code:'EXECUTION',message:'expected domain failure'};if(x.path==='fresh')throw Error('regression');return {status:'completed',output:(await clearings.call('files.read',x)).text}}",
     );
+    let source = source.replace("throw Error('regression')", fresh_failure);
+    let (url, handle) = model(&source);
     let mut settings = settings(url);
     settings.improve = true;
     settings.grants.roots.insert("data".into(), d.path().into());

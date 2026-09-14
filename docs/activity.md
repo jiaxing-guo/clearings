@@ -18,7 +18,7 @@ For behavioral observation, an integration can append a `clearings_workflow` rec
 
 A configured project's `model-usage` reports background response counters when provided. If the surrounding host does not expose a token meter, Clearings leaves its conversation usage unknown.
 
-Imports expire raw project activity using the configured retention period. Checkpoints include adapter identity, so changing adapters replays the selected file. File traversal and reads use held directory/file handles and reject symlinks. Structured workflow records require their own nonempty session, working-directory and event identifiers.
+Imports and activity reads expire raw project activity using the configured retention period. Checkpoints include adapter and file identity, so changing adapters or replacing files replays the selected file. Bounded fingerprints cover the header and the consumed boundary to detect truncation and common copy-truncate rotation. Selected logs should be append-only between rotations; arbitrary edits that preserve both fingerprint regions are unsupported. File traversal and reads use held directory/file handles and reject symlinks. Structured workflow records require their own nonempty session, working-directory and event identifiers. Workflow event IDs and Claude message IDs take precedence over envelope UUIDs when deduplicating records.
 
 `performance NAME --after VERSION` continues the preceding `next_after` cursor. Each version reports separate completed, handoff (`needs_agent`), not-applicable and failed counts.
 

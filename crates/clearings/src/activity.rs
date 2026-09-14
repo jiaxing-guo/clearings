@@ -37,6 +37,8 @@ struct Checkpoint {
     offset: u64,
     prefix: String,
     prefix_len: usize,
+    #[serde(default)]
+    boundary: String,
     session: String,
     cwd: String,
 }
@@ -115,6 +117,13 @@ fn prefix(file: &mut File, len: usize) -> Result<String> {
     file.take(len as u64).read_to_end(&mut bytes)?;
     digest(&bytes)
 }
+fn boundary(file: &mut File, offset: u64) -> Result<String> {
+    let start = offset.saturating_sub(4096);
+    file.seek(SeekFrom::Start(start))?;
+    let mut bytes = vec![];
+    file.take(offset - start).read_to_end(&mut bytes)?;
+    digest(&bytes)
+}
 fn usage(adapter: &str, value: &Value) -> Option<Value> {
     let (raw, cumulative) = if adapter == "codex"
         && value["type"] == "event_msg"
@@ -165,16 +174,19 @@ impl Store {
                 Err(e) => errors.push(json!({"source":source.path,"error":e.to_string()})),
             }
         }
-        let expired = self.db.execute(
-            "DELETE FROM activity WHERE project=?1 AND created_at < datetime('now', ?2)",
-            params![
-                project_id,
-                format!("-{} days", project.settings.retention_days)
-            ],
-        )?;
+        let expired = self.expire_activity(&project)?;
         Ok(
             json!({"imported":imported,"expired":expired,"errors":errors,"bytes_remaining":remaining}),
         )
+    }
+    fn expire_activity(&self, project: &Project) -> Result<usize> {
+        Ok(self.db.execute(
+            "DELETE FROM activity WHERE project=?1 AND created_at < datetime('now', ?2)",
+            params![
+                project.id,
+                format!("-{} days", project.settings.retention_days)
+            ],
+        )?)
     }
     fn import_file(
         &mut self,
@@ -211,6 +223,7 @@ impl Store {
         if cp.identity != identity
             || metadata.len() < cp.offset
             || (!cp.prefix.is_empty() && prefix(&mut file, cp.prefix_len)? != cp.prefix)
+            || (cp.offset > 0 && boundary(&mut file, cp.offset)? != cp.boundary)
         {
             cp = Checkpoint::default();
         }
@@ -298,17 +311,19 @@ impl Store {
             if observation.is_none() && usage.is_none() {
                 continue;
             }
-            let event_key = if source.adapter == "claude" {
-                value["message"]["id"]
-                    .as_str()
-                    .or_else(|| value["uuid"].as_str())
+            let semantic_id = if value["type"] == "clearings_workflow" {
+                value["event_id"].as_str()
+            } else if source.adapter == "claude" {
+                value["message"]["id"].as_str()
             } else {
-                value["uuid"]
-                    .as_str()
-                    .or_else(|| value["event_id"].as_str())
-            }
-            .map(str::to_owned)
-            .unwrap_or(digest(&value)?);
+                None
+            };
+            let event_key = semantic_id
+                .or_else(|| value["event_id"].as_str())
+                .or_else(|| value["uuid"].as_str())
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+                .unwrap_or(digest(&value)?);
             let id = digest(&(source.adapter.as_str(), &cp.session, event_key))?;
             let body = json!({"session":cp.session,"adapter":source.adapter,"observation":observation,"usage":usage,"provenance":"selected_session_record"});
             ensure!(
@@ -320,6 +335,7 @@ impl Store {
         cp.offset += last as u64 + 1;
         cp.prefix_len = (cp.offset as usize).min(4096);
         cp.prefix = prefix(&mut file, cp.prefix_len)?;
+        cp.boundary = boundary(&mut file, cp.offset)?;
         let tx = self
             .db
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
@@ -339,6 +355,7 @@ impl Store {
             before.is_none_or(|id| id > 0),
             "before must be a positive activity ID"
         );
+        self.expire_activity(&self.project(project)?)?;
         let mut stmt=self.db.prepare("SELECT seq,id,body,created_at FROM activity WHERE project=?1 AND (?2 IS NULL OR seq<?2) ORDER BY seq DESC LIMIT 101")?;
         let mut rows = stmt.query(params![project, before])?;
         let mut values = vec![];

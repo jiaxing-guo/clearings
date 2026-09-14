@@ -181,10 +181,12 @@ fn retention_is_scoped_and_preserves_budget_accounting() {
     }
     assert_eq!(store.prune(&p.id, false).unwrap()["activity_records"], 1);
     assert_eq!(
-        store.activity(&p.id, None).unwrap()["events"]
-            .as_array()
-            .unwrap()
-            .len(),
+        conn.query_row(
+            "SELECT count(*) FROM activity WHERE project=?1",
+            [&p.id],
+            |r| r.get::<_, u64>(0)
+        )
+        .unwrap(),
         1
     );
     store.prune(&p.id, true).unwrap();
@@ -195,10 +197,12 @@ fn retention_is_scoped_and_preserves_budget_accounting() {
             .is_empty()
     );
     assert_eq!(
-        store.activity(&q.id, None).unwrap()["events"]
-            .as_array()
-            .unwrap()
-            .len(),
+        conn.query_row(
+            "SELECT count(*) FROM activity WHERE project=?1",
+            [&q.id],
+            |r| r.get::<_, u64>(0)
+        )
+        .unwrap(),
         1
     );
     assert_eq!(
