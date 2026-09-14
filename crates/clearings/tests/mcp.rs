@@ -206,7 +206,12 @@ fn tool_annotations_describe_state_replacement() {
                     | "clearings_manage"
                     | "clearings_prune"
                     | "clearings_background_cancel"
+                    | "clearings_observe"
+                    | "clearings_activity"
             )
         );
+        if matches!(name, "clearings_observe" | "clearings_activity") {
+            assert_eq!(tool["annotations"]["readOnlyHint"], false);
+        }
     }
 }

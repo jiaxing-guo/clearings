@@ -277,6 +277,13 @@ impl Store {
         Ok(value)
     }
     pub fn prepare_task(&self, task: &Task) -> Result<String> {
+        ensure!(
+            task.evidence.is_none(),
+            "observation evidence is host-owned"
+        );
+        self.prepare_host_task(task)
+    }
+    pub(crate) fn prepare_host_task(&self, task: &Task) -> Result<String> {
         task.validate()?;
         self.put("task", task)
     }

@@ -173,14 +173,25 @@ impl Store {
         let mut imported = 0;
         let mut errors = vec![];
         let mut remaining = 8 * IMPORT_BYTES;
+        let mut remaining_records = 1000;
         for source in &project.settings.trace_sources {
+            if remaining == 0 || remaining_records == 0 {
+                break;
+            }
             match files(source) {
                 Ok(paths) => {
                     for (path, file) in paths {
-                        if remaining == 0 {
+                        if remaining == 0 || remaining_records == 0 {
                             break;
                         }
-                        match self.import_file(&project, source, &path, file, &mut remaining) {
+                        match self.import_file(
+                            &project,
+                            source,
+                            &path,
+                            file,
+                            &mut remaining,
+                            &mut remaining_records,
+                        ) {
                             Ok(n) => imported += n,
                             Err(e) => {
                                 if errors.len() < 32 {
@@ -195,7 +206,7 @@ impl Store {
         }
         let expired = self.expire_activity(&project)?;
         Ok(
-            json!({"imported":imported,"expired":expired,"errors":errors,"bytes_remaining":remaining}),
+            json!({"imported":imported,"expired":expired,"errors":errors,"bytes_remaining":remaining,"records_remaining":remaining_records}),
         )
     }
     fn expire_activity(&self, project: &Project) -> Result<usize> {
@@ -214,6 +225,7 @@ impl Store {
         path: &Path,
         mut file: File,
         remaining: &mut usize,
+        remaining_records: &mut usize,
     ) -> Result<usize> {
         let key = digest(&(
             path.to_str().context("trace path is not UTF-8")?,
@@ -257,10 +269,17 @@ impl Store {
             return Ok(0);
         };
         let mut events = vec![];
-        for line in bytes[..=last]
-            .split(|b| *b == b'\n')
-            .filter(|l| !l.is_empty())
-        {
+        let mut consumed = 0;
+        for line in bytes[..=last].split_inclusive(|b| *b == b'\n') {
+            if *remaining_records == 0 {
+                break;
+            }
+            *remaining_records -= 1;
+            consumed += line.len();
+            let line = &line[..line.len() - 1];
+            if line.is_empty() {
+                continue;
+            }
             let value: Value = serde_json::from_slice(line)
                 .context("malformed complete trace line; repair it before retrying")?;
             let metadata_ready = cp.headless_metadata;
@@ -362,7 +381,7 @@ impl Store {
             );
             events.push((id, body));
         }
-        cp.offset += last as u64 + 1;
+        cp.offset += consumed as u64;
         cp.prefix_len = (cp.offset as usize).min(4096);
         cp.prefix = prefix(&mut file, cp.prefix_len)?;
         cp.boundary = boundary(&mut file, cp.offset)?;

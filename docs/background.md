@@ -42,4 +42,8 @@ Improvement selection skips tasks outside the supported 3-to-8-case range. Autom
 
 Oversized or otherwise invalid combined acceptance groups are reported and skipped before storage. A group that cannot reserve a model request yields to other eligible groups, so a cheaper request can still fit the remaining budget. No attempt is consumed before reservation.
 
-A resumed candidate that fails validation or measurement is recorded as a terminal failed trial, so it cannot repeatedly block later routines. Cancellation remains resumable; requests that were never reserved can remain deferred.
+A resumed candidate that fails validation or measurement is recorded as a terminal failed trial, so it cannot repeatedly block later routines. Trials that exhaust the cycle time budget also fail terminally. Other cancellations remain resumable; requests that were never reserved can remain deferred.
+
+Background coordination supports processes that share the same canonical database path within one filesystem namespace. Symlink aliases resolve to that path; hard-linked database files are rejected. Exposing one database through different bind-mount paths or filesystem namespaces is not a supported storage layout.
+
+Observation sampling represents distinct input/outcome pairs and session identities within the existing per-group record and byte limits. Failed proposals retain bounded source diagnostics even when TypeScript preparation fails before a version is created.
