@@ -1,5 +1,7 @@
 # Background execution
 
+A cycle with observation errors is recorded as failed and retains the structured source errors, even when no records were imported. `background --once` returns an unsuccessful exit status for that result. A valid empty source can still complete successfully.
+
 After project authorization, run `clearings --store /private/state.db --project PROJECT_ID background`. It remains a foreground process suitable for a service manager. `background --once` executes one due cycle, which also makes it suitable for an external timer. Neither command installs or enables a system service.
 
 A kernel file lock prevents concurrent cycles for the same database and project. The lock is released on process exit, including a crash. The next cycle marks interrupted work explicitly. Checkpoints and deduplicated observations prevent duplicate capture. Missed schedule intervals coalesce into one catch-up cycle; they are not replayed repeatedly.
