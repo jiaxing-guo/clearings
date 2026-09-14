@@ -80,6 +80,108 @@ fn observation(x: i64) -> Observation {
 }
 
 #[test]
+fn oversized_groups_are_reported_without_blocking_valid_work() {
+    let d = tempfile::tempdir().unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    let mut large = observation(1);
+    large.contract.output_schema = json!({"type":"string"});
+    large.contract.limits.output_bytes = 1024 * 1024;
+    let valid_fingerprint = clearings::store::digest(&observation(1).contract).unwrap();
+    let name = (0..100)
+        .find_map(|i| {
+            large.contract.name = format!("large-{i}");
+            (clearings::store::digest(&large.contract).unwrap() < valid_fingerprint)
+                .then(|| large.contract.name.clone())
+        })
+        .unwrap();
+    for i in 1..=3 {
+        large.case.input = json!(i);
+        large.case.expected = clearings::contract::Outcome::Completed {
+            output: json!("x".repeat(600 * 1024)),
+        };
+        store
+            .record_observation(&p.id, &format!("large-{i}"), large.clone())
+            .unwrap();
+        store
+            .record_observation(&p.id, &format!("valid-{i}"), observation(i))
+            .unwrap();
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["learning"]["status"], "created",
+        "{result}"
+    );
+    assert_eq!(result["report"]["learning"]["rejected_groups"], 1);
+    assert_eq!(result["report"]["learning"]["skipped"][0]["name"], name);
+    handle.join().unwrap();
+}
+
+#[test]
+fn unaffordable_groups_yield_to_smaller_requests_without_spending_attempts() {
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let mut options = settings(url);
+    options.daily_budget_microusd = 50;
+    options.model.as_mut().unwrap().input_price = 1000;
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", options, None)
+        .unwrap();
+    let mut expensive = observation(1);
+    expensive.contract.input_schema = json!({"type":"object"});
+    let valid_fingerprint = clearings::store::digest(&observation(1).contract).unwrap();
+    let fingerprint = (0..100)
+        .find_map(|i| {
+            expensive.contract.name = format!("expensive-{i}");
+            let fingerprint = clearings::store::digest(&expensive.contract).unwrap();
+            (fingerprint < valid_fingerprint).then_some(fingerprint)
+        })
+        .unwrap();
+    for i in 1..=3 {
+        expensive.case.input = json!({"number":i,"padding":"x".repeat(100_000)});
+        expensive.case.expected = clearings::contract::Outcome::Completed {
+            output: json!(i * 2),
+        };
+        store
+            .record_observation(&p.id, &format!("expensive-{i}"), expensive.clone())
+            .unwrap();
+        store
+            .record_observation(&p.id, &format!("valid-{i}"), observation(i))
+            .unwrap();
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["learning"]["status"], "created",
+        "{result}"
+    );
+    assert_eq!(result["report"]["learning"]["deferred_groups"], 1);
+    let request = handle.join().unwrap();
+    let packet: Value =
+        serde_json::from_str(request["messages"][1]["content"].as_str().unwrap()).unwrap();
+    assert_eq!(packet["packet"]["contract"]["name"], "double");
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    let group: (String, i64) = conn
+        .query_row(
+            "SELECT status,attempts FROM learning_groups WHERE fingerprint=?1",
+            [fingerprint],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(group, ("deferred".into(), 0));
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        1
+    );
+}
+
+#[test]
 fn observations_separated_by_other_work_form_one_eligible_group() {
     let d = tempfile::tempdir().unwrap();
     let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
