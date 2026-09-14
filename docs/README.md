@@ -1,19 +1,14 @@
 # Clearings documentation
 
-Clearings is being designed to make straightforward backend code run efficiently as workloads grow. Its planned TypeScript and Python SDKs let an engineer or coding agent describe application operations, while adapters and execution policies supply the information needed to batch, reuse and schedule work.
+Clearings turns user-selected repeated agent work into reusable TypeScript routines. A Rust host prepares and executes each routine in an isolated worker with explicit inputs, outputs and capabilities.
 
 ## Current status
 
-The active repository contains product requirements and the documentation site. The service runtime, SDKs, adapters, CLI and MCP interface are not implemented. The first workload and API examples are proposals; no performance benefit has been established for this product.
+The embedded execution boundary supports parameterized TypeScript, JSON schemas, bounded file capabilities and explicit handoff outcomes. Routine persistence and coding-agent integration are planned next. Oxc removes TypeScript syntax; it does not perform full type checking. Token savings remain unmeasured.
 
-| Read                               | Purpose                                                                                |
-| ---------------------------------- | -------------------------------------------------------------------------------------- |
-| [Product requirements](product.md) | Approved direction, proposed interfaces, behavior requirements and open decisions      |
-| [Development](development.md)      | Set up the repository and check documentation changes                                  |
-| [History](history.md)              | Retrieve the earlier analyzer, specification engine, compiler and recorded experiments |
-
-## Execution boundary
-
-The intended model separates application logic, operation capabilities and execution policies. A runtime can combine calls only when the adapter and operation semantics permit it. It must preserve dependencies, output positions and authorization scopes while enforcing the documented resource limits.
-
-The [product requirements](product.md) describe this intended behavior. They are the starting point for technical design, not an API reference for an existing implementation.
+| Read                               | Purpose                                          |
+| ---------------------------------- | ------------------------------------------------ |
+| [Product requirements](product.md) | Product direction and implementation boundaries  |
+| [Execution](execution.md)          | Implemented runtime, capabilities and limits     |
+| [Development](development.md)      | Build and check the repository                   |
+| [History](history.md)              | Retrieve earlier implementations and experiments |

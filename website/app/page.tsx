@@ -4,7 +4,7 @@ import { getLayoutOptions } from '@/lib/layout-options';
 const paths = [
   [
     'Product requirements',
-    'SDKs, adapters, execution policies and the proposed first workload.',
+    'User-selected routines, explicit capabilities and reusable execution.',
     '/docs/product',
   ],
   ['Development', 'Set up the documentation site and run the current checks.', '/docs/development'],
@@ -20,11 +20,11 @@ export default function Home() {
     <HomeLayout {...getLayoutOptions()}>
       <main className="home-intro">
         <p className="eyebrow">Clearings · In development</p>
-        <h1>Straightforward backend logic. Efficient execution as workloads grow.</h1>
+        <h1>Let your agent discover the work. Reuse what it learns.</h1>
         <p>
-          We are designing TypeScript and Python SDKs that let engineers and coding agents describe
-          application operations while Clearings handles batching, scoped reuse, concurrency and
-          service limits.
+          Clearings runs parameterized TypeScript routines inside a Rust executable. Your coding
+          agent can turn repeated work into code with explicit inputs, outputs and host
+          capabilities.
         </p>
         <div className="reading-paths">
           {paths.map(([title, description, href]) => (
@@ -38,9 +38,8 @@ export default function Home() {
           ))}
         </div>
         <p className="home-note">
-          This repository currently contains requirements and documentation infrastructure. The
-          managed runtime, SDKs, adapters, CLI and MCP are not implemented yet. Performance benefits
-          remain to be demonstrated.
+          The embedded execution boundary is implemented. Routine persistence and agent integration
+          are the next steps. Token savings remain to be measured.
         </p>
       </main>
     </HomeLayout>

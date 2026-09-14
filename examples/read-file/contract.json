@@ -1,0 +1,13 @@
+{
+  "abi": 1,
+  "name": "read-file",
+  "description": "Read an explicitly granted UTF-8 file and trim surrounding whitespace.",
+  "capabilities": ["files.read"],
+  "input_schema": {
+    "type": "object",
+    "properties": { "root": { "type": "string" }, "path": { "type": "string" } },
+    "required": ["root", "path"],
+    "additionalProperties": false
+  },
+  "output_schema": { "type": "string" }
+}
