@@ -1,5 +1,7 @@
 # Background execution
 
+Hard-linked database files are rejected before opening SQLite and before acquiring a background lock, because SQLite WAL sidecars belong to a single database path. Symlink aliases resolve to the same canonical database and lock.
+
 A cycle with observation errors is recorded as failed and retains the structured source errors, even when no records were imported. `background --once` returns an unsuccessful exit status for that result. A valid empty source can still complete successfully.
 
 After project authorization, run `clearings --store /private/state.db --project PROJECT_ID background`. It remains a foreground process suitable for a service manager. `background --once` executes one due cycle, which also makes it suitable for an external timer. Neither command installs or enables a system service.

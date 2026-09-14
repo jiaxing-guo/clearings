@@ -193,6 +193,7 @@ pub struct Store {
 }
 impl Store {
     pub fn open(path: &Path) -> Result<Self> {
+        Self::check_database_links(path)?;
         let db = Connection::open(path)?;
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
@@ -213,6 +214,21 @@ impl Store {
             CREATE TABLE IF NOT EXISTS model_requests(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),job INTEGER NOT NULL REFERENCES background_jobs(id),purpose TEXT NOT NULL,reserved INTEGER NOT NULL,status TEXT NOT NULL,usage TEXT);
             PRAGMA user_version=4;")?;
         Ok(Self { db })
+    }
+    pub(crate) fn check_database_links(path: &Path) -> Result<()> {
+        #[cfg(unix)]
+        match std::fs::metadata(path) {
+            Ok(metadata) => {
+                use std::os::unix::fs::MetadataExt;
+                ensure!(
+                    metadata.nlink() == 1,
+                    "hard-linked databases are unsupported; use one database file path"
+                );
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+        Ok(())
     }
     fn put(&self, kind: &str, value: &impl Serialize) -> Result<String> {
         let body = serde_json::to_string(value)?;

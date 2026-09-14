@@ -30,6 +30,8 @@ impl Observation {
 }
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct Checkpoint {
+    #[serde(default)]
+    identity: Option<(u64, u64)>,
     offset: u64,
     prefix: String,
     prefix_len: usize,
@@ -192,11 +194,21 @@ impl Store {
             .map(|s| serde_json::from_str(&s))
             .transpose()?
             .unwrap_or_default();
-        if file.metadata()?.len() < cp.offset
+        let metadata = file.metadata()?;
+        #[cfg(unix)]
+        let identity = {
+            use std::os::unix::fs::MetadataExt;
+            Some((metadata.dev(), metadata.ino()))
+        };
+        #[cfg(not(unix))]
+        let identity = None;
+        if cp.identity != identity
+            || metadata.len() < cp.offset
             || (!cp.prefix.is_empty() && prefix(&mut file, cp.prefix_len)? != cp.prefix)
         {
             cp = Checkpoint::default();
         }
+        cp.identity = identity;
         file.seek(SeekFrom::Start(cp.offset))?;
         let mut bytes = vec![];
         let budget = IMPORT_BYTES.min(*remaining);
