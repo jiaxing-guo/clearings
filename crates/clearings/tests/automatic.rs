@@ -203,6 +203,11 @@ fn observations_separated_by_other_work_form_one_eligible_group() {
             }
         }
     }
+    for i in 0..500 {
+        store
+            .record_observation(&p.id, &format!("duplicate-{i}"), observation(1))
+            .unwrap();
+    }
     let result = store.background_tick(&p.id, exe()).unwrap();
     assert_eq!(
         result["report"]["learning"]["status"], "created",
@@ -470,4 +475,28 @@ fn cancellation_propagates_to_job_and_preserves_request_usage() {
             .unwrap()
             > 0
     );
+}
+
+#[test]
+fn invalid_proposals_keep_source_diagnostics_without_a_version() {
+    let d = tempfile::tempdir().unwrap();
+    let source = "export default async ( => {";
+    let (url, handle) = model(source);
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    for i in 1..=3 {
+        store
+            .record_observation(&p.id, &format!("s{i}"), observation(i))
+            .unwrap();
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    handle.join().unwrap();
+    assert_eq!(result["report"]["learning"]["status"], "failed");
+    let candidate = &result["report"]["learning"]["result"]["candidate"];
+    assert_eq!(candidate["source_preview"], source);
+    assert_eq!(candidate["source_truncated"], false);
+    assert!(candidate["version"].is_null());
+    assert!(store.named_task(&p.id, "double", true).is_err());
 }

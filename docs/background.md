@@ -31,3 +31,7 @@ Reconfiguration resets the due time, disabled ticks reconcile interrupted work, 
 Learning groups matching contracts before applying its scan cursor, so unrelated records cannot split a workflow across pages. Each cycle reads at most 500 contract groups and 8 MiB of observations; each group supplies at most 500 records and 4 MiB. Groups without any completed case remain observations and cannot become acceptance tasks.
 
 Oversized or otherwise invalid combined acceptance groups are reported and skipped before storage. A group that cannot reserve a model request yields to other eligible groups, so a cheaper request can still fit the remaining budget. No attempt is consumed before reservation.
+
+Background coordination supports processes that share the same canonical database path within one filesystem namespace. Symlink aliases resolve to that path; hard-linked database files are rejected. Exposing one database through different bind-mount paths or filesystem namespaces is not a supported storage layout.
+
+Observation sampling represents distinct input/outcome pairs and session identities within the existing per-group record and byte limits. Failed proposals retain bounded source diagnostics even when TypeScript preparation fails before a version is created.
