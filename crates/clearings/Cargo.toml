@@ -22,6 +22,10 @@ oxc_codegen = "=0.140.0"
 rquickjs = { version = "=0.13.0", features = ["loader"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+sha2 = "0.10"
+
+rusqlite = { version = "0.37", features = ["bundled"] }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls", "json"] }
 
 [dev-dependencies]
 tempfile = "3.20"

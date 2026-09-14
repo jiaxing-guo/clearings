@@ -12,10 +12,11 @@
     "docs:dev": "node scripts/dev-docs.mjs",
     "docs:build": "npm --prefix website run build",
     "docs:check": "npm --prefix website run typecheck && node scripts/check-docs.mjs",
-    "check": "npm run format:check && npm run docs:build && npm run docs:check",
+    "check": "npm run format:check && npm run docs:build && npm run docs:check && npm run sdk:check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "clean": "node scripts/clean.mjs"
+    "clean": "node scripts/clean.mjs",
+    "sdk:check": "node website/node_modules/typescript/bin/tsc --strict --noEmit --skipLibCheck --target ES2022 --module ESNext sdk/clearings.d.ts tests/sdk-types.ts"
   },
   "devDependencies": {
     "prettier": "3.9.6"
