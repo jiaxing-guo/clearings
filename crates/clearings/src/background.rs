@@ -81,7 +81,17 @@ impl Store {
         let job = self.db.last_insert_rowid();
         let result = self.background_cycle(project, job, executable);
         let (status, report) = match result {
-            Ok(report) => ("completed", report),
+            Ok(report) => {
+                let status = if report["observation"]["errors"]
+                    .as_array()
+                    .is_some_and(|errors| !errors.is_empty())
+                {
+                    "failed"
+                } else {
+                    "completed"
+                };
+                (status, report)
+            }
             Err(e) => (
                 "failed",
                 json!({"error":e.to_string(),"recovery":"Ordinary agent work remains available. Inspect the job and project settings."}),
@@ -105,6 +115,12 @@ impl Store {
         self.check_job(project, job)?;
         let observation = self.observe(project)?;
         self.check_job(project, job)?;
+        if observation["errors"]
+            .as_array()
+            .is_some_and(|errors| !errors.is_empty())
+        {
+            return Ok(json!({"observation":observation}));
+        }
         let learning = self.learn(project, job, executable)?;
         let improvement = if learning["status"] == "no_eligible_observations" {
             self.improve(project, job, executable)?
@@ -259,6 +275,33 @@ mod tests {
         (store, p.id)
     }
     use std::path::Path;
+    #[test]
+    fn incomplete_imports_fail_jobs_and_preserve_source_errors() {
+        for malformed in [false, true] {
+            let d = tempfile::tempdir().unwrap();
+            let (mut store, project) = configured(d.path());
+            if malformed {
+                std::fs::write(d.path().join("trace.jsonl"), "{malformed}\n").unwrap();
+            } else {
+                std::fs::remove_file(d.path().join("trace.jsonl")).unwrap();
+            }
+            let result = store
+                .background_tick(&project, Path::new("unused"))
+                .unwrap();
+            assert_eq!(result["status"], "failed");
+            assert_eq!(result["report"]["observation"]["imported"], 0);
+            assert_eq!(
+                result["report"]["observation"]["errors"]
+                    .as_array()
+                    .unwrap()
+                    .len(),
+                1
+            );
+            let history = store.background_jobs(&project, None).unwrap();
+            assert_eq!(history["jobs"][0]["status"], "failed");
+            assert_eq!(history["jobs"][0]["report"], result["report"]);
+        }
+    }
     #[test]
     fn kernel_lock_prevents_overlap_and_missed_periods_coalesce() {
         let d = tempfile::tempdir().unwrap();

@@ -116,7 +116,13 @@ impl Store {
                     task.cases.push(case);
                 }
             }
-            if conflict || task.cases.len() < 3 {
+            if conflict
+                || task.cases.len() < 3
+                || !task
+                    .cases
+                    .iter()
+                    .any(|case| matches!(case.expected, crate::contract::Outcome::Completed { .. }))
+            {
                 continue;
             }
             // Freeze all cases first. Source author receives no held-out input or expected result.
@@ -175,39 +181,53 @@ impl Store {
             )
             .optional()?
             .flatten();
-        let mut stmt=self.db.prepare("SELECT id,body,seq FROM activity WHERE project=?1 AND json_extract(body,'$.observation') IS NOT NULL AND (?2 IS NULL OR seq<?2) ORDER BY seq DESC LIMIT 501")?;
+        let mut contracts = self.db.prepare("SELECT json_extract(body,'$.observation.contract'),MAX(seq) FROM activity WHERE project=?1 AND json_extract(body,'$.observation.contract') IS NOT NULL GROUP BY json_extract(body,'$.observation.contract') HAVING (?2 IS NULL OR MAX(seq)<?2) ORDER BY MAX(seq) DESC LIMIT 501")?;
+        let mut selected = contracts.query(params![project, before])?;
+        let mut records = self.db.prepare("SELECT id,body FROM activity WHERE project=?1 AND json_extract(body,'$.observation.contract')=?2 ORDER BY seq DESC LIMIT 500")?;
         let mut groups: BTreeMap<String, Group> = BTreeMap::new();
-        let mut rows = stmt.query(params![project, before])?;
         let mut last = None;
-        let mut count = 0;
         let mut more = false;
         let mut bytes = 0;
-        while let Some(row) = rows.next()? {
-            let body: String = row.get(1)?;
-            bytes += body.len();
-            if bytes > 4 * 1024 * 1024 || count == 500 {
+        let mut count = 0;
+        'contracts: while let Some(contract) = selected.next()? {
+            if count == 500 {
                 more = true;
                 break;
             }
-            last = Some(row.get::<_, i64>(2)?);
+            let key: String = contract.get(0)?;
+            let mut rows = records.query(params![project, key])?;
+            let mut group_bytes = 0;
+            while let Some(row) = rows.next()? {
+                let body: String = row.get(1)?;
+                if group_bytes + body.len() > 4 * 1024 * 1024 {
+                    break;
+                }
+                if bytes + body.len() > 8 * 1024 * 1024 {
+                    more = true;
+                    break 'contracts;
+                }
+                group_bytes += body.len();
+                bytes += body.len();
+                let v: Value = serde_json::from_str(&body)?;
+                let o: Observation = serde_json::from_value(v["observation"].clone())?;
+                let fingerprint = digest(&o.contract)?;
+                groups
+                    .entry(fingerprint)
+                    .or_insert(Group {
+                        observations: vec![],
+                    })
+                    .observations
+                    .push((
+                        v["session"]
+                            .as_str()
+                            .context("missing observation session")?
+                            .into(),
+                        row.get(0)?,
+                        o,
+                    ));
+            }
+            last = Some(contract.get::<_, i64>(1)?);
             count += 1;
-            let v: Value = serde_json::from_str(&body)?;
-            let o: Observation = serde_json::from_value(v["observation"].clone())?;
-            let fingerprint = digest(&o.contract)?;
-            groups
-                .entry(fingerprint)
-                .or_insert(Group {
-                    observations: vec![],
-                })
-                .observations
-                .push((
-                    v["session"]
-                        .as_str()
-                        .context("missing observation session")?
-                        .into(),
-                    row.get(0)?,
-                    o,
-                ));
         }
         self.db.execute("INSERT INTO learning_scan(project,before_seq) VALUES(?1,?2) ON CONFLICT(project) DO UPDATE SET before_seq=excluded.before_seq",params![project,if more {last} else {None}])?;
         Ok(groups)

@@ -17,7 +17,7 @@ fn tool(
     required: Value,
     read_only: bool,
 ) -> Value {
-    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"),"openWorldHint":matches!(name,"run"|"reuse")}})
+    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"background_cancel"),"openWorldHint":matches!(name,"run"|"reuse")}})
 }
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
@@ -45,6 +45,29 @@ pub fn tools() -> Value {
     ]})
 }
 
+pub fn tools_for_project(project_selected: bool) -> Value {
+    let mut catalog = tools();
+    catalog["tools"].as_array_mut().unwrap().retain(|tool| {
+        project_selected
+            || matches!(
+                tool["name"].as_str(),
+                Some(
+                    "clearings_list"
+                        | "clearings_inspect"
+                        | "clearings_sdk"
+                        | "clearings_prepare_task"
+                        | "clearings_submit"
+                        | "clearings_evaluate"
+                        | "clearings_activate"
+                        | "clearings_deactivate"
+                        | "clearings_run"
+                        | "clearings_runs"
+                )
+            )
+    });
+    catalog
+}
+
 pub fn serve(mut api: Api) -> Result<()> {
     let session = crate::store::digest(&(
         std::process::id(),
@@ -52,6 +75,7 @@ pub fn serve(mut api: Api) -> Result<()> {
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos(),
     ))?;
+    let catalog = tools_for_project(api.project.is_some());
     let mut input = BufReader::new(std::io::stdin().lock());
     let mut output = std::io::stdout().lock();
     let mut initialized = false;
@@ -108,10 +132,10 @@ pub fn serve(mut api: Api) -> Result<()> {
                 }
             }
             _ if !ready => Err((-32002, "Initialize this connection first")),
-            "tools/list" => Ok(tools()),
+            "tools/list" => Ok(catalog.clone()),
             "tools/call" => {
                 let name = message["params"]["name"].as_str().unwrap_or("");
-                let known = tools()["tools"]
+                let known = catalog["tools"]
                     .as_array()
                     .unwrap()
                     .iter()
@@ -139,7 +163,7 @@ pub fn serve(mut api: Api) -> Result<()> {
                     } else {
                         Err(anyhow::anyhow!("arguments must be an object"))
                     };
-                    let schema = tools()["tools"]
+                    let schema = catalog["tools"]
                         .as_array()
                         .unwrap()
                         .iter()

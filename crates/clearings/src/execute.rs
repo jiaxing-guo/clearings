@@ -176,8 +176,19 @@ pub fn run(
     input: Value,
     broker: &mut dyn Broker,
 ) -> Run {
+    run_with_worker_failure(executable, contract, prepared, input, broker).0
+}
+
+pub(crate) fn run_with_worker_failure(
+    executable: &Path,
+    contract: &Contract,
+    prepared: &Prepared,
+    input: Value,
+    broker: &mut dyn Broker,
+) -> (Run, bool) {
     let start = Instant::now();
     let mut capability_calls = 0;
+    let mut worker_failure = false;
     let result = (|| -> Result<Outcome> {
         contract.limits.validate()?;
         let deadline = start + Duration::from_millis(contract.limits.wall_ms);
@@ -210,7 +221,10 @@ pub fn run(
                 )?;
                 Ok(outcome)
             }
-            Event::Error { message } => Ok(Outcome::failed("EXECUTION", message)),
+            Event::Error { message } => {
+                worker_failure = true;
+                Ok(Outcome::failed("EXECUTION", message))
+            }
             _ => bail!("invalid execution result"),
         }
     })();
@@ -218,12 +232,15 @@ pub fn run(
         Ok(v) => v,
         Err(error) => Outcome::failed("RUNTIME", error),
     };
-    Run {
-        outcome,
-        elapsed_ms: start.elapsed().as_millis(),
-        capability_calls,
-        model_usage: None,
-    }
+    (
+        Run {
+            outcome,
+            elapsed_ms: start.elapsed().as_millis(),
+            capability_calls,
+            model_usage: None,
+        },
+        worker_failure,
+    )
 }
 
 fn validate(
