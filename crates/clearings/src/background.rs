@@ -97,14 +97,23 @@ impl Store {
         let observation = self.observe(project)?;
         self.check_job(project, job)?;
         let learning = self.learn(project, job, executable)?;
-        Ok(json!({"observation":observation,"learning":learning}))
+        let improvement = if learning["status"] == "no_eligible_observations" {
+            self.improve(project, job, executable)?
+        } else {
+            json!({"status":"deferred_after_creation"})
+        };
+        Ok(json!({"observation":observation,"learning":learning,"improvement":improvement}))
     }
     pub(crate) fn check_job(&self, project: &str, job: i64) -> Result<()> {
-        let (revision, cancelled, status): (u64, bool, String) = self.db.query_row(
-            "SELECT revision,cancelled,status FROM background_jobs WHERE id=?1 AND project=?2",
+        let (revision, cancelled, status, started): (u64, bool, String, i64) = self.db.query_row(
+            "SELECT revision,cancelled,status,started FROM background_jobs WHERE id=?1 AND project=?2",
             params![job, project],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
         )?;
+        ensure!(
+            now()? <= started + 120,
+            "background cycle time budget exhausted"
+        );
         let current = self.project(project)?;
         ensure!(
             !cancelled
@@ -241,7 +250,7 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let (mut s, p) = configured(d.path());
         s.db.execute(
-            "INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,1,0,'running')",
+            "INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,1,CAST(strftime('%s','now') AS INTEGER),'running')",
             [&p],
         )
         .unwrap();

@@ -126,3 +126,58 @@ fn candidate_failure_leaves_ordinary_work_available_and_does_not_activate() {
     handle.join().unwrap();
     assert!(store.named_task(&p.id, "double", true).is_err());
 }
+
+#[test]
+fn measured_replacement_reduces_reads_and_live_regression_restores_previous_version() {
+    use clearings::store::Task;
+    let d = tempfile::tempdir().unwrap();
+    let (url, handle) = model(
+        "export default async x=>{if(x.path==='fresh')throw Error('regression');return {status:'completed',output:(await clearings.call('files.read',x)).text}}",
+    );
+    let mut settings = settings(url);
+    settings.improve = true;
+    settings.grants.roots.insert("data".into(), d.path().into());
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings, None)
+        .unwrap();
+    let cases:Vec<Value>=(1..=3).map(|i|{let input=json!({"root":"data","path":i.to_string()});let call=json!({"name":"files.read","input":input,"result":{"text":i.to_string()}});json!({"name":i.to_string(),"input":input,"expected":{"status":"completed","output":i.to_string()},"calls":vec![call;32]})}).collect();
+    let task:Task=serde_json::from_value(json!({"evaluation":"read_only_behavior","contract":{"abi":1,"name":"read","description":"Read the requested file","input_schema":{"type":"object"},"output_schema":{"type":"string"},"capabilities":["files.read"]},"cases":cases})).unwrap();
+    let task_id = store.prepare_named(&p.id, task, "user").unwrap();
+    // Make the fixture benefit large enough to distinguish it from worker startup noise.
+    let baseline=store.save_named(exe(),&p.id,"read","export default async x=>{for(let i=0;i<31;i++)await clearings.call('files.read',x);return {status:'completed',output:(await clearings.call('files.read',x)).text}}".into(),None).unwrap()["version"].as_str().unwrap().to_owned();
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    handle.join().unwrap();
+    assert_eq!(
+        result["report"]["improvement"]["status"], "improved",
+        "{result}"
+    );
+    assert_ne!(
+        store.active(&task_id).unwrap().as_deref(),
+        Some(baseline.as_str())
+    );
+    std::fs::write(d.path().join("fresh"), "current data").unwrap();
+    let failure = store
+        .reuse_named(
+            exe(),
+            &p.id,
+            "read",
+            json!({"root":"data","path":"fresh"}),
+            &p.settings.grants,
+        )
+        .unwrap();
+    assert_eq!(failure["run"]["outcome"]["status"], "failed");
+    assert_eq!(failure["recovery"]["restored_version"], baseline);
+    assert_eq!(
+        store
+            .reuse_named(
+                exe(),
+                &p.id,
+                "read",
+                json!({"root":"data","path":"fresh"}),
+                &p.settings.grants
+            )
+            .unwrap()["run"]["outcome"]["output"],
+        "current data"
+    );
+}

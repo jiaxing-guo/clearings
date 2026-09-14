@@ -5,6 +5,7 @@ mod blocking_io;
 pub mod capabilities;
 pub mod contract;
 pub mod execute;
+mod improvement;
 mod isolation;
 mod learning;
 pub mod mcp;
