@@ -29,33 +29,43 @@ struct ValidatedHttpBinding {
     bearer_token_env: Option<String>,
 }
 
+fn validated_http(policy: &Policy) -> Result<BTreeMap<String, ValidatedHttpBinding>> {
+    let mut http = BTreeMap::new();
+    for (name, binding) in &policy.http {
+        ensure!(!name.starts_with("files."), "reserved capability name");
+        let url = reqwest::Url::parse(&binding.url)?;
+        ensure!(url.host_str().is_some(), "HTTP endpoint requires a host");
+        ensure!(
+            url.scheme() == "https"
+                || (url.scheme() == "http"
+                    && matches!(url.host_str(), Some("127.0.0.1" | "[::1]" | "localhost"))),
+            "HTTP bindings require HTTPS except explicit loopback endpoints"
+        );
+        ensure!(
+            url.username().is_empty() && url.password().is_none() && url.fragment().is_none(),
+            "credentials and fragments do not belong in the URL"
+        );
+        http.insert(
+            name.clone(),
+            ValidatedHttpBinding {
+                url,
+                query_keys: binding.query_keys.clone(),
+                output: Arc::new(compile_schema(&binding.output_schema)?),
+                bearer_token_env: binding.bearer_token_env.clone(),
+            },
+        );
+    }
+    Ok(http)
+}
+
+pub(crate) fn validate_http_policy(policy: &Policy) -> Result<()> {
+    validated_http(policy)?;
+    Ok(())
+}
+
 impl LocalBroker {
     pub fn new(contract: &Contract, policy: &Policy) -> Result<Self> {
-        let mut http = BTreeMap::new();
-        for (name, binding) in &policy.http {
-            ensure!(!name.starts_with("files."), "reserved capability name");
-            let url = reqwest::Url::parse(&binding.url)?;
-            ensure!(url.host_str().is_some(), "HTTP endpoint requires a host");
-            ensure!(
-                url.scheme() == "https"
-                    || (url.scheme() == "http"
-                        && matches!(url.host_str(), Some("127.0.0.1" | "[::1]" | "localhost"))),
-                "HTTP bindings require HTTPS except explicit loopback endpoints"
-            );
-            ensure!(
-                url.username().is_empty() && url.password().is_none() && url.fragment().is_none(),
-                "credentials and fragments do not belong in the URL"
-            );
-            http.insert(
-                name.clone(),
-                ValidatedHttpBinding {
-                    url,
-                    query_keys: binding.query_keys.clone(),
-                    output: Arc::new(compile_schema(&binding.output_schema)?),
-                    bearer_token_env: binding.bearer_token_env.clone(),
-                },
-            );
-        }
+        let http = validated_http(policy)?;
         let client = if http.is_empty() {
             None
         } else {
