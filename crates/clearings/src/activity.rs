@@ -34,6 +34,8 @@ struct Checkpoint {
     identity: Option<(u64, u64)>,
     #[serde(default)]
     headless_metadata: bool,
+    #[serde(default)]
+    headless_thread: Option<String>,
     offset: u64,
     prefix: String,
     prefix_len: usize,
@@ -75,7 +77,13 @@ fn open_absolute(path: &Path) -> Result<File> {
     open_child(&dir, Path::new(names.last().unwrap()), false)
 }
 fn files(source: &TraceSource) -> Result<Vec<(PathBuf, File)>> {
-    fn visit(file: File, path: &Path, depth: usize, out: &mut Vec<(PathBuf, File)>) -> Result<()> {
+    fn visit(
+        file: File,
+        path: &Path,
+        depth: usize,
+        out: &mut Vec<(PathBuf, File)>,
+        visited: &mut usize,
+    ) -> Result<()> {
         ensure!(
             depth <= 6 && out.len() < 256,
             "trace selection exceeds directory or file limit; select a narrower source"
@@ -94,13 +102,18 @@ fn files(source: &TraceSource) -> Result<Vec<(PathBuf, File)>> {
             ensure!(children.len() <= 256, "trace directory exceeds entry limit");
             children.sort_by_key(|e| e.file_name());
             for child in children {
+                *visited += 1;
+                ensure!(
+                    *visited <= 1024,
+                    "trace selection exceeds total entry limit; select a narrower source"
+                );
                 let kind = child.file_type()?;
                 if kind.is_symlink() || !(kind.is_dir() || kind.is_file()) {
                     continue;
                 }
                 let name = child.file_name();
                 let file = open_child(&dir, Path::new(&name), kind.is_dir())?;
-                visit(file, &path.join(name), depth + 1, out)?;
+                visit(file, &path.join(name), depth + 1, out, visited)?;
             }
         } else {
             anyhow::bail!("trace must be a regular file or directory");
@@ -108,7 +121,13 @@ fn files(source: &TraceSource) -> Result<Vec<(PathBuf, File)>> {
         Ok(())
     }
     let mut out = vec![];
-    visit(open_absolute(&source.path)?, &source.path, 0, &mut out)?;
+    visit(
+        open_absolute(&source.path)?,
+        &source.path,
+        0,
+        &mut out,
+        &mut 1,
+    )?;
     Ok(out)
 }
 fn prefix(file: &mut File, len: usize) -> Result<String> {
@@ -248,6 +267,7 @@ impl Store {
             cp.headless_metadata = false;
             if value["type"] == "thread.started" {
                 let session = value["thread_id"].as_str().unwrap_or_default();
+                cp.headless_thread = Some(session.into());
                 if !metadata_ready || cp.session != session {
                     cp.cwd.clear();
                 }
@@ -266,6 +286,7 @@ impl Store {
                 );
             }
             if value["type"] == "session_meta" {
+                cp.headless_thread = None;
                 cp.session = value["payload"]["id"].as_str().unwrap_or_default().into();
                 cp.cwd = value["payload"]["cwd"].as_str().unwrap_or_default().into();
             }
@@ -307,7 +328,16 @@ impl Store {
             } else {
                 None
             };
-            let usage = usage(&source.adapter, &value);
+            let usage = if source.adapter == "codex"
+                && cp
+                    .headless_thread
+                    .as_ref()
+                    .is_some_and(|thread| thread != &cp.session)
+            {
+                None
+            } else {
+                usage(&source.adapter, &value)
+            };
             if observation.is_none() && usage.is_none() {
                 continue;
             }
@@ -407,6 +437,23 @@ impl Store {
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
+    #[test]
+    fn discovery_bounds_non_jsonl_entries_across_the_whole_tree() {
+        let d = tempfile::tempdir().unwrap();
+        for i in 0..5 {
+            let dir = d.path().join(i.to_string());
+            std::fs::create_dir(&dir).unwrap();
+            for j in 0..210 {
+                std::fs::write(dir.join(format!("{j}.txt")), "").unwrap();
+            }
+        }
+        let source = TraceSource {
+            adapter: "clearings".into(),
+            path: d.path().canonicalize().unwrap(),
+        };
+        let error = files(&source).unwrap_err();
+        assert!(error.to_string().contains("total entry limit"));
+    }
     #[test]
     fn trace_handles_do_not_follow_replaced_intermediate_directories() {
         let d = tempfile::tempdir().unwrap();

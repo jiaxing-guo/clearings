@@ -2,7 +2,7 @@
 
 Individual observations may record any supported outcome, including handoffs, unsupported work and failures. They still require valid schemas, inputs and fixtures. Preparing an acceptance task additionally requires at least one completed case.
 
-`observe` imports complete JSONL lines from the project's selected sources. It filters sessions by their canonical working directory, stores checkpoints atomically with imported events, ignores partial final lines until completed, and deduplicates events after restart or rotation. Each poll has file, depth and byte limits. Missing files and malformed records produce explicit errors. No other project sessions are imported.
+`observe` imports complete JSONL lines from the project's selected sources. It filters sessions by their canonical working directory, stores checkpoints atomically with imported events, ignores partial final lines until completed, and deduplicates retained events after restart or rotation. Each poll has file, depth and byte limits. Missing files and malformed records produce explicit errors. No other project sessions are imported.
 
 Codex session metadata and cumulative `token_count` records are supported. Claude Code message usage records are deduplicated by message identity. Imported counters retain their host-reported provenance and whether they are cumulative. Do not sum cumulative counters. Cached input, cache creation and reasoning fields retain their own categories; they are not universally additive across providers. Unsupported or missing counters stay unknown.
 
@@ -23,3 +23,7 @@ Imports and activity reads expire raw project activity using the configured rete
 `performance NAME --after VERSION` continues the preceding `next_after` cursor. Each version reports separate completed, handoff (`needs_agent`), not-applicable and failed counts.
 
 For Codex headless streams, supply a `clearings_session` record after `thread.started` and before usage, or immediately before it with the matching `session_id`. Each new stream requires its own project metadata. A changed session ID also clears any inherited working directory.
+
+Retention uses local import time and expires the local activity record, including its deduplication identity. It does not modify selected source logs. Replaying an authorized source after its records expire can import those records again; remove the source authorization to stop future imports. Discovery visits at most 1,024 entries across each selected directory tree, including files that are not JSONL.
+
+After a headless thread starts, usage requires project metadata with the same session ID. Metadata for a different session can precede its matching new thread, but cannot attribute usage to the current thread.

@@ -52,6 +52,10 @@ fn appended_headless_streams_require_fresh_project_metadata() {
     assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
     append(vec![meta("three"), start("three"), usage(50)]);
     assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
+    append(vec![start("five"), meta("wrong-thread"), usage(99)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
+    append(vec![meta("five"), usage(80)]);
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
     append(vec![
         json!({"type":"clearings_session","session_id":"four"}),
         usage(60),
@@ -62,7 +66,7 @@ fn appended_headless_streams_require_fresh_project_metadata() {
             .as_array()
             .unwrap()
             .len(),
-        3
+        4
     );
 }
 
