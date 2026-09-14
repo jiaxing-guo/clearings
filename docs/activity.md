@@ -7,3 +7,11 @@ Codex session metadata and cumulative `token_count` records are supported. Claud
 `activity` returns a bounded page; pass `--before` to continue. `performance NAME` groups executions by immutable routine version, including outcomes, elapsed execution time and capability calls. Session totals are not automatically assigned to a routine, and no token savings are inferred from them.
 
 For behavioral observation, an integration can append a `clearings_workflow` record to an authorized JSONL source. The record includes `session_id`, `cwd`, a stable `event_id`, and `observation` containing a runtime `contract` and one recorded `case` (name, input, expected outcome and capability fixtures). The host validates its shape. These records describe supplied observations; a transcript summary does not become an exact tool recording. Ordinary free-text transcripts are not executable instructions.
+
+## Usage sources checked
+
+[Codex non-interactive JSON output](https://developers.openai.com/codex/noninteractive) includes token counts in `turn.completed.usage`, including cached input and reasoning output when available. The importer accepts that shape as well as the session log counters. A host-owned `{"type":"clearings_session","session_id":"...","cwd":"/absolute/project"}` metadata line must precede streams that do not identify their working directory. Codex `thread.started` supplies its thread identity. Missing project metadata prevents import.
+
+[Claude Code programmatic JSON output](https://code.claude.com/docs/en/headless) provides usage and client-estimated cost metadata; its stream JSON `result` usage is retained as cumulative. Message-level log counters are also supported, but their completeness depends on the client version. [Claude's usage documentation](https://code.claude.com/docs/en/costs) distinguishes local estimates from authoritative billing. Source records, direct model response counters and local budget reservations remain separate in Clearings.
+
+A configured project's `model-usage` reports background response counters when provided. If the surrounding host does not expose a token meter, Clearings leaves its conversation usage unknown.

@@ -23,6 +23,7 @@ impl ProjectLock {
                 .path()
                 .context("background work requires a persistent database")?,
         )
+        .canonicalize()?
         .with_extension(format!("{project}.lock"));
         let file = OpenOptions::new()
             .read(true)
@@ -102,7 +103,10 @@ impl Store {
         } else {
             json!({"status":"deferred_after_creation"})
         };
-        Ok(json!({"observation":observation,"learning":learning,"improvement":improvement}))
+        let retention = self.prune(project, true)?;
+        Ok(
+            json!({"observation":observation,"learning":learning,"improvement":improvement,"retention":retention}),
+        )
     }
     pub(crate) fn check_job(&self, project: &str, job: i64) -> Result<()> {
         let (revision, cancelled, status, started): (u64, bool, String, i64) = self.db.query_row(
@@ -165,6 +169,11 @@ impl Store {
         let tx = self
             .db
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let authorized:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM projects JOIN background_jobs ON projects.id=background_jobs.project WHERE projects.id=?1 AND background_jobs.id=?2 AND projects.revision=background_jobs.revision AND background_jobs.cancelled=0 AND background_jobs.status='running' AND json_extract(projects.body,'$.settings.automatic')=1)",params![project,job],|r|r.get(0))?;
+        ensure!(
+            authorized,
+            "project authorization changed before budget reservation"
+        );
         tx.execute(
             "INSERT OR IGNORE INTO budgets(project,day,reserved) VALUES(?1,?2,0)",
             params![project, day],

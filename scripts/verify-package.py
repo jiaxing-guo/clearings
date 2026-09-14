@@ -58,4 +58,23 @@ with tempfile.TemporaryDirectory() as temporary:
             assert handoff['run']['outcome']['status'] == 'needs_agent'
     assert len(run('list')['tasks']) == 3
     assert len(run('runs')['runs']) == 7
-print('Packaged binary: 3 taught routines, 7 fresh executions, explicit handoff, empty PATH.')
+    settings = temp / 'settings.json'
+    settings.write_text('{}')
+    project = run('project-configure', '--root', temp, '--name', 'Package check', '--settings', settings)['id']
+    def scoped(*args):
+        return run('--project', project, *args)
+    folder = package / 'examples' / 'normalize-contacts'
+    name = json.loads((folder / 'task.json').read_text())['contract']['name']
+    scoped('prepare-task', folder / 'task.json')
+    saved = scoped('save', name, '--source', folder / 'routine.ts')
+    assert saved['accepted'] is True
+    assert scoped('reuse', name, '--input', folder / 'input.json')['run']['outcome']['status'] == 'completed'
+    assert len(scoped('discover')['routines']) == 1
+    scoped('manage', name, 'pause')
+    assert scoped('routine', name)['controls']['paused'] is True
+    scoped('manage', name, 'resume')
+    assert scoped('model-usage')['connection'] is None
+    assert scoped('background', '--once')['status'] == 'disabled'
+    scoped('manage', name, 'retire', '--expected-active', saved['version'])
+    assert scoped('routine', name)['controls']['excluded'] is True
+print('Packaged binary: 3 legacy routines, 7 fresh executions, handoff, project saving/reuse/controls and usage status, empty PATH.')

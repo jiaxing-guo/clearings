@@ -12,7 +12,7 @@ use std::{
     path::Path,
 };
 struct Group {
-    observations: Vec<(String, String, Observation)>,
+    observations: Vec<(String, String, Observation, Value)>,
 }
 impl Store {
     pub fn record_observation(
@@ -55,7 +55,7 @@ impl Store {
             if group.observations.len() < p.settings.min_occurrences {
                 continue;
             }
-            let sessions: BTreeSet<_> = group.observations.iter().map(|(s, _, _)| s).collect();
+            let sessions: BTreeSet<_> = group.observations.iter().map(|(s, _, _, _)| s).collect();
             if sessions.len() < p.settings.min_occurrences {
                 continue;
             }
@@ -84,6 +84,7 @@ impl Store {
                 continue;
             }
             let mut task = Task {
+                evidence: None,
                 project: Some(project.into()),
                 evaluation: EvaluationMode::ReadOnlyBehavior,
                 contract: first.contract.clone(),
@@ -100,7 +101,7 @@ impl Store {
             task.contract.limits.wall_ms = task.contract.limits.wall_ms.min(5000);
             let mut inputs = BTreeMap::new();
             let mut conflict = false;
-            for (_, id, o) in &group.observations {
+            for (_, id, o, _) in &group.observations {
                 let key = digest(&o.case.input)?;
                 if let Some(old) = inputs.insert(key, o.case.expected.clone()) {
                     if old != o.case.expected {
@@ -119,7 +120,21 @@ impl Store {
             if conflict || task.cases.len() < 3 {
                 continue;
             }
+            ensure!(
+                task.cases
+                    .iter()
+                    .flat_map(|c| &c.calls)
+                    .all(|call| call.input["root"].as_str().is_some_and(|root| p
+                        .settings
+                        .grants
+                        .roots
+                        .contains_key(root))),
+                "observed workflow requires an ungranted file root; no candidate was created"
+            );
             // Freeze all cases first. Source author receives no held-out input or expected result.
+            task.evidence = Some(
+                json!({"kind":"supplied_observations","source_records":group.observations.iter().take(8).map(|(_,id,_,provenance)|json!({"id":id,"provenance":provenance})).collect::<Vec<_>>(),"withheld_case":task.cases.last().map(|c|&c.name),"claim":"Agreement on supplied cases, not authenticated or universal correctness."}),
+            );
             if let Some((_, id, _)) = &previous {
                 task = self.get("task", id)?;
             }
@@ -177,6 +192,7 @@ impl Store {
                         .into(),
                     row.get(0)?,
                     o,
+                    v["provenance"].clone(),
                 ));
         }
         Ok(groups)

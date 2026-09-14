@@ -200,7 +200,11 @@ fn tool_annotations_describe_state_replacement() {
             tool["annotations"]["destructiveHint"],
             matches!(
                 name,
-                "clearings_activate" | "clearings_deactivate" | "clearings_save"
+                "clearings_activate"
+                    | "clearings_deactivate"
+                    | "clearings_save"
+                    | "clearings_manage"
+                    | "clearings_prune"
             )
         );
     }

@@ -33,7 +33,7 @@ Run this command as a local stdio MCP server:
 
 The server exposes `clearings_list`, `clearings_inspect`, `clearings_sdk`, `clearings_prepare_task`, `clearings_submit`, `clearings_evaluate`, `clearings_activate`, `clearings_deactivate`, `clearings_run` and `clearings_runs`. Store location and grants come from server startup, not tool arguments. Restart the server to change its policy. Client approval controls remain in force; the runtime does not grant the outer coding agent additional permissions.
 
-The transport implements the [MCP 2025-06-18 stdio lifecycle](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle) and tool calls. It advertises tools only and processes requests sequentially. Workers enforce deadlines. Cancellation notifications do not interrupt an already running operation in this first version; a client can terminate the server process. There is no HTTP listener, sampling, telemetry upload or model API dependency.
+The transport implements the [MCP 2025-06-18 stdio lifecycle](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle) and tool calls. It advertises tools only and processes requests sequentially. Workers enforce deadlines. Cancellation notifications do not interrupt an already running operation in this first version; a client can terminate the server process. The MCP server has no HTTP listener, sampling or telemetry upload. Background model requests run through the separately started, project-authorized worker.
 
 ## Codex and Claude Code
 
@@ -47,10 +47,18 @@ codex mcp add clearings -- /absolute/path/clearings --store /absolute/private/st
 
 For Claude Code, use its local stdio MCP registration or load the skill plugin during development with `claude --plugin-dir /absolute/path/to/integrations/claude-code/clearings`. Registration is a user setup step; this repository does not write client configuration while building or testing. See [Codex MCP configuration](https://developers.openai.com/codex/mcp) and [Claude Code plugin reference](https://code.claude.com/docs/en/plugins-reference) for current installation behavior.
 
-A useful first instruction is: “Make this repeated task reusable with Clearings. Preserve the inputs and rules we just agreed, and return unfamiliar cases to me.” A new conversation can discover the same stored task. Clearings does not scan other conversations or require a selected workflow to fit a built-in template.
+A useful first instruction is: “Make this repeated task reusable with Clearings. Preserve the inputs and rules we just agreed, and return unfamiliar cases to me.” A new conversation can discover the same stored task. Project-scoped automatic observation reads only selected sources and explicitly authorized conversational records. It does not require a selected workflow to fit a built-in template.
 
 ## What has been checked
 
 The CLI/MCP transport tests exercise initialization, task preparation, rejection before evaluation, activation, fresh input reuse, explicit handoff, and refusal of policy arguments supplied by a tool caller. These are deterministic integration tests, not a claim that a hosted Codex or Claude conversation has been run. Token savings require observed usage from real agent sessions; missing usage stays unknown.
 
 Task and version objects are rejected before storage if they exceed the inspection budget (about 1.3 MiB). `inspect` returns the complete object and a compact evaluation summary; `evaluate` returns the immutable full evaluation report. This keeps accepted requirements inspectable through the same CLI/MCP interface.
+
+## Project reuse and background work
+
+Configure the project using [project authorization](projects.md), then add `--project PROJECT_ID` to the server command. Keep its policy file equal to the configured grants. The server exposes named discovery, saving, reuse, observation and management through the same project boundary. The CLI `project-configure` is the only interface for changing that authorization.
+
+The host agent can record actual completed work with `clearings_record_observation` only when `record_conversations` is enabled. The project worker can then create routines without a save prompt on every workflow. Start that worker separately with `background`, or schedule `background --once`. See [background behavior](background.md), [activity formats](activity.md) and [management commands](management.md).
+
+The automatic lifecycle has deterministic local HTTP-fixture tests, including withheld examples, reuse after reopening the database, measured read reduction and recovery from a live regression. These do not demonstrate a hosted model's routine quality or end-to-end token savings.

@@ -79,3 +79,31 @@ fn claude_message_usage_is_deduplicated_and_missing_usage_is_not_zero() {
         10
     );
 }
+
+#[test]
+fn documented_headless_usage_requires_project_metadata_and_keeps_estimated_cost_separate() {
+    let d = tempfile::tempdir().unwrap();
+    let path = d.path().join("headless.jsonl");
+    let meta = json!({"type":"clearings_session","session_id":"s","cwd":d.path()});
+    let result = json!({"type":"result","session_id":"s","usage":{"input_tokens":100,"output_tokens":10},"total_cost_usd":0.02});
+    std::fs::write(&path, format!("{result}\n{meta}\n{result}\n")).unwrap();
+    let mut s = Store::open(&d.path().join("state.db")).unwrap();
+    let p = s
+        .configure_project(
+            d.path(),
+            "P",
+            Settings {
+                trace_sources: vec![TraceSource {
+                    adapter: "claude".into(),
+                    path,
+                }],
+                ..Default::default()
+            },
+            None,
+        )
+        .unwrap();
+    assert_eq!(s.observe(&p.id).unwrap()["imported"], 1);
+    let usage = s.activity(&p.id, None).unwrap()["events"][0]["event"]["usage"].clone();
+    assert_eq!(usage["cumulative"], true);
+    assert_eq!(usage["reported_cost_kind"], "client_estimate");
+}

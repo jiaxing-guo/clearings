@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Turn user-selected repeated agent work into reusable programs. The initial experience is: select completed work, describe what should vary, have the active agent author a TypeScript routine, evaluate it, and reuse it with new inputs. Users customize behavior through their existing Codex or Claude Code conversation.
+Turn authorized repeated agent work into reusable programs. The initial experience is: select completed work, describe what should vary, have the active agent author a TypeScript routine, evaluate it, and reuse it with new inputs. Users customize behavior through their existing Codex or Claude Code conversation.
 
 The same execution interface supports repository context gathering, log grouping, data normalization and other read-and-transform work. These are examples, not special cases in the runtime. The first release does not require a specific SaaS integration or a prescribed workflow template.
 
@@ -43,7 +43,9 @@ Executing a routine against fresh inputs is different from caching its output. C
 
 The active host agent supplies selected task evidence and authors source using a bundled SDK. Clearings provides the execution and evaluation lifecycle through the same interface in each host. Historical transcript access is limited to user-selected available evidence. Reconstructed summaries are not exact tool recordings.
 
-The initial product runs on demand. Always-on transcript scanning, scheduled background synthesis, remote workers and routine distribution are later extensions. No separate model API key is needed merely to submit source authored by the existing agent.
+On-demand teaching remains available without a separate model connection. Project authorization also supports selected transcript imports, explicitly enabled conversational observation, background source proposals, evaluation, activation and measured improvement. Background generation requires a configured model connection and conservative spending cap. Remote workers and cross-project routine distribution remain outside this version.
+
+Automatic eligibility currently uses structured observations with actual inputs, outcomes and tool fixtures. It does not reconstruct arbitrary workflows from free text or shell commands. See [background execution](background.md) for the acceptance limits and [management](management.md) for pause, exclusion, retirement, rollback and retention.
 
 ## Success and limits
 

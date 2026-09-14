@@ -1,0 +1,14 @@
+[Unit]
+Description=Clearings project background reuse
+
+[Service]
+Type=simple
+WorkingDirectory=/absolute/project
+ExecStart=/absolute/bin/clearings --store /absolute/private/state.db --project PROJECT_ID background
+Restart=on-failure
+RestartSec=30
+# Optional file owned and readable only by the service user. Do not put keys here.
+EnvironmentFile=-/absolute/private/model.env
+
+[Install]
+WantedBy=default.target

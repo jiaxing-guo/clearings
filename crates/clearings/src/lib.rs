@@ -8,6 +8,7 @@ pub mod execute;
 mod improvement;
 mod isolation;
 mod learning;
+pub mod management;
 pub mod mcp;
 mod model;
 pub mod project;

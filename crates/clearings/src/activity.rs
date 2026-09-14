@@ -24,6 +24,7 @@ pub struct Observation {
 impl Observation {
     pub fn validate(&self) -> Result<()> {
         let task = Task {
+            evidence: None,
             project: None,
             evaluation: Default::default(),
             contract: self.contract.clone(),
@@ -97,7 +98,11 @@ fn usage(adapter: &str, value: &Value) -> Option<Value> {
     {
         (&value["payload"]["info"]["total_token_usage"], true)
     } else if adapter == "claude" {
-        (&value["message"]["usage"], false)
+        if value["type"] == "result" {
+            (&value["usage"], true)
+        } else {
+            (&value["message"]["usage"], false)
+        }
     } else {
         (&value["usage"], false)
     };
@@ -107,7 +112,7 @@ fn usage(adapter: &str, value: &Value) -> Option<Value> {
         return None;
     }
     Some(
-        json!({"input_tokens":input,"output_tokens":output,"cached_input_tokens":raw.get("cached_input_tokens").or_else(|| raw.get("cache_read_input_tokens")),"cache_creation_input_tokens":raw.get("cache_creation_input_tokens"),"reasoning_output_tokens":raw.get("reasoning_output_tokens"),"cumulative":cumulative,"provenance":"host_reported","adapter":adapter}),
+        json!({"input_tokens":input,"output_tokens":output,"cached_input_tokens":raw.get("cached_input_tokens").or_else(|| raw.get("cache_read_input_tokens")),"cache_creation_input_tokens":raw.get("cache_creation_input_tokens"),"reasoning_output_tokens":raw.get("reasoning_output_tokens"),"cumulative":cumulative,"provenance":"host_reported","adapter":adapter,"reported_cost_usd":value.get("total_cost_usd"),"reported_cost_kind":if value.get("total_cost_usd").is_some(){Some("client_estimate")}else{None},"model_breakdown":value.get("modelUsage")}),
     )
 }
 impl Store {
@@ -184,6 +189,9 @@ impl Store {
         {
             let value: Value = serde_json::from_slice(line)
                 .context("malformed complete trace line; repair it before retrying")?;
+            if value["type"] == "thread.started" {
+                cp.session = value["thread_id"].as_str().unwrap_or_default().into();
+            }
             if value["type"] == "session_meta" {
                 cp.session = value["payload"]["id"].as_str().unwrap_or_default().into();
                 cp.cwd = value["payload"]["cwd"].as_str().unwrap_or_default().into();
@@ -218,12 +226,17 @@ impl Store {
             if observation.is_none() && usage.is_none() {
                 continue;
             }
-            let event_key = value["uuid"]
-                .as_str()
-                .or_else(|| value["event_id"].as_str())
-                .or_else(|| value["message"]["id"].as_str())
-                .map(str::to_owned)
-                .unwrap_or(digest(&value)?);
+            let event_key = if source.adapter == "claude" {
+                value["message"]["id"]
+                    .as_str()
+                    .or_else(|| value["uuid"].as_str())
+            } else {
+                value["uuid"]
+                    .as_str()
+                    .or_else(|| value["event_id"].as_str())
+            }
+            .map(str::to_owned)
+            .unwrap_or(digest(&value)?);
             let id = digest(&(source.adapter.as_str(), &cp.session, event_key))?;
             let body = json!({"session":cp.session,"adapter":source.adapter,"observation":observation,"usage":usage,"provenance":"selected_session_record"});
             ensure!(

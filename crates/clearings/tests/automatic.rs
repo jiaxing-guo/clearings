@@ -13,6 +13,12 @@ fn exe() -> &'static Path {
     Path::new(env!("CARGO_BIN_EXE_clearings"))
 }
 fn model(source: &str) -> (String, std::thread::JoinHandle<Value>) {
+    model_with(source, || {})
+}
+fn model_with(
+    source: &str,
+    before_response: impl FnOnce() + Send + 'static,
+) -> (String, std::thread::JoinHandle<Value>) {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let url = format!("http://{}/chat", listener.local_addr().unwrap());
     let source = source.to_owned();
@@ -46,6 +52,7 @@ fn model(source: &str) -> (String, std::thread::JoinHandle<Value>) {
             bytes.extend_from_slice(&buf[..n]);
         }
         let request: Value = serde_json::from_slice(&bytes[offset..offset + size]).unwrap();
+        before_response();
         let response=json!({"choices":[{"message":{"content":json!({"source":source}).to_string()}}],"usage":{"prompt_tokens":100,"completion_tokens":20}}).to_string();
         write!(stream,"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",response.len(),response).unwrap();
         request
@@ -179,5 +186,42 @@ fn measured_replacement_reduces_reads_and_live_regression_restores_previous_vers
             )
             .unwrap()["run"]["outcome"]["output"],
         "current data"
+    );
+}
+
+#[test]
+fn cancellation_during_model_request_preserves_usage_without_promoting() {
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let cancel_db = db.clone();
+    let (url, handle) = model_with(
+        "export default async x=>({status:'completed',output:x*2})",
+        move || {
+            let conn = rusqlite::Connection::open(cancel_db).unwrap();
+            conn.execute(
+                "UPDATE background_jobs SET cancelled=1 WHERE status='running'",
+                [],
+            )
+            .unwrap();
+        },
+    );
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    for i in 1..=3 {
+        store
+            .record_observation(&p.id, &format!("session-{i}"), observation(i))
+            .unwrap();
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    handle.join().unwrap();
+    assert_eq!(result["report"]["learning"]["status"], "failed");
+    assert!(store.named_task(&p.id, "double", false).is_err());
+    let usage = store.model_usage(&p.id, None).unwrap();
+    assert!(usage["reserved_microusd"].as_u64().unwrap() > 0);
+    assert_eq!(
+        usage["requests"][0]["usage"]["provenance"],
+        "provider_reported"
     );
 }

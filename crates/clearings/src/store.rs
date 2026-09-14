@@ -43,6 +43,8 @@ pub struct Case {
 #[serde(deny_unknown_fields)]
 pub struct Task {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub evidence: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub project: Option<String>,
     #[serde(default, skip_serializing_if = "EvaluationMode::is_exact")]
     pub evaluation: EvaluationMode,

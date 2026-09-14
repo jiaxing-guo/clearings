@@ -40,6 +40,28 @@ enum Action {
         expected_revision: Option<u64>,
     },
     ProjectStatus,
+    Routine {
+        name: String,
+    },
+    Manage {
+        name: String,
+        #[arg(value_enum)]
+        control: clearings::management::Control,
+        #[arg(long)]
+        expected_active: Option<String>,
+    },
+    Digest {
+        #[arg(long)]
+        after: Option<i64>,
+    },
+    ModelUsage {
+        #[arg(long)]
+        before: Option<i64>,
+    },
+    Prune {
+        #[arg(long)]
+        apply: bool,
+    },
     RecordObservation {
         #[arg(long)]
         session: String,
@@ -274,6 +296,19 @@ fn main() -> Result<()> {
                     session,
                     observation: read(file)?,
                 },
+                Action::Routine { name } => Operation::Routine { name },
+                Action::Manage {
+                    name,
+                    control,
+                    expected_active,
+                } => Operation::Manage {
+                    name,
+                    control,
+                    expected_active,
+                },
+                Action::Digest { after } => Operation::Digest { after },
+                Action::ModelUsage { before } => Operation::ModelUsage { before },
+                Action::Prune { apply } => Operation::Prune { apply },
                 Action::ProjectStatus => Operation::ProjectStatus,
                 Action::List { after } => Operation::List { after },
                 Action::Inspect { id } => Operation::Inspect { id },
