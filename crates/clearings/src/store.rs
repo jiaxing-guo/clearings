@@ -470,6 +470,14 @@ impl Store {
     }
 
     pub fn runs_page(&self, before: Option<i64>) -> Result<Value> {
+        self.runs_page_for_project(None, before)
+    }
+
+    pub fn runs_page_for_project(
+        &self,
+        project: Option<&str>,
+        before: Option<i64>,
+    ) -> Result<Value> {
         const PAGE_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
         ensure!(
             before.is_none_or(|id| id > 0),
@@ -478,9 +486,9 @@ impl Store {
         let mut stmt = self.db.prepare(
             "SELECT id,version,input_digest,length(CAST(report AS BLOB)),
              CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at
-             FROM runs WHERE EXISTS (SELECT 1 FROM objects v JOIN objects t ON t.id=json_extract(v.body,'$.task') WHERE v.id=runs.version AND json_extract(t.body,'$.project') IS NULL) AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
+             FROM runs WHERE EXISTS (SELECT 1 FROM objects v JOIN objects t ON t.id=json_extract(v.body,'$.task') WHERE v.id=runs.version AND json_extract(t.body,'$.project') IS ?3 AND (?3 IS NULL OR EXISTS (SELECT 1 FROM project_routines p WHERE p.project=?3 AND p.task=t.id))) AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
         )?;
-        let mut rows = stmt.query(params![before, PAGE_BYTES])?;
+        let mut rows = stmt.query(params![before, PAGE_BYTES, project])?;
         let mut runs = Vec::new();
         let mut bytes = 64;
         let mut next_before = None;

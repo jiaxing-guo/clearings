@@ -15,6 +15,32 @@ fn cli(dir: &Path, args: &[&str]) -> std::process::Output {
 }
 
 #[test]
+fn tool_discovery_matches_project_availability() {
+    let scoped = clearings::mcp::tools_for_project(true);
+    let names: Vec<_> = scoped["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["name"].as_str().unwrap())
+        .collect();
+    assert!(names.contains(&"clearings_project_status"));
+    assert!(names.contains(&"clearings_sdk"));
+    assert!(names.contains(&"clearings_list"));
+    assert!(names.contains(&"clearings_reuse"));
+    let unscoped = clearings::mcp::tools_for_project(false);
+    let names: Vec<_> = unscoped["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["name"].as_str().unwrap())
+        .collect();
+    assert!(!names.contains(&"clearings_project_status"));
+    assert!(!names.contains(&"clearings_reuse"));
+    assert!(!names.contains(&"clearings_discover"));
+    assert!(names.contains(&"clearings_run"));
+}
+
+#[test]
 fn project_transport_normalizes_grants_and_rejects_scope_escape() {
     let d = tempfile::tempdir().unwrap();
     std::fs::create_dir(d.path().join("data")).unwrap();
@@ -278,12 +304,67 @@ fn named_mcp_lifecycle_and_name_cursor_round_trip() {
         14
     );
     assert!(call("clearings_discover", json!({}))["structuredContent"]["routines"].is_array());
+    let db = rusqlite::Connection::open(d.path().join("state.db")).unwrap();
+    for _ in 0..100 {
+        db.execute("INSERT INTO runs(version,input_digest,report) SELECT version,input_digest,report FROM runs ORDER BY id LIMIT 1", []).unwrap();
+    }
+    let history = call("clearings_runs", json!({}));
+    assert_eq!(
+        history["structuredContent"]["runs"]
+            .as_array()
+            .unwrap()
+            .len(),
+        100
+    );
+    let older = call(
+        "clearings_runs",
+        json!({"before":history["structuredContent"]["next_before"]}),
+    );
+    assert_eq!(
+        older["structuredContent"]["runs"].as_array().unwrap().len(),
+        1
+    );
+    let mut expanded = p.settings.clone();
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    expanded
+        .grants
+        .roots
+        .insert("new-root".into(), d.path().to_owned());
+    store
+        .configure_project(d.path(), "P", expanded, Some(p.revision))
+        .unwrap();
+    let rejected = call("clearings_reuse", json!({"name":"Double","input":7}));
+    assert_eq!(rejected["isError"], true);
+    assert!(
+        rejected["structuredContent"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("restart this session")
+    );
+    assert_eq!(
+        call("clearings_project_status", json!({}))["structuredContent"]["revision"],
+        2
+    );
     drop(input);
     assert!(child.wait().unwrap().success());
     assert!(!cli(d.path(), &["inspect", &task_id]).status.success());
     let unscoped = cli(d.path(), &["runs"]);
     assert_eq!(
         serde_json::from_slice::<Value>(&unscoped.stdout).unwrap()["runs"],
+        json!([])
+    );
+    let own = cli(d.path(), &["--project", &p.id, "runs"]);
+    assert!(own.status.success());
+    assert_eq!(
+        serde_json::from_slice::<Value>(&own.stdout).unwrap()["runs"]
+            .as_array()
+            .unwrap()
+            .len(),
+        100
+    );
+    let other_history = cli(d.path(), &["--project", &foreign.id, "runs"]);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&other_history.stdout).unwrap()["runs"],
         json!([])
     );
     let mut forged = serde_json::to_value(task).unwrap();
