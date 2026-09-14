@@ -7,3 +7,13 @@ A kernel file lock prevents concurrent cycles for the same database and project.
 `background-cancel` stops current work at a bounded phase boundary. It does not permanently disable scheduling; update the project settings to turn off `automatic`. Changed authorization cancels an older job before it can promote a component. Ordinary agent work and already saved routines remain available when the optimizer is disabled, unavailable or out of budget.
 
 `background-jobs` reports completion, interruption and failures. Model requests reserve a conservative amount against a persisted UTC daily budget before sending. Reservations survive crashes and uncertain responses. A reservation is a local spending bound using configured prices, not a provider invoice. Unknown token usage remains unknown.
+
+## Automatic component creation
+
+When `automatic` is enabled, each due cycle imports selected records and considers one eligible workflow. It requires at least three distinct inputs across at least `min_occurrences` distinct sessions, consistent outcomes, and a read-only file or pure transformation contract. It excludes configured names and existing named routines. Plain conversational text is not treated as behavioral evidence.
+
+An integration may supply structured records through the selected trace files. If the project also explicitly enables `record_conversations`, the active agent can call `clearings_record_observation` after completing work, using actual input, output and tool results. This records evidence without asking the user to save each workflow. Agent-supplied observations retain that provenance. General automatic reconstruction of arbitrary shell commands or free-text histories is not supported.
+
+Acceptance cases are stored before requesting source. One recorded example is withheld from the authoring request. The configured model returns a JSON source proposal; the isolated TypeScript runtime prepares and evaluates it. Passing candidates become discoverable and reusable in later project sessions. This establishes agreement on recorded cases, not general correctness or measured token savings.
+
+A workflow has at most two authoring attempts, using the same frozen cases, across scheduled cycles. Failed attempts and their budget reservations remain visible. Model responses cannot change grants, acceptance cases or host settings. A configuration change, cancellation, concurrent manual replacement, pause or exclusion prevents automatic promotion.

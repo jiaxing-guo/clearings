@@ -91,12 +91,13 @@ impl Store {
         &mut self,
         project: &str,
         job: i64,
-        _executable: &std::path::Path,
+        executable: &std::path::Path,
     ) -> Result<Value> {
         self.check_job(project, job)?;
         let observation = self.observe(project)?;
         self.check_job(project, job)?;
-        Ok(json!({"observation":observation}))
+        let learning = self.learn(project, job, executable)?;
+        Ok(json!({"observation":observation,"learning":learning}))
     }
     pub(crate) fn check_job(&self, project: &str, job: i64) -> Result<()> {
         let (revision, cancelled, status): (u64, bool, String) = self.db.query_row(

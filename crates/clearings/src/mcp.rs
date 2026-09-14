@@ -22,6 +22,7 @@ fn tool(
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("record_observation","Record completed, user-authorized project work for background reuse. Supply actual input/output and capability fixtures, never invented examples. Requires automatic project authorization. Does not save or activate a routine.",json!({"session":{"type":"string","maxLength":200},"observation":{"type":"object","required":["contract","case"],"properties":{"contract":{"type":"object"},"case":{"type":"object"}},"additionalProperties":false}}),json!(["session","observation"]),false),
         tool("background_cancel","Cancel current project background work at its next bounded phase boundary.",json!({}),json!([]),false),
         tool("background_jobs","Inspect background progress, errors and interruptions.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
         tool("observe","Import new records only from host-authorized project trace sources.",json!({}),json!([]),false),

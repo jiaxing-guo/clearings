@@ -32,6 +32,7 @@ pub struct ModelConnection {
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
     pub automatic: bool,
+    pub record_conversations: bool,
     pub improve: bool,
     pub trace_sources: Vec<TraceSource>,
     pub model: Option<ModelConnection>,
@@ -46,6 +47,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             automatic: false,
+            record_conversations: false,
             improve: false,
             trace_sources: vec![],
             model: None,
@@ -133,7 +135,7 @@ impl Settings {
         );
         ensure!(
             !self.automatic
-                || (!self.trace_sources.is_empty()
+                || ((!self.trace_sources.is_empty() || self.record_conversations)
                     && self.model.is_some()
                     && self.daily_budget_microusd > 0),
             "automatic reuse requires selected traces, a model connection and a positive budget"
