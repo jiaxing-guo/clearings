@@ -119,7 +119,17 @@ impl Store {
             Ok(measurements)
         })();
         if let Err(error) = self.check_job(project, job) {
-            self.db.execute("UPDATE improvement_trials SET status='interrupted',report=?3 WHERE project=?1 AND baseline=?2",params![project,baseline,json!({"error":error.to_string()}).to_string()])?;
+            let started: i64 = self.db.query_row(
+                "SELECT started FROM background_jobs WHERE project=?1 AND id=?2",
+                params![project, job],
+                |r| r.get(0),
+            )?;
+            let status = if crate::background::now()? > started + 120 {
+                "failed"
+            } else {
+                "interrupted"
+            };
+            self.db.execute("UPDATE improvement_trials SET status=?3,report=?4 WHERE project=?1 AND baseline=?2",params![project,baseline,status,json!({"error":error.to_string()}).to_string()])?;
             return Err(error);
         }
         let (status, report) = match result {

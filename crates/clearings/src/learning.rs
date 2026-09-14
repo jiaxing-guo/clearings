@@ -168,13 +168,23 @@ impl Store {
             }
             let task_id = self.prepare_task(&task)?;
             self.db.execute("INSERT INTO learning_groups(project,fingerprint,task,status,attempts) VALUES(?1,?2,?3,'pending',0) ON CONFLICT(project,fingerprint) DO NOTHING",params![project,fingerprint,task_id])?;
+            let mut candidate_details = None;
             let result = (|| -> Result<Value> {
                 let packet = json!({"contract":task.contract,"examples":&task.cases[..task.cases.len()-1],"purpose":"Create a parameterized routine; one additional recorded case is withheld."});
                 let source =
                     self.propose_source(project, job, "create", packet, Some(&fingerprint))?;
                 self.check_job(project, job)?;
-                let version = self.submit(executable, &task_id, source)?;
+                let version = self.submit(executable, &task_id, source.clone())?;
+                candidate_details = Some(
+                    json!({"version":version,"source_preview":source.chars().take(16_384).collect::<String>(),"source_truncated":source.chars().count()>16_384}),
+                );
                 let report = self.evaluate(executable, &version)?;
+                let cases: Vec<Value> = report["cases"].as_array().context("missing evaluation cases")?.iter().map(|case| {
+                    let outcome = case["run"]["outcome"].to_string();
+                    json!({"name":case["name"],"accepted":case["accepted"],"outcome_preview":outcome.chars().take(1024).collect::<String>(),"outcome_truncated":outcome.chars().count()>1024})
+                }).collect();
+                candidate_details.as_mut().unwrap()["evaluation"] =
+                    json!({"accepted":report["accepted"],"cases":cases});
                 ensure!(
                     report["accepted"] == true,
                     "candidate disagrees with recorded behavior; ordinary work is unchanged"
@@ -194,7 +204,7 @@ impl Store {
                     let requested: bool = self.db.query_row("SELECT EXISTS(SELECT 1 FROM model_requests WHERE project=?1 AND job=?2 AND purpose='create')",params![project,job],|r|r.get(0))?;
                     (
                         if requested { "failed" } else { "deferred" },
-                        json!({"error":e.to_string(),"task":task_id}),
+                        json!({"error":e.to_string(),"task":task_id,"candidate":candidate_details}),
                     )
                 }
             };

@@ -306,6 +306,23 @@ fn candidate_failure_leaves_ordinary_work_available_and_does_not_activate() {
     }
     let result = store.background_tick(&p.id, exe()).unwrap();
     assert_eq!(result["report"]["learning"]["status"], "failed");
+    let candidate = &result["report"]["learning"]["result"]["candidate"];
+    assert!(candidate["version"].as_str().is_some());
+    assert!(
+        candidate["source_preview"]
+            .as_str()
+            .unwrap()
+            .contains("output:0")
+    );
+    assert_eq!(candidate["source_truncated"], false);
+    assert_eq!(candidate["evaluation"]["accepted"], false);
+    assert!(
+        candidate["evaluation"]["cases"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|case| case["accepted"] == false && case["outcome_preview"].as_str().is_some())
+    );
     handle.join().unwrap();
     assert!(store.named_task(&p.id, "double", true).is_err());
 }
@@ -662,5 +679,68 @@ fn interrupted_measurement_resumes_past_excluded_routines_without_a_model_reques
             .get::<_, i64>(0))
             .unwrap(),
         2
+    );
+}
+#[test]
+fn expired_improvement_trials_are_terminal_and_do_not_request_again() {
+    use clearings::store::Task;
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let expire_db = db.clone();
+    let (url, handle) = model_with(
+        "export default async x=>({status:'completed',output:x+x})",
+        move || {
+            rusqlite::Connection::open(expire_db)
+                .unwrap()
+                .execute(
+                    "UPDATE background_jobs SET started=0 WHERE status='running'",
+                    [],
+                )
+                .unwrap();
+        },
+    );
+    let mut options = settings(url);
+    options.improve = true;
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", options, None)
+        .unwrap();
+    let task: Task = serde_json::from_value(json!({"evaluation":"read_only_behavior","contract":observation(1).contract,"cases":(1..=3).map(|i| { let mut case=observation(i).case; case.name=i.to_string(); case }).collect::<Vec<_>>()})).unwrap();
+    store.prepare_named(&p.id, task, "user").unwrap();
+    store
+        .save_named(
+            exe(),
+            &p.id,
+            "double",
+            "export default async x=>({status:'completed',output:x*2})".into(),
+            None,
+        )
+        .unwrap();
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    handle.join().unwrap();
+    assert_eq!(result["status"], "failed");
+    assert!(
+        result["report"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("time budget")
+    );
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    assert_eq!(
+        conn.query_row("SELECT status FROM improvement_trials", [], |r| r
+            .get::<_, String>(0))
+            .unwrap(),
+        "failed"
+    );
+    conn.execute("UPDATE schedule SET next_due=0", []).unwrap();
+    assert_eq!(
+        store.background_tick(&p.id, exe()).unwrap()["report"]["improvement"]["status"],
+        "no_candidate"
+    );
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        1
     );
 }
