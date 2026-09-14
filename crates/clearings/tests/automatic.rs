@@ -78,6 +78,80 @@ fn settings(url: String) -> Settings {
 fn observation(x: i64) -> Observation {
     serde_json::from_value(json!({"contract":{"abi":1,"name":"double","description":"Double integers","input_schema":{"type":"integer"},"output_schema":{"type":"integer"}},"case":{"name":"observed","input":x,"expected":{"status":"completed","output":x*2}}})).unwrap()
 }
+
+#[test]
+fn observations_separated_by_other_work_form_one_eligible_group() {
+    let d = tempfile::tempdir().unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let mut store = Store::open(&d.path().join("state.db")).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    for i in 1..=3 {
+        store
+            .record_observation(&p.id, &format!("work-{i}"), observation(i))
+            .unwrap();
+        if i < 3 {
+            for j in 0..500 {
+                let mut noise = observation(0);
+                noise.contract.name = "noise".into();
+                store
+                    .record_observation(&p.id, &format!("noise-{i}-{j}"), noise)
+                    .unwrap();
+            }
+        }
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["learning"]["status"], "created",
+        "{result}"
+    );
+    handle.join().unwrap();
+}
+
+#[test]
+fn handoff_only_groups_stay_observations_and_do_not_block_valid_work() {
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    for i in 1..=3 {
+        let mut o = observation(i);
+        o.contract.name = "handoffs".into();
+        o.case.expected = clearings::contract::Outcome::NeedsAgent {
+            reason: "unsupported".into(),
+            context: json!({}),
+        };
+        store
+            .record_observation(&p.id, &format!("handoff-{i}"), o)
+            .unwrap();
+    }
+    assert_eq!(
+        store.background_tick(&p.id, exe()).unwrap()["report"]["learning"]["status"],
+        "no_eligible_observations"
+    );
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    conn.execute("UPDATE schedule SET next_due=0", []).unwrap();
+    for i in 1..=3 {
+        store
+            .record_observation(&p.id, &format!("work-{i}"), observation(i))
+            .unwrap();
+    }
+    assert_eq!(
+        store.background_tick(&p.id, exe()).unwrap()["report"]["learning"]["status"],
+        "created"
+    );
+    handle.join().unwrap();
+}
 #[test]
 fn enabled_once_creates_and_reuses_in_a_fresh_session_with_held_out_evidence() {
     let d = tempfile::tempdir().unwrap();
@@ -149,7 +223,7 @@ fn observation_scans_reach_older_groups_after_a_full_unlearnable_page() {
     }
     for i in 0..500 {
         let mut o = observation(0);
-        o.contract.name = "noise".into();
+        o.contract.name = format!("noise-{i}");
         s.record_observation(&p.id, &format!("new-{i}"), o).unwrap();
     }
     assert_eq!(
