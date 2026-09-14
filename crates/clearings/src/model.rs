@@ -4,6 +4,15 @@ use anyhow::{Context, Result, ensure};
 use rusqlite::params;
 use serde_json::{Value, json};
 use std::{io::Read, time::Duration};
+#[derive(Debug)]
+pub(crate) struct RequestTooLarge;
+impl std::fmt::Display for RequestTooLarge {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("model request exceeds byte limit")
+    }
+}
+impl std::error::Error for RequestTooLarge {}
+
 impl Store {
     pub(crate) fn propose_source(
         &mut self,
@@ -24,10 +33,7 @@ impl Store {
             {"role":"user","content":json!({"sdk":include_str!("../../../sdk/clearings.d.ts"),"packet":packet}).to_string()}
         ],"max_tokens":connection.max_output_tokens,"response_format":{"type":"json_object"}});
         let bytes = serde_json::to_vec(&prompt)?;
-        ensure!(
-            bytes.len() <= 512 * 1024,
-            "model request exceeds byte limit"
-        );
+        ensure!(bytes.len() <= 512 * 1024, RequestTooLarge);
         // One token per UTF-8 byte plus framing is a conservative local bound, not a tokenizer measurement.
         let amount = ((bytes.len() as u64 + 2048) * connection.input_price
             + u64::from(connection.max_output_tokens) * connection.output_price)

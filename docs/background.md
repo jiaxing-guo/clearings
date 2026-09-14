@@ -35,3 +35,5 @@ Oversized or otherwise invalid combined acceptance groups are reported and skipp
 Background coordination supports processes that share the same canonical database path within one filesystem namespace. Symlink aliases resolve to that path; hard-linked database files are rejected. Exposing one database through different bind-mount paths or filesystem namespaces is not a supported storage layout.
 
 Observation sampling represents distinct input/outcome pairs and session identities within the existing per-group record and byte limits. Failed proposals retain bounded source diagnostics even when TypeScript preparation fails before a version is created.
+
+An assembled model request above 512 KiB is rejected permanently for that frozen workflow without spending an authoring attempt. Later cycles skip the rejected group and continue considering other work. Budget refusal remains retryable.

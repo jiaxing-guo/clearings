@@ -500,3 +500,66 @@ fn invalid_proposals_keep_source_diagnostics_without_a_version() {
     assert!(candidate["version"].is_null());
     assert!(store.named_task(&p.id, "double", true).is_err());
 }
+
+#[test]
+fn oversized_creation_requests_are_terminal_without_spending_attempts() {
+    let d = tempfile::tempdir().unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x*2})");
+    let db = d.path().join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(d.path(), "P", settings(url), None)
+        .unwrap();
+    let mut large = observation(1);
+    large.contract.name = "oversized".into();
+    large.contract.output_schema = json!({"type":"string"});
+    large.contract.limits.output_bytes = 1024 * 1024;
+    for i in 1..=3 {
+        large.case.input = json!(i);
+        large.case.expected = clearings::contract::Outcome::Completed {
+            output: json!("x".repeat(300 * 1024)),
+        };
+        store
+            .record_observation(&p.id, &format!("large-{i}"), large.clone())
+            .unwrap();
+    }
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert_eq!(
+        result["report"]["learning"]["status"], "rejected",
+        "{result}"
+    );
+    assert!(
+        result["report"]["learning"]["result"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("request exceeds byte limit")
+    );
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    assert_eq!(
+        conn.query_row("SELECT attempts FROM learning_groups", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        0
+    );
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        0
+    );
+    for i in 1..=3 {
+        store
+            .record_observation(&p.id, &format!("valid-{i}"), observation(i))
+            .unwrap();
+    }
+    conn.execute("UPDATE schedule SET next_due=0", []).unwrap();
+    let next = store.background_tick(&p.id, exe()).unwrap();
+    handle.join().unwrap();
+    assert_eq!(next["report"]["learning"]["status"], "created", "{next}");
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, u64>(0))
+            .unwrap(),
+        1
+    );
+}
