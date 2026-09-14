@@ -38,8 +38,9 @@ export default function Home() {
           ))}
         </div>
         <p className="home-note">
-          The embedded execution boundary is implemented. Routine persistence and agent integration
-          are the next steps. Token savings remain to be measured.
+          Isolated execution, immutable routine storage, evaluation and activation are implemented.
+          CLI/MCP lifecycle operations and agent integrations are the next steps. Token savings
+          remain to be measured.
         </p>
       </main>
     </HomeLayout>
