@@ -40,6 +40,15 @@ enum Action {
         expected_revision: Option<u64>,
     },
     ProjectStatus,
+    Background {
+        #[arg(long)]
+        once: bool,
+    },
+    BackgroundCancel,
+    BackgroundJobs {
+        #[arg(long)]
+        before: Option<i64>,
+    },
     Observe,
     Activity {
         #[arg(long)]
@@ -201,6 +210,21 @@ fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&result)?);
                 return Ok(());
             }
+            if let Action::Background { once } = action {
+                let project = cli
+                    .project
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?;
+                if once {
+                    let result = store.background_tick(&project, &executable)?;
+                    println!("{}", result);
+                    anyhow::ensure!(
+                        result["status"] != "failed",
+                        "background job failed; see JSON result"
+                    );
+                    return Ok(());
+                }
+                return clearings::background::serve(store, project, executable);
+            }
             let selected = cli
                 .project
                 .as_deref()
@@ -247,6 +271,8 @@ fn main() -> Result<()> {
                 Action::Observe => Operation::Observe,
                 Action::Activity { before } => Operation::Activity { before },
                 Action::Performance { name, after } => Operation::Performance { name, after },
+                Action::BackgroundCancel => Operation::BackgroundCancel,
+                Action::BackgroundJobs { before } => Operation::BackgroundJobs { before },
                 Action::ProjectStatus => Operation::ProjectStatus,
                 Action::List { after } => Operation::List { after },
                 Action::Inspect { id } => Operation::Inspect { id },

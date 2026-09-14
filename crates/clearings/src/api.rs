@@ -11,6 +11,10 @@ use std::path::PathBuf;
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
     ProjectStatus,
+    BackgroundCancel,
+    BackgroundJobs {
+        before: Option<i64>,
+    },
     Observe,
     Activity {
         before: Option<i64>,
@@ -106,6 +110,17 @@ impl Api {
             _ => {}
         }
         Ok(match op {
+            Operation::BackgroundCancel => self.store.cancel_background(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+            )?,
+            Operation::BackgroundJobs { before } => self.store.background_jobs(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?,
+                before,
+            )?,
             Operation::Observe => self.store.observe(
                 self.project
                     .as_deref()

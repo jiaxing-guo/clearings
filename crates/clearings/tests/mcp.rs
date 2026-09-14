@@ -203,6 +203,7 @@ fn tool_annotations_describe_state_replacement() {
                 "clearings_activate"
                     | "clearings_deactivate"
                     | "clearings_save"
+                    | "clearings_background_cancel"
                     | "clearings_observe"
                     | "clearings_activity"
             )

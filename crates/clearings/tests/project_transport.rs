@@ -376,3 +376,47 @@ fn named_mcp_lifecycle_and_name_cursor_round_trip() {
             .success()
     );
 }
+
+#[test]
+fn cancelled_background_once_prints_failure_and_exits_unsuccessfully() {
+    let d = tempfile::tempdir().unwrap();
+    let event =
+        json!({"session_id":"host","cwd":d.path(),"usage":{"input_tokens":1,"output_tokens":1}});
+    std::fs::write(d.path().join("trace.jsonl"), format!("{event}\n")).unwrap();
+    let settings = json!({"automatic":true,"trace_sources":[{"adapter":"clearings","path":"trace.jsonl"}],"daily_budget_microusd":100,"model":{"url":"http://127.0.0.1:9/chat","model":"test","max_output_tokens":100,"input_price":1,"output_price":1}});
+    std::fs::write(d.path().join("settings.json"), settings.to_string()).unwrap();
+    let configured = cli(
+        d.path(),
+        &[
+            "project-configure",
+            "--root",
+            ".",
+            "--name",
+            "P",
+            "--settings",
+            "settings.json",
+        ],
+    );
+    assert!(
+        configured.status.success(),
+        "{}",
+        String::from_utf8_lossy(&configured.stderr)
+    );
+    let p: Value = serde_json::from_slice(&configured.stdout).unwrap();
+    let conn = rusqlite::Connection::open(d.path().join("state.db")).unwrap();
+    conn.execute_batch("CREATE TRIGGER cancel_during_import AFTER INSERT ON activity BEGIN UPDATE background_jobs SET cancelled=1 WHERE project=NEW.project AND status='running'; END;").unwrap();
+    let result = cli(
+        d.path(),
+        &[
+            "--project",
+            p["id"].as_str().unwrap(),
+            "background",
+            "--once",
+        ],
+    );
+    assert!(!result.status.success());
+    assert_eq!(
+        serde_json::from_slice::<Value>(&result.stdout).unwrap()["status"],
+        "failed"
+    );
+}

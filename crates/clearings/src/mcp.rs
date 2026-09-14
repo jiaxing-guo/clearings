@@ -17,11 +17,13 @@ fn tool(
     required: Value,
     read_only: bool,
 ) -> Value {
-    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"observe"|"activity"),"openWorldHint":matches!(name,"run"|"reuse")}})
+    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"background_cancel"|"observe"|"activity"),"openWorldHint":matches!(name,"run"|"reuse")}})
 }
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("background_cancel","Cancel current project background work at its next bounded phase boundary.",json!({}),json!([]),false),
+        tool("background_jobs","Inspect background progress, errors and interruptions.",json!({"before":{"type":"integer","minimum":1}}),json!([]),true),
         tool("observe","Import new records from host-authorized project trace sources and expire old activity.",json!({}),json!([]),false),
         tool("activity","Expire old activity, then inspect a page of imported project records with usage provenance.",json!({"before":{"type":"integer","minimum":1}}),json!([]),false),
         tool("performance","Inspect paged version outcomes and costs. Pass next_after as after; unknown savings remain unknown.",json!({"name":{"type":"string"},"after":id}),json!(["name"]),true),

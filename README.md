@@ -8,6 +8,8 @@ The native Rust executable embeds the TypeScript transformer and JavaScript engi
 
 ## Status
 
+Project activity imports can run on a persisted background schedule. This scheduling layer does not yet generate or optimize routines.
+
 The implementation includes isolated TypeScript execution, scoped file and HTTP capabilities, immutable routine versions, acceptance checking, activation, run records, CLI and MCP interfaces, and small Codex/Claude Code skill plugins. Three user-defined examples exercise the complete teach-and-reuse flow. See [workflows](docs/workflows.md), [installation](docs/installation.md), and [agent integration](docs/agents.md).
 
 The implementation is under development. Passing runtime tests does not establish general-purpose task correctness or token savings. See [execution](docs/execution.md) for the supported boundary and [development](docs/development.md) for checks.

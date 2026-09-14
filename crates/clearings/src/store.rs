@@ -193,11 +193,12 @@ pub struct Store {
 }
 impl Store {
     pub fn open(path: &Path) -> Result<Self> {
+        Self::check_database_links(path)?;
         let db = Connection::open(path)?;
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 3, "store was created by a newer version");
+        ensure!(schema <= 4, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -210,8 +211,27 @@ impl Store {
             CREATE TABLE IF NOT EXISTS trace_scan(project TEXT NOT NULL REFERENCES projects(id), source TEXT NOT NULL, next INTEGER NOT NULL, PRIMARY KEY(project,source));
             CREATE INDEX IF NOT EXISTS activity_page ON activity(project,seq DESC);
             CREATE INDEX IF NOT EXISTS activity_expiration ON activity(project,created_at);
-            PRAGMA user_version=3;")?;
+            CREATE TABLE IF NOT EXISTS schedule(project TEXT PRIMARY KEY REFERENCES projects(id),next_due INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS background_jobs(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),revision INTEGER NOT NULL,started INTEGER NOT NULL,status TEXT NOT NULL,cancelled INTEGER NOT NULL DEFAULT 0,report TEXT NOT NULL DEFAULT '{}');
+            CREATE TABLE IF NOT EXISTS budgets(project TEXT NOT NULL REFERENCES projects(id),day INTEGER NOT NULL,reserved INTEGER NOT NULL,PRIMARY KEY(project,day));
+            CREATE TABLE IF NOT EXISTS model_requests(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),job INTEGER NOT NULL REFERENCES background_jobs(id),purpose TEXT NOT NULL,reserved INTEGER NOT NULL,status TEXT NOT NULL,usage TEXT);
+            PRAGMA user_version=4;")?;
         Ok(Self { db })
+    }
+    pub(crate) fn check_database_links(path: &Path) -> Result<()> {
+        #[cfg(unix)]
+        match std::fs::metadata(path) {
+            Ok(metadata) => {
+                use std::os::unix::fs::MetadataExt;
+                ensure!(
+                    metadata.nlink() == 1,
+                    "hard-linked databases are unsupported; use one database file path"
+                );
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+        Ok(())
     }
     fn put(&self, kind: &str, value: &impl Serialize) -> Result<String> {
         let body = serde_json::to_string(value)?;

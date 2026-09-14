@@ -208,6 +208,7 @@ impl Store {
             settings,
         };
         tx.execute("INSERT INTO projects(id,revision,body) VALUES(?1,?2,?3) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,body=excluded.body", params![id,revision,serde_json::to_string(&project)?])?;
+        tx.execute("DELETE FROM schedule WHERE project=?1", [&id])?;
         tx.commit()?;
         Ok(project)
     }
