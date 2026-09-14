@@ -2,7 +2,7 @@
 use crate::{
     contract::Contract,
     project::{Project, TraceSource},
-    store::{Case, Store, Task, digest},
+    store::{Case, Store, digest},
 };
 use anyhow::{Context, Result, ensure};
 use rusqlite::{OptionalExtension, params};
@@ -23,13 +23,9 @@ pub struct Observation {
 }
 impl Observation {
     pub fn validate(&self) -> Result<()> {
-        let task = Task {
-            project: None,
-            evaluation: Default::default(),
-            contract: self.contract.clone(),
-            cases: vec![self.case.clone()],
-        };
-        task.validate()
+        let (input_schema, output_schema) = self.contract.checked_schemas()?;
+        self.case
+            .validate(&self.contract, &input_schema, &output_schema)
     }
 }
 #[derive(Default, Clone, Serialize, Deserialize)]

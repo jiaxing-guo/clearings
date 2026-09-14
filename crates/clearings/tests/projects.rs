@@ -1,6 +1,27 @@
 use clearings::{project::Settings, store::Store};
 
 #[test]
+fn ipv6_loopback_model_authorization_preserves_url_host_syntax() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut store = Store::open(&dir.path().join("state.db")).unwrap();
+    let url = reqwest::Url::parse("http://[::1]:8080").unwrap();
+    assert_eq!(url.host_str(), Some("[::1]"));
+    let settings: Settings = serde_json::from_value(serde_json::json!({"model":{"url":url.as_str(),"model":"local","max_output_tokens":128,"input_price":1,"output_price":1}})).unwrap();
+    assert!(
+        store
+            .configure_project(dir.path(), "IPv6", settings.clone(), None)
+            .is_ok()
+    );
+    let mut remote = settings;
+    remote.model.as_mut().unwrap().url = "http://[2001:db8::1]:8080".into();
+    assert!(
+        store
+            .configure_project(dir.path(), "Remote IPv6", remote, Some(1))
+            .is_err()
+    );
+}
+
+#[test]
 fn authorization_survives_restart_and_updates_require_current_revision() {
     let dir = tempfile::tempdir().unwrap();
     let db = dir.path().join("state.db");

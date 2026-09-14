@@ -1,5 +1,7 @@
 # Project authorization
 
+MCP advertises operations available in the selected session. Its initial grant policy stays fixed: if project grants change, operational calls require restarting the session with the current policy; project status remains readable. Project run history is available through `runs` and is filtered to the selected project.
+
 Configure a project once through the host CLI. The saved identity uses the canonical project directory. A rename keeps that identity. Settings updates require the current revision, so concurrent changes cannot silently overwrite each other.
 
 ```sh
