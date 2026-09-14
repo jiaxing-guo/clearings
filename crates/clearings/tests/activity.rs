@@ -327,3 +327,43 @@ fn tiny_records_are_bounded_and_resume_without_skipping_usage() {
     assert_eq!(store.observe(&p.id).unwrap()["imported"], 1);
     assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
 }
+
+#[test]
+fn polling_rotates_busy_sources_and_files_across_restart() {
+    let d = tempfile::tempdir().unwrap();
+    let busy = d.path().join("busy");
+    std::fs::create_dir(&busy).unwrap();
+    std::fs::write(busy.join("a.jsonl"), "{}\n".repeat(3000)).unwrap();
+    let meta = json!({"type":"session_meta","payload":{"id":"one","cwd":d.path()}});
+    let usage = json!({"event_id":"b","usage":{"input_tokens":10,"output_tokens":2}});
+    std::fs::write(busy.join("b.jsonl"), format!("{meta}\n{usage}\n")).unwrap();
+    let later = d.path().join("later.jsonl");
+    let usage = json!({"event_id":"c","usage":{"input_tokens":20,"output_tokens":4}});
+    std::fs::write(&later, format!("{meta}\n{usage}\n")).unwrap();
+    let db = d.path().join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let p = store
+        .configure_project(
+            d.path(),
+            "P",
+            Settings {
+                trace_sources: vec![busy, later]
+                    .into_iter()
+                    .map(|path| TraceSource {
+                        adapter: "codex".into(),
+                        path,
+                    })
+                    .collect(),
+                ..Default::default()
+            },
+            None,
+        )
+        .unwrap();
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
+    drop(store);
+    let mut store = Store::open(&db).unwrap();
+    let next = store.observe(&p.id).unwrap();
+    assert_eq!(next["imported"], 2, "{next}");
+    assert_eq!(next["errors"], json!([]));
+    assert_eq!(store.observe(&p.id).unwrap()["imported"], 0);
+}
