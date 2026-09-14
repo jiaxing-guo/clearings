@@ -207,6 +207,9 @@ impl Store {
             CREATE TABLE IF NOT EXISTS project_routines (project TEXT NOT NULL REFERENCES projects(id), name TEXT NOT NULL, task TEXT NOT NULL REFERENCES objects(id), origin TEXT NOT NULL, paused INTEGER NOT NULL DEFAULT 0, excluded INTEGER NOT NULL DEFAULT 0, previous TEXT, PRIMARY KEY(project,name), UNIQUE(project,task));
             CREATE TABLE IF NOT EXISTS trace_checkpoints(project TEXT NOT NULL REFERENCES projects(id), path TEXT NOT NULL, body TEXT NOT NULL, PRIMARY KEY(project,path));
             CREATE TABLE IF NOT EXISTS activity(seq INTEGER PRIMARY KEY, project TEXT NOT NULL REFERENCES projects(id), id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(project,id));
+            CREATE TABLE IF NOT EXISTS trace_scan(project TEXT NOT NULL REFERENCES projects(id), source TEXT NOT NULL, next INTEGER NOT NULL, PRIMARY KEY(project,source));
+            CREATE INDEX IF NOT EXISTS activity_page ON activity(project,seq DESC);
+            CREATE INDEX IF NOT EXISTS activity_expiration ON activity(project,created_at);
             PRAGMA user_version=3;")?;
         Ok(Self { db })
     }
