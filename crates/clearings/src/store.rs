@@ -39,6 +39,53 @@ pub struct Case {
     #[serde(default)]
     pub calls: Vec<FixtureCall>,
 }
+impl Case {
+    pub(crate) fn validate(
+        &self,
+        contract: &Contract,
+        input_schema: &jsonschema::Validator,
+        output_schema: &jsonschema::Validator,
+    ) -> Result<()> {
+        ensure!(!self.name.is_empty(), "case names must be nonempty");
+        crate::contract::check_json(&self.input)?;
+        input_schema
+            .validate(&self.input)
+            .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
+        match &self.expected {
+            Outcome::Completed { output } => {
+                crate::contract::check_json(output)?;
+                output_schema
+                    .validate(output)
+                    .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
+            }
+            Outcome::NeedsAgent { context, .. } => crate::contract::check_json(context)?,
+            _ => {}
+        }
+        ensure!(
+            serde_json::to_vec(&self.expected)?.len() <= contract.limits.output_bytes,
+            "expected outcome exceeds run output byte limit"
+        );
+        ensure!(
+            self.calls.len() <= contract.limits.capability_calls,
+            "fixture exceeds call budget"
+        );
+        for call in &self.calls {
+            ensure!(
+                contract.capabilities.contains(&call.name),
+                "fixture capability was not declared"
+            );
+            crate::contract::check_json(&call.input)?;
+            crate::contract::check_json(&call.result)?;
+            crate::capabilities::validate_fixture(
+                &call.name,
+                &call.input,
+                &call.result,
+                contract.limits.output_bytes,
+            )?;
+        }
+        Ok(())
+    }
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Task {
@@ -101,42 +148,7 @@ impl Task {
                 !case.name.is_empty() && names.insert(&case.name),
                 "case names must be nonempty and unique"
             );
-            crate::contract::check_json(&case.input)?;
-            input_schema
-                .validate(&case.input)
-                .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
-            match &case.expected {
-                Outcome::Completed { output } => {
-                    crate::contract::check_json(output)?;
-                    output_schema
-                        .validate(output)
-                        .map_err(|e| anyhow::anyhow!("schema mismatch: {e}"))?;
-                }
-                Outcome::NeedsAgent { context, .. } => crate::contract::check_json(context)?,
-                _ => {}
-            }
-            ensure!(
-                serde_json::to_vec(&case.expected)?.len() <= self.contract.limits.output_bytes,
-                "expected outcome exceeds run output byte limit"
-            );
-            ensure!(
-                case.calls.len() <= self.contract.limits.capability_calls,
-                "fixture exceeds call budget"
-            );
-            for call in &case.calls {
-                ensure!(
-                    self.contract.capabilities.contains(&call.name),
-                    "fixture capability was not declared"
-                );
-                crate::contract::check_json(&call.input)?;
-                crate::contract::check_json(&call.result)?;
-                crate::capabilities::validate_fixture(
-                    &call.name,
-                    &call.input,
-                    &call.result,
-                    self.contract.limits.output_bytes,
-                )?;
-            }
+            case.validate(&self.contract, &input_schema, &output_schema)?;
         }
         Ok(())
     }
@@ -185,7 +197,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 2, "store was created by a newer version");
+        ensure!(schema <= 3, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -193,7 +205,12 @@ impl Store {
             CREATE TABLE IF NOT EXISTS runs (id INTEGER PRIMARY KEY, version TEXT NOT NULL, input_digest TEXT NOT NULL, report TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(version) REFERENCES objects(id));
             CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, revision INTEGER NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS project_routines (project TEXT NOT NULL REFERENCES projects(id), name TEXT NOT NULL, task TEXT NOT NULL REFERENCES objects(id), origin TEXT NOT NULL, paused INTEGER NOT NULL DEFAULT 0, excluded INTEGER NOT NULL DEFAULT 0, previous TEXT, PRIMARY KEY(project,name), UNIQUE(project,task));
-            PRAGMA user_version=2;")?;
+            CREATE TABLE IF NOT EXISTS trace_checkpoints(project TEXT NOT NULL REFERENCES projects(id), path TEXT NOT NULL, body TEXT NOT NULL, PRIMARY KEY(project,path));
+            CREATE TABLE IF NOT EXISTS activity(seq INTEGER PRIMARY KEY, project TEXT NOT NULL REFERENCES projects(id), id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(project,id));
+            CREATE TABLE IF NOT EXISTS trace_scan(project TEXT NOT NULL REFERENCES projects(id), source TEXT NOT NULL, next INTEGER NOT NULL, PRIMARY KEY(project,source));
+            CREATE INDEX IF NOT EXISTS activity_page ON activity(project,seq DESC);
+            CREATE INDEX IF NOT EXISTS activity_expiration ON activity(project,created_at);
+            PRAGMA user_version=3;")?;
         Ok(Self { db })
     }
     fn put(&self, kind: &str, value: &impl Serialize) -> Result<String> {

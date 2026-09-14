@@ -1,3 +1,4 @@
+pub mod activity;
 pub mod api;
 mod blocking_io;
 pub mod capabilities;

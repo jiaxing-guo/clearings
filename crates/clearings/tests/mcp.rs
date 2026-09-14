@@ -200,8 +200,15 @@ fn tool_annotations_describe_state_replacement() {
             tool["annotations"]["destructiveHint"],
             matches!(
                 name,
-                "clearings_activate" | "clearings_deactivate" | "clearings_save"
+                "clearings_activate"
+                    | "clearings_deactivate"
+                    | "clearings_save"
+                    | "clearings_observe"
+                    | "clearings_activity"
             )
         );
+        if matches!(name, "clearings_observe" | "clearings_activity") {
+            assert_eq!(tool["annotations"]["readOnlyHint"], false);
+        }
     }
 }

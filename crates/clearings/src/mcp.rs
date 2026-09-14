@@ -17,11 +17,14 @@ fn tool(
     required: Value,
     read_only: bool,
 ) -> Value {
-    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"),"openWorldHint":matches!(name,"run"|"reuse")}})
+    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"observe"|"activity"),"openWorldHint":matches!(name,"run"|"reuse")}})
 }
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("observe","Import new records from host-authorized project trace sources and expire old activity.",json!({}),json!([]),false),
+        tool("activity","Expire old activity, then inspect a page of imported project records with usage provenance.",json!({"before":{"type":"integer","minimum":1}}),json!([]),false),
+        tool("performance","Inspect paged version outcomes and costs. Pass next_after as after; unknown savings remain unknown.",json!({"name":{"type":"string"},"after":id}),json!(["name"]),true),
         tool("discover", "Find saved routines by readable names in this project. Use next_after to continue.", json!({"after":{"type":"string"}}), json!([]), true),
         tool("save", "Save or revise a routine whose requirements were prepared first. Evaluates and activates only on success. Supply the previous active version for revision.", json!({"name":{"type":"string"},"source":{"type":"string","maxLength":262144},"expected_active":{"type":["string","null"]}}), json!(["name","source","expected_active"]), false),
         tool("reuse", "Run a named saved routine on fresh input. A handoff or failure means continue ordinary agent work.", json!({"name":{"type":"string"},"input":{}}), json!(["name","input"]), false),
