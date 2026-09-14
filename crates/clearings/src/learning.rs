@@ -125,10 +125,11 @@ impl Store {
             }
             task.validate()?;
             let task_id = self.prepare_task(&task)?;
-            self.db.execute("INSERT INTO learning_groups(project,fingerprint,task,status,attempts) VALUES(?1,?2,?3,'authoring',1) ON CONFLICT(project,fingerprint) DO UPDATE SET status='authoring',attempts=attempts+1",params![project,fingerprint,task_id])?;
+            self.db.execute("INSERT INTO learning_groups(project,fingerprint,task,status,attempts) VALUES(?1,?2,?3,'pending',0) ON CONFLICT(project,fingerprint) DO NOTHING",params![project,fingerprint,task_id])?;
             let result = (|| -> Result<Value> {
                 let packet = json!({"contract":task.contract,"examples":&task.cases[..task.cases.len()-1],"purpose":"Create a parameterized routine; one additional recorded case is withheld."});
-                let source = self.propose_source(project, job, "create", packet)?;
+                let source =
+                    self.propose_source(project, job, "create", packet, Some(&fingerprint))?;
                 self.check_job(project, job)?;
                 let version = self.submit(executable, &task_id, source)?;
                 let report = self.evaluate(executable, &version)?;
@@ -141,9 +142,23 @@ impl Store {
                     json!({"name":task.contract.name,"task":task_id,"version":version,"accepted":true,"evidence":"recorded-case agreement with one withheld example","savings":null}),
                 )
             })();
+            if let Err(error) = self.check_job(project, job) {
+                self.db.execute("UPDATE learning_groups SET status='interrupted',report=?3 WHERE project=?1 AND fingerprint=?2",params![project,fingerprint,json!({"error":error.to_string()}).to_string()])?;
+                return Err(error);
+            }
             let (status, value) = match result {
                 Ok(v) => ("created", v),
-                Err(e) => ("failed", json!({"error":e.to_string(),"task":task_id})),
+                Err(e) => {
+                    let attempts: u32 = self.db.query_row(
+                        "SELECT attempts FROM learning_groups WHERE project=?1 AND fingerprint=?2",
+                        params![project, fingerprint],
+                        |r| r.get(0),
+                    )?;
+                    (
+                        if attempts == 0 { "deferred" } else { "failed" },
+                        json!({"error":e.to_string(),"task":task_id}),
+                    )
+                }
             };
             self.db.execute("UPDATE learning_groups SET status=?3,report=?4 WHERE project=?1 AND fingerprint=?2",params![project,fingerprint,status,value.to_string()])?;
             return Ok(json!({"status":status,"result":value}));
@@ -151,16 +166,31 @@ impl Store {
         Ok(json!({"status":"no_eligible_observations"}))
     }
     fn observation_groups(&self, project: &str) -> Result<BTreeMap<String, Group>> {
-        let mut stmt=self.db.prepare("SELECT id,body FROM activity WHERE project=?1 AND json_extract(body,'$.observation') IS NOT NULL ORDER BY seq DESC LIMIT 500")?;
+        let before: Option<i64> = self
+            .db
+            .query_row(
+                "SELECT before_seq FROM learning_scan WHERE project=?1",
+                [project],
+                |r| r.get(0),
+            )
+            .optional()?
+            .flatten();
+        let mut stmt=self.db.prepare("SELECT id,body,seq FROM activity WHERE project=?1 AND json_extract(body,'$.observation') IS NOT NULL AND (?2 IS NULL OR seq<?2) ORDER BY seq DESC LIMIT 501")?;
         let mut groups: BTreeMap<String, Group> = BTreeMap::new();
-        let mut rows = stmt.query([project])?;
+        let mut rows = stmt.query(params![project, before])?;
+        let mut last = None;
+        let mut count = 0;
+        let mut more = false;
         let mut bytes = 0;
         while let Some(row) = rows.next()? {
             let body: String = row.get(1)?;
             bytes += body.len();
-            if bytes > 4 * 1024 * 1024 {
+            if bytes > 4 * 1024 * 1024 || count == 500 {
+                more = true;
                 break;
             }
+            last = Some(row.get::<_, i64>(2)?);
+            count += 1;
             let v: Value = serde_json::from_str(&body)?;
             let o: Observation = serde_json::from_value(v["observation"].clone())?;
             let fingerprint = digest(&o.contract)?;
@@ -179,6 +209,7 @@ impl Store {
                     o,
                 ));
         }
+        self.db.execute("INSERT INTO learning_scan(project,before_seq) VALUES(?1,?2) ON CONFLICT(project) DO UPDATE SET before_seq=excluded.before_seq",params![project,if more {last} else {None}])?;
         Ok(groups)
     }
     pub(crate) fn promote_automatic(
@@ -191,8 +222,22 @@ impl Store {
     ) -> Result<()> {
         self.check_job(&project.id, job)?;
         let v: Version = self.get("version", version)?;
-        self.owns_task(&project.id, &v.task)?;
         let task: Task = self.get("task", &v.task)?;
+        ensure!(
+            task.project.as_deref() == Some(&project.id),
+            "candidate belongs to a different project"
+        );
+        // New candidates have a frozen learning record before their name is registered.
+        if expected.is_some() {
+            self.owns_task(&project.id, &v.task)?;
+        } else {
+            let frozen: bool = self.db.query_row(
+                "SELECT EXISTS(SELECT 1 FROM learning_groups WHERE project=?1 AND task=?2)",
+                params![project.id, v.task],
+                |r| r.get(0),
+            )?;
+            ensure!(frozen, "candidate has no host-frozen learning record");
+        }
         let report = self.inspect(version)?;
         ensure!(
             report["evaluation"]["accepted"] == true,

@@ -17,3 +17,9 @@ An integration may supply structured records through the selected trace files. I
 Acceptance cases are stored before requesting source. One recorded example is withheld from the authoring request. The configured model returns a JSON source proposal; the isolated TypeScript runtime prepares and evaluates it. Passing candidates become discoverable and reusable in later project sessions. This establishes agreement on recorded cases, not general correctness or measured token savings.
 
 A workflow has at most two authoring attempts, using the same frozen cases, across scheduled cycles. Failed attempts and their budget reservations remain visible. Model responses cannot change grants, acceptance cases or host settings. A configuration change, cancellation, concurrent manual replacement, pause or exclusion prevents automatic promotion.
+
+Observation scans retain a cursor across bounded cycles so older groups remain reachable. Budget refusal does not consume an authoring attempt. `background-jobs` includes request reservations, status and reported usage. Cancellation or changed authorization fails the job explicitly.
+
+MCP observation tools use one host-generated session identity per server connection; the caller cannot supply it. Transcript imports and the host CLI retain host-supplied session identities. These are provenance boundaries, not proof that supplied observations are true or that sessions are statistically independent.
+
+Reconfiguration resets the due time, disabled ticks reconcile interrupted work, and failed `background --once` jobs return an unsuccessful exit status.

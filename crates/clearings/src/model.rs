@@ -11,6 +11,7 @@ impl Store {
         job: i64,
         purpose: &str,
         packet: Value,
+        learning_group: Option<&str>,
     ) -> Result<String> {
         self.check_job(project, job)?;
         let connection = self
@@ -31,7 +32,8 @@ impl Store {
         let amount = ((bytes.len() as u64 + 2048) * connection.input_price
             + u64::from(connection.max_output_tokens) * connection.output_price)
             .div_ceil(1_000_000);
-        let request_id = self.reserve_request(project, job, purpose, amount.max(1))?;
+        let request_id =
+            self.reserve_request_with_group(project, job, purpose, amount.max(1), learning_group)?;
         let result = (|| -> Result<(String, Option<Value>)> {
             let client = reqwest::blocking::Client::builder()
                 .no_proxy()
@@ -48,6 +50,7 @@ impl Store {
                     std::env::var(env).context("configured model credential is unavailable")?,
                 );
             }
+            self.check_job(project, job)?;
             let response = request
                 .send()
                 .map_err(|_| anyhow::anyhow!("model request failed"))?;

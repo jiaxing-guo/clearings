@@ -23,7 +23,13 @@ impl ProjectLock {
                 .path()
                 .context("background work requires a persistent database")?,
         )
-        .with_extension(format!("{project}.lock"));
+        .canonicalize()?;
+        let mut filename = path
+            .file_name()
+            .context("database filename is missing")?
+            .to_os_string();
+        filename.push(format!(".{project}.lock"));
+        let path = path.with_file_name(filename);
         let file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -50,11 +56,14 @@ impl Store {
         project: &str,
         executable: &std::path::Path,
     ) -> Result<Value> {
+        self.project(project)?;
+        let _lock = ProjectLock::acquire(self, project)?;
+        self.db.execute("UPDATE model_requests SET status='interrupted' WHERE project=?1 AND status='reserved' AND job IN (SELECT id FROM background_jobs WHERE project=?1 AND status='running')", [project])?;
+        self.db.execute("UPDATE background_jobs SET status='interrupted',report=?2 WHERE project=?1 AND status='running'",params![project,json!({"error":"worker interrupted before completion"}).to_string()])?;
         let settings = self.project(project)?;
         if !settings.settings.automatic {
             return Ok(json!({"status":"disabled"}));
         }
-        let _lock = ProjectLock::acquire(self, project)?;
         let started = now()?;
         let due: Option<i64> = self
             .db
@@ -67,7 +76,6 @@ impl Store {
         if due.is_some_and(|n| n > started) {
             return Ok(json!({"status":"not_due","next_due":due}));
         }
-        self.db.execute("UPDATE background_jobs SET status='interrupted',report='{}' WHERE project=?1 AND status='running'",[project])?;
         self.db.execute("INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,?2,?3,'running')",params![project,settings.revision,started])?;
         let job = self.db.last_insert_rowid();
         let result = self.background_cycle(project, job, executable);
@@ -84,7 +92,7 @@ impl Store {
         )?;
         // Scheduling from completion coalesces missed periods into one catch-up cycle.
         let next = now()? + settings.settings.interval_seconds as i64;
-        self.db.execute("INSERT INTO schedule(project,next_due) VALUES(?1,?2) ON CONFLICT(project) DO UPDATE SET next_due=excluded.next_due",params![project,next])?;
+        self.db.execute("INSERT INTO schedule(project,next_due) SELECT ?1,?2 WHERE EXISTS(SELECT 1 FROM projects WHERE id=?1 AND revision=?3) ON CONFLICT(project) DO UPDATE SET next_due=excluded.next_due",params![project,next,settings.revision])?;
         Ok(json!({"job":job,"status":status,"report":report,"next_due":next}))
     }
     fn background_cycle(
@@ -97,6 +105,7 @@ impl Store {
         let observation = self.observe(project)?;
         self.check_job(project, job)?;
         let learning = self.learn(project, job, executable)?;
+        self.check_job(project, job)?;
         Ok(json!({"observation":observation,"learning":learning}))
     }
     pub(crate) fn check_job(&self, project: &str, job: i64) -> Result<()> {
@@ -125,6 +134,10 @@ impl Store {
         )
     }
     pub fn background_jobs(&self, project: &str, before: Option<i64>) -> Result<Value> {
+        ensure!(
+            before.is_none_or(|id| id > 0),
+            "before must be a positive job ID"
+        );
         let mut stmt=self.db.prepare("SELECT id,status,started,cancelled,report FROM background_jobs WHERE project=?1 AND (?2 IS NULL OR id<?2) ORDER BY id DESC LIMIT 101")?;
         let mut rows = stmt.query(params![project, before])?;
         let mut jobs = vec![];
@@ -136,8 +149,24 @@ impl Store {
                 more = true;
                 break;
             }
-            bytes += report.len();
-            jobs.push(json!({"id":r.get::<_,i64>(0)?,"status":r.get::<_,String>(1)?,"started":r.get::<_,i64>(2)?,"cancelled":r.get::<_,bool>(3)?,"report":serde_json::from_str::<Value>(&report)?}));
+            let job_id: i64 = r.get(0)?;
+            let mut requests=self.db.prepare("SELECT id,purpose,reserved,status,usage FROM model_requests WHERE project=?1 AND job=?2 ORDER BY id DESC LIMIT 101")?;
+            let raw: Vec<(i64, String, u64, String, Option<String>)> = requests
+                .query_map(params![project, job_id], |r| {
+                    Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?))
+                })?
+                .collect::<rusqlite::Result<_>>()?;
+            let truncated = raw.len() > 100;
+            let requests:Vec<Value>=raw.into_iter().take(100).map(|(id,purpose,reserved,status,usage)|Ok(json!({"id":id,"purpose":purpose,"reserved_microusd":reserved,"status":status,"usage":usage.map(|s|serde_json::from_str::<Value>(&s)).transpose()?}))).collect::<Result<_>>()?;
+            let entry = json!({"id":job_id,"status":r.get::<_,String>(1)?,"started":r.get::<_,i64>(2)?,"cancelled":r.get::<_,bool>(3)?,"report":serde_json::from_str::<Value>(&report)?,"requests":requests,"requests_truncated":truncated});
+            let length = serde_json::to_vec(&entry)?.len();
+            if bytes + length > 1024 * 1024 {
+                ensure!(!jobs.is_empty(), "job report exceeds page byte limit");
+                more = true;
+                break;
+            }
+            bytes += length;
+            jobs.push(entry);
         }
         Ok(
             json!({"jobs":jobs,"next_before":if more {jobs.last().map(|j|j["id"].clone())} else {None}}),
@@ -150,12 +179,21 @@ impl Store {
         purpose: &str,
         amount: u64,
     ) -> Result<i64> {
-        self.check_job(project, job)?;
-        let budget = self.project(project)?.settings.daily_budget_microusd;
-        let day = now()? / 86400;
+        self.reserve_request_with_group(project, job, purpose, amount, None)
+    }
+    pub(crate) fn reserve_request_with_group(
+        &mut self,
+        project: &str,
+        job: i64,
+        purpose: &str,
+        amount: u64,
+        group: Option<&str>,
+    ) -> Result<i64> {
         let tx = self
             .db
             .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let budget: u64=tx.query_row("SELECT json_extract(projects.body,'$.settings.daily_budget_microusd') FROM projects JOIN background_jobs ON projects.id=background_jobs.project WHERE projects.id=?1 AND background_jobs.id=?2 AND projects.revision=background_jobs.revision AND background_jobs.cancelled=0 AND background_jobs.status='running' AND json_extract(projects.body,'$.settings.automatic')=1",params![project,job],|r|r.get(0)).context("background job cancelled or project authorization changed before reservation")?;
+        let day = now()? / 86400;
         tx.execute(
             "INSERT OR IGNORE INTO budgets(project,day,reserved) VALUES(?1,?2,0)",
             params![project, day],
@@ -163,6 +201,9 @@ impl Store {
         ensure!(tx.execute("UPDATE budgets SET reserved=reserved+?3 WHERE project=?1 AND day=?2 AND reserved+?3<=?4",params![project,day,amount,budget])?==1,"optimizer budget exhausted; continue ordinary work");
         tx.execute("INSERT INTO model_requests(project,job,purpose,reserved,status) VALUES(?1,?2,?3,?4,'reserved')",params![project,job,purpose,amount])?;
         let id = tx.last_insert_rowid();
+        if let Some(group) = group {
+            ensure!(tx.execute("UPDATE learning_groups SET status='authoring',attempts=attempts+1 WHERE project=?1 AND fingerprint=?2 AND attempts<2 AND status!='created'",params![project,group])? == 1, "learning attempts are exhausted or the group changed");
+        }
         tx.commit()?;
         Ok(id)
     }
@@ -253,5 +294,50 @@ mod tests {
         assert!(s.reserve_request(&p, job, "test", 4).is_err());
         s.cancel_background(&p).unwrap();
         assert!(s.reserve_request(&p, job, "test", 1).is_err());
+    }
+    #[test]
+    fn reconfiguration_reschedules_and_disabled_ticks_reconcile_crashes() {
+        let d = tempfile::tempdir().unwrap();
+        let (mut s, p) = configured(d.path());
+        assert_eq!(
+            s.background_tick(&p, Path::new("unused")).unwrap()["status"],
+            "completed"
+        );
+        let mut settings = s.project(&p).unwrap().settings;
+        settings.interval_seconds = 10;
+        s.configure_project(d.path(), "P", settings.clone(), Some(1))
+            .unwrap();
+        assert_eq!(
+            s.background_tick(&p, Path::new("unused")).unwrap()["status"],
+            "completed"
+        );
+        s.db.execute(
+            "INSERT INTO background_jobs(project,revision,started,status) VALUES(?1,2,0,'running')",
+            [&p],
+        )
+        .unwrap();
+        settings.automatic = false;
+        s.configure_project(d.path(), "P", settings, Some(2))
+            .unwrap();
+        assert_eq!(
+            s.background_tick(&p, Path::new("unused")).unwrap()["status"],
+            "disabled"
+        );
+        assert_eq!(
+            s.background_jobs(&p, None).unwrap()["jobs"][0]["status"],
+            "interrupted"
+        );
+    }
+    #[test]
+    fn lock_identity_preserves_full_filename_and_resolves_database_aliases() {
+        let d = tempfile::tempdir().unwrap();
+        let (s, p) = configured(d.path());
+        let held = ProjectLock::acquire(&s, &p).unwrap();
+        std::os::unix::fs::symlink(d.path().join("state.db"), d.path().join("alias.db")).unwrap();
+        let alias = Store::open(&d.path().join("alias.db")).unwrap();
+        assert!(ProjectLock::acquire(&alias, &p).is_err());
+        let other = Store::open(&d.path().join("state.sqlite")).unwrap();
+        assert!(ProjectLock::acquire(&other, &p).is_ok());
+        drop(held);
     }
 }
