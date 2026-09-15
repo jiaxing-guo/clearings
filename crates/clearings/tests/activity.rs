@@ -329,11 +329,12 @@ fn performance_preserves_each_outcome_and_pages_all_versions() {
         .unwrap();
         for status in ["completed", "needs_agent", "not_applicable", "failed"] {
             conn.execute(
-                "INSERT INTO runs(version,input_digest,report) VALUES(?1,'input',?2)",
+                "INSERT INTO runs(version,input_digest,report,project) VALUES(?1,'input',?2,?3)",
                 rusqlite::params![
                     version,
                     json!({"outcome":{"status":status},"elapsed_ms":1,"capability_calls":2})
-                        .to_string()
+                        .to_string(),
+                    p.id
                 ],
             )
             .unwrap();

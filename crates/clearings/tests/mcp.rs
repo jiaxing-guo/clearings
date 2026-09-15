@@ -204,6 +204,7 @@ fn tool_annotations_describe_state_replacement() {
                     | "clearings_deactivate"
                     | "clearings_save"
                     | "clearings_manage"
+                    | "clearings_pause_shared"
                     | "clearings_prune"
                     | "clearings_background_cancel"
                     | "clearings_observe"

@@ -217,7 +217,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 7, "store was created by a newer version");
+        ensure!(schema <= 8, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -243,7 +243,35 @@ impl Store {
             CREATE TABLE IF NOT EXISTS conversations(id TEXT PRIMARY KEY,client TEXT NOT NULL,host_id TEXT NOT NULL,root TEXT NOT NULL,source TEXT,updated INTEGER NOT NULL,body TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS conversations_recent ON conversations(updated DESC,id);
             CREATE TABLE IF NOT EXISTS conversation_evidence(id TEXT PRIMARY KEY,body TEXT NOT NULL);
-            PRAGMA user_version=7;")?;
+            CREATE TABLE IF NOT EXISTS routine_library(task TEXT PRIMARY KEY REFERENCES objects(id),applicability TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS library_controls(project TEXT NOT NULL REFERENCES projects(id),task TEXT NOT NULL REFERENCES objects(id),paused INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(project,task));
+            CREATE TABLE IF NOT EXISTS routine_usage(task TEXT NOT NULL,version TEXT NOT NULL,project TEXT NOT NULL,day TEXT NOT NULL,calls INTEGER NOT NULL,completed INTEGER NOT NULL,handoffs INTEGER NOT NULL,failed INTEGER NOT NULL,elapsed_ms INTEGER NOT NULL,capability_calls INTEGER NOT NULL,last_used TEXT NOT NULL,PRIMARY KEY(task,version,project,day));
+            CREATE TABLE IF NOT EXISTS routine_offers(session TEXT NOT NULL,project TEXT NOT NULL,task TEXT NOT NULL,version TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY(session,project,task,version));")?;
+        if schema < 8 {
+            let tx = rusqlite::Transaction::new_unchecked(
+                &db,
+                rusqlite::TransactionBehavior::Immediate,
+            )?;
+            let current: i32 = tx.pragma_query_value(None, "user_version", |r| r.get(0))?;
+            if current < 8 {
+                let has_project: bool = tx.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM pragma_table_info('runs') WHERE name='project')",
+                    [],
+                    |r| r.get(0),
+                )?;
+                if !has_project {
+                    tx.execute_batch(
+                        "ALTER TABLE runs ADD COLUMN project TEXT REFERENCES projects(id);",
+                    )?;
+                }
+                tx.execute_batch("
+                UPDATE runs SET project=(SELECT json_extract(t.body,'$.project') FROM objects v JOIN objects t ON t.id=json_extract(v.body,'$.task') WHERE v.id=runs.version);
+                INSERT OR IGNORE INTO routine_usage SELECT json_extract(v.body,'$.task'),r.version,COALESCE(r.project,''),date(r.created_at),count(*),sum(json_extract(r.report,'$.outcome.status')='completed'),sum(json_extract(r.report,'$.outcome.status') IN ('needs_agent','not_applicable')),sum(json_extract(r.report,'$.outcome.status')='failed'),sum(json_extract(r.report,'$.elapsed_ms')),sum(json_extract(r.report,'$.capability_calls')),max(r.created_at) FROM runs r JOIN objects v ON v.id=r.version GROUP BY 1,2,3,4;
+                PRAGMA user_version=8;")?;
+            }
+            tx.commit()?;
+        }
+        db.execute_batch("CREATE INDEX IF NOT EXISTS runs_project_expiration ON runs(project,created_at); CREATE INDEX IF NOT EXISTS runs_project_page ON runs(project,id); CREATE INDEX IF NOT EXISTS offers_expiration ON routine_offers(created_at);")?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {
@@ -459,6 +487,17 @@ impl Store {
         input: Value,
         policy: &Policy,
     ) -> Result<Value> {
+        let task: Task = self.get("task", task_id)?;
+        self.run_in_project(executable, task_id, input, policy, task.project.as_deref())
+    }
+    pub(crate) fn run_in_project(
+        &self,
+        executable: &Path,
+        task_id: &str,
+        input: Value,
+        policy: &Policy,
+        execution_project: Option<&str>,
+    ) -> Result<Value> {
         let id = self
             .active(task_id)?
             .context("task has no active version")?;
@@ -473,11 +512,20 @@ impl Store {
                 self.named_task(project, &task.contract.name, true)? == task_id,
                 "task is not the registered routine"
             );
+        }
+        if let Some(project) = execution_project {
+            let paused:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM library_controls WHERE project=?1 AND task=?2 AND paused=1)",params![project,task_id],|r|r.get(0))?;
+            ensure!(!paused, "routine is paused in this project");
             ensure!(
                 serde_json::to_value(crate::project::normalize_grants(policy.clone())?)?
                     == serde_json::to_value(self.project(project)?.settings.grants)?,
                 "project grants are fixed"
             );
+            if task.project.as_deref() != Some(project) {
+                self.require_shared(project, task_id)?;
+            }
+        } else {
+            ensure!(task.project.is_none(), "select an execution project");
         }
         let input_digest = digest(&input)?;
         let (run, candidate_failure) = match LocalBroker::new(&task.contract, policy) {
@@ -508,12 +556,29 @@ impl Store {
                 false,
             ),
         };
-        self.db.execute(
-            "INSERT INTO runs(version,input_digest,report) VALUES(?1,?2,?3)",
-            params![id, input_digest, serde_json::to_string(&run)?],
+        let tx = rusqlite::Transaction::new_unchecked(
+            &self.db,
+            rusqlite::TransactionBehavior::Immediate,
         )?;
-        let run_id = self.db.last_insert_rowid();
-        let recovery = if candidate_failure {
+        tx.execute(
+            "INSERT INTO runs(version,input_digest,report,project) VALUES(?1,?2,?3,?4)",
+            params![
+                id,
+                input_digest,
+                serde_json::to_string(&run)?,
+                execution_project
+            ],
+        )?;
+        let run_id = tx.last_insert_rowid();
+        let status = serde_json::to_value(&run.outcome)?["status"]
+            .as_str()
+            .unwrap_or("failed")
+            .to_owned();
+        tx.execute("INSERT INTO routine_usage(task,version,project,day,calls,completed,handoffs,failed,elapsed_ms,capability_calls,last_used) VALUES(?1,?2,?3,date('now'),1,?4,?5,?6,?7,?8,datetime('now')) ON CONFLICT(task,version,project,day) DO UPDATE SET calls=calls+1,completed=completed+excluded.completed,handoffs=handoffs+excluded.handoffs,failed=failed+excluded.failed,elapsed_ms=elapsed_ms+excluded.elapsed_ms,capability_calls=capability_calls+excluded.capability_calls,last_used=excluded.last_used",params![task_id,id,execution_project.unwrap_or(""),status=="completed",matches!(status.as_str(),"needs_agent"|"not_applicable"),status=="failed",i64::try_from(run.elapsed_ms)?,run.capability_calls])?;
+        tx.commit()?;
+        // A receiving project's narrower grants must not roll back the owner's
+        // shared definition. Only owner executions can trigger global recovery.
+        let recovery = if candidate_failure && execution_project == task.project.as_deref() {
             self.recover_regression(task_id, &id)?
         } else {
             None
@@ -593,7 +658,7 @@ impl Store {
         let mut stmt = self.db.prepare(
             "SELECT id,version,input_digest,length(CAST(report AS BLOB)),
              CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at
-             FROM runs WHERE EXISTS (SELECT 1 FROM objects v JOIN objects t ON t.id=json_extract(v.body,'$.task') WHERE v.id=runs.version AND json_extract(t.body,'$.project') IS ?3 AND (?3 IS NULL OR EXISTS (SELECT 1 FROM project_routines p WHERE p.project=?3 AND p.task=t.id))) AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
+             FROM runs WHERE project IS ?3 AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
         )?;
         let mut rows = stmt.query(params![before, PAGE_BYTES, project])?;
         let mut runs = Vec::new();

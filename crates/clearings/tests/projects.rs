@@ -76,8 +76,45 @@ fn incomplete_background_authorization_is_rejected_and_legacy_database_migrates(
     assert_eq!(
         conn.pragma_query_value(None, "user_version", |r| r.get::<_, i32>(0))
             .unwrap(),
-        7
+        8
     );
     conn.pragma_update(None, "user_version", 99).unwrap();
     assert!(Store::open(&db).is_err());
+}
+
+#[test]
+fn populated_v7_runs_backfill_ownership_and_daily_usage_once() {
+    use serde_json::json;
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("state.db");
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch("CREATE TABLE objects(id TEXT PRIMARY KEY,kind TEXT NOT NULL,body TEXT NOT NULL); CREATE TABLE projects(id TEXT PRIMARY KEY,revision INTEGER NOT NULL,body TEXT NOT NULL); CREATE TABLE runs(id INTEGER PRIMARY KEY,version TEXT NOT NULL,input_digest TEXT NOT NULL,report TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP); PRAGMA user_version=7;").unwrap();
+    db.execute("INSERT INTO projects VALUES('p',1,'{}')", [])
+        .unwrap();
+    db.execute(
+        "INSERT INTO objects VALUES('task','task',?1)",
+        [json!({"project":"p"}).to_string()],
+    )
+    .unwrap();
+    db.execute(
+        "INSERT INTO objects VALUES('version','version',?1)",
+        [json!({"task":"task"}).to_string()],
+    )
+    .unwrap();
+    for (status, ms, calls) in [("completed", 4, 2), ("needs_agent", 6, 1), ("failed", 3, 0)] {
+        db.execute("INSERT INTO runs(version,input_digest,report,created_at) VALUES('version','input',?1,'2026-09-15 12:00:00')",[json!({"outcome":{"status":status},"elapsed_ms":ms,"capability_calls":calls}).to_string()]).unwrap();
+    }
+    drop(db);
+    for _ in 0..2 {
+        drop(Store::open(&path).unwrap());
+        let db = rusqlite::Connection::open(&path).unwrap();
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM runs WHERE project='p'", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            3
+        );
+        let totals=db.query_row("SELECT calls,completed,handoffs,failed,elapsed_ms,capability_calls FROM routine_usage WHERE task='task' AND project='p' AND day='2026-09-15'",[],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,i64>(1)?,r.get::<_,i64>(2)?,r.get::<_,i64>(3)?,r.get::<_,i64>(4)?,r.get::<_,i64>(5)?))).unwrap();
+        assert_eq!(totals, (3, 1, 1, 1, 13, 3));
+    }
 }

@@ -16,6 +16,25 @@ pub enum Operation {
         #[serde(default)]
         scope: crate::conversations::Scope,
     },
+    FindRoutines {
+        query: String,
+    },
+    ShareRoutine {
+        name: String,
+        applicability: String,
+    },
+    LibraryRoutine {
+        id: String,
+        part: Option<String>,
+    },
+    RunRoutine {
+        id: String,
+        input: Value,
+    },
+    PauseShared {
+        id: String,
+        paused: bool,
+    },
     RecentConversations {
         #[serde(default)]
         scope: crate::conversations::Scope,
@@ -166,6 +185,45 @@ impl Api {
                 task,
                 &evidence_ids,
                 scope,
+            )?,
+            Operation::FindRoutines { query } => self.store.find_routines(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                &query,
+            )?,
+            Operation::ShareRoutine {
+                name,
+                applicability,
+            } => self.store.share_routine(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                &name,
+                &applicability,
+            )?,
+            Operation::LibraryRoutine { id, part } => self.store.library_part(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                &id,
+                part.as_deref(),
+            )?,
+            Operation::RunRoutine { id, input } => self.store.run_routine(
+                &self.executable,
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                &id,
+                input,
+                &self.policy,
+            )?,
+            Operation::PauseShared { id, paused } => self.store.pause_shared(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                &id,
+                paused,
             )?,
             Operation::RecentConversations {
                 scope,

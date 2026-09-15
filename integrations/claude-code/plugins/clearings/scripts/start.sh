@@ -6,6 +6,9 @@ clearings_action=plugin-mcp
 if [ "${1:-}" = '--register-session' ]; then
     clearings_action=plugin-register
     shift
+elif [ "${1:-}" = '--suggest' ]; then
+    clearings_action=plugin-suggest
+    shift
 fi
 clearings_plugin=$(CDPATH= cd -- "${0%/*}/.." && pwd -P)
 if [ -x "$clearings_plugin/bin/clearings" ]; then

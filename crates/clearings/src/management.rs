@@ -180,13 +180,20 @@ impl Store {
             params![project, cutoff],
             |r| r.get(0),
         )?;
-        let runs:u64=tx.query_row("SELECT count(*) FROM runs WHERE created_at<datetime('now',?2) AND version IN (SELECT id FROM objects WHERE kind='version' AND json_extract(body,'$.task') IN (SELECT task FROM project_routines WHERE project=?1))",params![project,cutoff],|r|r.get(0))?;
+        let runs: u64 = tx.query_row(
+            "SELECT count(*) FROM runs WHERE created_at<datetime('now',?2) AND project=?1",
+            params![project, cutoff],
+            |r| r.get(0),
+        )?;
         if apply {
             tx.execute(
                 "DELETE FROM activity WHERE project=?1 AND created_at<datetime('now',?2)",
                 params![project, cutoff],
             )?;
-            tx.execute("DELETE FROM runs WHERE created_at<datetime('now',?2) AND version IN (SELECT id FROM objects WHERE kind='version' AND json_extract(body,'$.task') IN (SELECT task FROM project_routines WHERE project=?1))",params![project,cutoff])?;
+            tx.execute(
+                "DELETE FROM runs WHERE created_at<datetime('now',?2) AND project=?1",
+                params![project, cutoff],
+            )?;
         }
         tx.commit()?;
         Ok(

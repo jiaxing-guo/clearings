@@ -89,7 +89,7 @@ fn incompatible_improvement_keeps_error_explicit_and_does_not_block_retention() 
         rusqlite::params![task_id, old_id],
     )
     .unwrap();
-    conn.execute("INSERT INTO runs(version,input_digest,report,created_at) VALUES(?1,'input','{}','2000-01-01')", [&old_id]).unwrap();
+    conn.execute("INSERT INTO runs(version,input_digest,report,created_at,project) VALUES(?1,'input','{}','2000-01-01',?2)", rusqlite::params![old_id,p.id]).unwrap();
     let result = store.background_tick(&p.id, exe).unwrap();
     assert_eq!(result["status"], "failed", "{result}");
     assert!(
@@ -310,7 +310,7 @@ fn pruning_waits_for_current_retention_settings_before_deleting() {
         .unwrap();
     let mut writer = rusqlite::Connection::open(&db).unwrap();
     writer.execute("INSERT INTO activity(project,id,body,created_at) VALUES(?1,'event','{}',datetime('now','-100 days'))", [&p.id]).unwrap();
-    writer.execute("INSERT INTO runs(version,input_digest,report,created_at) VALUES(?1,'input','{}',datetime('now','-100 days'))", [saved["version"].as_str().unwrap()]).unwrap();
+    writer.execute("INSERT INTO runs(version,input_digest,report,created_at,project) VALUES(?1,'input','{}',datetime('now','-100 days'),?2)", rusqlite::params![saved["version"].as_str().unwrap(),p.id]).unwrap();
     let tx = writer
         .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
         .unwrap();
