@@ -76,7 +76,7 @@ fn incomplete_background_authorization_is_rejected_and_legacy_database_migrates(
     assert_eq!(
         conn.pragma_query_value(None, "user_version", |r| r.get::<_, i32>(0))
             .unwrap(),
-        9
+        11
     );
     conn.pragma_update(None, "user_version", 99).unwrap();
     assert!(Store::open(&db).is_err());

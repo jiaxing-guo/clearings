@@ -1,6 +1,10 @@
 # Manage reusable work
 
-Use the project commands with `--store` and `--project`, or their matching MCP tools:
+Ask the coding agent to pause or resume learning, change the schedule, inspect what was learned or used, exclude a project, or undo the last automatic change. The bundled manage-clearings skill resolves names and revisions; users do not need IDs or configuration files.
+
+`learning-status` is user-wide. `pause-learning`, `resume-learning`, `learning-schedule weekly`, `exclude-learning PROJECT`, `include-learning PROJECT`, and `undo-learning` use the default private store. The management tools update only requested preferences. Pausing learning preserves routine execution; muting suggestions preserves learning. Undo compares the currently active version before restoring a previous accepted version or deactivating a new automatic routine.
+
+For agent authors and advanced hosts, ordinary CLI commands select the current project automatically. Explicit `--store` and `--project` remain available:
 
 | Command                                                   | Result                                                            |
 | --------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -19,7 +23,7 @@ Use the project commands with `--store` and `--project`, or their matching MCP t
 
 Pause and exclusion controls do not alter the routine's source or grant additional access. Resume does not remove an exclusion. Retirement keeps immutable evidence and prevents automatic rediscovery under the same name. It is not permanent erasure of stored source or acceptance cases. Requirements, versions, evaluations, change history and budget accounting remain available; an explicit future erasure feature would need to account for their references.
 
-Authorized background cycles apply the configured retention period to raw observations and runtime reports. This does not delete the original transcript files or the examples already frozen into an accepted task. Performance counts describe the retained run records. Digests and usage reports are local; no email, Slack message or telemetry is sent.
+Authorized background cycles apply the configured retention period to raw observations and runtime reports. This does not delete the original transcript files or the examples already frozen into an accepted task. Performance reports describe retained run records. Compact routine-use aggregates survive raw-run pruning and report seven-, 30-, and 90-day windows. Digests and usage reports are local; no email, Slack message or telemetry is sent.
 
 `model-usage` distinguishes provider-reported counters from conservative operator-priced budget reservations. A credential availability flag checks only whether the configured host environment variable exists. Session usage in `activity` remains separate because surrounding conversation tokens cannot reliably be assigned to a routine. Missing usage and total savings remain unknown.
 

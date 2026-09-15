@@ -2,7 +2,7 @@
 
 Choose a repeated task first: gathering repository context, grouping logs, or normalizing exported data are examples. The coding agent records its inputs and expected behavior, writes TypeScript, and evaluates it. Once activated, the same routine can run on fresh inputs. Unfamiliar cases return to the agent through `needs_agent` or `not_applicable`.
 
-## Local CLI
+## Advanced local CLI
 
 Create a private directory for the SQLite store and a JSON policy file containing the file roots and named HTTP bindings you grant. `{}` grants no host capabilities. Paths in policies are resolved relative to the launching process; use absolute paths for agent integrations.
 
@@ -37,11 +37,11 @@ The transport implements the [MCP 2025-06-18 stdio lifecycle](https://modelconte
 
 ## Codex and Claude Code
 
-Use the [plugin installation](installation.md) for the normal developer experience. The Codex plugin lives in `plugins/clearings`; the Claude Code plugin lives in `integrations/claude-code/plugins/clearings`. Each includes its MCP registration, native launcher and reuse-work skill. Install once at user scope, then open any project normally. There is no per-project server registration or policy file.
+Use the [plugin installation](installation.md) for the normal developer experience. The Codex plugin lives in `plugins/clearings`; the Claude Code plugin lives in `integrations/claude-code/plugins/clearings`. Each includes its MCP registration, native launcher, and focused skills for learning, reuse, and management. Install once at user scope, then open any project normally. There is no per-project server registration or policy file.
 
-The client SessionStart hook automatically registers the working project from trusted host context. Before other Clearings tools, the agent calls `clearings_open_project` using the actual session working directory. Clearings returns the canonical project, effective read grant and existing settings. The agent discovers saved routines, checks their requirements and reuses suitable ones on fresh inputs. It reconnects when the user changes projects; the MCP process's launch directory is irrelevant.
+The client SessionStart hook automatically registers the working project from trusted host context. Before project-scoped Clearings tools, the agent calls `clearings_open_project` using the actual session working directory. Clearings returns the canonical project, effective read grant and existing settings. The agent discovers saved routines, checks their requirements and reuses suitable ones on fresh inputs. It reconnects when the user changes projects; the MCP process's launch directory is irrelevant.
 
-A useful first instruction is: “Make this repeated task reusable with Clearings. Preserve the inputs and rules we just agreed, and return unfamiliar cases to me.” A new conversation in that project can discover the same saved routine. To test continuity, change a source file and ask for the same task again: the reused routine should read fresh data. Open a second repository and verify its routine list is separate. Return to the first repository and verify the original routine and history are still present.
+A useful first instruction is: “Make this repeated task reusable with Clearings. Preserve the inputs and rules we just agreed, and return unfamiliar cases to me.” A new conversation in that project can discover the same saved routine. To test continuity, change a source file and ask for the same task again: the reused routine should read fresh data. Open a second repository and verify its grants remain separate; shared definitions should be discoverable there. Return to the first repository and verify the original routine and history are still present.
 
 For local plugin development, a packaged Claude plugin can also be loaded with `claude --plugin-dir /absolute/path/to/clearings/integrations/claude-code/plugins/clearings`. The standalone CLI and manually bound MCP configuration above remain available for advanced hosting and clients without plugins.
 
@@ -53,7 +53,7 @@ Task and version objects are rejected before storage if they exceed the inspecti
 
 ## Project reuse and background work
 
-The plugin sets up project reading and on-demand reuse automatically. For advanced manual hosting, configure [project authorization](projects.md), add `--project PROJECT_ID` to the server command and keep its policy equal to the configured grants. Both interfaces expose named discovery, saving, reuse, observation and management within the selected project. Use the host CLI to change existing settings or enable background work.
+The plugin sets up project reading and on-demand reuse automatically. For advanced manual hosting, configure [project authorization](projects.md), add `--project PROJECT_ID` to the server command and keep its policy equal to the configured grants. Both interfaces expose named discovery, saving, reuse, observation and management within the selected project. Use the management skill for default learning preferences; explicit project settings remain available for advanced hosts.
 
 The host agent can record actual completed work with `clearings_record_observation` only when `record_conversations` is enabled. The project worker can then create routines without a save prompt on every workflow. Start that worker separately with `background`, or schedule `background --once`. See [background behavior](background.md), [activity formats](activity.md) and [management commands](management.md).
 

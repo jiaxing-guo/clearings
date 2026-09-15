@@ -174,6 +174,9 @@ impl Store {
         )
     }
     pub fn suggest(&self, context: &Value) -> Result<Value> {
+        if !self.preferences()?.suggestions_enabled {
+            return Ok(Value::Null);
+        }
         ensure!(
             context["hook_event_name"] == "UserPromptSubmit",
             "expected host UserPromptSubmit event"

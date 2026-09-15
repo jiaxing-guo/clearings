@@ -205,6 +205,8 @@ fn tool_annotations_describe_state_replacement() {
                     | "clearings_save"
                     | "clearings_learn_now"
                     | "clearings_manage"
+                    | "clearings_learning_preferences"
+                    | "clearings_undo_learning"
                     | "clearings_pause_shared"
                     | "clearings_prune"
                     | "clearings_background_cancel"

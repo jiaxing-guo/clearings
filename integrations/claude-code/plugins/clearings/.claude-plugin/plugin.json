@@ -1,7 +1,7 @@
 {
   "name": "clearings",
   "version": "0.1.0-alpha.3",
-  "description": "Save and reuse repeated work across your projects. Installation authorizes project and recent conversation reading; state and MCP setup are automatic.",
+  "description": "Reuse repeated work across projects. Installation enables recent local conversation reading and quiet daily learning through your signed-in coding client, with bounded requests and configurable defaults.",
   "author": {
     "name": "Clearings contributors"
   }

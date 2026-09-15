@@ -18,6 +18,7 @@ pub mod native_learning;
 pub mod plugin;
 pub mod project;
 pub mod reuse;
+pub mod service;
 pub mod store;
 mod transform;
 mod worker;

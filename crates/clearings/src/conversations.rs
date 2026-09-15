@@ -115,6 +115,19 @@ impl Store {
     }
     pub(crate) fn register_transcript(&self, context: &Value, project: &Path) -> Result<()> {
         self.authorize_history()?;
+        if self
+            .preferences()?
+            .excludes(project.to_string_lossy().as_ref())
+        {
+            return Ok(());
+        }
+        if let Some(model) = context["model"].as_str() {
+            if model.starts_with("claude") {
+                self.remember_client("claude")?;
+            } else if model.starts_with("gpt") {
+                self.remember_client("codex")?;
+            }
+        }
         let (Some(path), Some(session)) = (
             context["transcript_path"].as_str(),
             context["session_id"].as_str(),
@@ -133,6 +146,7 @@ impl Store {
         } else {
             "claude"
         };
+        self.remember_client(client)?;
         self.remember_conversation(
             client,
             session,
@@ -226,6 +240,12 @@ impl Store {
                     || source["project"] == selected.root.to_string_lossy().as_ref(),
                 "evidence belongs to another project"
             );
+            ensure!(
+                !self
+                    .preferences()?
+                    .excludes(source["project"].as_str().unwrap_or("")),
+                "evidence project is excluded"
+            );
             sources.push(json!({"id":id,"record":source}));
         }
         task.evidence = Some(
@@ -262,6 +282,12 @@ impl Store {
             let Ok(project) = self.conversation_root(Path::new(cwd), selected) else {
                 continue;
             };
+            if self
+                .preferences()?
+                .excludes(project.to_string_lossy().as_ref())
+            {
+                continue;
+            }
             if scope == Scope::Project && project != selected {
                 continue;
             }
@@ -279,7 +305,17 @@ impl Store {
                 )?,
             );
         }
-        Ok((found, page["nextCursor"].as_str().map(str::to_owned)))
+        let older = threads
+            .last()
+            .is_some_and(|t| t["updatedAt"].as_i64().is_some_and(|v| v < since));
+        Ok((
+            found,
+            if older {
+                None
+            } else {
+                page["nextCursor"].as_str().map(str::to_owned)
+            },
+        ))
     }
     fn list_claude(
         &self,
@@ -326,6 +362,7 @@ impl Store {
         for (updated, path) in files.iter().take(20) {
             match claude_identity(path,None).and_then(|v|v.map(|(id,cwd,title)|Ok((id,self.conversation_root(&cwd,selected)?,title))).transpose()) {
                 Ok(Some((session,project,title))) => {
+                    if self.preferences()?.excludes(project.to_string_lossy().as_ref()){continue;}
                     if scope==Scope::Project && project!=selected {continue;}
                     found.push(self.remember_conversation("claude",&session,&project,Some(path),*updated,&title)?);
                 }
@@ -365,6 +402,10 @@ impl Store {
             scope == Scope::All || Path::new(&conversation_root) == selected.root,
             "conversation belongs to another project; choose all scope explicitly"
         );
+        ensure!(
+            !self.preferences()?.excludes(&conversation_root),
+            "conversation project is excluded"
+        );
         let mut result = if client == "codex" {
             let process = codex()?;
             let meta = process.call(
@@ -383,22 +424,36 @@ impl Store {
                 )? == Path::new(&conversation_root),
                 "conversation project changed; refresh listing"
             );
-            let page=process.call(3,"thread/turns/list",json!({"threadId":session,"limit":3,"sortDirection":"desc","itemsView":"full","cursor":cursor})).context("Codex recent-turn pagination is unavailable; update the coding client")?;
-            let turns = page["data"]
+            let paginated = meta["thread"]["historyMode"] == "paginated";
+            let page = if paginated {
+                process.call(
+                    3,
+                    "thread/items/list",
+                    json!({"threadId":session,"limit":20,"sortDirection":"desc","cursor":cursor}),
+                )?
+            } else {
+                process.call(3,"thread/turns/list",json!({"threadId":session,"limit":3,"sortDirection":"desc","itemsView":"summary","cursor":cursor})).context("Codex history pagination is unavailable; update the coding client")?
+            };
+            let values = page["data"]
                 .as_array()
-                .context("Codex history page lacks turns")?;
+                .context("Codex history page lacks data")?;
             let mut items = vec![];
-            for turn in turns {
-                if let Some(values) = turn["items"].as_array() {
+            for value in values {
+                if paginated {
+                    if let Some(mut item) = codex_item(&value["item"]) {
+                        item["turn_id"] = value["turnId"].clone();
+                        items.push(item);
+                    }
+                } else if let Some(values) = value["items"].as_array() {
                     for item in values {
-                        if let Some(mut v) = codex_item(item) {
-                            v["turn_id"] = turn["id"].clone();
-                            items.push(v)
+                        if let Some(mut item) = codex_item(item) {
+                            item["turn_id"] = value["id"].clone();
+                            items.push(item);
                         }
                     }
                 }
             }
-            json!({"items":items,"next_cursor":page["nextCursor"],"coverage":"page","order":"newest_turn_first"})
+            json!({"items":items,"next_cursor":page["nextCursor"],"coverage":if paginated{"page"}else{"summary_page"},"order":"newest_first"})
         } else {
             let path = source.context("conversation source is unavailable")?;
             let identity = claude_identity(Path::new(&path), Some(Path::new(&conversation_root)))?
@@ -525,40 +580,50 @@ fn codex_item(item: &Value) -> Option<Value> {
 }
 fn read_claude(path: &Path, cursor: Option<&str>) -> Result<Value> {
     let mut file = open_transcript(path)?;
-    let mut offset: u64 = cursor
-        .map(str::parse)
+    let size = file.metadata()?.len();
+    let end: u64 = cursor
+        .map(|s| s.strip_prefix("before:").unwrap_or(s).parse())
         .transpose()
         .context("invalid transcript cursor")?
-        .unwrap_or(0);
-    ensure!(
-        offset <= file.metadata()?.len(),
-        "transcript rotated; restart reading"
-    );
+        .unwrap_or(size);
+    ensure!(end <= size, "transcript rotated; restart reading");
+    let mut offset = end.saturating_sub(1024 * 1024);
+    let skip = if offset > 0 {
+        file.seek(SeekFrom::Start(offset - 1))?;
+        let mut byte = [0];
+        file.read_exact(&mut byte)?;
+        byte[0] != b'\n'
+    } else {
+        false
+    };
     file.seek(SeekFrom::Start(offset))?;
     let mut reader = BufReader::new(file);
-    let mut items = vec![];
-    let mut bytes = 0;
+    if skip {
+        let mut prefix = vec![];
+        offset += Read::by_ref(&mut reader)
+            .take(end - offset)
+            .read_until(b'\n', &mut prefix)? as u64;
+    }
+    let window_start = offset;
+    let mut items = std::collections::VecDeque::new();
     let mut partial = false;
-    for _ in 0..64 {
+    while offset < end {
         let mut line = vec![];
         let n = Read::by_ref(&mut reader)
-            .take(1024 * 1024 + 1)
+            .take(end - offset)
             .read_until(b'\n', &mut line)?;
         if n == 0 {
             break;
         }
-        ensure!(n <= 1024 * 1024, "conversation record exceeds byte limit");
         if !line.ends_with(b"\n") {
             partial = true;
             break;
         }
-        if bytes + n > 1024 * 1024 {
-            break;
-        }
-        let v: Value = serde_json::from_slice(&line).context("malformed conversation record")?;
-        let kind = v["type"].as_str().unwrap_or("");
-        if matches!(kind, "user" | "assistant") && v["isMeta"] != true {
-            let body = match &v["message"]["content"] {
+        let value: Value =
+            serde_json::from_slice(&line).context("malformed conversation record")?;
+        let kind = value["type"].as_str().unwrap_or("");
+        if matches!(kind, "user" | "assistant") && value["isMeta"] != true {
+            let body = match &value["message"]["content"] {
                 Value::Array(parts) => Value::Array(
                     parts
                         .iter()
@@ -575,14 +640,20 @@ fn read_claude(path: &Path, cursor: Option<&str>) -> Result<Value> {
                 _ => Value::Null,
             };
             let text = body.to_string();
-            items.push(json!({"id":v["uuid"],"kind":kind,"offset":offset,"content":if text.len()>16000{json!(clipped(&text,4000))}else{body},"truncated":text.len()>16000}));
+            items.push_back(json!({"id":value["uuid"],"kind":kind,"offset":offset,"content":if text.len()>16000{json!(clipped(&text,4000))}else{body},"truncated":text.len()>16000}));
+            if items.len() > 64 {
+                items.pop_front();
+            }
         }
         offset += n as u64;
-        bytes += n;
     }
-    let more = partial || offset < reader.get_ref().metadata()?.len();
+    let before = items
+        .front()
+        .and_then(|v| v["offset"].as_u64())
+        .unwrap_or(window_start.min(end.saturating_sub(1024 * 1024)));
+    let items: Vec<_> = items.into_iter().rev().collect();
     Ok(
-        json!({"items":items,"next_cursor":more.then(||offset.to_string()),"coverage":if partial{"partial_final_record"}else{"page"},"order":"oldest_first"}),
+        json!({"items":items,"next_cursor":(before>0).then(||format!("before:{before}")),"coverage":if partial{"partial_final_record"}else{"page"},"order":"newest_first"}),
     )
 }
 
@@ -669,6 +740,30 @@ mod tests {
         assert_eq!(fresh[0]["session"], "s22");
     }
     #[test]
+    fn claude_pages_newest_records_then_every_older_record_once() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().canonicalize().unwrap().join("session.jsonl");
+        let rows=(0..150).map(|i|json!({"type":"user","uuid":i.to_string(),"message":{"content":format!("message {i}")}}).to_string()+"\n").collect::<String>();
+        fs::write(&path, rows).unwrap();
+        let mut cursor = None;
+        let mut ids = vec![];
+        loop {
+            let page = read_claude(&path, cursor.as_deref()).unwrap();
+            ids.extend(
+                page["items"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|i| i["id"].as_str().unwrap().parse::<usize>().unwrap()),
+            );
+            cursor = page["next_cursor"].as_str().map(str::to_owned);
+            if cursor.is_none() {
+                break;
+            }
+        }
+        assert_eq!(ids, (0..150).rev().collect::<Vec<_>>());
+    }
+    #[test]
     fn claude_reads_real_messages_and_tools_without_thinking_and_preserves_partial_cursor() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp
@@ -682,10 +777,8 @@ mod tests {
         let page = read_claude(&path, None).unwrap();
         assert_eq!(page["items"][0]["content"].as_array().unwrap().len(), 2);
         assert_eq!(page["coverage"], "partial_final_record");
-        assert_eq!(
-            read_claude(&path, page["next_cursor"].as_str()).unwrap()["items"],
-            json!([])
-        );
+        assert_eq!(page["next_cursor"], Value::Null);
+        assert_eq!(read_claude(&path, None).unwrap()["items"], page["items"]);
     }
     #[test]
     fn exact_configured_subproject_is_preserved() {

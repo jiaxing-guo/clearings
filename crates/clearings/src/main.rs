@@ -29,6 +29,31 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Action {
+    Install {
+        #[arg(long)]
+        data_dir: Option<PathBuf>,
+        #[arg(long)]
+        no_service: bool,
+        #[arg(long)]
+        no_client: bool,
+    },
+    LearningService {
+        #[arg(long)]
+        data_dir: Option<PathBuf>,
+    },
+    PauseLearning,
+    ResumeLearning,
+    LearningSchedule {
+        #[arg(value_enum)]
+        frequency: Frequency,
+    },
+    ExcludeLearning {
+        project: String,
+    },
+    IncludeLearning {
+        project: String,
+    },
+    UndoLearning,
     #[command(hide = true)]
     LearningJob {
         id: i64,
@@ -249,6 +274,23 @@ enum Action {
         path: PathBuf,
     },
 }
+#[derive(Clone, clap::ValueEnum)]
+enum Frequency {
+    Daily,
+    TwiceDaily,
+    EveryTwoDays,
+    Weekly,
+}
+impl Frequency {
+    fn seconds(&self) -> u64 {
+        match self {
+            Self::Daily => 86400,
+            Self::TwiceDaily => 43200,
+            Self::EveryTwoDays => 172800,
+            Self::Weekly => 604800,
+        }
+    }
+}
 fn read<T: DeserializeOwned>(path: PathBuf) -> Result<T> {
     Ok(serde_json::from_slice(&read_bytes(
         path,
@@ -276,6 +318,48 @@ fn main() -> Result<()> {
     let executable = std::env::current_exe()?;
     let register_session = matches!(&cli.command, Action::PluginRegister { .. });
     match cli.command {
+        Action::Install {
+            data_dir,
+            no_service,
+            no_client,
+        } => {
+            let directory = clearings::plugin::data_directory(data_dir)?;
+            let store = Store::open(&directory.join("state.db"))?;
+            store.enable_default_history()?;
+            if no_service {
+                store.update_preferences(
+                    store.preferences()?.revision,
+                    serde_json::json!({"service_enabled":false}),
+                )?;
+            }
+            store.bind_plugin_service(!no_client)?;
+            let client = if no_client {
+                Value::Null
+            } else {
+                clearings::service::register_client(&store, &executable)?
+            };
+            let service = if no_service {
+                Value::Null
+            } else {
+                clearings::service::install_service(&store, &directory, &executable)?
+            };
+            println!(
+                "{}",
+                serde_json::json!({"status":"installed","client":client,"service":service,"defaults":store.preferences()?})
+            );
+            Ok(())
+        }
+        Action::LearningService { data_dir } => {
+            let directory = clearings::plugin::data_directory(data_dir)?;
+            let mut store = Store::open(&directory.join("state.db"))?;
+            let result = store.default_tick(&directory, &executable)?;
+            println!("{result}");
+            anyhow::ensure!(
+                !clearings::api::failed(&result),
+                "learning cycle failed; inspect learning-status"
+            );
+            Ok(())
+        }
         Action::PluginSuggest {
             all_projects,
             data_dir,
@@ -311,10 +395,24 @@ fn main() -> Result<()> {
                 cli.store.is_none() && cli.project.is_none(),
                 "plugin mode manages its own store and project selection"
             );
+            let default_install =
+                data_dir.is_none() && std::env::var_os("CLEARINGS_DATA_DIR").is_none();
             let directory = clearings::plugin::data_directory(data_dir)?;
             let mut store = Store::open(&directory.join("state.db"))?;
             if register_session {
                 clearings::plugin::register_session(&mut store, std::io::stdin().lock())?;
+                if default_install {
+                    store.bind_plugin_service(true)?;
+                    if let Err(error) = store.check_service_integration().and_then(|()| {
+                        clearings::service::install_service(&store, &directory, &executable)
+                    }) {
+                        store.record_service_error(&error.to_string())?;
+                    }
+                    let notice = store.learning_notice()?;
+                    if !notice.is_null() {
+                        println!("{notice}");
+                    }
+                }
                 return Ok(());
             }
             let api = Api {
@@ -357,10 +455,57 @@ fn main() -> Result<()> {
             Ok(())
         }
         action => {
-            let mut store =
-                Store::open(&cli.store.ok_or_else(|| {
-                    anyhow::anyhow!("provide --store /path/to/private/state.db")
-                })?)?;
+            let defaults = cli.store.is_none();
+            let path = match cli.store {
+                Some(path) => path,
+                None => clearings::plugin::data_directory(None)?.join("state.db"),
+            };
+            let mut store = Store::open(&path)?;
+            if defaults
+                && matches!(
+                    action,
+                    Action::LearnNow { .. } | Action::RecentConversations { .. }
+                )
+            {
+                store.enable_default_history()?;
+            }
+            if matches!(action, Action::LearningStatus) {
+                println!("{}", store.learning_status()?);
+                return Ok(());
+            }
+            if matches!(action, Action::UndoLearning) {
+                println!("{}", store.undo_learning(None, None)?);
+                return Ok(());
+            }
+            if matches!(
+                action,
+                Action::PauseLearning
+                    | Action::ResumeLearning
+                    | Action::LearningSchedule { .. }
+                    | Action::ExcludeLearning { .. }
+                    | Action::IncludeLearning { .. }
+            ) {
+                let prefs = store.preferences()?;
+                let patch = match action {
+                    Action::PauseLearning => serde_json::json!({"learning_enabled":false}),
+                    Action::ResumeLearning => serde_json::json!({"learning_enabled":true}),
+                    Action::LearningSchedule { frequency } => {
+                        serde_json::json!({"interval_seconds":frequency.seconds()})
+                    }
+                    Action::ExcludeLearning { project } => {
+                        let mut values = prefs.excluded_projects.clone();
+                        values.push(project);
+                        serde_json::json!({"excluded_projects":values})
+                    }
+                    Action::IncludeLearning { project } => {
+                        let root = store.resolve_project_name(&project)?;
+                        serde_json::json!({"excluded_projects":prefs.excluded_projects.iter().filter(|p|**p!=root).collect::<Vec<_>>()})
+                    }
+                    _ => unreachable!(),
+                };
+                println!("{}", store.update_preferences(prefs.revision, patch)?);
+                return Ok(());
+            }
             if let Action::LearningJob { id } = action {
                 let value = store.execute_learning(id, &executable)?;
                 println!("{value}");
@@ -371,12 +516,13 @@ fn main() -> Result<()> {
                 return Ok(());
             }
             if let Action::LearnNow { all } = action {
-                let project = cli
-                    .project
-                    .as_deref()
-                    .ok_or_else(|| anyhow::anyhow!("select --project"))?;
+                let project = match &cli.project {
+                    Some(id) => id.clone(),
+                    None if defaults => store.open_cli_project(&std::env::current_dir()?)?,
+                    None => anyhow::bail!("select --project"),
+                };
                 let value = store.learn_now(
-                    project,
+                    &project,
                     if all {
                         clearings::conversations::Scope::All
                     } else {
@@ -418,8 +564,12 @@ fn main() -> Result<()> {
                 }
                 return clearings::background::serve(store, project, executable);
             }
-            let selected = cli
-                .project
+            let selected_id = match cli.project {
+                Some(id) => Some(id),
+                None if defaults => Some(store.open_cli_project(&std::env::current_dir()?)?),
+                None => None,
+            };
+            let selected = selected_id
                 .as_deref()
                 .map(|id| store.project(id))
                 .transpose()?;
@@ -429,7 +579,7 @@ fn main() -> Result<()> {
                     .as_ref()
                     .map(|p| p.settings.grants.clone())
                     .unwrap_or_default(),
-                project: cli.project,
+                project: selected_id,
                 executable,
             };
             let operation = match action {

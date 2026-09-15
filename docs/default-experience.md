@@ -1,6 +1,6 @@
 # Default experience
 
-This is the target product behavior for the next implementation. It records the agreed direction; it does not describe features as already shipped. See [installation](installation.md) and [background execution](background.md) for the current implementation.
+This page records the agreed product requirements. The local runtime implements the defaults below; real-client installation and selection remain explicit launch acceptance gates. See [installation](installation.md) and [background execution](background.md) for the current implementation.
 
 ## Install and work
 

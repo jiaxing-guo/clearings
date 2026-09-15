@@ -1,5 +1,31 @@
 # Background execution
 
+## Conversation learning through the coding client
+
+`learn-now` performs a bounded recent-conversation review using the existing signed-in coding client. Its MCP counterpart queues the cycle and returns immediately; `learning_status` exposes completion, failures, preferences, and reported usage. Closing the MCP connection does not stop an already queued worker. The CLI command waits for its result. A queued cycle uses the same executable and private store, and overlapping requests are coordinated through a user-wide lock.
+
+The cycle reads bounded local conversation pages, interprets candidate requirements, freezes source evidence and examples, and requests TypeScript in a separate authoring session. One case is withheld from source authoring. Passing candidates are activated and can be shared with applicability information. Conversation-derived cases remain agent interpretations, not authenticated observations. Existing task requirements, paused routines, exclusions, and concurrent changes are preserved.
+
+Defaults allow three candidate groups and six client authoring requests per UTC day, with at most two per group. Client-internal provider retries and billing are separate from this request count. Requests reserve allowance before launch. Completed responses and pending source packets survive interruption, so resumed work can reuse them without another model call. An uncertain interrupted request retains its allowance; explicit signed-out responses can be retried after login. Candidates with inadequate evidence or failed evaluation remain unactivated. No provider fallback follows an authentication failure.
+
+Codex authoring uses its local client with tools, hooks, plugins, and host skill discovery disabled for the authoring session; Claude uses print mode with no tools or MCP servers. These sessions do not persist their own transcripts, preventing recursive learning. Source executes only in Clearings' isolated worker. An explicitly configured project HTTP model remains supported and uses its existing conservative budget reservations. Native client usage does not claim a dollar spending bound.
+
+The existing structured-observation background path remains available for configured projects.
+
+## Default daily learning
+
+Trusted plugin startup installs a user-level schedule. A standalone package can register the coding-client plugin and schedule through `clearings install`. Defaults need no model key or setup questionnaire. The first automatic review is due 24 hours after the schedule's first check. The operating system checks hourly; one missed interval produces one catch-up review. Closed laptops do not replay every missed interval.
+
+Daily review uses all-project scope and a seven-day conversation-update lookback. It refreshes the newest metadata page and continues saved listing cursors. It reads least-recently-reviewed eligible sessions first, alternating updated heads with older pages. Each cycle reads at most 12 conversation pages, with a 1 MiB evidence budget, and saves bounded candidate packets before advancing progress. Request exhaustion retains pending work. Complete and failed packets are deduplicated. Small evidence packets stay pending and combine with later conversations within the lookback window. Partial reads and unavailable clients appear in coverage; a review is not a claim to have read every message in a seven-day window.
+
+Automatic improvements consider routines used at least three times within 90 days. One improvement can occupy a candidate slot. The same frozen cases, withheld case, paired measurements, and atomic promotion checks apply. The internal library project has no user-wide filesystem grant. Shared routines execute with the receiving project's grants. A receiving-project access failure cannot roll back a shared source version for other projects.
+
+“Pause learning” cancels unfinished promotion and preserves routine use. “Mute suggestions” changes only discovery hints. Schedule changes do not invalidate active authoring. Model, source, and learning changes do. `learning-status` reports next due time, installation failures, recent work, request usage, and routine calls over seven, 30, and 90 days. `undo-learning` deactivates the latest automatic creation or restores its previous accepted version; source and evidence remain inspectable.
+
+macOS uses a LaunchAgent; Linux uses a systemd user timer. The schedule runs only while the user session supports that service manager. It uses a private stable copy of the native executable. Plugin-bound schedules check whether Clearings remains enabled in a supported client before authoring or promotion and stop when disabled or removed. Custom stores selected by plugin `--data-dir` or `CLEARINGS_DATA_DIR` do not automatically install an OS service. Standalone installations can explicitly use the service without a plugin.
+
+## Configured structured-observation mode
+
 Hard-linked database files are rejected before opening SQLite and before acquiring a background lock, because SQLite WAL sidecars belong to a single database path. Symlink aliases resolve to the same canonical database and lock.
 
 A cycle with observation errors is recorded as failed and retains the structured source errors, even when no records were imported. `background --once` returns an unsuccessful exit status for that result. A valid empty source can still complete successfully.
@@ -51,15 +77,3 @@ Observation sampling represents distinct input/outcome pairs and session identit
 An assembled model request above 512 KiB is rejected permanently for that frozen workflow without spending an authoring attempt. Later cycles skip the rejected group and continue considering other work. Budget refusal remains retryable.
 
 Improvement trials with oversized model requests are terminal; actual budget refusals remain retryable. Live recovery also recognizes call-count exhaustion, undeclared capabilities and malformed capability arguments as candidate failures. Missing resources, unavailable workers and endpoint failures do not cause automatic rollback.
-
-## Conversation learning through the coding client
-
-`learn-now` performs a bounded recent-conversation review using the existing signed-in coding client. Its MCP counterpart queues the cycle and returns immediately; `learning_status` exposes completion, failures, preferences, and reported usage. Closing the MCP connection does not stop an already queued worker. The CLI command waits for its result. A queued cycle uses the same executable and private store, and overlapping requests are coordinated through a user-wide lock.
-
-The cycle reads bounded local conversation pages, interprets candidate requirements, freezes source evidence and examples, and requests TypeScript in a separate authoring session. One case is withheld from source authoring. Passing candidates are activated and can be shared with applicability information. Conversation-derived cases remain agent interpretations, not authenticated observations. Existing task requirements, paused routines, exclusions, and concurrent changes are preserved.
-
-Defaults allow three candidate groups and six client authoring requests per UTC day, with at most two per group. Client-internal provider retries and billing are separate from this request count. Requests reserve allowance before launch. Completed responses and pending source packets survive interruption, so resumed work can reuse them without another model call. An uncertain interrupted request retains its allowance; explicit signed-out responses can be retried after login. Candidates with inadequate evidence or failed evaluation remain unactivated. No provider fallback follows an authentication failure.
-
-Codex authoring uses its local client with tools, hooks, plugins, and host skill discovery disabled for the authoring session; Claude uses print mode with no tools or MCP servers. These sessions do not persist their own transcripts, preventing recursive learning. Source executes only in Clearings' isolated worker. An explicitly configured project HTTP model remains supported and uses its existing conservative budget reservations. Native client usage does not claim a dollar spending bound.
-
-This change adds on-request cycles. Automatic OS scheduling and natural-language preference changes are introduced separately. The existing structured-observation background path remains available for configured projects.
