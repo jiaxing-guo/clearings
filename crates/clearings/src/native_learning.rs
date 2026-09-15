@@ -593,13 +593,14 @@ impl Store {
             }
         }
         let selected = self.project(project)?;
-        let mut statement = self.db.prepare("SELECT c.id,c.updated,c.root,COALESCE(p.head_updated,0),p.tail_cursor,COALESCE(p.tail_next,0),p.head_cursor,p.head_anchor FROM conversations c LEFT JOIN conversation_progress p ON p.conversation=c.id WHERE c.updated>=?1 AND (?2 OR c.root=?3) AND (p.conversation IS NULL OR c.updated>p.head_updated OR p.tail_cursor IS NOT NULL OR p.head_cursor IS NOT NULL) ORDER BY COALESCE(p.reviewed_at,0),c.updated DESC,c.id LIMIT 96")?;
+        let mut statement = self.db.prepare("SELECT c.id,c.updated,c.root,COALESCE(p.head_updated,0),p.tail_cursor,COALESCE(p.tail_next,0),p.head_cursor,p.head_anchor FROM conversations c LEFT JOIN conversation_progress p ON p.conversation=c.id WHERE c.updated>=?1 AND (?2 OR c.root=?3) AND NOT EXISTS(SELECT 1 FROM json_each(?4) e WHERE c.root=rtrim(e.value,'/') OR substr(c.root,1,length(rtrim(e.value,'/'))+1)=rtrim(e.value,'/')||'/') AND (p.conversation IS NULL OR c.updated>p.head_updated OR p.tail_cursor IS NOT NULL OR p.head_cursor IS NOT NULL) ORDER BY COALESCE(p.reviewed_at,0),c.updated DESC,c.id LIMIT 96")?;
         let sessions = statement
             .query_map(
                 params![
                     crate::background::now()? - i64::from(prefs.lookback_days) * 86400,
                     scope == Scope::All,
-                    selected.root.to_string_lossy()
+                    selected.root.to_string_lossy(),
+                    serde_json::to_string(&prefs.excluded_projects)?
                 ],
                 |r| {
                     Ok((
@@ -696,6 +697,7 @@ impl Store {
                 }
                 Err(e) => {
                     coverage.push(json!({"conversation":id,"error":e.to_string()}));
+                    self.db.execute("INSERT INTO conversation_progress(conversation,reviewed_at) VALUES(?1,?2) ON CONFLICT(conversation) DO UPDATE SET reviewed_at=excluded.reviewed_at",params![id,crate::background::now()?])?;
                     // Retry an expired content cursor from the newest page next time.
                     if reading_tail || reading_refresh {
                         self.db.execute("UPDATE conversation_progress SET tail_cursor=NULL,head_cursor=NULL,head_anchor=NULL,head_updated=0 WHERE conversation=?1",[id])?;
