@@ -16,6 +16,7 @@ pub struct Preferences {
     pub work_revision: u64,
     pub model: Option<String>,
     pub learning_enabled: bool,
+    pub service_enabled: bool,
     pub improve_enabled: bool,
     pub excluded_workflows: Vec<String>,
     pub suggestions_enabled: bool,
@@ -33,6 +34,7 @@ impl Default for Preferences {
             work_revision: 1,
             model: None,
             learning_enabled: true,
+            service_enabled: true,
             improve_enabled: true,
             excluded_workflows: vec![],
             suggestions_enabled: true,
@@ -403,6 +405,81 @@ impl Store {
         }
         Ok(json!({"cycle":cycle,"status":status,"report":report}))
     }
+    fn pending_conversation_groups(&self, project: &str, scope: Scope) -> Result<Vec<Vec<Value>>> {
+        let mut statement=self.db.prepare("SELECT fingerprint,report,EXISTS(SELECT 1 FROM native_requests r WHERE r.fingerprint=c.fingerprint) FROM native_candidates c WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2 ORDER BY rowid LIMIT 24")?;
+        let rows = statement
+            .query_map(
+                params![
+                    project,
+                    if scope == Scope::All {
+                        "all"
+                    } else {
+                        "project"
+                    }
+                ],
+                |r| {
+                    Ok((
+                        r.get::<_, String>(0)?,
+                        r.get::<_, String>(1)?,
+                        r.get::<_, bool>(2)?,
+                    ))
+                },
+            )?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        let mut groups = vec![];
+        let mut packet = vec![];
+        let mut originals = vec![];
+        let mut count = 0;
+        let flush = |packet: &mut Vec<Value>,
+                     originals: &mut Vec<String>,
+                     groups: &mut Vec<Vec<Value>>|
+         -> Result<()> {
+            if packet.is_empty() {
+                return Ok(());
+            }
+            let ids: Vec<_> = packet
+                .iter()
+                .flat_map(|p| p["items"].as_array().unwrap())
+                .filter_map(|i| i["evidence_id"].as_str())
+                .collect();
+            let key = digest(&(project, &ids))?;
+            let tx = rusqlite::Transaction::new_unchecked(
+                &self.db,
+                rusqlite::TransactionBehavior::Immediate,
+            )?;
+            tx.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![key,json!({"project":project,"scope":scope,"packet":packet}).to_string()])?;
+            for original in originals.drain(..).filter(|k| k != &key) {
+                tx.execute("UPDATE native_candidates SET status='grouped',report=?2 WHERE fingerprint=?1 AND status='pending'",params![original,json!({"group":key}).to_string()])?;
+            }
+            tx.commit()?;
+            groups.push(std::mem::take(packet));
+            Ok(())
+        };
+        for (id, body, requested) in rows {
+            let mut pages = serde_json::from_str::<Value>(&body)?["packet"]
+                .as_array()
+                .context("invalid pending candidate")?
+                .clone();
+            let size = pages
+                .iter()
+                .map(|p| p["items"].as_array().map_or(0, Vec::len))
+                .sum::<usize>();
+            // Freeze already-requested packets so cached author replies remain usable.
+            if requested || count + size > 20 || packet.len() + pages.len() > 4 {
+                flush(&mut packet, &mut originals, &mut groups)?;
+                count = 0;
+            }
+            if requested {
+                groups.push(pages);
+                continue;
+            }
+            count += size;
+            packet.append(&mut pages);
+            originals.push(id);
+        }
+        flush(&mut packet, &mut originals, &mut groups)?;
+        Ok(groups)
+    }
     fn conversation_cycle(
         &mut self,
         project: &str,
@@ -541,29 +618,7 @@ impl Store {
                 }
             }
         }
-        let mut pending=self.db.prepare("SELECT report FROM native_candidates WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2 ORDER BY rowid LIMIT 24")?;
-        let pending: Vec<String> = pending
-            .query_map(
-                params![
-                    project,
-                    if scope == Scope::All {
-                        "all"
-                    } else {
-                        "project"
-                    }
-                ],
-                |r| r.get(0),
-            )?
-            .collect::<rusqlite::Result<_>>()?;
-        let groups: Vec<Vec<Value>> = pending
-            .into_iter()
-            .map(|s| -> Result<Vec<Value>> {
-                Ok(serde_json::from_str::<Value>(&s)?["packet"]
-                    .as_array()
-                    .context("invalid pending candidate")?
-                    .clone())
-            })
-            .collect::<Result<_>>()?;
+        let groups = self.pending_conversation_groups(project, scope)?;
         let improvement = if automatic && prefs.improve_enabled {
             self.select_native_improvement(project, scope, prefs)?
         } else {

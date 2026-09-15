@@ -326,6 +326,12 @@ fn main() -> Result<()> {
             let directory = clearings::plugin::data_directory(data_dir)?;
             let store = Store::open(&directory.join("state.db"))?;
             store.enable_default_history()?;
+            if no_service {
+                store.update_preferences(
+                    store.preferences()?.revision,
+                    serde_json::json!({"service_enabled":false}),
+                )?;
+            }
             store.bind_plugin_service(!no_client)?;
             let client = if no_client {
                 Value::Null

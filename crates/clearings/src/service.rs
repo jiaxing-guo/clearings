@@ -111,6 +111,7 @@ impl Store {
             .context("preferences patch must be an object")?;
         let allowed = [
             "learning_enabled",
+            "service_enabled",
             "improve_enabled",
             "excluded_workflows",
             "suggestions_enabled",
@@ -224,6 +225,10 @@ impl Store {
             tx.execute("INSERT INTO installation(key,body) VALUES('next_learning_due',?1) ON CONFLICT(key) DO UPDATE SET body=excluded.body",[next.to_string()])?;
         }
         tx.commit()?;
+        if !prefs.service_enabled {
+            stop_service(self)?;
+            self.db.execute("INSERT INTO installation(key,body) VALUES('service_health','{\"status\":\"disabled\"}') ON CONFLICT(key) DO UPDATE SET body=excluded.body",[])?;
+        }
         Ok(
             json!({"preferences":prefs,"effect":"Saved. Existing routines remain usable when learning is paused."}),
         )
@@ -280,6 +285,9 @@ impl Store {
                 let _ = stop_service(self);
             }
             return Ok(json!({"status":"integration_unavailable","error":error.to_string()}));
+        }
+        if !prefs.service_enabled {
+            return Ok(json!({"status":"disabled"}));
         }
         if !prefs.learning_enabled {
             return Ok(json!({"status":"paused"}));
@@ -478,6 +486,9 @@ fn write_private(path: &Path, body: &[u8]) -> Result<()> {
 }
 
 pub fn install_service(store: &Store, directory: &Path, executable: &Path) -> Result<Value> {
+    if !store.preferences()?.service_enabled {
+        return Ok(json!({"status":"disabled"}));
+    }
     let home = PathBuf::from(std::env::var_os("HOME").context("home directory unavailable")?);
     let source = executable.canonicalize()?;
     let meta = fs::metadata(&source)?;

@@ -16,6 +16,8 @@ Use `clearings_learning_preferences` with the returned revision and only the req
 | Exclude a project or workflow              | Add its known name/path to `excluded_projects`, or its routine name/prefix to `excluded_workflows`    |
 | Use a different client or model            | Set the explicitly requested `client` (`codex`/`claude`) or `model`; `null` restores automatic choice |
 
+An installation with `--no-service` keeps `service_enabled: false` across updates and startup. To restore automatic learning when requested, set `service_enabled: true`; the next trusted client session installs its schedule.
+
 Pausing learning preserves saved routine execution. Muting suggestions preserves learning. After a stale-revision error, reread status and apply the requested change to the new settings. Do not retry a changed or ambiguous target blindly.
 
 For “undo the last automatic change,” take `service.latest_automatic_change.version` from status and call `clearings_undo_learning` with that `expected_version` and `scope: all`. This restores the prior accepted version, or deactivates a newly created routine. Definitions and evidence remain available. For a named routine, inspect its current state first; use `clearings_manage` for owner-project controls or `clearings_pause_shared` to stop using a shared routine only in the current project. Resolve IDs through the tools; do not ask users for IDs or configuration files.
