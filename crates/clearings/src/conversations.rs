@@ -150,11 +150,14 @@ impl Store {
         let clients = client.map_or_else(|| vec![Client::Codex, Client::Claude], |c| vec![c]);
         for client in clients {
             let result = match client {
-                Client::Codex => self.list_codex(&selected.root, scope, since, cursor),
+                Client::Codex => self
+                    .list_codex(&selected.root, scope, since, cursor)
+                    .map(|(found, next)| (found, next, vec![])),
                 Client::Claude => self.list_claude(&selected.root, scope, since, cursor),
             };
             match result {
-                Ok((mut found, next)) => {
+                Ok((mut found, next, mut partial)) => {
+                    errors.append(&mut partial);
                     entries.append(&mut found);
                     continuations[client.name()] = json!(next);
                 }
@@ -262,7 +265,7 @@ impl Store {
         scope: Scope,
         since: i64,
         cursor: Option<&str>,
-    ) -> Result<(Vec<Value>, Option<String>)> {
+    ) -> Result<(Vec<Value>, Option<String>, Vec<Value>)> {
         let home = std::env::var_os("HOME").context("home directory unavailable")?;
         let directory = std::env::var_os("CLAUDE_CONFIG_DIR")
             .map(PathBuf::from)
@@ -275,37 +278,45 @@ impl Store {
         let mut files = vec![];
         let mut visited = 0;
         claude_files(&directory.canonicalize()?, 0, &mut visited, &mut files)?;
+        self.claude_page(files, selected, scope, since, cursor)
+    }
+    fn claude_page(
+        &self,
+        mut files: Vec<(i64, PathBuf)>,
+        selected: &Path,
+        scope: Scope,
+        since: i64,
+        cursor: Option<&str>,
+    ) -> Result<(Vec<Value>, Option<String>, Vec<Value>)> {
         files.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
-        let start: usize = cursor
-            .map(str::parse)
+        let after: Option<(i64, PathBuf)> = cursor
+            .map(serde_json::from_str)
             .transpose()
-            .context("invalid Claude cursor")?
-            .unwrap_or(0);
-        ensure!(
-            start <= files.len(),
-            "Claude history changed; restart listing"
-        );
+            .context("invalid Claude cursor; restart listing")?;
+        files.retain(|(updated, path)| {
+            *updated >= since
+                && after
+                    .as_ref()
+                    .is_none_or(|(time, key)| updated < time || (updated == time && path > key))
+        });
         let mut found = vec![];
-        let end = (start + 20).min(files.len());
-        for (updated, path) in &files[start..end] {
-            if *updated < since {
-                continue;
-            }
-            if let Some((session, project, title)) = claude_identity(path, Some(selected))? {
-                if scope == Scope::Project && project != selected {
-                    continue;
+        let mut errors = vec![];
+        for (updated, path) in files.iter().take(20) {
+            match claude_identity(path,Some(selected)) {
+                Ok(Some((session,project,title))) => {
+                    if scope==Scope::Project && project!=selected {continue;}
+                    found.push(self.remember_conversation("claude",&session,&project,Some(path),*updated,&title)?);
                 }
-                found.push(self.remember_conversation(
-                    "claude",
-                    &session,
-                    &project,
-                    Some(path),
-                    *updated,
-                    &title,
-                )?);
+                Ok(None) => errors.push(json!({"client":"claude","source":path,"error":"transcript lacks readable session metadata"})),
+                Err(e) => errors.push(json!({"client":"claude","source":path,"error":e.to_string()})),
             }
         }
-        Ok((found, (end < files.len()).then(|| end.to_string())))
+        let next = if files.len() > 20 {
+            Some(serde_json::to_string(&files[19])?)
+        } else {
+            None
+        };
+        Ok((found, next, errors))
     }
     pub fn read_conversation(
         &self,
@@ -556,6 +567,45 @@ fn read_claude(path: &Path, cursor: Option<&str>) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn claude_keyset_pages_survive_updates_and_report_individual_bad_sources() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let store = Store::open(&root.join("state.db")).unwrap();
+        let mut files = vec![];
+        for i in 0..24 {
+            let path = root.join(format!("{i}.jsonl"));
+            fs::write(&path,format!("{}\n",json!({"sessionId":format!("s{i}"),"cwd":root,"type":"user","message":{"content":"work"}}))).unwrap();
+            files.push((100 - i, path));
+        }
+        let (head, cursor, errors) = store
+            .claude_page(files.clone(), &root, Scope::All, 0, None)
+            .unwrap();
+        assert_eq!(head.len(), 20);
+        assert!(errors.is_empty());
+        files.remove(0);
+        files
+            .iter_mut()
+            .find(|(_, p)| p.ends_with("22.jsonl"))
+            .unwrap()
+            .0 = 200;
+        fs::write(root.join("23.jsonl"), "not JSON\n").unwrap();
+        let (tail, next, errors) = store
+            .claude_page(files.clone(), &root, Scope::All, 0, cursor.as_deref())
+            .unwrap();
+        assert_eq!(
+            tail.iter()
+                .map(|v| v["session"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            vec!["s20", "s21"]
+        );
+        assert!(next.is_none());
+        assert_eq!(errors.len(), 1);
+        let (fresh, _, _) = store
+            .claude_page(files, &root, Scope::All, 0, None)
+            .unwrap();
+        assert_eq!(fresh[0]["session"], "s22");
+    }
     #[test]
     fn claude_reads_real_messages_and_tools_without_thinking_and_preserves_partial_cursor() {
         let temp = tempfile::tempdir().unwrap();
