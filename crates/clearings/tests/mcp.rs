@@ -203,6 +203,7 @@ fn tool_annotations_describe_state_replacement() {
                 "clearings_activate"
                     | "clearings_deactivate"
                     | "clearings_save"
+                    | "clearings_learn_now"
                     | "clearings_manage"
                     | "clearings_pause_shared"
                     | "clearings_prune"
@@ -211,6 +212,13 @@ fn tool_annotations_describe_state_replacement() {
                     | "clearings_activity"
             )
         );
+        if matches!(
+            name,
+            "clearings_run" | "clearings_reuse" | "clearings_run_routine" | "clearings_learn_now"
+        ) {
+            assert_eq!(tool["annotations"]["openWorldHint"], true);
+            assert_eq!(tool["annotations"]["readOnlyHint"], false);
+        }
         if matches!(name, "clearings_observe" | "clearings_activity") {
             assert_eq!(tool["annotations"]["readOnlyHint"], false);
         }
