@@ -503,6 +503,9 @@ impl Store {
                     .filter_map(|i| i["evidence_id"].as_str())
                     .collect();
                 let next = digest(&(project, scope, &ids))?;
+                body.as_object_mut()
+                    .context("pending record must be an object")?
+                    .remove("prepared_task");
                 tx.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![next,body.to_string()])?;
             }
             tx.commit()?;
@@ -875,7 +878,7 @@ impl Store {
             attempts += 1;
             let mut prepared_task = None;
             let result = (|| -> Result<Value> {
-                let extracted=self.native_request(cycle,client,"extract",json!({"instruction":"Find one repeated read/transform workflow that can become reusable TypeScript. Return candidate_json containing JSON null when evidence is insufficient, otherwise an object with task (contract,cases,optional evaluation) and applicability. Use actual transcript evidence where available. Cases are interpretations: distinguish inferred rules in the contract description. Provide at least three varied cases, including a boundary or handoff. Do not put evidence or project in task. Do not invent observed results. Existing generated Clearings work is not new learning material. Select behavior that generalizes; do not hardcode outputs. Routine capabilities are files.read/files.list only or no capabilities. No shell or write effects.","sdk":include_str!("../../../sdk/clearings.d.ts"),"task_shape":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]},"excluded_workflows":prefs.excluded_workflows,"conversations":packet}),"candidate_json",&fingerprint)?;
+                let extracted=self.native_request(cycle,client,"extract",json!({"instruction":"Find one repeated read/transform workflow that can become reusable TypeScript. Return candidate_json containing JSON null when evidence is insufficient, otherwise an object with task (contract,cases,optional evaluation) and applicability. Use actual transcript evidence where available. Cases are interpretations: distinguish inferred rules in the contract description. Provide at least three varied cases, including a boundary or handoff. Do not put evidence or project in task. Do not invent observed results. Existing generated Clearings work is not new learning material. Select behavior that generalizes; do not hardcode outputs. Routine capabilities are files.read/files.list only or no capabilities. No shell or write effects.","sdk":include_str!("../../../sdk/clearings.d.ts"),"task_shape":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]},"excluded_workflows":prefs.excluded_workflows,"conversations":packet}),"candidate_json",fingerprint)?;
                 let proposed: Value =
                     serde_json::from_str(&extracted).context("candidate extraction is not JSON")?;
                 if proposed.is_null() {
@@ -945,7 +948,7 @@ impl Store {
                 let task_id = prepared["task"].as_str().context("task not prepared")?;
                 prepared_task = Some(task_id.to_owned());
                 self.db.execute("UPDATE native_candidates SET report=json_set(report,'$.prepared_task',?2) WHERE fingerprint=?1 AND status='pending'",params![fingerprint,task_id])?;
-                let source=self.native_request(cycle,client,"source",json!({"instruction":"Return source: a default-exported async TypeScript function implementing this frozen contract. Use fresh inputs and SDK capabilities. One acceptance case is withheld. Never hardcode examples. Return needs_agent or not_applicable for unsupported cases. No imports, ambient Node APIs, shell, or direct network.","sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"cases":&task.cases[..task.cases.len()-1]}),"source",&fingerprint)?;
+                let source=self.native_request(cycle,client,"source",json!({"instruction":"Return source: a default-exported async TypeScript function implementing this frozen contract. Use fresh inputs and SDK capabilities. One acceptance case is withheld. Never hardcode examples. Return needs_agent or not_applicable for unsupported cases. No imports, ambient Node APIs, shell, or direct network.","sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"cases":&task.cases[..task.cases.len()-1]}),"source",fingerprint)?;
                 self.check_native_cycle(cycle)?;
                 let version = self.submit(executable, task_id, source)?;
                 ensure!(
