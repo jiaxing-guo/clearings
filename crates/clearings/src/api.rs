@@ -10,6 +10,11 @@ use std::path::PathBuf;
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    LearnNow {
+        #[serde(default)]
+        scope: crate::conversations::Scope,
+    },
+    LearningStatus,
     PrepareConversationTask {
         task: Task,
         evidence_ids: Vec<String>,
@@ -174,6 +179,14 @@ impl Api {
             _ => {}
         }
         Ok(match op {
+            Operation::LearnNow { scope } => self.store.start_learning(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                scope,
+                &self.executable,
+            )?,
+            Operation::LearningStatus => self.store.learning_status()?,
             Operation::PrepareConversationTask {
                 task,
                 evidence_ids,

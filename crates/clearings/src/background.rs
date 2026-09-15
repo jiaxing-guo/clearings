@@ -11,11 +11,11 @@ use std::{
 pub(crate) fn now() -> Result<i64> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as i64)
 }
-struct ProjectLock {
+pub(crate) struct ProjectLock {
     _file: File,
 }
 impl ProjectLock {
-    fn acquire(store: &Store, project: &str) -> Result<Self> {
+    pub(crate) fn acquire(store: &Store, project: &str) -> Result<Self> {
         use std::os::{fd::AsRawFd, unix::fs::OpenOptionsExt};
         let path = std::path::Path::new(
             store

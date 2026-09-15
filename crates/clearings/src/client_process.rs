@@ -39,7 +39,7 @@ pub(crate) fn executable(name: &str) -> Result<PathBuf> {
 
 pub(crate) struct JsonProcess {
     child: Child,
-    input: Arc<Mutex<ChildStdin>>,
+    input: Arc<Mutex<Option<ChildStdin>>>,
     output: mpsc::Receiver<Result<Value>>,
     deadline: Instant,
 }
@@ -52,7 +52,7 @@ impl JsonProcess {
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()?;
-        let input = Arc::new(Mutex::new(child.stdin.take().unwrap()));
+        let input = Arc::new(Mutex::new(child.stdin.take()));
         let mut reader = BufReader::new(child.stdout.take().unwrap());
         let (sender, output) = mpsc::sync_channel(8);
         std::thread::spawn(move || {
@@ -109,10 +109,27 @@ impl JsonProcess {
             "client request exceeds byte limit"
         );
         crate::blocking_io::call(self.remaining()?, move || {
-            let mut input = input.lock().unwrap();
+            let mut guard = input.lock().unwrap();
+            let input = guard.as_mut().context("client input is closed")?;
             input.write_all(&bytes)?;
             input.write_all(b"\n")?;
             input.flush()?;
+            Ok(Value::Null)
+        })?;
+        Ok(())
+    }
+    pub(crate) fn finish_text(&self, text: String) -> Result<()> {
+        ensure!(text.len() <= 512 * 1024, "authoring input exceeds limit");
+        let input = self.input.clone();
+        crate::blocking_io::call(self.remaining()?, move || {
+            let mut input = input
+                .lock()
+                .unwrap()
+                .take()
+                .context("client input already closed")?;
+            input.write_all(text.as_bytes())?;
+            input.flush()?;
+            drop(input);
             Ok(Value::Null)
         })?;
         Ok(())

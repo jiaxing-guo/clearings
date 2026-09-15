@@ -22,6 +22,8 @@ fn tool(
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("learn_now","Review recent conversations and create evaluated reusable routines through the installed signed-in client. Defaults to this project; all scope reviews across projects. Queues one bounded cycle and returns immediately. Inspect learning_status for completion. No API key or model setup is required. Report actual outcomes and partial coverage.",json!({"scope":{"enum":["project","all"]}}),json!([]),false),
+        tool("learning_status","Inspect default learning preferences, recent cycles, failures, and consumed request allowance. Does not start work.",json!({}),json!([]),true),
         tool("prepare_conversation_task","Prepare immutable requirements from conversation records already read by Clearings. Pass evidence_ids from read_conversation. Task has contract and cases, optionally evaluation; evidence and project are host-assigned. Cases remain agent interpretations, not authenticated observations.",json!({"task":{"type":"object","required":["contract","cases"],"properties":{"contract":{"type":"object"},"cases":{"type":"array","minItems":1,"maxItems":100},"evaluation":{"enum":["exact_calls","read_only_behavior"]}},"additionalProperties":false},"evidence_ids":{"type":"array","minItems":1,"maxItems":20,"items":id},"scope":{"enum":["project","all"]}}),json!(["task","evidence_ids"]),false),
         tool("find_routines","Find up to three relevant accepted routines for an ordinary task, including shared routines. Inspect requirements and execute a suitable match on fresh input. Empty results need no announcement.",json!({"query":{"type":"string","maxLength":16000}}),json!(["query"]),true),
         tool("share_routine","Make an accepted routine available across this user's projects. Describe its applicability and project-specific assumptions. Sharing transfers code definitions, never source-project grants. Use after saving genuinely reusable behavior.",json!({"name":{"type":"string"},"applicability":{"type":"string","minLength":1,"maxLength":4000}}),json!(["name","applicability"]),false),
@@ -154,6 +156,13 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
                     ))
                 } else {
                     initialized = true;
+                    if plugin {
+                        api.store.remember_client(
+                            message["params"]["clientInfo"]["name"]
+                                .as_str()
+                                .unwrap_or(""),
+                        )?;
+                    }
                     let instructions = if plugin {
                         "First call clearings_open_project with the user's actual absolute working directory from the host session. Do this yourself: installation already authorizes project reading, saving and reuse across projects. The trusted client SessionStart hook registers working projects automatically; this tool only selects registered projects. If registration is missing, explain that the installed hook must be trusted/enabled in the client and a new session started. Never run the registration CLI yourself or fabricate hook input to grant access. No per-project IDs or policies are needed. Never select the plugin's own directory. Then discover and inspect matching routines, reuse fresh inputs, and use sdk before authoring. Background model requests remain separately configured."
                     } else {

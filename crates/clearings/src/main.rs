@@ -29,6 +29,15 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Action {
+    #[command(hide = true)]
+    LearningJob {
+        id: i64,
+    },
+    LearnNow {
+        #[arg(long)]
+        all: bool,
+    },
+    LearningStatus,
     PrepareConversationTask {
         file: PathBuf,
         #[arg(long)]
@@ -345,6 +354,36 @@ fn main() -> Result<()> {
                 Store::open(&cli.store.ok_or_else(|| {
                     anyhow::anyhow!("provide --store /path/to/private/state.db")
                 })?)?;
+            if let Action::LearningJob { id } = action {
+                let value = store.execute_learning(id, &executable)?;
+                println!("{value}");
+                anyhow::ensure!(
+                    !clearings::api::failed(&value),
+                    "learning failed; inspect learning-status"
+                );
+                return Ok(());
+            }
+            if let Action::LearnNow { all } = action {
+                let project = cli
+                    .project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?;
+                let value = store.learn_now(
+                    project,
+                    if all {
+                        clearings::conversations::Scope::All
+                    } else {
+                        clearings::conversations::Scope::Project
+                    },
+                    &executable,
+                )?;
+                println!("{value}");
+                anyhow::ensure!(
+                    !clearings::api::failed(&value),
+                    "learning failed; inspect learning-status"
+                );
+                return Ok(());
+            }
             if let Action::ProjectConfigure {
                 root,
                 name,
@@ -387,6 +426,14 @@ fn main() -> Result<()> {
                 executable,
             };
             let operation = match action {
+                Action::LearnNow { all } => Operation::LearnNow {
+                    scope: if all {
+                        clearings::conversations::Scope::All
+                    } else {
+                        clearings::conversations::Scope::Project
+                    },
+                },
+                Action::LearningStatus => Operation::LearningStatus,
                 Action::PrepareConversationTask {
                     file,
                     evidence_ids,
