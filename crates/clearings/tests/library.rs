@@ -46,6 +46,20 @@ fn shared_definition_reads_receiving_project_and_keeps_history_and_counts_separa
     );
     assert_eq!(
         store
+            .find_routines(
+                &pb.id,
+                "Explain in one sentence why chloroplasts matter for photosynthesis"
+            )
+            .unwrap()["routines"],
+        json!([])
+    );
+    assert_eq!(
+        store.find_routines(&pb.id, "already").unwrap()["routines"],
+        json!([])
+    );
+
+    assert_eq!(
+        store
             .run_routine(exe(), &pb.id, &id, json!("value.txt"), &pb.settings.grants)
             .unwrap()["run"]["outcome"]["output"],
         "current"
@@ -191,4 +205,80 @@ fn large_shared_inspection_remains_readable_in_individual_parts() {
             .contains("private-origin-conversation")
     );
     assert!(store.suggest(&json!({"hook_event_name":"UserPromptSubmit","cwd":root,"session_id":"s","prompt":"é".repeat(10000)})).unwrap().is_null());
+}
+
+#[test]
+fn example_resource_names_do_not_hide_parameterized_routines_or_grant_access() {
+    let temp = tempfile::tempdir().unwrap();
+    let base = temp.path().canonicalize().unwrap();
+    let origin = base.join("origin");
+    let receiving = base.join("receiving");
+    fs::create_dir(&origin).unwrap();
+    fs::create_dir(&receiving).unwrap();
+    fs::write(receiving.join("README.md"), "fresh receiving text").unwrap();
+    let mut store = Store::open(&base.join("state.db")).unwrap();
+    let a = store
+        .configure_project(&origin, "Origin", Settings::default(), None)
+        .unwrap();
+    let mut settings = Settings::default();
+    settings
+        .grants
+        .roots
+        .insert("repo".into(), receiving.clone());
+    let b = store
+        .configure_project(&receiving, "Receiving", settings, None)
+        .unwrap();
+    let task: Task = serde_json::from_str(include_str!(
+        "../../../examples/repository-context/task.json"
+    ))
+    .unwrap();
+    let id = store.prepare_named(&a.id, task, "user").unwrap();
+    assert_eq!(
+        store
+            .save_named(
+                exe(),
+                &a.id,
+                "repository-context",
+                include_str!("../../../examples/repository-context/routine.ts").into(),
+                None
+            )
+            .unwrap()["accepted"],
+        true
+    );
+    store
+        .share_routine(
+            &a.id,
+            "repository-context",
+            "Read selected files into a context packet",
+        )
+        .unwrap();
+    assert_eq!(
+        store
+            .find_routines(&b.id, "Gather current file text into a JSON context packet")
+            .unwrap()["routines"][0]["routine"],
+        id
+    );
+    let run = store
+        .run_routine(
+            exe(),
+            &b.id,
+            &id,
+            json!({"root":"repo","paths":["README.md"]}),
+            &b.settings.grants,
+        )
+        .unwrap();
+    assert_eq!(
+        run["run"]["outcome"]["output"][0]["text"],
+        "fresh receiving text"
+    );
+    let denied = store
+        .run_routine(
+            exe(),
+            &b.id,
+            &id,
+            json!({"root":"docs","paths":["README.md"]}),
+            &b.settings.grants,
+        )
+        .unwrap();
+    assert_eq!(denied["run"]["outcome"]["status"], "failed");
 }

@@ -107,11 +107,52 @@ impl Store {
         Ok(json!({"routine":task,"project":project,"paused":paused}))
     }
     pub fn find_routines(&self, project: &str, query: &str) -> Result<Value> {
-        let settings = self.project(project)?;
+        self.project(project)?;
         ensure!(query.len() <= 16000, "routine query exceeds limit");
         let terms: Vec<_> = query
             .split(|c: char| !c.is_alphanumeric())
-            .filter(|s| s.len() >= 3)
+            .filter(|s| {
+                s.len() >= 3
+                    && !matches!(
+                        s.to_lowercase().as_str(),
+                        "the"
+                            | "and"
+                            | "for"
+                            | "with"
+                            | "from"
+                            | "that"
+                            | "this"
+                            | "are"
+                            | "was"
+                            | "has"
+                            | "have"
+                            | "into"
+                            | "then"
+                            | "each"
+                            | "its"
+                            | "any"
+                            | "can"
+                            | "you"
+                            | "your"
+                            | "use"
+                            | "using"
+                            | "return"
+                            | "show"
+                            | "give"
+                            | "please"
+                            | "why"
+                            | "how"
+                            | "what"
+                            | "when"
+                            | "which"
+                            | "where"
+                            | "one"
+                            | "all"
+                            | "just"
+                            | "instead"
+                            | "only"
+                    )
+            })
             .take(32)
             .map(str::to_lowercase)
             .collect();
@@ -131,13 +172,8 @@ impl Store {
         for row in rows {
             let (id, body, applicability, version) = row?;
             let task: Task = serde_json::from_str(&body)?;
-            if !task.cases.iter().flat_map(|c| &c.calls).all(|c| {
-                c.input["root"]
-                    .as_str()
-                    .is_none_or(|r| settings.settings.grants.roots.contains_key(r))
-            }) {
-                continue;
-            }
+            // Acceptance examples can vary a resource parameter. They do not
+            // establish resources required by every future invocation.
             let name = task.contract.name.to_lowercase();
             let description = format!(
                 "{} {}",
@@ -145,12 +181,20 @@ impl Store {
                 applicability.as_deref().unwrap_or("")
             )
             .to_lowercase();
+            let name_words: std::collections::BTreeSet<_> =
+                name.split(|c: char| !c.is_alphanumeric()).collect();
+            let description_words: std::collections::BTreeSet<_> =
+                description.split(|c: char| !c.is_alphanumeric()).collect();
             let score: usize = terms
                 .iter()
                 .map(|term| {
-                    usize::from(name.contains(term)) * 3 + usize::from(description.contains(term))
+                    usize::from(name_words.contains(term.as_str())) * 3
+                        + usize::from(description_words.contains(term.as_str()))
                 })
                 .sum();
+            if score == 0 {
+                continue;
+            }
             let usage = self.routine_usage(project, &id)?;
             matches.push((score,usage["windows"]["30"]["calls"].as_u64().unwrap_or(0),json!({"routine":id,"name":task.contract.name,"description":task.contract.description,"applicability":applicability,"active":version,"origin_project":task.project,"capabilities":task.contract.capabilities})));
         }

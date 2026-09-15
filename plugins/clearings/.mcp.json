@@ -4,7 +4,8 @@
       "command": "sh",
       "args": ["scripts/start.sh"],
       "cwd": ".",
-      "startup_timeout_sec": 180
+      "startup_timeout_sec": 180,
+      "env_vars": ["CLEARINGS_DATA_DIR", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "XDG_DATA_HOME"]
     }
   }
 }
