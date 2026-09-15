@@ -57,7 +57,7 @@ else:
  field=next(iter(schema['properties']))
  if field=='candidate_json':
   task={'contract':{'abi':1,'name':'double-integer','description':'Double any integer input','input_schema':{'type':'integer'},'output_schema':{'type':'integer'},'capabilities':[]},'cases':[{'name':str(i),'input':i,'expected':{'status':'completed','output':i*2}} for i in [1,3,5]]}
-  answer=json.dumps({'task':task,'applicability':'Double integer inputs in any project'})
+  answer=json.dumps({'task':task,'applicability':'X'*4001 if os.environ.get('INVALID_SHARING') else 'Double integer inputs in any project'})
  else:
   if os.environ.get('CHANGE_PREFS'):
    import sqlite3
@@ -350,4 +350,30 @@ fn explicit_http_connection_uses_the_same_learning_pipeline_and_reserves_its_bud
         .unwrap();
     assert!(reserved > 0 && reserved <= 100);
     server.join().unwrap();
+}
+
+#[test]
+fn invalid_sharing_metadata_cannot_leave_a_failed_candidate_active() {
+    let f = Fixture::new();
+    let output = f
+        .command()
+        .env("INVALID_SHARING", "1")
+        .arg("learn-now")
+        .output()
+        .unwrap();
+    let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(result["status"], "failed");
+    assert_eq!(f.run(&["learning-status"])["requests_today"], 1);
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM active", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM component_changes", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
 }

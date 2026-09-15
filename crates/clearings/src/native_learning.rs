@@ -415,6 +415,9 @@ impl Store {
                         break;
                     }
                     used_bytes += size;
+                    if !page["next_cursor"].is_null() || page["coverage"] != "page" {
+                        coverage.push(json!({"conversation":id,"status":"partial_conversation","coverage":page["coverage"],"order":page["order"],"next_cursor":page["next_cursor"]}));
+                    }
                     packets.push(page);
                 }
                 Err(e) => coverage.push(json!({"conversation":id,"error":e.to_string()})),
@@ -522,6 +525,13 @@ impl Store {
                         .all(|c| matches!(c.as_str(), "files.read" | "files.list")),
                     "automatic candidate requests unsupported effects"
                 );
+                let applicability = proposed["applicability"]
+                    .as_str()
+                    .filter(|s| !s.trim().is_empty());
+                ensure!(
+                    applicability.is_none_or(|s| s.len() <= 4000),
+                    "routine applicability exceeds 4000 bytes"
+                );
                 let name = task.contract.name.clone();
                 if self.project(project)?.settings.excludes(&name) {
                     return Ok(json!({"status":"excluded","name":name}));
@@ -546,13 +556,7 @@ impl Store {
                     self.evaluate(executable, &version)?["accepted"] == true,
                     "candidate failed acceptance"
                 );
-                self.promote_conversation(cycle, project, task_id, &version)?;
-                if let Some(applicability) = proposed["applicability"]
-                    .as_str()
-                    .filter(|s| !s.trim().is_empty())
-                {
-                    self.share_routine(project, &name, applicability)?;
-                }
+                self.promote_conversation(cycle, project, task_id, &version, applicability)?;
                 Ok(
                     json!({"status":"created","name":name,"task":task_id,"version":version,"evidence":"conversation interpretation with a withheld case","savings":null}),
                 )
@@ -591,6 +595,7 @@ impl Store {
         project: &str,
         task: &str,
         version: &str,
+        applicability: Option<&str>,
     ) -> Result<()> {
         self.check_native_cycle(cycle)?;
         let tx = rusqlite::Transaction::new_unchecked(
@@ -604,6 +609,9 @@ impl Store {
         );
         ensure!(tx.execute("INSERT INTO active(task,version) SELECT ?1,?2 WHERE NOT EXISTS(SELECT 1 FROM active WHERE task=?1)",params![task,version])?==1,"routine changed during authoring");
         tx.execute("INSERT INTO component_changes(project,task,version,reason) VALUES(?1,?2,?3,'conversation_created')",params![project,task,version])?;
+        if let Some(applicability) = applicability {
+            tx.execute("INSERT INTO routine_library(task,applicability) VALUES(?1,?2) ON CONFLICT(task) DO UPDATE SET applicability=excluded.applicability",params![task,applicability])?;
+        }
         tx.commit()?;
         Ok(())
     }
