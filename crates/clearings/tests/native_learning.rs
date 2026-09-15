@@ -863,3 +863,70 @@ fn explicit_project_review_can_use_short_pending_global_work() {
         "{manual}"
     );
 }
+
+#[test]
+fn one_long_conversation_uses_the_available_page_budget() {
+    let f = Fixture::new();
+    let store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
+    store
+        .update_preferences(1, json!({"max_requests_per_day":0}))
+        .unwrap();
+    let updated = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        .to_string();
+    let run = || {
+        let out = f
+            .command()
+            .env("PAGED_TOTAL", "500")
+            .env("DESC_IDS", "1")
+            .env("FIXTURE_TIME", &updated)
+            .arg("learn-now")
+            .output()
+            .unwrap();
+        assert!(!out.stdout.is_empty());
+    };
+    run();
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    let count = || {
+        db.query_row("SELECT count(*) FROM conversation_evidence", [], |r| {
+            r.get::<_, i64>(0)
+        })
+        .unwrap()
+    };
+    assert_eq!(
+        count(),
+        240,
+        "one conversation can use all 12 bounded pages"
+    );
+    run();
+    assert_eq!(
+        count(),
+        480,
+        "the next cycle continues rather than rereading its head"
+    );
+    run();
+    assert_eq!(count(), 500);
+    assert_eq!(db.query_row("SELECT count(*) FROM conversation_progress WHERE tail_cursor IS NOT NULL OR head_cursor IS NOT NULL", [], |r| r.get::<_,i64>(0)).unwrap(), 0);
+}
+
+#[test]
+fn long_conversations_share_the_page_budget_before_repeating() {
+    let f = Fixture::new();
+    let store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
+    store
+        .update_preferences(1, json!({"max_requests_per_day":0}))
+        .unwrap();
+    let out = f
+        .command()
+        .env("PAGED_TOTAL", "200")
+        .env("HISTORY_SESSIONS", "3")
+        .arg("learn-now")
+        .output()
+        .unwrap();
+    assert!(!out.stdout.is_empty());
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    let counts:Vec<i64> = db.prepare("SELECT count(*) FROM conversation_evidence GROUP BY json_extract(body,'$.conversation') ORDER BY json_extract(body,'$.conversation')").unwrap().query_map([], |r| r.get(0)).unwrap().map(Result::unwrap).collect();
+    assert_eq!(counts, vec![80, 80, 80]);
+}

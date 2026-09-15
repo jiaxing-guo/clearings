@@ -65,3 +65,21 @@ fn user_defined_workflows_share_one_runtime_and_revisions_preserve_history() {
         }
     }
 }
+
+#[test]
+fn sdk_file_example_prepares_and_evaluates_without_external_docs() {
+    let sdk = clearings::api::sdk_definition();
+    let task: Task = serde_json::from_value(sdk["file_task_example"].clone()).unwrap();
+    let temp = tempfile::tempdir().unwrap();
+    let store = Store::open(&temp.path().join("state.db")).unwrap();
+    let id = store.prepare_task(&task).unwrap();
+    let exe = Path::new(env!("CARGO_BIN_EXE_clearings"));
+    let version = store
+        .submit(
+            exe,
+            &id,
+            include_str!("../../../examples/repository-context/routine.ts").to_owned(),
+        )
+        .unwrap();
+    assert_eq!(store.evaluate(exe, &version).unwrap()["accepted"], true);
+}

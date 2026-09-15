@@ -726,15 +726,26 @@ impl Store {
             .collect::<rusqlite::Result<Vec<_>>>()?;
         drop(statement);
         let mut used_bytes = 0;
-        for (id, updated, _root, head, tail, tail_next, refresh, anchor) in
-            sessions.iter().filter(|s| !prefs.excludes(&s.2)).take(12)
+        // Give each eligible conversation a turn, then use spare page capacity
+        // to continue long conversations within the same bounded cycle.
+        let mut pages: std::collections::VecDeque<_> = sessions
+            .iter()
+            .filter(|s| !prefs.excludes(&s.2))
+            .cloned()
+            .collect();
+        let mut pages_attempted = 0;
+        while let Some((id, updated, root, head, tail, tail_next, refresh, anchor)) =
+            pages.pop_front()
         {
+            if pages_attempted == 12 {
+                break;
+            }
+            pages_attempted += 1;
             self.check_native_cycle(cycle)?;
             let refresh: Option<Value> =
                 refresh.as_deref().map(serde_json::from_str).transpose()?;
             let reading_refresh = refresh.is_some();
-            let reading_tail =
-                !reading_refresh && tail.is_some() && (*tail_next || head >= updated);
+            let reading_tail = !reading_refresh && tail.is_some() && (tail_next || head >= updated);
             let cursor = if let Some(refresh) = &refresh {
                 refresh["cursor"].as_str()
             } else if reading_tail {
@@ -742,7 +753,7 @@ impl Store {
             } else {
                 None
             };
-            match self.read_conversation(project, id, scope, cursor) {
+            match self.read_conversation(project, &id, scope, cursor) {
                 Ok(page) => {
                     let size = page.to_string().len();
                     if used_bytes > 0 && used_bytes + size > 1024 * 1024 {
@@ -781,13 +792,13 @@ impl Store {
                     let reached =
                         stop.is_some_and(|stop| items.iter().any(|i| i["evidence_id"] == stop));
                     let fresh_head = !reading_tail && !reading_refresh;
-                    let next_refresh =
-                        if !reading_tail && (*head > 0 || reading_refresh) && !reached {
-                            next.map(|cursor| json!({"cursor":cursor,"stop":stop}).to_string())
-                        } else {
-                            None
-                        };
-                    let next_tail = if reading_tail || (fresh_head && *head == 0) {
+                    let next_refresh = if !reading_tail && (head > 0 || reading_refresh) && !reached
+                    {
+                        next.map(|cursor| json!({"cursor":cursor,"stop":stop}).to_string())
+                    } else {
+                        None
+                    };
+                    let next_tail = if reading_tail || (fresh_head && head == 0) {
                         next
                     } else {
                         tail.as_deref()
@@ -800,8 +811,20 @@ impl Store {
                     } else {
                         anchor.as_deref()
                     };
-                    tx.execute("INSERT INTO conversation_progress(conversation,head_updated,tail_cursor,tail_next,reviewed_at,head_cursor,head_anchor) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(conversation) DO UPDATE SET head_updated=excluded.head_updated,tail_cursor=excluded.tail_cursor,tail_next=excluded.tail_next,reviewed_at=excluded.reviewed_at,head_cursor=excluded.head_cursor,head_anchor=excluded.head_anchor",params![id,if fresh_head{*updated}else{*head},next_tail,!reading_tail,crate::background::now()?,next_refresh,next_anchor])?;
+                    tx.execute("INSERT INTO conversation_progress(conversation,head_updated,tail_cursor,tail_next,reviewed_at,head_cursor,head_anchor) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(conversation) DO UPDATE SET head_updated=excluded.head_updated,tail_cursor=excluded.tail_cursor,tail_next=excluded.tail_next,reviewed_at=excluded.reviewed_at,head_cursor=excluded.head_cursor,head_anchor=excluded.head_anchor",params![id,if fresh_head{updated}else{head},next_tail,!reading_tail,crate::background::now()?,next_refresh,next_anchor])?;
                     tx.commit()?;
+                    if next_tail.is_some() || next_refresh.is_some() {
+                        pages.push_back((
+                            id,
+                            updated,
+                            root,
+                            if fresh_head { updated } else { head },
+                            next_tail.map(str::to_owned),
+                            !reading_tail,
+                            next_refresh,
+                            next_anchor.map(str::to_owned),
+                        ));
+                    }
                 }
                 Err(e) => {
                     coverage.push(json!({"conversation":id,"error":e.to_string()}));
@@ -878,7 +901,7 @@ impl Store {
             attempts += 1;
             let mut prepared_task = None;
             let result = (|| -> Result<Value> {
-                let extracted=self.native_request(cycle,client,"extract",json!({"instruction":"Find one repeated read/transform workflow that can become reusable TypeScript. Return candidate_json containing JSON null when evidence is insufficient, otherwise an object with task (contract,cases,optional evaluation) and applicability. Use actual transcript evidence where available. Cases are interpretations: distinguish inferred rules in the contract description. Provide at least three varied cases, including a boundary or handoff. Do not put evidence or project in task. Do not invent observed results. Existing generated Clearings work is not new learning material. Select behavior that generalizes; do not hardcode outputs. Routine capabilities are files.read/files.list only or no capabilities. No shell or write effects.","sdk":include_str!("../../../sdk/clearings.d.ts"),"task_shape":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]},"excluded_workflows":prefs.excluded_workflows,"conversations":packet}),"candidate_json",fingerprint)?;
+                let extracted=self.native_request(cycle,client,"extract",json!({"instruction":"Find one repeated read/transform workflow that can become reusable TypeScript. Repetition can occur within one conversation; multiple sessions are not required. Evaluate recurring mechanical operations and workflow episodes, not the number of conversation records. Return candidate_json containing JSON null when evidence is insufficient, otherwise an object with task (contract,cases,optional evaluation) and applicability. Applicability must be a nonempty plain-text string of at most 4000 bytes, not an object or array; describe when another project can use the routine and its input assumptions. Put provenance and inferred rules in the contract description. Use actual transcript evidence where available. Cases are interpretations: distinguish inferred rules in the contract description. Provide at least three varied cases, including a boundary or handoff. Do not put evidence or project in task. Do not invent observed results. Existing generated Clearings work is not new learning material. Select behavior that generalizes; do not hardcode outputs. Allow harmless extra input fields unless the evidence requires a closed shape. Do not invent arbitrary file-count or input-size limits; use the runtime limits and evidence-backed task restrictions. Routine capabilities are files.read/files.list only or no capabilities. No shell or write effects.","sdk":crate::api::sdk_definition(),"candidate_shape":{"applicability":"Plain-text description of suitable inputs, assumptions, and limits","task":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]}},"excluded_workflows":prefs.excluded_workflows,"conversations":packet}),"candidate_json",fingerprint)?;
                 let proposed: Value =
                     serde_json::from_str(&extracted).context("candidate extraction is not JSON")?;
                 if proposed.is_null() {
