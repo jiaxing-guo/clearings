@@ -268,7 +268,30 @@ impl Store {
         )
     }
     pub fn learn_now(&mut self, project: &str, scope: Scope, executable: &Path) -> Result<Value> {
-        self.learn_cycle(project, scope, executable, false)
+        let mut result = self.learn_cycle(project, scope, executable, false)?;
+        let cycle = result["cycle"]
+            .as_i64()
+            .context("learning result lacks cycle")?;
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(610);
+        loop {
+            if !matches!(result["status"].as_str(), Some("queued" | "running")) {
+                // Another worker may have finished the reused cycle.
+                let report: String = self.db.query_row(
+                    "SELECT report FROM native_cycles WHERE id=?1",
+                    [cycle],
+                    |r| r.get(0),
+                )?;
+                return Ok(
+                    json!({"cycle":cycle,"status":result["status"],"report":serde_json::from_str::<Value>(&report)?}),
+                );
+            }
+            ensure!(
+                std::time::Instant::now() < deadline,
+                "learning is still queued or running; inspect learning-status"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            result = self.execute_learning(cycle, executable)?;
+        }
     }
     pub(crate) fn learn_cycle(
         &mut self,

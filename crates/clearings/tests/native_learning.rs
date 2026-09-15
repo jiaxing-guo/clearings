@@ -51,6 +51,7 @@ else:
   schema=json.load(open(sys.argv[sys.argv.index('--output-schema')+1]))
  assert os.getcwd()!=root
  prompt=sys.stdin.read()
+ if os.environ.get('AUTHOR_DELAY'):time.sleep(.3)
  if claude and os.environ.get('AUTH_MISSING'):
   emit({'type':'result','is_error':True,'result':'Not logged in · Please run /login','usage':{'input_tokens':0,'output_tokens':0}})
   sys.exit(1)
@@ -376,4 +377,40 @@ fn invalid_sharing_metadata_cannot_leave_a_failed_candidate_active() {
             .unwrap(),
         0
     );
+}
+
+#[test]
+fn concurrent_synchronous_callers_wait_for_the_same_terminal_cycle() {
+    let f = Fixture::new();
+    let first = f
+        .command()
+        .env("AUTHOR_DELAY", "1")
+        .arg("learn-now")
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+        let running: bool = db
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM native_cycles WHERE status='running')",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        if running {
+            break;
+        }
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    let second = f.run(&["learn-now"]);
+    let first = first.wait_with_output().unwrap();
+    let first: Value = serde_json::from_slice(&first.stdout).unwrap();
+    assert_eq!(first["status"], "completed", "{first}");
+    assert_eq!(second["status"], "completed", "{second}");
+    assert_eq!(first["cycle"], second["cycle"]);
+    assert_eq!(second["report"]["outcomes"][0]["status"], "created");
+    assert_eq!(f.run(&["learning-status"])["requests_today"], 2);
 }
