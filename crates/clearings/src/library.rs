@@ -68,7 +68,15 @@ impl Store {
             self.require_shared(project, task)?;
         }
         match part {
-            Some("task") => self.inspect(task),
+            Some("task") => {
+                let mut result = self.inspect(task)?;
+                if t.project.as_deref() != Some(project)
+                    && let Some(object) = result["object"].as_object_mut()
+                {
+                    result["origin_evidence_omitted"] = json!(object.remove("evidence").is_some());
+                }
+                Ok(result)
+            }
             Some("version") => self.inspect(
                 &self
                     .active(task)?

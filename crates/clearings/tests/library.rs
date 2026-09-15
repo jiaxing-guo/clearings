@@ -134,7 +134,29 @@ fn large_shared_inspection_remains_readable_in_individual_parts() {
         .unwrap();
     let text = "\\\"".repeat(120000);
     let task:Task=serde_json::from_value(json!({"contract":{"abi":1,"name":"echo","description":"Echo input","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"large","input":text,"expected":{"status":"completed","output":1}}]})).unwrap();
-    let id = store.prepare_named(&project.id, task, "user").unwrap();
+    let record = json!({"project":root,"content":"private-origin-conversation"});
+    let evidence = clearings::store::digest(&record).unwrap();
+    let conn = rusqlite::Connection::open(root.join("state.db")).unwrap();
+    conn.execute(
+        "INSERT INTO installation(key,body) VALUES('history_access','true')",
+        [],
+    )
+    .unwrap();
+    conn.execute(
+        "INSERT INTO conversation_evidence(id,body) VALUES(?1,?2)",
+        rusqlite::params![evidence, record.to_string()],
+    )
+    .unwrap();
+    let prepared = store
+        .prepare_conversation_task(
+            &project.id,
+            task,
+            &[evidence],
+            clearings::conversations::Scope::Project,
+        )
+        .unwrap();
+    let id = prepared["task"].as_str().unwrap().to_owned();
+
     let source = format!(
         "export default async x=>({{status:'completed',output:1}}); /* {} */",
         "x".repeat(150000)
@@ -157,8 +179,16 @@ fn large_shared_inspection_remains_readable_in_individual_parts() {
         .unwrap();
     for part in [None, Some("task"), Some("version")] {
         let value = store.library_part(&receiving.id, &id, part).unwrap();
+        assert!(!value.to_string().contains("private-origin-conversation"));
         let wire = json!({"result":{"content":[{"type":"text","text":value.to_string()}],"structuredContent":value}});
         assert!(serde_json::to_vec(&wire).unwrap().len() < clearings::contract::MAX_WIRE_BYTES);
     }
+    assert!(
+        store
+            .library_part(&project.id, &id, Some("task"))
+            .unwrap()
+            .to_string()
+            .contains("private-origin-conversation")
+    );
     assert!(store.suggest(&json!({"hook_event_name":"UserPromptSubmit","cwd":root,"session_id":"s","prompt":"é".repeat(10000)})).unwrap().is_null());
 }
