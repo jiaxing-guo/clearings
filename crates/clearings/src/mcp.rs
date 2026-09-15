@@ -17,7 +17,7 @@ fn tool(
     required: Value,
     read_only: bool,
 ) -> Value {
-    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"learn_now"|"manage"|"pause_shared"|"prune"|"background_cancel"|"observe"|"activity"),"openWorldHint":matches!(name,"run"|"reuse"|"run_routine"|"learn_now")}})
+    json!({"name":format!("clearings_{name}"),"description":description,"inputSchema":{"type":"object","properties":properties,"required":required,"additionalProperties":false},"annotations":{"readOnlyHint":read_only,"destructiveHint":matches!(name,"activate"|"deactivate"|"save"|"learn_now"|"manage"|"learning_preferences"|"undo_learning"|"pause_shared"|"prune"|"background_cancel"|"observe"|"activity"),"openWorldHint":matches!(name,"run"|"reuse"|"run_routine"|"learn_now")}})
 }
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});

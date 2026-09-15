@@ -305,7 +305,17 @@ impl Store {
                 )?,
             );
         }
-        Ok((found, page["nextCursor"].as_str().map(str::to_owned)))
+        let older = threads
+            .last()
+            .is_some_and(|t| t["updatedAt"].as_i64().is_some_and(|v| v < since));
+        Ok((
+            found,
+            if older {
+                None
+            } else {
+                page["nextCursor"].as_str().map(str::to_owned)
+            },
+        ))
     }
     fn list_claude(
         &self,

@@ -544,14 +544,35 @@ impl Store {
                 project,
                 serde_json::to_string(&scope)?
             );
-            let saved: Option<String> = self
-                .db
-                .query_row("SELECT body FROM installation WHERE key=?1", [&key], |r| {
-                    r.get(0)
-                })
-                .optional()?;
-            let mut cursor = None;
-            for index in 0..4 {
+            let refresh_key = format!("{key}:refresh");
+            let cutoff_key = format!("{key}:cutoff");
+            let read = |key: &str| -> Result<Option<String>> {
+                Ok(self
+                    .db
+                    .query_row("SELECT body FROM installation WHERE key=?1", [key], |r| {
+                        r.get(0)
+                    })
+                    .optional()?)
+            };
+            let save = |key: &str, value: Option<String>| -> Result<()> {
+                if let Some(value) = value {
+                    self.db.execute("INSERT INTO installation(key,body) VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET body=excluded.body",params![key,value])?;
+                } else {
+                    self.db
+                        .execute("DELETE FROM installation WHERE key=?1", [key])?;
+                }
+                Ok(())
+            };
+            let mut backlog = read(&key)?;
+            let mut refresh: Option<Value> = read(&refresh_key)?
+                .map(|s| serde_json::from_str(&s))
+                .transpose()?;
+            let cutoff = read(&cutoff_key)?.map(|s| s.parse::<i64>()).transpose()?;
+            let mut head = refresh.is_none();
+            let mut cursor = refresh
+                .as_ref()
+                .and_then(|r| r["cursor"].as_str().map(str::to_owned));
+            for _ in 0..4 {
                 self.check_native_cycle(cycle)?;
                 let page = self.recent_conversations(
                     project,
@@ -560,31 +581,60 @@ impl Store {
                     prefs.lookback_days,
                     cursor.as_deref(),
                 )?;
-                coverage.extend(page["errors"].as_array().unwrap().iter().cloned());
-                if page["errors"]
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .any(|e| e.get("source").is_none())
-                {
-                    // Opaque cursors can expire when a host deletes or compacts history.
-                    self.db
-                        .execute("DELETE FROM installation WHERE key=?1", [&key])?;
+                let errors = page["errors"].as_array().unwrap();
+                coverage.extend(errors.iter().cloned());
+                if errors.iter().any(|e| e.get("source").is_none()) {
+                    save(&key, None)?;
+                    save(&refresh_key, None)?;
                     break;
                 }
+                let entries = page["conversations"].as_array().unwrap();
                 let next = page["continuations"][client.name()]
                     .as_str()
                     .map(str::to_owned);
-                cursor = if index == 0 {
-                    saved.clone().or(next)
-                } else {
-                    next
+                let newest = entries
+                    .iter()
+                    .filter_map(|v| v["updated_at"].as_i64())
+                    .max()
+                    .or(cutoff);
+                let reached = |boundary: Option<i64>| {
+                    boundary.is_some_and(|boundary| {
+                        entries
+                            .iter()
+                            .any(|v| v["updated_at"].as_i64().is_some_and(|t| t <= boundary))
+                    })
                 };
-                if let Some(cursor) = &cursor {
-                    self.db.execute("INSERT INTO installation(key,body) VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET body=excluded.body", params![key,cursor])?;
+                if head {
+                    head = false;
+                    if backlog.is_some() && !reached(cutoff) && next.is_some() {
+                        refresh = Some(json!({"cursor":next,"stop":cutoff,"cutoff":newest}));
+                        cursor = next;
+                    } else {
+                        save(&cutoff_key, newest.map(|v| v.to_string()))?;
+                        if backlog.is_none() {
+                            backlog = next;
+                        }
+                        cursor = backlog.clone();
+                    }
+                } else if let Some(progress) = &mut refresh {
+                    if next.is_none() || reached(progress["stop"].as_i64()) {
+                        save(
+                            &cutoff_key,
+                            progress["cutoff"].as_i64().map(|v| v.to_string()),
+                        )?;
+                        refresh = None;
+                        cursor = backlog.clone();
+                    } else {
+                        progress["cursor"] = json!(next);
+                        cursor = next;
+                    }
                 } else {
-                    self.db
-                        .execute("DELETE FROM installation WHERE key=?1", [&key])?;
+                    backlog = next.clone();
+                    cursor = next;
+                }
+                save(&key, backlog.clone())?;
+                save(&refresh_key, refresh.as_ref().map(Value::to_string))?;
+                if cursor.is_none() {
                     break;
                 }
             }

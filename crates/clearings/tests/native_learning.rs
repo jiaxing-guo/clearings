@@ -42,7 +42,9 @@ if sys.argv[1]=='app-server':
   if method=='initialize':r={}
   elif method=='thread/list':
    total=int(os.environ.get('HISTORY_SESSIONS','1'));start=int(v['params'].get('cursor') or 0);end=min(total,start+20)
-   r={'data':[{'id':'fixture-session-'+str(i),'cwd':root,'updatedAt':int(time.time())+int(os.environ.get('NEW_EVIDENCE','0')),'name':'Double integer values'} for i in range(start,end)],'nextCursor':str(end) if end<total else None}
+   descending=os.environ.get('DESC_IDS')
+   ids=range(total-start,total-end,-1) if descending else range(start,end)
+   r={'data':[{'id':'fixture-session-'+str(i),'cwd':root,'updatedAt':int(os.environ['FIXTURE_TIME'])+i if descending else int(time.time())+int(os.environ.get('NEW_EVIDENCE','0')),'name':'Double integer values'} for i in ids],'nextCursor':str(end) if end<total else None}
   elif method=='thread/read':r={'thread':{'cwd':root,'historyMode':'paginated' if os.environ.get('PAGED_TOTAL') else 'full'}}
   elif method=='thread/items/list':
    end=int(v['params'].get('cursor') or os.environ['PAGED_TOTAL']);start=max(0,end-20)
@@ -788,4 +790,46 @@ fn excluded_packets_do_not_block_the_pending_queue_or_its_allowed_parts() {
     let unsafe_pending:i64=db.query_row("SELECT count(*) FROM native_candidates c,json_each(c.report,'$.packet') p WHERE c.status='pending' AND json_extract(p.value,'$.project')=?1",[excluded.to_str()],|r|r.get(0)).unwrap();
     assert_eq!(unsafe_pending, 0);
     assert!(db.query_row("SELECT EXISTS(SELECT 1 FROM native_candidates WHERE status='pending' AND instr(report,'allowed')>0)",[],|r|r.get::<_,bool>(0)).unwrap());
+}
+
+#[test]
+fn refreshed_metadata_lists_reach_new_conversations_before_old_backlogs() {
+    let f = Fixture::new();
+    let store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
+    store
+        .update_preferences(1, json!({"max_requests_per_day":0}))
+        .unwrap();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+        - 1000;
+    let scan = |total: &str| {
+        let r = f
+            .command()
+            .env("HISTORY_SESSIONS", total)
+            .env("DESC_IDS", "1")
+            .env("FIXTURE_TIME", now.to_string())
+            .arg("learn-now")
+            .output()
+            .unwrap();
+        assert!(
+            !r.stdout.is_empty(),
+            "{}",
+            String::from_utf8_lossy(&r.stderr)
+        );
+    };
+    scan("100");
+    scan("200");
+    scan("200");
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    assert_eq!(
+        db.query_row(
+            "SELECT count(*) FROM conversations WHERE updated>?1",
+            [now + 100],
+            |r| r.get::<_, i64>(0)
+        )
+        .unwrap(),
+        100
+    );
 }
