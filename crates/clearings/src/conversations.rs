@@ -36,9 +36,6 @@ impl Client {
         }
     }
 }
-fn root(path: &str) -> Result<PathBuf> {
-    crate::plugin::project_root(Path::new(path))
-}
 fn clipped(s: &str, max: usize) -> String {
     s.chars().take(max).collect()
 }
@@ -51,6 +48,31 @@ fn codex() -> Result<JsonProcess> {
     Ok(process)
 }
 impl Store {
+    fn conversation_root(&self, cwd: &Path, selected: &Path) -> Result<PathBuf> {
+        let cwd = cwd.canonicalize()?;
+        let repository = crate::plugin::project_root(&cwd)?;
+        for ancestor in cwd.ancestors() {
+            let id = digest(&ancestor)?;
+            let registered: Option<String> = self
+                .db
+                .query_row(
+                    "SELECT json_extract(body,'$.root') FROM projects WHERE id=?1",
+                    [id],
+                    |r| r.get(0),
+                )
+                .optional()?;
+            if registered
+                .as_deref()
+                .is_some_and(|p| Path::new(p) == ancestor)
+            {
+                return Ok(ancestor.to_owned());
+            }
+            if ancestor == repository && repository.join(".git").exists() {
+                break;
+            }
+        }
+        crate::plugin::scoped_project_root(&cwd, selected)
+    }
     pub(crate) fn authorize_history(&self) -> Result<()> {
         self.db.execute(
             "INSERT OR IGNORE INTO installation(key,body) VALUES('history_access','true')",
@@ -237,7 +259,7 @@ impl Store {
             let Some(cwd) = thread["cwd"].as_str() else {
                 continue;
             };
-            let Ok(project) = crate::plugin::scoped_project_root(Path::new(cwd), selected) else {
+            let Ok(project) = self.conversation_root(Path::new(cwd), selected) else {
                 continue;
             };
             if scope == Scope::Project && project != selected {
@@ -302,7 +324,7 @@ impl Store {
         let mut found = vec![];
         let mut errors = vec![];
         for (updated, path) in files.iter().take(20) {
-            match claude_identity(path,Some(selected)) {
+            match claude_identity(path,None).and_then(|v|v.map(|(id,cwd,title)|Ok((id,self.conversation_root(&cwd,selected)?,title))).transpose()) {
                 Ok(Some((session,project,title))) => {
                     if scope==Scope::Project && project!=selected {continue;}
                     found.push(self.remember_conversation("claude",&session,&project,Some(path),*updated,&title)?);
@@ -475,7 +497,7 @@ fn claude_identity(
             let project = if let Some(selected) = selected {
                 crate::plugin::scoped_project_root(Path::new(cwd), selected)?
             } else {
-                root(cwd)?
+                Path::new(cwd).canonicalize()?
             };
             return Ok(Some((id.into(), project, clipped(title, 300))));
         }
@@ -567,6 +589,46 @@ fn read_claude(path: &Path, cursor: Option<&str>) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn sibling_registered_projects_have_stable_conversation_identity() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        fs::create_dir(root.join(".git")).unwrap();
+        let a = root.join("a");
+        let b = root.join("b");
+        fs::create_dir(&a).unwrap();
+        fs::create_dir(&b).unwrap();
+        fs::create_dir(b.join("src")).unwrap();
+        let mut store = Store::open(&root.join("state.db")).unwrap();
+        store
+            .configure_project(&a, "A", Default::default(), None)
+            .unwrap();
+        store
+            .configure_project(&b, "B", Default::default(), None)
+            .unwrap();
+        assert_eq!(store.conversation_root(&b, &a).unwrap(), b);
+        assert_eq!(store.conversation_root(&b.join("src"), &a).unwrap(), b);
+        let source = root.join("s.jsonl");
+        fs::write(
+            &source,
+            format!(
+                "{}\n",
+                json!({"sessionId":"s","cwd":b,"type":"user","message":{"content":"work"}})
+            ),
+        )
+        .unwrap();
+        let files = vec![(100, source)];
+        let left = store
+            .claude_page(files.clone(), &a, Scope::All, 0, None)
+            .unwrap()
+            .0;
+        let right = store
+            .claude_page(files, &b, Scope::Project, 0, None)
+            .unwrap()
+            .0;
+        assert_eq!(left[0]["id"], right[0]["id"]);
+        assert_eq!(left[0]["project"], json!(b));
+    }
     #[test]
     fn claude_keyset_pages_survive_updates_and_report_individual_bad_sources() {
         let temp = tempfile::tempdir().unwrap();
