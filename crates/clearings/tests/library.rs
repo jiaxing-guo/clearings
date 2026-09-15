@@ -282,3 +282,62 @@ fn example_resource_names_do_not_hide_parameterized_routines_or_grant_access() {
         .unwrap();
     assert_eq!(denied["run"]["outcome"]["status"], "failed");
 }
+
+#[test]
+fn substring_distractors_cannot_hide_a_later_exact_word_match() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let db = root.join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let project = store
+        .configure_project(&root, "Project", Settings::default(), None)
+        .unwrap();
+    let task:Task=serde_json::from_value(json!({"contract":{"abi":1,"name":"log-summary","description":"Summarize log entries","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"sample","input":1,"expected":{"status":"completed","output":1}}]})).unwrap();
+    let target = store.prepare_named(&project.id, task, "user").unwrap();
+    let saved = store
+        .save_named(
+            exe(),
+            &project.id,
+            "log-summary",
+            "export default async x=>({status:'completed',output:x})".into(),
+            None,
+        )
+        .unwrap();
+    let writer = rusqlite::Connection::open(&db).unwrap();
+    let template: String = writer
+        .query_row("SELECT body FROM objects WHERE id=?1", [&target], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    let template: serde_json::Value = serde_json::from_str(&template).unwrap();
+    // Metadata-only distractors exercise search at scale; the target above is
+    // prepared and accepted by the real lifecycle and remains executable.
+    for n in 0..501 {
+        let id = format!("{n:064x}");
+        let name = format!("catalog-{n}");
+        let mut body = template.clone();
+        body["contract"]["name"] = json!(name);
+        body["contract"]["description"] = json!("Catalog inventory");
+        writer
+            .execute(
+                "INSERT INTO objects(id,kind,body) VALUES(?1,'task',?2)",
+                rusqlite::params![id, body.to_string()],
+            )
+            .unwrap();
+        writer
+            .execute(
+                "INSERT INTO project_routines(project,name,task,origin) VALUES(?1,?2,?3,'fixture')",
+                rusqlite::params![project.id, name, id],
+            )
+            .unwrap();
+        writer
+            .execute(
+                "INSERT INTO active(task,version) VALUES(?1,?2)",
+                rusqlite::params![id, saved["version"].as_str()],
+            )
+            .unwrap();
+    }
+    let found = store.find_routines(&project.id, "log").unwrap();
+    assert_eq!(found["routines"].as_array().unwrap().len(), 1);
+    assert_eq!(found["routines"][0]["routine"], target);
+}
