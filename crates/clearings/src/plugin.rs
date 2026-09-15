@@ -26,6 +26,7 @@ pub fn register_session(store: &mut crate::store::Store, input: impl Read) -> Re
         .context("host session has no working directory")?;
     let root = project_root(Path::new(cwd))?;
     store.ensure_plugin_project(&root)?;
+    store.register_transcript(&context, &root)?;
     Ok(())
 }
 
@@ -118,4 +119,15 @@ pub fn connect(api: &mut Api, path: &Path) -> Result<Value> {
     Ok(
         json!({"project": project, "authorization": "plugin installation: project read access", "scope": "this connection", "background_started": false}),
     )
+}
+
+/// Preserve a configured subproject while excluding a nested independent repository.
+pub(crate) fn scoped_project_root(path: &Path, selected: &Path) -> Result<PathBuf> {
+    let canonical = path.canonicalize()?;
+    if canonical == selected
+        || (canonical.starts_with(selected) && project_root(&canonical)? == project_root(selected)?)
+    {
+        return Ok(selected.to_owned());
+    }
+    project_root(&canonical)
 }

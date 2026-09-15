@@ -58,7 +58,7 @@ fn open_child(dir: &cap_std::fs::Dir, name: &Path, directory: bool) -> Result<Fi
 fn open_child(_dir: &cap_std::fs::Dir, _name: &Path, _directory: bool) -> Result<File> {
     anyhow::bail!("safe trace opening is unsupported on this platform")
 }
-fn open_absolute(path: &Path) -> Result<File> {
+pub(crate) fn open_absolute(path: &Path) -> Result<File> {
     use cap_std::{ambient_authority, fs::Dir};
     use std::path::Component;
     ensure!(path.is_absolute(), "authorized trace path must be absolute");
@@ -354,7 +354,10 @@ impl Store {
             }
             if cp.session.is_empty()
                 || cp.cwd.is_empty()
-                || Path::new(&cp.cwd).canonicalize().ok().as_ref() != Some(&project.root)
+                || crate::plugin::scoped_project_root(Path::new(&cp.cwd), &project.root)
+                    .ok()
+                    .as_ref()
+                    != Some(&project.root)
             {
                 continue;
             }
