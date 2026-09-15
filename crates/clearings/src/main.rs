@@ -36,6 +36,33 @@ enum Action {
         #[arg(long)]
         all: bool,
     },
+    FindRoutines {
+        query: String,
+    },
+    ShareRoutine {
+        name: String,
+        #[arg(long)]
+        applicability: String,
+    },
+    LibraryRoutine {
+        id: String,
+    },
+    RunRoutine {
+        id: String,
+        #[arg(long)]
+        input: PathBuf,
+    },
+    PauseShared {
+        id: String,
+        #[arg(long)]
+        resume: bool,
+    },
+    PluginSuggest {
+        #[arg(long, required = true)]
+        all_projects: bool,
+        #[arg(long)]
+        data_dir: Option<PathBuf>,
+    },
     RecentConversations {
         #[arg(long)]
         all: bool,
@@ -235,6 +262,25 @@ fn main() -> Result<()> {
     let executable = std::env::current_exe()?;
     let register_session = matches!(&cli.command, Action::PluginRegister { .. });
     match cli.command {
+        Action::PluginSuggest {
+            all_projects,
+            data_dir,
+        } => {
+            anyhow::ensure!(all_projects, "plugin authorization required");
+            let directory = clearings::plugin::data_directory(data_dir)?;
+            let store = Store::open(&directory.join("state.db"))?;
+            let mut input = vec![];
+            std::io::stdin()
+                .lock()
+                .take(65537)
+                .read_to_end(&mut input)?;
+            anyhow::ensure!(input.len() <= 65536, "hook input exceeds limit");
+            let value = store.suggest(&serde_json::from_slice(&input)?)?;
+            if !value.is_null() {
+                println!("{value}");
+            }
+            Ok(())
+        }
         Action::PluginMcp {
             all_projects,
             data_dir,
@@ -351,6 +397,23 @@ fn main() -> Result<()> {
                     } else {
                         clearings::conversations::Scope::Project
                     },
+                },
+                Action::FindRoutines { query } => Operation::FindRoutines { query },
+                Action::ShareRoutine {
+                    name,
+                    applicability,
+                } => Operation::ShareRoutine {
+                    name,
+                    applicability,
+                },
+                Action::LibraryRoutine { id } => Operation::LibraryRoutine { id },
+                Action::RunRoutine { id, input } => Operation::RunRoutine {
+                    id,
+                    input: read(input)?,
+                },
+                Action::PauseShared { id, resume } => Operation::PauseShared {
+                    id,
+                    paused: !resume,
                 },
                 Action::RecentConversations {
                     all,

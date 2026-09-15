@@ -14,3 +14,5 @@ Read `clearings_sdk`. Use `clearings_prepare_conversation_task` with the task an
 Use `clearings_save` to evaluate and activate the candidate. For a revision, inspect the current routine and supply its active version. Failed evaluation preserves the current version; repair the source rather than weakening the frozen cases. Changed requirements need a new task. Test a fresh supported input and an unfamiliar case when available. Report what is actually established by those runs.
 
 The user has already requested saving or reviewing work: do not ask permission to perform every routine step. Resolve names and IDs through the tools. Keep ordinary results concise; do not announce empty scans repeatedly or claim token savings from execution time alone.
+
+After acceptance, use `clearings_share_routine` when the behavior is useful across projects. Describe the input conditions and assumptions. Keep project-specific behavior local unless its dependencies are explicit. Shared definitions execute under each receiving project's own grants; do not copy resource permissions or hardcode private examples.

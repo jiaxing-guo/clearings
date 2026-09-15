@@ -10,6 +10,7 @@ pub mod execute;
 mod improvement;
 mod isolation;
 mod learning;
+pub mod library;
 pub mod management;
 pub mod mcp;
 mod model;

@@ -58,3 +58,9 @@ The plugin sets up project reading and on-demand reuse automatically. For advanc
 The host agent can record actual completed work with `clearings_record_observation` only when `record_conversations` is enabled. The project worker can then create routines without a save prompt on every workflow. Start that worker separately with `background`, or schedule `background --once`. See [background behavior](background.md), [activity formats](activity.md) and [management commands](management.md).
 
 The automatic lifecycle has deterministic local HTTP-fixture tests, including withheld examples, reuse after reopening the database, measured read reduction and recovery from a live regression. These do not demonstrate a hosted model's routine quality or end-to-end token savings.
+
+## Quiet discovery and shared routines
+
+The plugin's prompt hook performs a bounded local lookup and supplies up to three matching accepted routines. It does not call a model, block ordinary work, or announce an empty result. A candidate is offered once per session/version; the reuse-work skill inspects its requirements and executes a suitable match on fresh input. Matching remains an agent decision and requires real host-interaction testing.
+
+`find_routines`, `library_routine`, and `run_routine` support this flow. After saving generic behavior, the agent can call `share_routine` with its applicability. The same definition and version then become discoverable in other projects. Source-project grants do not transfer: execution uses the receiving project's grants and named resources. `pause_shared` pauses use in one receiving project. The originating routine's pause/exclusion and active-version controls still apply.

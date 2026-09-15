@@ -306,7 +306,7 @@ fn named_mcp_lifecycle_and_name_cursor_round_trip() {
     assert!(call("clearings_discover", json!({}))["structuredContent"]["routines"].is_array());
     let db = rusqlite::Connection::open(d.path().join("state.db")).unwrap();
     for _ in 0..100 {
-        db.execute("INSERT INTO runs(version,input_digest,report) SELECT version,input_digest,report FROM runs ORDER BY id LIMIT 1", []).unwrap();
+        db.execute("INSERT INTO runs(version,input_digest,report,project) SELECT version,input_digest,report,project FROM runs ORDER BY id LIMIT 1", []).unwrap();
     }
     let history = call("clearings_runs", json!({}));
     assert_eq!(
