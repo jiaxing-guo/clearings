@@ -4,11 +4,11 @@
 
 Clearings gives Codex and Claude Code a local execution boundary for work that should not need to be rediscovered on every run. The agent writes a parameterized routine; Clearings prepares it, checks its behavior, and executes it through explicitly granted tool operations. Unfamiliar cases return to the agent with structured context.
 
-The native Rust executable embeds the TypeScript transformer and JavaScript engine. Installed users do not need Node, Python, npm, or a Rust compiler. The project being worked on can use any language.
+The native Rust executable embeds the TypeScript transformer and JavaScript engine. Installed users do not need Node, Python, npm, or a Rust compiler. The project being worked on can use any language. Install the plugin once, then use Clearings in any working project; it handles project identity, private storage and project read grants. See [plugin installation and alpha availability](docs/installation.md).
 
 ## Status
 
-The implementation includes isolated TypeScript execution, scoped file and HTTP capabilities, immutable routine versions, acceptance checking, activation, run records, CLI and MCP interfaces, and Codex/Claude Code skill plugins. Project authorization, named saving/reuse, incremental activity imports, scheduled component creation, measured replacement, rollback, local digests and retention controls extend that lifecycle. Three user-defined examples exercise the complete teach-and-reuse flow. See [workflows](docs/workflows.md), [installation](docs/installation.md), and [agent integration](docs/agents.md).
+The implementation includes isolated TypeScript execution, scoped file and HTTP capabilities, immutable routine versions, acceptance checking, activation, run records, CLI and MCP interfaces, and Codex/Claude Code plugins with MCP registration and automatic project setup. Project authorization, named saving/reuse, incremental activity imports, scheduled component creation, measured replacement, rollback, local digests and retention controls extend that lifecycle. Three user-defined examples exercise the complete teach-and-reuse flow. See [workflows](docs/workflows.md), [installation](docs/installation.md), and [agent integration](docs/agents.md).
 
 Automatic creation requires structured observations; arbitrary shell/free-text history reconstruction is not implemented. Model connections use an explicitly configured compatible chat-completion endpoint. See [project setup](docs/projects.md), [background work](docs/background.md), and [management](docs/management.md).
 

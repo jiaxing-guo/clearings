@@ -1,4 +1,4 @@
-//! Persistent, host-owned project authorization. Conversation tools cannot widen it.
+//! Persistent project authorization. Plugin installations may provision project read grants.
 use crate::{
     contract::Policy,
     store::{Store, digest},
@@ -174,6 +174,52 @@ pub struct Project {
 }
 
 impl Store {
+    /// Called only by the installation-authorized host SessionStart hook. Existing
+    /// settings, including deliberately narrowed grants, always take precedence.
+    pub(crate) fn ensure_plugin_project(&mut self, root: &Path) -> Result<Project> {
+        let id = digest(&root)?;
+        let tx = self
+            .db
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let existing: Option<String> = tx
+            .query_row(
+                "SELECT body FROM projects WHERE id=?1 AND length(CAST(body AS BLOB)) <= 131072",
+                [&id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        if let Some(body) = existing {
+            return Ok(serde_json::from_str(&body)?);
+        }
+        let mut settings = Settings::default();
+        settings.grants.roots.insert("repo".into(), root.to_owned());
+        settings.validate()?;
+        let name = root
+            .file_name()
+            .context("project must have a directory name")?
+            .to_string_lossy();
+        let mut short_name = String::new();
+        for ch in name.chars() {
+            if short_name.len() + ch.len_utf8() > 80 {
+                break;
+            }
+            short_name.push(ch);
+        }
+        let project = Project {
+            id: id.clone(),
+            name: short_name,
+            root: root.to_owned(),
+            revision: 1,
+            settings,
+        };
+        tx.execute(
+            "INSERT INTO projects(id,revision,body) VALUES(?1,1,?2)",
+            params![id, serde_json::to_string(&project)?],
+        )?;
+        tx.commit()?;
+        Ok(project)
+    }
+
     pub fn configure_project(
         &mut self,
         root: &Path,

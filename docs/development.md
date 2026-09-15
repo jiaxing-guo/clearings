@@ -71,3 +71,9 @@ Keep one Rust application crate with concrete runtime, capability, routine, stor
 `cargo test --locked --workspace` includes the three examples and the CLI/MCP transport. The Packages workflow builds release executables, collects dependency licenses and checks the extracted artifact. The installed binary is exercised with an empty `PATH`. The packaging scripts use Python only in development and CI; Python is not shipped or required by the product.
 
 `python3 scripts/package.py target/release/clearings /path/to/new/package-output` creates a package from an existing release build. `python3 scripts/verify-package.py /path/to/extracted/clearings` checks it. Use a fresh output directory for each package.
+
+## Plugin packaging
+
+The root marketplace catalogs select `plugins/clearings` for Codex and `integrations/claude-code/plugins/clearings` for Claude Code. Keep their launcher, hook configuration and runtime-version files identical. The SessionStart hook runs `plugin-register` with bounded host JSON on stdin; MCP has no registration operation and can only select existing projects. `python3 -m unittest discover -s tests -p 'test_*.py'` checks tracked source selection, bootstrap verification, offline reuse and concurrent installation. `plugin_transport` tests exercise real MCP processes and project boundaries.
+
+Package creation embeds the native binary and all dependency license notices in both plugin roots. `scripts/verify-package.py` copies each into a client cache and connects it to a separate working project with an empty `PATH`. Packaging does not require the plugin bootstrap release to exist. Before publishing a version tag, update both plugin manifests, both runtime-version files and the Claude marketplace version together. The Packages workflow verifies that the runtime pins match the tag, validates native artifacts, then publishes the archives and checksums. PR builds remain downloadable review artifacts.

@@ -11,6 +11,7 @@ mod learning;
 pub mod management;
 pub mod mcp;
 mod model;
+pub mod plugin;
 pub mod project;
 pub mod reuse;
 pub mod store;

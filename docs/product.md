@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Turn authorized repeated agent work into reusable programs. The initial experience is: select completed work, describe what should vary, have the active agent author a TypeScript routine, evaluate it, and reuse it with new inputs. Users customize behavior through their existing Codex or Claude Code conversation.
+Turn authorized repeated agent work into reusable programs. The initial experience is: select completed work, describe what should vary, have the active agent author a TypeScript routine, evaluate it, and reuse it with new inputs. Users customize behavior through their existing Codex or Claude Code conversation. Plugin installation is user-wide: working projects receive their own identity, private state and read grant automatically, without per-project setup. Existing restrictions remain in force, and background model spending requires separate configuration.
 
 The same execution interface supports repository context gathering, log grouping, data normalization and other read-and-transform work. These are examples, not special cases in the runtime. The first release does not require a specific SaaS integration or a prescribed workflow template.
 

@@ -95,6 +95,15 @@ if licenses_only:
     print('Dependency license preflight passed.')
     sys.exit(0)
 (package / 'build.txt').write_text(subprocess.check_output(['rustc', '-vV'], text=True))
+# Client caches copy only the selected plugin directory. Keep the executable and
+# all dependency notices inside that directory so review installs work offline.
+for relative in ['plugins/clearings', 'integrations/claude-code/plugins/clearings']:
+    plugin = package / relative
+    (plugin / 'bin').mkdir()
+    shutil.copy2(binary, plugin / 'bin/clearings')
+    for name in ['LICENSE', 'THIRD_PARTY_NOTICES.md', 'dependencies.json', 'build.txt']:
+        shutil.copy2(package / name, plugin / name)
+    shutil.copytree(licenses, plugin / 'licenses')
 archive = output / 'clearings.tar.gz'
 with tarfile.open(archive, 'w:gz') as tar:
     tar.add(package, arcname='clearings')

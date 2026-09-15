@@ -77,4 +77,33 @@ with tempfile.TemporaryDirectory() as temporary:
     assert scoped('background', '--once')['status'] == 'disabled'
     scoped('manage', name, 'retire', '--expected-active', saved['version'])
     assert scoped('routine', name)['controls']['excluded'] is True
-print('Packaged binary: 3 legacy routines, 7 fresh executions, handoff, project saving/reuse/controls and usage status, empty PATH.')
+    # Clients copy only the plugin directory into their own cache. Exercise that
+    # copy with an unrelated process cwd and no tools or download on PATH.
+    import shutil
+    for index, relative in enumerate(['plugins/clearings', 'integrations/claude-code/plugins/clearings']):
+        plugin = temp / f'client cache {index}'
+        shutil.copytree(package / relative, plugin)
+        assert (plugin / 'licenses').is_dir()
+        project_root = temp / f'working project {index}'
+        project_root.mkdir()
+        hook = subprocess.run(['/bin/sh', str(plugin / 'scripts/start.sh'), '--register-session', '--data-dir', str(temp / 'plugin state')],
+                              cwd=plugin, env=environment, input=json.dumps({'hook_event_name': 'SessionStart', 'cwd': str(project_root)}),
+                              text=True, capture_output=True, timeout=30)
+        assert hook.returncode == 0, hook.stderr
+        assert hook.stdout == ''
+        messages = [
+            {'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {'protocolVersion': '2025-06-18', 'capabilities': {}, 'clientInfo': {'name': 'package-check', 'version': '1'}}},
+            {'jsonrpc': '2.0', 'method': 'notifications/initialized'},
+            {'jsonrpc': '2.0', 'id': 2, 'method': 'tools/call', 'params': {'name': 'clearings_open_project', 'arguments': {'path': str(project_root)}}},
+            {'jsonrpc': '2.0', 'id': 3, 'method': 'tools/call', 'params': {'name': 'clearings_discover', 'arguments': {}}},
+        ]
+        result = subprocess.run(['/bin/sh', str(plugin / 'scripts/start.sh'), '--data-dir', str(temp / 'plugin state')],
+                                cwd=plugin, env=environment, input=''.join(json.dumps(m) + '\n' for m in messages),
+                                text=True, capture_output=True, timeout=30)
+        assert result.returncode == 0, result.stderr
+        replies = [json.loads(line) for line in result.stdout.splitlines()]
+        selected = replies[1]['result']['structuredContent']['project']
+        assert selected['root'] == str(project_root.resolve())
+        assert selected['settings']['grants']['roots']['repo'] == selected['root']
+        assert replies[2]['result']['structuredContent']['routines'] == []
+print('Packaged binary and both cached plugins: teaching, fresh reuse, handoff, project controls, automatic binding and private state, empty PATH.')

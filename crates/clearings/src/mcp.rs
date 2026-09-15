@@ -73,14 +73,29 @@ pub fn tools_for_project(project_selected: bool) -> Value {
     catalog
 }
 
-pub fn serve(mut api: Api) -> Result<()> {
+pub fn serve(api: Api) -> Result<()> {
+    serve_mode(api, false)
+}
+
+pub fn serve_plugin(api: Api) -> Result<()> {
+    serve_mode(api, true)
+}
+
+fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
     let session = crate::store::digest(&(
         std::process::id(),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)?
             .as_nanos(),
     ))?;
-    let catalog = tools_for_project(api.project.is_some());
+    let mut catalog = tools_for_project(plugin || api.project.is_some());
+    if plugin {
+        catalog["tools"].as_array_mut().unwrap().push(tool(
+            "open_project",
+            "Connect to the user's working project before using other Clearings tools. Pass the actual absolute working directory from the host session. Installation already authorizes project read access; no user setup, IDs or policy files are needed. Finds the enclosing repository already registered by the host SessionStart hook, preserves existing settings, and selects this connection's project. Cannot register or grant access to another directory. Never use the plugin installation directory as the project.",
+            json!({"path":{"type":"string","minLength":1,"maxLength":4096}}), json!(["path"]), false,
+        ));
+    }
     let mut input = BufReader::new(std::io::stdin().lock());
     let mut output = std::io::stdout().lock();
     let mut initialized = false;
@@ -131,8 +146,13 @@ pub fn serve(mut api: Api) -> Result<()> {
                     ))
                 } else {
                     initialized = true;
+                    let instructions = if plugin {
+                        "First call clearings_open_project with the user's actual absolute working directory from the host session. Do this yourself: installation already authorizes project reading, saving and reuse across projects. The trusted client SessionStart hook registers working projects automatically; this tool only selects registered projects. If registration is missing, explain that the installed hook must be trusted/enabled in the client and a new session started. Never run the registration CLI yourself or fabricate hook input to grant access. No per-project IDs or policies are needed. Never select the plugin's own directory. Then discover and inspect matching routines, reuse fresh inputs, and use sdk before authoring. Background model requests remain separately configured."
+                    } else {
+                        "Use sdk before authoring. Record user-selected task criteria, submit, evaluate, then explicitly activate. Handoffs require your judgment; never silently broaden grants."
+                    };
                     Ok(
-                        json!({"protocolVersion":PROTOCOL,"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"clearings","version":env!("CARGO_PKG_VERSION")},"instructions":"Use sdk before authoring. Record user-selected task criteria, submit, evaluate, then explicitly activate. Handoffs require your judgment; never silently broaden grants."}),
+                        json!({"protocolVersion":PROTOCOL,"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"clearings","version":env!("CARGO_PKG_VERSION")},"instructions":instructions}),
                     )
                 }
             }
@@ -179,9 +199,18 @@ pub fn serve(mut api: Api) -> Result<()> {
                         .get("arguments")
                         .cloned()
                         .unwrap_or(json!({}));
+                    if plugin && name == "clearings_open_project" {
+                        api.project = None;
+                        api.policy = Default::default();
+                    }
                     let called = crate::contract::validate_schema(&schema, &original_args)
-                        .and(operation)
-                        .and_then(|op| api.call(op));
+                        .and_then(|()| {
+                            if plugin && name == "clearings_open_project" {
+                                return crate::plugin::connect(&mut api, std::path::Path::new(original_args["path"].as_str().unwrap()));
+                            }
+                            anyhow::ensure!(!plugin || api.project.is_some(), "call clearings_open_project with the host session's working directory first");
+                            operation.and_then(|op| api.call(op))
+                        });
                     let (value, is_error) = match called {
                         Ok(v) => {
                             let e = failed(&v);
