@@ -833,3 +833,33 @@ fn refreshed_metadata_lists_reach_new_conversations_before_old_backlogs() {
         100
     );
 }
+
+#[test]
+fn explicit_project_review_can_use_short_pending_global_work() {
+    let f = Fixture::new();
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    db.execute(
+        "INSERT INTO installation(key,body) VALUES('next_learning_due','0')",
+        [],
+    )
+    .unwrap();
+    let automatic = f
+        .command()
+        .env("SHORT_SESSION", "1")
+        .args(["learning-service", "--data-dir", f.data.to_str().unwrap()])
+        .output()
+        .unwrap();
+    let automatic: Value = serde_json::from_slice(&automatic.stdout).unwrap();
+    assert_eq!(automatic["report"]["outcomes"], json!([]));
+    let manual = f
+        .command()
+        .env("SHORT_SESSION", "1")
+        .arg("learn-now")
+        .output()
+        .unwrap();
+    let manual: Value = serde_json::from_slice(&manual.stdout).unwrap();
+    assert_eq!(
+        manual["report"]["outcomes"][0]["status"], "created",
+        "{manual}"
+    );
+}

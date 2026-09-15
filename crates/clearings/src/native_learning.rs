@@ -405,9 +405,54 @@ impl Store {
         }
         Ok(json!({"cycle":cycle,"status":status,"report":report}))
     }
-    fn pending_conversation_groups(&self, project: &str, scope: Scope) -> Result<Vec<Vec<Value>>> {
-        self.db.execute("UPDATE native_candidates SET status='expired',report='{}' WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2 AND NOT EXISTS(SELECT 1 FROM json_each(report,'$.packet') page JOIN conversations c ON c.id=json_extract(page.value,'$.conversation') WHERE c.updated>=?3)",params![project,if scope==Scope::All{"all"}else{"project"},crate::background::now()? - i64::from(self.preferences()?.lookback_days)*86400])?;
+    fn pending_conversation_groups(
+        &self,
+        project: &str,
+        scope: Scope,
+    ) -> Result<Vec<(String, Vec<Value>)>> {
         let prefs = self.preferences()?;
+        let since = crate::background::now()? - i64::from(prefs.lookback_days) * 86400;
+        let mut fresh_query = self
+            .db
+            .prepare("SELECT id FROM conversations WHERE updated>=?1")?;
+        let fresh = fresh_query
+            .query_map([since], |r| r.get::<_, String>(0))?
+            .collect::<rusqlite::Result<std::collections::BTreeSet<_>>>()?;
+        drop(fresh_query);
+        // Explicit project review may use its own pages from an automatic all-project
+        // packet even when the shared scan cursor has already passed those messages.
+        if scope == Scope::Project {
+            let selected = self.project(project)?;
+            let mut query=self.db.prepare("SELECT report FROM native_candidates WHERE status='pending' AND json_extract(report,'$.scope')='all'")?;
+            let rows = query
+                .query_map([], |r| r.get::<_, String>(0))?
+                .collect::<rusqlite::Result<Vec<_>>>()?;
+            drop(query);
+            for body in rows {
+                let body: Value = serde_json::from_str(&body)?;
+                let pages: Vec<_> = body["packet"]
+                    .as_array()
+                    .context("pending candidate lacks packet")?
+                    .iter()
+                    .filter(|p| {
+                        p["project"] == selected.root.to_string_lossy().as_ref()
+                            && fresh.contains(p["conversation"].as_str().unwrap_or(""))
+                            && !prefs.excludes(p["project"].as_str().unwrap_or(""))
+                    })
+                    .cloned()
+                    .collect();
+                if pages.is_empty() {
+                    continue;
+                }
+                let ids: Vec<_> = pages
+                    .iter()
+                    .flat_map(|p| p["items"].as_array().unwrap())
+                    .filter_map(|i| i["evidence_id"].as_str())
+                    .collect();
+                let key = digest(&(project, scope, &ids))?;
+                self.db.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![key,json!({"project":project,"scope":scope,"packet":pages}).to_string()])?;
+            }
+        }
         let mut excluded=self.db.prepare("SELECT fingerprint,report FROM native_candidates WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2")?;
         let rows = excluded
             .query_map(
@@ -425,11 +470,18 @@ impl Store {
         drop(excluded);
         for (key, body) in rows {
             let mut body: Value = serde_json::from_str(&body)?;
+            let prepared = body["prepared_task"].as_str().map(str::to_owned);
             let pages = body["packet"]
                 .as_array_mut()
                 .context("pending candidate lacks packet")?;
             let before = pages.len();
-            pages.retain(|p| !prefs.excludes(p["project"].as_str().unwrap_or("")));
+            let excluded = pages
+                .iter()
+                .any(|p| prefs.excludes(p["project"].as_str().unwrap_or("")));
+            pages.retain(|p| {
+                !prefs.excludes(p["project"].as_str().unwrap_or(""))
+                    && fresh.contains(p["conversation"].as_str().unwrap_or(""))
+            });
             if pages.len() == before {
                 continue;
             }
@@ -437,9 +489,12 @@ impl Store {
                 &self.db,
                 rusqlite::TransactionBehavior::Immediate,
             )?;
+            if let Some(task) = prepared {
+                self.release_failed_binding(project, &task)?;
+            }
             tx.execute(
-                "UPDATE native_candidates SET status='excluded',report='{}' WHERE fingerprint=?1",
-                [&key],
+                "UPDATE native_candidates SET status=?2,report='{}' WHERE fingerprint=?1",
+                params![key, if excluded { "excluded" } else { "expired" }],
             )?;
             if !pages.is_empty() {
                 let ids: Vec<_> = pages
@@ -447,7 +502,7 @@ impl Store {
                     .flat_map(|p| p["items"].as_array().unwrap())
                     .filter_map(|i| i["evidence_id"].as_str())
                     .collect();
-                let next = digest(&(project, &ids))?;
+                let next = digest(&(project, scope, &ids))?;
                 tx.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![next,body.to_string()])?;
             }
             tx.commit()?;
@@ -478,7 +533,7 @@ impl Store {
         let mut count = 0;
         let flush = |packet: &mut Vec<Value>,
                      originals: &mut Vec<String>,
-                     groups: &mut Vec<Vec<Value>>|
+                     groups: &mut Vec<(String, Vec<Value>)>|
          -> Result<()> {
             if packet.is_empty() {
                 return Ok(());
@@ -488,7 +543,7 @@ impl Store {
                 .flat_map(|p| p["items"].as_array().unwrap())
                 .filter_map(|i| i["evidence_id"].as_str())
                 .collect();
-            let key = digest(&(project, &ids))?;
+            let key = digest(&(project, scope, &ids))?;
             let tx = rusqlite::Transaction::new_unchecked(
                 &self.db,
                 rusqlite::TransactionBehavior::Immediate,
@@ -498,7 +553,7 @@ impl Store {
                 tx.execute("UPDATE native_candidates SET status='grouped',report=?2 WHERE fingerprint=?1 AND status='pending'",params![original,json!({"group":key}).to_string()])?;
             }
             tx.commit()?;
-            groups.push(std::mem::take(packet));
+            groups.push((key, std::mem::take(packet)));
             Ok(())
         };
         for (id, body, requested) in rows {
@@ -516,7 +571,7 @@ impl Store {
                 count = 0;
             }
             if requested {
-                groups.push(pages);
+                groups.push((id, pages));
                 continue;
             }
             count += size;
@@ -711,7 +766,7 @@ impl Store {
                             .iter()
                             .filter_map(|i| i["evidence_id"].as_str())
                             .collect();
-                        let fingerprint = digest(&(project, &ids))?;
+                        let fingerprint = digest(&(project, scope, &ids))?;
                         tx.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![fingerprint,json!({"project":project,"scope":scope,"packet":[packet]}).to_string()])?;
                     }
                     let next = page["next_cursor"].as_str();
@@ -775,7 +830,7 @@ impl Store {
             .saturating_sub(usize::from(improvement.is_some()));
         let mut attempts = 0;
         let mut author_unavailable = false;
-        for packet in &groups {
+        for (fingerprint, packet) in &groups {
             if attempts >= new_limit {
                 break;
             }
@@ -795,7 +850,6 @@ impl Store {
             if ids.is_empty() {
                 continue;
             }
-            let fingerprint = digest(&(project, &ids))?;
             let seen: bool = self.db.query_row(
                 "SELECT EXISTS(SELECT 1 FROM native_candidates WHERE fingerprint=?1 AND status!='pending')",
                 [&fingerprint],
@@ -890,6 +944,7 @@ impl Store {
                     self.prepare_conversation_task(project, task.clone(), &ids, scope)?;
                 let task_id = prepared["task"].as_str().context("task not prepared")?;
                 prepared_task = Some(task_id.to_owned());
+                self.db.execute("UPDATE native_candidates SET report=json_set(report,'$.prepared_task',?2) WHERE fingerprint=?1 AND status='pending'",params![fingerprint,task_id])?;
                 let source=self.native_request(cycle,client,"source",json!({"instruction":"Return source: a default-exported async TypeScript function implementing this frozen contract. Use fresh inputs and SDK capabilities. One acceptance case is withheld. Never hardcode examples. Return needs_agent or not_applicable for unsupported cases. No imports, ambient Node APIs, shell, or direct network.","sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"cases":&task.cases[..task.cases.len()-1]}),"source",&fingerprint)?;
                 self.check_native_cycle(cycle)?;
                 let version = self.submit(executable, task_id, source)?;
@@ -920,7 +975,7 @@ impl Store {
                 if report["status"] == "failed"
                     && let Some(task) = &prepared_task
                 {
-                    self.db.execute("DELETE FROM project_routines WHERE project=?1 AND task=?2 AND origin='conversation' AND paused=0 AND excluded=0 AND previous IS NULL AND NOT EXISTS(SELECT 1 FROM active WHERE task=?2) AND NOT EXISTS(SELECT 1 FROM component_changes WHERE task=?2)",params![project,task])?;
+                    self.release_failed_binding(project, task)?;
                 }
                 self.db.execute(
                     "UPDATE native_candidates SET status=?2,report=?3 WHERE fingerprint=?1",
@@ -943,6 +998,10 @@ impl Store {
         Ok(
             json!({"outcomes":outcomes,"coverage":coverage,"scope":scope,"sessions_considered":sessions.len(),"status":"reviewed","savings":null}),
         )
+    }
+    fn release_failed_binding(&self, project: &str, task: &str) -> Result<()> {
+        self.db.execute("DELETE FROM project_routines WHERE project=?1 AND task=?2 AND origin='conversation' AND paused=0 AND excluded=0 AND previous IS NULL AND NOT EXISTS(SELECT 1 FROM active WHERE task=?2) AND NOT EXISTS(SELECT 1 FROM component_changes WHERE task=?2)",params![project,task])?;
+        Ok(())
     }
     fn select_native_improvement(
         &self,
@@ -1110,6 +1169,68 @@ impl Store {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn scoped_groups_drop_stale_pages_and_keep_legacy_global_work_separate() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut store = Store::open(&temp.path().join("state.db")).unwrap();
+        let p = store
+            .configure_project(temp.path(), "P", Default::default(), None)
+            .unwrap();
+        let now = crate::background::now().unwrap();
+        for (id, time) in [("old", now - 8 * 86400), ("new", now)] {
+            store.db.execute("INSERT INTO conversations(id,client,host_id,root,updated,body) VALUES(?1,'claude',?1,?2,?3,'{}')",params![id,p.root.to_string_lossy(),time]).unwrap();
+        }
+        let old =
+            json!({"conversation":"old","project":p.root,"items":[{"evidence_id":"a".repeat(64)}]});
+        let fresh =
+            json!({"conversation":"new","project":p.root,"items":[{"evidence_id":"b".repeat(64)}]});
+        let legacy = digest(&(&p.id, vec!["a".repeat(64), "b".repeat(64)])).unwrap();
+        store
+            .db
+            .execute(
+                "INSERT INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",
+                params![
+                    legacy,
+                    json!({"project":p.id,"scope":"all","packet":[old,fresh]}).to_string()
+                ],
+            )
+            .unwrap();
+        let project = store
+            .pending_conversation_groups(&p.id, Scope::Project)
+            .unwrap();
+        assert_eq!(project.len(), 1);
+        assert_eq!(project[0].1.len(), 1);
+        assert_eq!(project[0].1[0]["conversation"], "new");
+        assert_eq!(
+            store
+                .db
+                .query_row(
+                    "SELECT status FROM native_candidates WHERE fingerprint=?1",
+                    [&legacy],
+                    |r| r.get::<_, String>(0)
+                )
+                .unwrap(),
+            "pending"
+        );
+        let all = store
+            .pending_conversation_groups(&p.id, Scope::All)
+            .unwrap();
+        assert_eq!(all.len(), 1);
+        assert_ne!(project[0].0, all[0].0);
+        assert_eq!(all[0].1.len(), 1);
+        assert_eq!(all[0].1[0]["conversation"], "new");
+        assert_eq!(
+            store
+                .db
+                .query_row(
+                    "SELECT status FROM native_candidates WHERE fingerprint=?1",
+                    [legacy],
+                    |r| r.get::<_, String>(0)
+                )
+                .unwrap(),
+            "expired"
+        );
+    }
     #[test]
     fn escaped_http_body_is_rejected_before_reservation() {
         let temp = tempfile::tempdir().unwrap();
