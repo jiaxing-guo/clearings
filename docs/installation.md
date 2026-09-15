@@ -2,11 +2,48 @@
 
 Clearings is one Rust executable containing its TypeScript transformer, JavaScript engine and SQLite support. Installed users do not need Node, Python, npm or a Rust compiler. Validated platforms are Linux x86-64 and the macOS architecture exercised by CI. Linux aarch64 remains an unvalidated target; it is not yet advertised as supported. Windows isolation is not implemented.
 
+## Install once for all projects
+
+Plugin onboarding starts with **v0.1.0-alpha.3**. While that release is pending, use a Packages review artifact as described below. Alpha.2 does not provide `plugin-mcp` or automatic project setup.
+
+With a Codex version that supports plugins, install the Clearings marketplace and plugin once:
+
+```sh
+codex plugin marketplace add jiaxing-guo/clearings
+codex plugin add clearings@clearings
+```
+
+For Claude Code, install at user scope so it is available in every project:
+
+```sh
+claude plugin marketplace add jiaxing-guo/clearings
+claude plugin install clearings@clearings --scope user
+```
+
+Start a new coding session in any project and ask: “Use Clearings to save and reuse this repeated task.” The plugin registers its MCP server. The agent connects it to the actual working directory; Clearings finds the repository root, creates a stable project identity and private state, and supplies a `repo` read grant. You do not configure IDs, policy files, storage locations or MCP entries for individual projects. Git worktrees and folders without Git are supported.
+
+Installation authorizes Clearings to read working projects as they are selected, and to save and reuse routines within each project. It does not crawl all projects at installation. Each MCP connection has its own selection, and routines cannot use that read grant to escape the selected root. Existing narrowed grants and controls are preserved. The coding client's own sandbox, workspace trust and tool approval settings still apply. Background model spending and conversation recording remain separate settings.
+
+On its first start, a source-installed plugin downloads its pinned native release from GitHub, verifies SHA-256, and caches it privately. Later starts work offline. Review packages include the executable and license notices inside each plugin, so they need no bootstrap download. The supported downloads are Linux x86-64 and macOS Apple silicon; no language runtime is needed. A client may time out during a slow first download; restart its MCP connection after the download, or install the bundled review package.
+
+Disable old manually registered Clearings MCP entries after installing the plugin, so the agent sees one Clearings integration. Existing lab databases are kept; the plugin uses its own persistent store unless you deliberately select an existing store directory with `CLEARINGS_DATA_DIR`. Uninstalling the plugin does not erase saved routines.
+
+See [Codex plugins](https://developers.openai.com/codex/plugins) and [Claude Code plugin installation](https://code.claude.com/docs/en/plugin-marketplaces) for client support and marketplace management.
+
 ## Review builds
 
 The Packages workflow creates platform-specific review artifacts containing `clearings.tar.gz` and `SHA256SUMS`. These are CI artifacts, not a published release. Download the artifact matching your OS and inspect its `build.txt` for the exact target and compiler. Linux packages are built on Ubuntu 24.04 and require compatible system libraries; they are not advertised as portable to older glibc systems. macOS packages target the runner's architecture and are not universal binaries or notarized releases.
 
-Verify the archive checksum and extract it. The `clearings/` directory contains the executable, examples, SDK declarations, skill integrations, documentation, project license and dependency licenses. Put the executable in a location on your `PATH`, or use its absolute path. Keep your state database and policy in a private directory outside the disposable package directory.
+Verify the archive checksum and extract it. The `clearings/` directory contains the executable, examples, SDK declarations, installable plugins and marketplace catalogs, documentation, project license and dependency licenses. For plugin review, register the extracted `clearings/` directory as a local marketplace once, then install `clearings@clearings` with the client commands above. For example:
+
+```sh
+codex plugin marketplace add /absolute/path/to/extracted/clearings
+codex plugin add clearings@clearings
+```
+
+Claude Code accepts the same local marketplace directory with `claude plugin marketplace add`. Its plugin install command stays the same. Register one Clearings marketplace source at a time; remove an older marketplace registration before switching between review and release installs. The absolute package path is needed only for this review installation; working projects need no setup. Client caches receive a self-contained plugin, and its state stays outside the package.
+
+For standalone CLI use, put the executable on your `PATH` or use its absolute path, and choose a private directory for your database and policy.
 
 ```sh
 tar -xzf clearings.tar.gz
@@ -33,4 +70,4 @@ The same executable provides `background` and `background --once`; no additional
 
 An editable [systemd user-service example](../integrations/services/clearings.service.example) is included in packages. Replace every path and `PROJECT_ID` before using it. On macOS, use a LaunchAgent with the same argument vector, or schedule `background --once` through an existing timer. Creating a package does not install or enable a service. Start one foreground cycle first and inspect `background-jobs`, `digest` and `model-usage` before enabling unattended runs.
 
-The repository does not publish a package or install client configuration as part of these checks. See [project settings](projects.md) and [management](management.md) for operation and recovery.
+PR and main-branch checks do not publish releases or install client configuration. Pushing a matching version tag runs both native package checks and publishes the versioned archives and `SHA256SUMS` needed by source-installed plugins. See [project settings](projects.md) and [management](management.md) for operation and recovery.

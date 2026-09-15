@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "clearings": {
+      "command": "sh",
+      "args": ["scripts/start.sh"],
+      "cwd": ".",
+      "startup_timeout_sec": 180
+    }
+  }
+}

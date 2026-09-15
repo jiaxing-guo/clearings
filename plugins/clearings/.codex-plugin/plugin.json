@@ -1,0 +1,19 @@
+{
+  "name": "clearings",
+  "version": "0.1.0-alpha.3",
+  "description": "Save and reuse repeated work across your projects. Installation authorizes project read access; state and MCP setup are automatic.",
+  "author": {
+    "name": "Clearings contributors"
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Clearings",
+    "shortDescription": "Reuse repeated work across projects.",
+    "longDescription": "Install once, then save and reuse routines in any working project. Clearings sets up private storage and project read access automatically. Background model spending requires separate configuration.",
+    "developerName": "Clearings contributors",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": ["Make this repeated task reusable with Clearings."]
+  }
+}

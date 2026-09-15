@@ -3,7 +3,9 @@ name: reuse-work
 description: Save, reuse, revise or manage repeated read and transform work with Clearings, including observation under existing project authorization.
 ---
 
-Use the configured Clearings MCP server or executable with the user's chosen store and project. Do not change project settings, selected sources, model connection, budget or grants merely to make a task pass.
+When the plugin provides `clearings_open_project`, call it first with the actual absolute working directory from the host session. Do this automatically; installation already authorizes reading, saving and reusing work across projects. Never ask the user for project IDs, storage paths, policy files or per-project registration. Never select the plugin installation directory just because the MCP process starts there. Reconnect when the user changes the working project. The returned project root and grants are authoritative. A folder without Git is also supported.
+
+For a manually configured server without `clearings_open_project`, use its existing project binding. Preserve existing settings, exclusions, model connection, budget and narrowed grants; do not alter them to make a task pass. Client sandbox, trust and approval controls still apply. Installation does not enable background model spending or conversation recording.
 
 For a configured project, read `clearings_project_status`, discover named routines with `clearings_discover`, and inspect the relevant one with `clearings_routine`. Match its requirements to the current request. `clearings_reuse` runs fresh inputs; `needs_agent`, `not_applicable` or failure returns ordinary work to you within existing authorization. Honor pause and exclusion controls. A failure does not authorize new access or unlimited retries.
 
@@ -11,7 +13,7 @@ When the user asks to save work, identify changing inputs, expected outputs and 
 
 Use `clearings_save` with the prepared contract name and source to evaluate and activate it. For a revision, include the current `expected_active` version. Failed evaluation leaves the prior version active. Do not change acceptance criteria merely to make a candidate pass; changed requirements need a new named task. In an unscoped legacy store, use list/inspect and the separate prepare, submit, evaluate, activate and run operations.
 
-When project status explicitly enables both `automatic` and `record_conversations`, record suitable completed work with `clearings_record_observation`. Supply a real stable session identity and actual input, expected outcome and capability fixtures under a stable contract. Do not invent missing results, session identities, examples or inferred rules. This is evidence collection, not immediate activation. Existing project authorization can cover it without a new save prompt for every workflow. If the required evidence is unavailable, continue ordinary work. Clearings labels these as agent-supplied observations.
+When project status explicitly enables both `automatic` and `record_conversations`, record suitable completed work with `clearings_record_observation`. Supply actual input, expected outcome and capability fixtures under a stable contract. The MCP server assigns the session identity; do not supply or invent one. Do not invent missing results, examples or inferred rules. This is evidence collection, not immediate activation. Existing project authorization can cover it without a new save prompt for every workflow. If the required evidence is unavailable, continue ordinary work. Clearings labels these as agent-supplied observations.
 
 The authorized background process handles candidate selection, source proposals, withheld-case checking, bounded retries and measured replacement. Do not imitate its scheduling by repeatedly calling tools. Read `clearings_digest` when a status update is useful; `clearings_manage` supports pause, exclusion, retirement and rollback. Retirement retains source and immutable acceptance evidence.
 

@@ -1,0 +1,14 @@
+{
+  "name": "clearings",
+  "owner": {
+    "name": "Clearings contributors"
+  },
+  "plugins": [
+    {
+      "name": "clearings",
+      "source": "./integrations/claude-code/plugins/clearings",
+      "description": "Save and reuse repeated work across your projects. Installation authorizes project read access; state and MCP setup are automatic.",
+      "version": "0.1.0-alpha.3"
+    }
+  ]
+}

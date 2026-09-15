@@ -29,6 +29,15 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Action {
+    /// Plugin entry point: automatically provision the projects selected by the host agent.
+    PluginMcp {
+        /// Installation-wide permission to read projects opened with this plugin.
+        #[arg(long, required = true)]
+        all_projects: bool,
+        /// Override the private user data directory (normally chosen automatically).
+        #[arg(long)]
+        data_dir: Option<PathBuf>,
+    },
     ProjectConfigure {
         #[arg(long)]
         root: PathBuf,
@@ -194,6 +203,27 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     let executable = std::env::current_exe()?;
     match cli.command {
+        Action::PluginMcp {
+            all_projects,
+            data_dir,
+        } => {
+            anyhow::ensure!(
+                all_projects,
+                "plugin installation must authorize project access"
+            );
+            anyhow::ensure!(
+                cli.store.is_none() && cli.project.is_none(),
+                "plugin mode manages its own store and project selection"
+            );
+            let directory = clearings::plugin::data_directory(data_dir)?;
+            let api = Api {
+                store: Store::open(&directory.join("state.db"))?,
+                policy: Policy::default(),
+                project: None,
+                executable,
+            };
+            clearings::mcp::serve_plugin(api)
+        }
         Action::Worker => clearings::worker_main(),
         Action::IsolationProbe { path } => clearings::isolation_probe(&path),
         Action::Sdk => {

@@ -37,27 +37,23 @@ The transport implements the [MCP 2025-06-18 stdio lifecycle](https://modelconte
 
 ## Codex and Claude Code
 
-The repository supplies small skill plugins in `integrations/codex/clearings` and `integrations/claude-code/clearings`. They teach the same prepare, submit, evaluate, activate and reuse workflow. Plugin installation does not register a server or alter permissions automatically. Register the executable separately using your client's local MCP settings and the command above, then enable the corresponding skill plugin. In clients without plugin support, the CLI works directly.
+Use the [plugin installation](installation.md) for the normal developer experience. The Codex plugin lives in `plugins/clearings`; the Claude Code plugin lives in `integrations/claude-code/plugins/clearings`. Each includes its MCP registration, native launcher and reuse-work skill. Install once at user scope, then open any project normally. There is no per-project server registration or policy file.
 
-For Codex CLI, a standard registration is:
+Before other Clearings tools, the agent calls `clearings_open_project` using the actual session working directory. Clearings returns the canonical project, effective read grant and existing settings. The agent discovers saved routines, checks their requirements and reuses suitable ones on fresh inputs. It reconnects when the user changes projects; the MCP process's launch directory is irrelevant.
 
-```sh
-codex mcp add clearings -- /absolute/path/clearings --store /absolute/private/state.db mcp --policy /absolute/private/policy.json
-```
+A useful first instruction is: “Make this repeated task reusable with Clearings. Preserve the inputs and rules we just agreed, and return unfamiliar cases to me.” A new conversation in that project can discover the same saved routine. To test continuity, change a source file and ask for the same task again: the reused routine should read fresh data. Open a second repository and verify its routine list is separate. Return to the first repository and verify the original routine and history are still present.
 
-For Claude Code, use its local stdio MCP registration or load the skill plugin during development with `claude --plugin-dir /absolute/path/to/integrations/claude-code/clearings`. Registration is a user setup step; this repository does not write client configuration while building or testing. See [Codex MCP configuration](https://developers.openai.com/codex/mcp) and [Claude Code plugin reference](https://code.claude.com/docs/en/plugins-reference) for current installation behavior.
-
-A useful first instruction is: “Make this repeated task reusable with Clearings. Preserve the inputs and rules we just agreed, and return unfamiliar cases to me.” A new conversation can discover the same stored task. Project-scoped automatic observation reads only selected sources and explicitly authorized conversational records. It does not require a selected workflow to fit a built-in template.
+For local plugin development, a packaged Claude plugin can also be loaded with `claude --plugin-dir /absolute/path/to/clearings/integrations/claude-code/plugins/clearings`. The standalone CLI and manually bound MCP configuration above remain available for advanced hosting and clients without plugins.
 
 ## What has been checked
 
-The CLI/MCP transport tests exercise initialization, task preparation, rejection before evaluation, activation, fresh input reuse, explicit handoff, and refusal of policy arguments supplied by a tool caller. These are deterministic integration tests, not a claim that a hosted Codex or Claude conversation has been run. Token savings require observed usage from real agent sessions; missing usage stays unknown.
+The CLI/MCP transport tests exercise initialization, task preparation, rejection before evaluation, activation, fresh input reuse, explicit handoff, and refusal of policy arguments supplied by a tool caller. Plugin tests also exercise automatic root selection from an unrelated launch directory, concurrent project isolation, persistent history, restricted grants, failed project switches, verified downloads and offline reconnection. Packaged plugins are copied into a simulated client cache and launched without language runtimes on `PATH`. These are deterministic integration tests, not a claim that a hosted Codex or Claude conversation has been run. Token savings require observed usage from real agent sessions; missing usage stays unknown.
 
 Task and version objects are rejected before storage if they exceed the inspection budget (about 1.3 MiB). `inspect` returns the complete object and a compact evaluation summary; `evaluate` returns the immutable full evaluation report. This keeps accepted requirements inspectable through the same CLI/MCP interface.
 
 ## Project reuse and background work
 
-Configure the project using [project authorization](projects.md), then add `--project PROJECT_ID` to the server command. Keep its policy file equal to the configured grants. The server exposes named discovery, saving, reuse, observation and management through the same project boundary. The CLI `project-configure` is the only interface for changing that authorization.
+The plugin sets up project reading and on-demand reuse automatically. For advanced manual hosting, configure [project authorization](projects.md), add `--project PROJECT_ID` to the server command and keep its policy equal to the configured grants. Both interfaces expose named discovery, saving, reuse, observation and management within the selected project. Use the host CLI to change existing settings or enable background work.
 
 The host agent can record actual completed work with `clearings_record_observation` only when `record_conversations` is enabled. The project worker can then create routines without a save prompt on every workflow. Start that worker separately with `background`, or schedule `background --once`. See [background behavior](background.md), [activity formats](activity.md) and [management commands](management.md).
 
