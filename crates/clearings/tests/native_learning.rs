@@ -601,8 +601,25 @@ fn short_conversations_form_one_repeated_work_candidate() {
     let f = Fixture::new();
     let store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
     let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    for total in ["1", "2"] {
+        db.execute(
+            "INSERT OR REPLACE INTO installation(key,body) VALUES('next_learning_due','0')",
+            [],
+        )
+        .unwrap();
+        let output = f
+            .command()
+            .env("HISTORY_SESSIONS", total)
+            .env("SHORT_SESSION", "1")
+            .args(["learning-service", "--data-dir", f.data.to_str().unwrap()])
+            .output()
+            .unwrap();
+        let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(result["report"]["outcomes"], json!([]), "{result}");
+        assert_eq!(store.learning_status().unwrap()["requests_today"], 0);
+    }
     db.execute(
-        "INSERT INTO installation(key,body) VALUES('next_learning_due','0')",
+        "INSERT OR REPLACE INTO installation(key,body) VALUES('next_learning_due','0')",
         [],
     )
     .unwrap();

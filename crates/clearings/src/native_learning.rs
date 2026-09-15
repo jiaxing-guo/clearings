@@ -406,6 +406,7 @@ impl Store {
         Ok(json!({"cycle":cycle,"status":status,"report":report}))
     }
     fn pending_conversation_groups(&self, project: &str, scope: Scope) -> Result<Vec<Vec<Value>>> {
+        self.db.execute("UPDATE native_candidates SET status='expired',report='{}' WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2 AND NOT EXISTS(SELECT 1 FROM json_each(report,'$.packet') page JOIN conversations c ON c.id=json_extract(page.value,'$.conversation') WHERE c.updated>=?3)",params![project,if scope==Scope::All{"all"}else{"project"},crate::background::now()? - i64::from(self.preferences()?.lookback_days)*86400])?;
         let mut statement=self.db.prepare("SELECT fingerprint,report,EXISTS(SELECT 1 FROM native_requests r WHERE r.fingerprint=c.fingerprint) FROM native_candidates c WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2 ORDER BY rowid LIMIT 24")?;
         let rows = statement
             .query_map(
@@ -677,7 +678,7 @@ impl Store {
                 })
                 .count();
             if automatic && meaningful < 3 {
-                self.db.execute("UPDATE native_candidates SET status='insufficient_evidence',report='{}' WHERE fingerprint=?1", [&fingerprint])?;
+                coverage.push(json!({"status":"awaiting_repeated_evidence"}));
                 continue;
             }
             attempts += 1;
