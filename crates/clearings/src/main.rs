@@ -29,6 +29,13 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Action {
+    PrepareConversationTask {
+        file: PathBuf,
+        #[arg(long)]
+        evidence_ids: Vec<String>,
+        #[arg(long)]
+        all: bool,
+    },
     RecentConversations {
         #[arg(long)]
         all: bool,
@@ -332,6 +339,19 @@ fn main() -> Result<()> {
                 executable,
             };
             let operation = match action {
+                Action::PrepareConversationTask {
+                    file,
+                    evidence_ids,
+                    all,
+                } => Operation::PrepareConversationTask {
+                    task: read(file)?,
+                    evidence_ids,
+                    scope: if all {
+                        clearings::conversations::Scope::All
+                    } else {
+                        clearings::conversations::Scope::Project
+                    },
+                },
                 Action::RecentConversations {
                     all,
                     client,

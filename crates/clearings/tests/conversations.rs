@@ -81,7 +81,14 @@ fn existing_claude_history_from_subdirectory_becomes_a_reusable_task() {
     run(
         &data,
         &home,
-        &["--project", &id, "prepare-task", path.to_str().unwrap()],
+        &[
+            "--project",
+            &id,
+            "prepare-conversation-task",
+            path.to_str().unwrap(),
+            "--evidence-ids",
+            history["items"][0]["evidence_id"].as_str().unwrap(),
+        ],
     );
     let source = base.join("routine.ts");
     fs::write(

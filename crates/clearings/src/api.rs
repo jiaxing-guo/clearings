@@ -10,6 +10,12 @@ use std::path::PathBuf;
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    PrepareConversationTask {
+        task: Task,
+        evidence_ids: Vec<String>,
+        #[serde(default)]
+        scope: crate::conversations::Scope,
+    },
     RecentConversations {
         #[serde(default)]
         scope: crate::conversations::Scope,
@@ -149,6 +155,18 @@ impl Api {
             _ => {}
         }
         Ok(match op {
+            Operation::PrepareConversationTask {
+                task,
+                evidence_ids,
+                scope,
+            } => self.store.prepare_conversation_task(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                task,
+                &evidence_ids,
+                scope,
+            )?,
             Operation::RecentConversations {
                 scope,
                 client,

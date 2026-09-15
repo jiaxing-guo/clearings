@@ -354,7 +354,7 @@ impl Store {
             }
             if cp.session.is_empty()
                 || cp.cwd.is_empty()
-                || crate::plugin::project_root(Path::new(&cp.cwd))
+                || crate::plugin::scoped_project_root(Path::new(&cp.cwd), &project.root)
                     .ok()
                     .as_ref()
                     != Some(&project.root)

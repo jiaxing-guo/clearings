@@ -24,10 +24,22 @@ impl Store {
         let version: Version = self.get("version", id)?;
         self.check_task_scope(project, &version.task)
     }
-    pub fn prepare_named(&self, project: &str, mut task: Task, origin: &str) -> Result<String> {
+    pub fn prepare_named(&self, project: &str, task: Task, origin: &str) -> Result<String> {
+        ensure!(
+            task.evidence.is_none(),
+            "observation evidence is host-owned"
+        );
+        self.prepare_named_evidence(project, task, origin)
+    }
+    pub(crate) fn prepare_named_evidence(
+        &self,
+        project: &str,
+        mut task: Task,
+        origin: &str,
+    ) -> Result<String> {
         self.project(project)?;
         task.project = Some(project.to_owned());
-        let id = self.prepare_task(&task)?;
+        let id = self.prepare_host_task(&task)?;
         let tx = rusqlite::Transaction::new_unchecked(
             &self.db,
             rusqlite::TransactionBehavior::Immediate,

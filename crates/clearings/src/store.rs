@@ -242,6 +242,7 @@ impl Store {
             CREATE TABLE IF NOT EXISTS installation(key TEXT PRIMARY KEY,body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS conversations(id TEXT PRIMARY KEY,client TEXT NOT NULL,host_id TEXT NOT NULL,root TEXT NOT NULL,source TEXT,updated INTEGER NOT NULL,body TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS conversations_recent ON conversations(updated DESC,id);
+            CREATE TABLE IF NOT EXISTS conversation_evidence(id TEXT PRIMARY KEY,body TEXT NOT NULL);
             PRAGMA user_version=7;")?;
         Ok(Self { db })
     }

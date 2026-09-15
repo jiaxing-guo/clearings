@@ -120,3 +120,14 @@ pub fn connect(api: &mut Api, path: &Path) -> Result<Value> {
         json!({"project": project, "authorization": "plugin installation: project read access", "scope": "this connection", "background_started": false}),
     )
 }
+
+/// Preserve a configured subproject while excluding a nested independent repository.
+pub(crate) fn scoped_project_root(path: &Path, selected: &Path) -> Result<PathBuf> {
+    let canonical = path.canonicalize()?;
+    if canonical == selected
+        || (canonical.starts_with(selected) && project_root(&canonical)? == project_root(selected)?)
+    {
+        return Ok(selected.to_owned());
+    }
+    project_root(&canonical)
+}

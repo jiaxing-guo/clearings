@@ -166,6 +166,48 @@ impl Store {
             json!({"conversations":entries,"continuations":continuations,"errors":errors,"coverage":if errors.is_empty(){"page"}else{"partial"},"scope":scope,"untrusted_evidence":true}),
         )
     }
+    pub fn prepare_conversation_task(
+        &self,
+        project: &str,
+        mut task: crate::store::Task,
+        ids: &[String],
+        scope: Scope,
+    ) -> Result<Value> {
+        self.history_access()?;
+        ensure!(
+            task.evidence.is_none() && task.project.is_none(),
+            "task evidence and ownership are host assigned"
+        );
+        ensure!(
+            !ids.is_empty() && ids.len() <= 20,
+            "provide 1 to 20 evidence IDs returned by conversation reading"
+        );
+        let selected = self.project(project)?;
+        let mut sources = vec![];
+        for id in ids {
+            ensure!(id.len() == 64, "invalid evidence ID");
+            let body: String = self
+                .db
+                .query_row(
+                    "SELECT body FROM conversation_evidence WHERE id=?1",
+                    [id],
+                    |r| r.get(0),
+                )
+                .context("evidence not found; read its conversation first")?;
+            let source: Value = serde_json::from_str(&body)?;
+            ensure!(digest(&source)? == *id, "conversation evidence changed");
+            ensure!(
+                scope == Scope::All
+                    || source["project"] == selected.root.to_string_lossy().as_ref(),
+                "evidence belongs to another project"
+            );
+            sources.push(json!({"id":id,"record":source}));
+        }
+        task.evidence = Some(
+            json!({"kind":"conversation_interpretation","sources":sources,"case_provenance":"agent_supplied_interpretation","claim":"Source records were read by Clearings; case interpretations and constructed examples are not authenticated observations."}),
+        );
+        Ok(json!({"task":self.prepare_named_evidence(project,task,"conversation")?}))
+    }
     fn list_codex(
         &self,
         selected: &Path,
@@ -192,7 +234,9 @@ impl Store {
             let Some(cwd) = thread["cwd"].as_str() else {
                 continue;
             };
-            let Ok(project) = root(cwd) else { continue };
+            let Ok(project) = crate::plugin::scoped_project_root(Path::new(cwd), selected) else {
+                continue;
+            };
             if scope == Scope::Project && project != selected {
                 continue;
             }
@@ -247,7 +291,7 @@ impl Store {
             if *updated < since {
                 continue;
             }
-            if let Some((session, project, title)) = claude_identity(path)? {
+            if let Some((session, project, title)) = claude_identity(path, Some(selected))? {
                 if scope == Scope::Project && project != selected {
                     continue;
                 }
@@ -296,10 +340,13 @@ impl Store {
                 json!({"threadId":session,"includeTurns":false}),
             )?;
             ensure!(
-                root(
-                    meta["thread"]["cwd"]
-                        .as_str()
-                        .context("session lacks project")?
+                crate::plugin::scoped_project_root(
+                    Path::new(
+                        meta["thread"]["cwd"]
+                            .as_str()
+                            .context("session lacks project")?
+                    ),
+                    Path::new(&conversation_root)
                 )? == Path::new(&conversation_root),
                 "conversation project changed; refresh listing"
             );
@@ -321,7 +368,7 @@ impl Store {
             json!({"items":items,"next_cursor":page["nextCursor"],"coverage":"page","order":"newest_turn_first"})
         } else {
             let path = source.context("conversation source is unavailable")?;
-            let identity = claude_identity(Path::new(&path))?
+            let identity = claude_identity(Path::new(&path), Some(Path::new(&conversation_root)))?
                 .context("Claude transcript lacks session metadata")?;
             ensure!(
                 identity.0 == session && identity.1 == Path::new(&conversation_root),
@@ -329,6 +376,17 @@ impl Store {
             );
             read_claude(Path::new(&path), cursor)?
         };
+        if let Some(items) = result["items"].as_array_mut() {
+            for item in items {
+                let body = json!({"conversation":id,"project":conversation_root,"client":client,"item":item});
+                let evidence_id = digest(&body)?;
+                self.db.execute(
+                    "INSERT OR IGNORE INTO conversation_evidence(id,body) VALUES(?1,?2)",
+                    params![evidence_id, body.to_string()],
+                )?;
+                item["evidence_id"] = json!(evidence_id);
+            }
+        }
         result["conversation"] = json!(id);
         result["project"] = json!(conversation_root);
         result["client"] = json!(client);
@@ -379,7 +437,10 @@ fn claude_files(
     }
     Ok(())
 }
-fn claude_identity(path: &Path) -> Result<Option<(String, PathBuf, String)>> {
+fn claude_identity(
+    path: &Path,
+    selected: Option<&Path>,
+) -> Result<Option<(String, PathBuf, String)>> {
     let mut reader = BufReader::new(open_transcript(path)?);
     let mut read = 0;
     for _ in 0..64 {
@@ -400,7 +461,12 @@ fn claude_identity(path: &Path) -> Result<Option<(String, PathBuf, String)>> {
             let title = v["message"]["content"]
                 .as_str()
                 .unwrap_or("Claude conversation");
-            return Ok(Some((id.into(), root(cwd)?, clipped(title, 300))));
+            let project = if let Some(selected) = selected {
+                crate::plugin::scoped_project_root(Path::new(cwd), selected)?
+            } else {
+                root(cwd)?
+            };
+            return Ok(Some((id.into(), project, clipped(title, 300))));
         }
     }
     Ok(None)
@@ -500,13 +566,72 @@ mod tests {
             .join("conversation.jsonl");
         let row = json!({"sessionId":"s","cwd":temp.path(),"type":"assistant","uuid":"message","message":{"content":[{"type":"text","text":"answer"},{"type":"thinking","thinking":"private reasoning"},{"type":"tool_use","name":"Read","input":{"file":"sample"}}]}});
         fs::write(&path, format!("{row}\n{{\"partial\":")).unwrap();
-        assert_eq!(claude_identity(&path).unwrap().unwrap().0, "s");
+        assert_eq!(claude_identity(&path, None).unwrap().unwrap().0, "s");
         let page = read_claude(&path, None).unwrap();
         assert_eq!(page["items"][0]["content"].as_array().unwrap().len(), 2);
         assert_eq!(page["coverage"], "partial_final_record");
         assert_eq!(
             read_claude(&path, page["next_cursor"].as_str()).unwrap()["items"],
             json!([])
+        );
+    }
+    #[test]
+    fn exact_configured_subproject_is_preserved() {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().canonicalize().unwrap();
+        fs::create_dir(repo.join(".git")).unwrap();
+        let sub = repo.join("packages/foo");
+        fs::create_dir_all(sub.join("src")).unwrap();
+        assert_eq!(crate::plugin::scoped_project_root(&sub, &sub).unwrap(), sub);
+        assert_eq!(
+            crate::plugin::scoped_project_root(&sub.join("src"), &sub).unwrap(),
+            sub
+        );
+        fs::create_dir(sub.join("src/.git")).unwrap();
+        assert_ne!(
+            crate::plugin::scoped_project_root(&sub.join("src"), &sub).unwrap(),
+            sub
+        );
+    }
+    #[test]
+    fn conversation_preparation_attaches_read_evidence_and_rejects_forged_ids() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut store = Store::open(&temp.path().join("s.db")).unwrap();
+        let project = store
+            .configure_project(temp.path(), "P", Default::default(), None)
+            .unwrap();
+        store.authorize_history().unwrap();
+        let task:crate::store::Task=serde_json::from_value(json!({"contract":{"abi":1,"name":"identity","description":"Preserve numbers","input_schema":{},"output_schema":{}},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":1}}]})).unwrap();
+        assert!(
+            store
+                .prepare_conversation_task(
+                    &project.id,
+                    task.clone(),
+                    &["a".repeat(64)],
+                    Scope::Project
+                )
+                .is_err()
+        );
+        let body = json!({"conversation":"session","project":project.root,"item":{"content":"Return the supplied number"}});
+        let id = digest(&body).unwrap();
+        store
+            .db
+            .execute(
+                "INSERT INTO conversation_evidence VALUES(?1,?2)",
+                params![id, body.to_string()],
+            )
+            .unwrap();
+        let prepared = store
+            .prepare_conversation_task(&project.id, task, &[id], Scope::Project)
+            .unwrap();
+        let inspected = store.inspect(prepared["task"].as_str().unwrap()).unwrap();
+        assert_eq!(
+            inspected["object"]["evidence"]["kind"],
+            "conversation_interpretation"
+        );
+        assert_eq!(
+            inspected["object"]["evidence"]["case_provenance"],
+            "agent_supplied_interpretation"
         );
     }
     #[test]
