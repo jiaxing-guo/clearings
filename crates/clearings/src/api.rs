@@ -10,6 +10,20 @@ use std::path::PathBuf;
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    RecentConversations {
+        #[serde(default)]
+        scope: crate::conversations::Scope,
+        client: Option<crate::conversations::Client>,
+        #[serde(default = "history_days")]
+        days: u32,
+        cursor: Option<String>,
+    },
+    ReadConversation {
+        id: String,
+        #[serde(default)]
+        scope: crate::conversations::Scope,
+        cursor: Option<String>,
+    },
     ProjectStatus,
     Routine {
         name: String,
@@ -96,6 +110,9 @@ pub struct Api {
     pub policy: Policy,
     pub executable: PathBuf,
 }
+fn history_days() -> u32 {
+    7
+}
 impl Api {
     pub fn call(&mut self, op: Operation) -> Result<Value> {
         if let Some(project) = &self.project {
@@ -132,6 +149,28 @@ impl Api {
             _ => {}
         }
         Ok(match op {
+            Operation::RecentConversations {
+                scope,
+                client,
+                days,
+                cursor,
+            } => self.store.recent_conversations(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project first"))?,
+                scope,
+                client,
+                days,
+                cursor.as_deref(),
+            )?,
+            Operation::ReadConversation { id, scope, cursor } => self.store.read_conversation(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project first"))?,
+                &id,
+                scope,
+                cursor.as_deref(),
+            )?,
             Operation::Routine { name } => self.store.inspect_named(
                 self.project
                     .as_deref()

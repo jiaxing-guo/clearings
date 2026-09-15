@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Learn from conversations'
+  short_description: 'Turn recent work into tested reusable routines'
+  default_prompt: 'Use $learn-from-conversations to make our recent repeated work reusable.'

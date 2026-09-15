@@ -217,7 +217,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 6, "store was created by a newer version");
+        ensure!(schema <= 7, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -239,7 +239,10 @@ impl Store {
             CREATE TABLE IF NOT EXISTS learning_groups(project TEXT NOT NULL REFERENCES projects(id),fingerprint TEXT NOT NULL,task TEXT NOT NULL REFERENCES objects(id),status TEXT NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,report TEXT NOT NULL DEFAULT '{}',PRIMARY KEY(project,fingerprint));
             CREATE TABLE IF NOT EXISTS component_changes(id INTEGER PRIMARY KEY,project TEXT NOT NULL REFERENCES projects(id),task TEXT NOT NULL REFERENCES objects(id),version TEXT NOT NULL REFERENCES objects(id),previous TEXT,reason TEXT NOT NULL,job INTEGER REFERENCES background_jobs(id),created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
             CREATE TABLE IF NOT EXISTS improvement_trials(project TEXT NOT NULL REFERENCES projects(id),baseline TEXT NOT NULL REFERENCES objects(id),candidate TEXT,status TEXT NOT NULL,report TEXT NOT NULL DEFAULT '{}',PRIMARY KEY(project,baseline));
-            PRAGMA user_version=6;")?;
+            CREATE TABLE IF NOT EXISTS installation(key TEXT PRIMARY KEY,body TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS conversations(id TEXT PRIMARY KEY,client TEXT NOT NULL,host_id TEXT NOT NULL,root TEXT NOT NULL,source TEXT,updated INTEGER NOT NULL,body TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS conversations_recent ON conversations(updated DESC,id);
+            PRAGMA user_version=7;")?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {

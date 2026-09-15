@@ -29,6 +29,23 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Action {
+    RecentConversations {
+        #[arg(long)]
+        all: bool,
+        #[arg(long)]
+        client: Option<clearings::conversations::Client>,
+        #[arg(long, default_value_t = 7)]
+        days: u32,
+        #[arg(long)]
+        cursor: Option<String>,
+    },
+    ReadConversation {
+        id: String,
+        #[arg(long)]
+        all: bool,
+        #[arg(long)]
+        cursor: Option<String>,
+    },
     /// Host SessionStart hook: register the working directory supplied on stdin.
     PluginRegister {
         #[arg(long, required = true)]
@@ -315,6 +332,30 @@ fn main() -> Result<()> {
                 executable,
             };
             let operation = match action {
+                Action::RecentConversations {
+                    all,
+                    client,
+                    days,
+                    cursor,
+                } => Operation::RecentConversations {
+                    scope: if all {
+                        clearings::conversations::Scope::All
+                    } else {
+                        clearings::conversations::Scope::Project
+                    },
+                    client,
+                    days,
+                    cursor,
+                },
+                Action::ReadConversation { id, all, cursor } => Operation::ReadConversation {
+                    id,
+                    scope: if all {
+                        clearings::conversations::Scope::All
+                    } else {
+                        clearings::conversations::Scope::Project
+                    },
+                    cursor,
+                },
                 Action::Mcp { policy } => {
                     let supplied: Policy = read(policy)?;
                     if selected.is_some() {

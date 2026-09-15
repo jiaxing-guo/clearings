@@ -26,6 +26,7 @@ pub fn register_session(store: &mut crate::store::Store, input: impl Read) -> Re
         .context("host session has no working directory")?;
     let root = project_root(Path::new(cwd))?;
     store.ensure_plugin_project(&root)?;
+    store.register_transcript(&context, &root)?;
     Ok(())
 }
 

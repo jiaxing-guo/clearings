@@ -1,7 +1,7 @@
 {
   "name": "clearings",
   "version": "0.1.0-alpha.3",
-  "description": "Save and reuse repeated work across your projects. Installation authorizes project read access; state and MCP setup are automatic.",
+  "description": "Save and reuse repeated work across your projects. Installation authorizes project and recent conversation reading; state and MCP setup are automatic.",
   "author": {
     "name": "Clearings contributors"
   },
