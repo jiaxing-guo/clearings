@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Manage Clearings'
+  short_description: 'Control learning, quiet reuse, and recovery'
+  default_prompt: 'Use $manage-clearings to show what Clearings learned and pause background learning.'

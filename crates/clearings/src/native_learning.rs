@@ -13,7 +13,11 @@ use std::path::Path;
 #[serde(default, deny_unknown_fields)]
 pub struct Preferences {
     pub revision: u64,
+    pub work_revision: u64,
+    pub model: Option<String>,
     pub learning_enabled: bool,
+    pub improve_enabled: bool,
+    pub excluded_workflows: Vec<String>,
     pub suggestions_enabled: bool,
     pub interval_seconds: u64,
     pub lookback_days: u32,
@@ -26,7 +30,11 @@ impl Default for Preferences {
     fn default() -> Self {
         Self {
             revision: 1,
+            work_revision: 1,
+            model: None,
             learning_enabled: true,
+            improve_enabled: true,
+            excluded_workflows: vec![],
             suggestions_enabled: true,
             interval_seconds: 86400,
             lookback_days: 7,
@@ -39,9 +47,10 @@ impl Default for Preferences {
 }
 impl Preferences {
     pub(crate) fn excludes(&self, root: &str) -> bool {
-        self.excluded_projects
-            .iter()
-            .any(|p| p == root || digest(&root).is_ok_and(|id| p == &id))
+        self.excluded_projects.iter().any(|p| {
+            (Path::new(p).is_absolute() && Path::new(root).starts_with(p))
+                || digest(&root).is_ok_and(|id| p == &id)
+        })
     }
 }
 impl Store {
@@ -99,7 +108,7 @@ impl Store {
         let (project,started,status,revision,project_revision):(String,i64,String,u64,u64)=self.db.query_row("SELECT project,started,status,revision,project_revision FROM native_cycles WHERE id=?1",[cycle],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?)))?;
         ensure!(
             status == "running"
-                && self.preferences()?.revision == revision
+                && self.preferences()?.work_revision == revision
                 && self.project(&project)?.revision == project_revision,
             "learning was cancelled or settings changed"
         );
@@ -130,6 +139,7 @@ impl Store {
                 .map(str::to_owned)
                 .context("cached response lacks requested field");
         }
+        self.ensure_integration()?;
         let now = crate::background::now()?;
         let prefs = self.preferences()?;
         let project_id: String = self.db.query_row(
@@ -192,7 +202,7 @@ impl Store {
                 field,
             )
         } else {
-            crate::model::author_client(client, packet, field)
+            crate::model::author_client(client, packet, field, prefs.model.as_deref())
         };
         match result {
             Ok((value, usage)) => {
@@ -246,7 +256,7 @@ impl Store {
             |r| r.get(0),
         )?;
         ensure!(count < 8, "learning queue is full");
-        tx.execute("INSERT INTO native_cycles(project,started,status,revision,project_revision,scope,automatic) VALUES(?1,?2,'queued',?3,?4,?5,?6)",params![project,crate::background::now()?,prefs.revision,selected.revision,scope,automatic])?;
+        tx.execute("INSERT INTO native_cycles(project,started,status,revision,project_revision,scope,automatic) VALUES(?1,?2,'queued',?3,?4,?5,?6)",params![project,crate::background::now()?,prefs.work_revision,selected.revision,scope,automatic])?;
         let id = tx.last_insert_rowid();
         tx.commit()?;
         Ok(id)
@@ -402,11 +412,23 @@ impl Store {
         cycle: i64,
         prefs: &Preferences,
     ) -> Result<Value> {
-        let mut sessions = vec![];
         let mut coverage = vec![];
+        // Refresh the head on every cycle, then continue the saved metadata backlog.
         for client in [Client::Codex, Client::Claude] {
+            let key = format!(
+                "history_listing:{}:{}:{}",
+                client.name(),
+                project,
+                serde_json::to_string(&scope)?
+            );
+            let saved: Option<String> = self
+                .db
+                .query_row("SELECT body FROM installation WHERE key=?1", [&key], |r| {
+                    r.get(0)
+                })
+                .optional()?;
             let mut cursor = None;
-            for _ in 0..4 {
+            for index in 0..4 {
                 self.check_native_cycle(cycle)?;
                 let page = self.recent_conversations(
                     project,
@@ -416,18 +438,25 @@ impl Store {
                     cursor.as_deref(),
                 )?;
                 coverage.extend(page["errors"].as_array().unwrap().iter().cloned());
-                sessions.extend(
-                    page["conversations"]
-                        .as_array()
-                        .unwrap()
-                        .iter()
-                        .filter(|v| !prefs.excludes(v["project"].as_str().unwrap_or("")))
-                        .cloned(),
-                );
-                cursor = page["continuations"][client.name()]
+                if !page["errors"].as_array().unwrap().is_empty() {
+                    // Opaque cursors can expire when a host deletes or compacts history.
+                    self.db
+                        .execute("DELETE FROM installation WHERE key=?1", [&key])?;
+                    break;
+                }
+                let next = page["continuations"][client.name()]
                     .as_str()
                     .map(str::to_owned);
-                if cursor.is_none() {
+                cursor = if index == 0 {
+                    saved.clone().or(next)
+                } else {
+                    next
+                };
+                if let Some(cursor) = &cursor {
+                    self.db.execute("INSERT INTO installation(key,body) VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET body=excluded.body", params![key,cursor])?;
+                } else {
+                    self.db
+                        .execute("DELETE FROM installation WHERE key=?1", [&key])?;
                     break;
                 }
             }
@@ -435,21 +464,39 @@ impl Store {
                 coverage.push(json!({"client":client.name(),"status":"more_history_available"}));
             }
         }
-        sessions.sort_by_key(|v| std::cmp::Reverse(v["updated_at"].as_i64().unwrap_or(0)));
-        sessions.dedup_by(|a, b| a["id"] == b["id"]);
-        let mut packets = vec![];
+        let selected = self.project(project)?;
+        let mut statement = self.db.prepare("SELECT c.id,c.updated,c.root,COALESCE(p.head_updated,0),p.tail_cursor,COALESCE(p.tail_next,0) FROM conversations c LEFT JOIN conversation_progress p ON p.conversation=c.id WHERE c.updated>=?1 AND (?2 OR c.root=?3) AND (p.conversation IS NULL OR c.updated>p.head_updated OR p.tail_cursor IS NOT NULL) ORDER BY COALESCE(p.reviewed_at,0),c.updated DESC,c.id LIMIT 96")?;
+        let sessions = statement
+            .query_map(
+                params![
+                    crate::background::now()? - i64::from(prefs.lookback_days) * 86400,
+                    scope == Scope::All,
+                    selected.root.to_string_lossy()
+                ],
+                |r| {
+                    Ok((
+                        r.get::<_, String>(0)?,
+                        r.get::<_, i64>(1)?,
+                        r.get::<_, String>(2)?,
+                        r.get::<_, i64>(3)?,
+                        r.get::<_, Option<String>>(4)?,
+                        r.get::<_, bool>(5)?,
+                    ))
+                },
+            )?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        drop(statement);
         let mut used_bytes = 0;
-        for session in sessions.iter().take(12) {
+        for (id, updated, _root, head, tail, tail_next) in
+            sessions.iter().filter(|s| !prefs.excludes(&s.2)).take(12)
+        {
             self.check_native_cycle(cycle)?;
-            let id = session["id"].as_str().context("conversation lacks ID")?;
-            match self.read_conversation(project, id, scope, None) {
+            let reading_tail = tail.is_some() && (*tail_next || head >= updated);
+            let cursor = if reading_tail { tail.as_deref() } else { None };
+            match self.read_conversation(project, id, scope, cursor) {
                 Ok(page) => {
-                    let items = page["items"].as_array().unwrap();
-                    if items.is_empty() {
-                        continue;
-                    }
                     let size = page.to_string().len();
-                    if used_bytes + size > 384 * 1024 {
+                    if used_bytes > 0 && used_bytes + size > 1024 * 1024 {
                         coverage.push(json!({"status":"evidence_byte_limit"}));
                         break;
                     }
@@ -457,12 +504,44 @@ impl Store {
                     if !page["next_cursor"].is_null() || page["coverage"] != "page" {
                         coverage.push(json!({"conversation":id,"status":"partial_conversation","coverage":page["coverage"],"order":page["order"],"next_cursor":page["next_cursor"]}));
                     }
-                    packets.push(page);
+                    let items = page["items"]
+                        .as_array()
+                        .context("conversation page lacks items")?;
+                    let tx = rusqlite::Transaction::new_unchecked(
+                        &self.db,
+                        rusqlite::TransactionBehavior::Immediate,
+                    )?;
+                    // Save every bounded packet before advancing its cursor. Budget exhaustion
+                    // must not discard conversations which have already been read.
+                    for chunk in items.chunks(20) {
+                        let mut packet = page.clone();
+                        packet["items"] = json!(chunk);
+                        let ids: Vec<_> = chunk
+                            .iter()
+                            .filter_map(|i| i["evidence_id"].as_str())
+                            .collect();
+                        let fingerprint = digest(&(project, &ids))?;
+                        tx.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![fingerprint,json!({"project":project,"scope":scope,"packet":[packet]}).to_string()])?;
+                    }
+                    let next = page["next_cursor"].as_str();
+                    let next_tail = if reading_tail || tail.is_none() {
+                        next
+                    } else {
+                        tail.as_deref()
+                    };
+                    tx.execute("INSERT INTO conversation_progress(conversation,head_updated,tail_cursor,tail_next,reviewed_at) VALUES(?1,?2,?3,?4,?5) ON CONFLICT(conversation) DO UPDATE SET head_updated=excluded.head_updated,tail_cursor=excluded.tail_cursor,tail_next=excluded.tail_next,reviewed_at=excluded.reviewed_at",params![id,if reading_tail{*head}else{*updated},next_tail,!reading_tail,crate::background::now()?])?;
+                    tx.commit()?;
                 }
-                Err(e) => coverage.push(json!({"conversation":id,"error":e.to_string()})),
+                Err(e) => {
+                    coverage.push(json!({"conversation":id,"error":e.to_string()}));
+                    // Retry an expired content cursor from the newest page next time.
+                    if reading_tail {
+                        self.db.execute("UPDATE conversation_progress SET tail_cursor=NULL,head_updated=0 WHERE conversation=?1",[id])?;
+                    }
+                }
             }
         }
-        let mut pending=self.db.prepare("SELECT report FROM native_candidates WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2 ORDER BY rowid LIMIT 3")?;
+        let mut pending=self.db.prepare("SELECT report FROM native_candidates WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2 ORDER BY rowid LIMIT 24")?;
         let pending: Vec<String> = pending
             .query_map(
                 params![
@@ -476,7 +555,7 @@ impl Store {
                 |r| r.get(0),
             )?
             .collect::<rusqlite::Result<_>>()?;
-        let mut groups: Vec<Vec<Value>> = pending
+        let groups: Vec<Vec<Value>> = pending
             .into_iter()
             .map(|s| -> Result<Vec<Value>> {
                 Ok(serde_json::from_str::<Value>(&s)?["packet"]
@@ -485,22 +564,13 @@ impl Store {
                     .clone())
             })
             .collect::<Result<_>>()?;
-        let has_pending = !groups.is_empty();
-        if packets.is_empty() && !has_pending {
-            return Ok(
-                json!({"outcomes":[],"coverage":coverage,"status":"no_readable_conversations"}),
-            );
-        }
-        // Background candidates require repeated user work before spending on interpretation.
-        let users = packets
-            .iter()
-            .flat_map(|p| p["items"].as_array().unwrap())
-            .filter(|i| matches!(i["kind"].as_str(), Some("user" | "userMessage")))
-            .count();
-        if automatic && users < 3 && !has_pending {
-            return Ok(
-                json!({"outcomes":[],"coverage":coverage,"status":"insufficient_repeated_work"}),
-            );
+        let improvement = if automatic && prefs.improve_enabled {
+            self.select_native_improvement(project, scope, prefs)?
+        } else {
+            None
+        };
+        if groups.is_empty() && improvement.is_none() {
+            return Ok(json!({"outcomes":[],"coverage":coverage,"status":"no_pending_work"}));
         }
         let client = if self.project(project)?.settings.model.is_some() {
             Client::Codex
@@ -508,22 +578,19 @@ impl Store {
             self.default_client()?
         };
         let mut outcomes = vec![];
-        groups.extend(packets.chunks(4).map(|p| p.to_vec()));
-        for packet in groups.iter().take(prefs.max_candidates) {
+        let new_limit = prefs
+            .max_candidates
+            .saturating_sub(usize::from(improvement.is_some()));
+        let mut attempts = 0;
+        for packet in &groups {
+            if attempts >= new_limit {
+                break;
+            }
             if packet
                 .iter()
                 .any(|p| prefs.excludes(p["project"].as_str().unwrap_or("")))
             {
                 continue;
-            }
-            let mut packet = packet.clone();
-            let mut remaining = 20;
-            for page in &mut packet {
-                let items = page["items"]
-                    .as_array_mut()
-                    .context("candidate page lacks items")?;
-                items.truncate(remaining);
-                remaining -= items.len();
             }
             self.check_native_cycle(cycle)?;
             let ids: Vec<String> = packet
@@ -544,10 +611,24 @@ impl Store {
             if seen {
                 continue;
             }
-            self.db.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![fingerprint,json!({"project":project,"scope":scope,"packet":packet}).to_string()])?;
-            let mut prepared_task = None;
+            let meaningful = packet
+                .iter()
+                .flat_map(|p| p["items"].as_array().unwrap())
+                .filter(|i| {
+                    matches!(
+                        i["kind"].as_str(),
+                        Some("user" | "userMessage" | "commandExecution" | "mcpToolCall")
+                    )
+                })
+                .count();
+            if automatic && meaningful < 3 {
+                self.db.execute("UPDATE native_candidates SET status='insufficient_evidence',report='{}' WHERE fingerprint=?1", [&fingerprint])?;
+                continue;
+            }
+            attempts += 1;
+            let mut prepared_task=None;
             let result = (|| -> Result<Value> {
-                let extracted=self.native_request(cycle,client,"extract",json!({"instruction":"Find one repeated read/transform workflow that can become reusable TypeScript. Return candidate_json containing JSON null when evidence is insufficient, otherwise an object with task (contract,cases,optional evaluation) and applicability. Use actual transcript evidence where available. Cases are interpretations: distinguish inferred rules in the contract description. Provide at least three varied cases, including a boundary or handoff. Do not put evidence or project in task. Do not invent observed results. Existing generated Clearings work is not new learning material. Select behavior that generalizes; do not hardcode outputs. Routine capabilities are files.read/files.list only or no capabilities. No shell or write effects.","sdk":include_str!("../../../sdk/clearings.d.ts"),"task_shape":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]},"conversations":packet}),"candidate_json",&fingerprint)?;
+                let extracted=self.native_request(cycle,client,"extract",json!({"instruction":"Find one repeated read/transform workflow that can become reusable TypeScript. Return candidate_json containing JSON null when evidence is insufficient, otherwise an object with task (contract,cases,optional evaluation) and applicability. Use actual transcript evidence where available. Cases are interpretations: distinguish inferred rules in the contract description. Provide at least three varied cases, including a boundary or handoff. Do not put evidence or project in task. Do not invent observed results. Existing generated Clearings work is not new learning material. Select behavior that generalizes; do not hardcode outputs. Routine capabilities are files.read/files.list only or no capabilities. No shell or write effects.","sdk":include_str!("../../../sdk/clearings.d.ts"),"task_shape":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]},"excluded_workflows":prefs.excluded_workflows,"conversations":packet}),"candidate_json",&fingerprint)?;
                 let proposed: Value =
                     serde_json::from_str(&extracted).context("candidate extraction is not JSON")?;
                 if proposed.is_null() {
@@ -572,9 +653,35 @@ impl Store {
                     applicability.is_none_or(|s| s.len() <= 4000),
                     "routine applicability exceeds 4000 bytes"
                 );
+                ensure!(
+                    !(automatic || scope == Scope::All) || applicability.is_some(),
+                    "cross-project learning requires an applicability description"
+                );
                 let name = task.contract.name.clone();
+                if prefs
+                    .excluded_workflows
+                    .iter()
+                    .any(|n| n == &name || name.starts_with(&format!("{n}/")))
+                {
+                    return Ok(json!({"status":"excluded","name":name}));
+                }
+                for root in packet.iter().filter_map(|p| p["project"].as_str()) {
+                    let source = digest(&root)?;
+                    let controlled:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM project_routines WHERE project=?1 AND name=?2 AND (paused=1 OR excluded=1))",params![source,name],|r|r.get(0))?;
+                    if controlled
+                        || self
+                            .project(&source)
+                            .is_ok_and(|p| p.settings.excludes(&name))
+                    {
+                        return Ok(json!({"status":"excluded","name":name}));
+                    }
+                }
                 if self.project(project)?.settings.excludes(&name) {
                     return Ok(json!({"status":"excluded","name":name}));
+                }
+                let shared:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM routine_library l JOIN objects o ON o.id=l.task WHERE json_extract(o.body,'$.contract.name')=?1)",[&name],|r|r.get(0))?;
+                if shared {
+                    return Ok(json!({"status":"existing_requirements","name":name}));
                 }
                 if let Ok(existing) = self.named_task(project, &name, false) {
                     let was_active: bool = self.db.query_row(
@@ -602,9 +709,10 @@ impl Store {
                     json!({"status":"created","name":name,"task":task_id,"version":version,"evidence":"conversation interpretation with a withheld case","savings":null}),
                 )
             })();
-            let unavailable = result
-                .as_ref()
-                .is_err_and(|e| e.is::<crate::model::ClientUnavailable>());
+            let unavailable = result.as_ref().is_err_and(|e| {
+                e.is::<crate::model::ClientUnavailable>()
+                    || e.is::<crate::service::IntegrationUnavailable>()
+            });
             let report = match result {
                 Ok(v) => v,
                 Err(e) => {
@@ -631,9 +739,130 @@ impl Store {
                 break;
             }
         }
+        if let Some((task, baseline, owner)) = improvement {
+            self.check_native_cycle(cycle)?;
+            outcomes
+                .push(self.improve_native(cycle, client, executable, &task, &baseline, &owner)?);
+        }
         Ok(
             json!({"outcomes":outcomes,"coverage":coverage,"scope":scope,"sessions_considered":sessions.len(),"status":"reviewed","savings":null}),
         )
+    }
+    fn select_native_improvement(
+        &self,
+        project: &str,
+        scope: Scope,
+        prefs: &Preferences,
+    ) -> Result<Option<(String, String, String)>> {
+        let mut statement=self.db.prepare("SELECT t.id,a.version,p.project,t.body FROM objects t JOIN active a ON a.task=t.id JOIN project_routines p ON p.task=t.id AND p.project=json_extract(t.body,'$.project') JOIN routine_usage u ON u.task=t.id AND u.version=a.version WHERE t.kind='task' AND p.paused=0 AND p.excluded=0 AND json_array_length(t.body,'$.cases') BETWEEN 3 AND 8 AND (?1 OR p.project=?2 OR (u.project=?2 AND EXISTS(SELECT 1 FROM routine_library WHERE task=t.id))) AND u.day>=date('now','-89 days') GROUP BY t.id,a.version,p.project HAVING sum(u.calls)>=3 ORDER BY sum(u.calls) DESC,t.id LIMIT 20")?;
+        let rows = statement.query_map(params![scope == Scope::All, project], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+                r.get::<_, String>(3)?,
+            ))
+        })?;
+        for row in rows {
+            let (id, baseline, owner, body) = row?;
+            let task: Task = serde_json::from_str(&body)?;
+            if prefs.excludes(self.project(&owner)?.root.to_string_lossy().as_ref())
+                || prefs.excluded_workflows.iter().any(|n| {
+                    n == &task.contract.name || task.contract.name.starts_with(&format!("{n}/"))
+                })
+            {
+                continue;
+            }
+            if task
+                .evidence
+                .as_ref()
+                .and_then(|e| e["sources"].as_array())
+                .is_some_and(|a| {
+                    a.iter()
+                        .any(|v| prefs.excludes(v["record"]["project"].as_str().unwrap_or("")))
+                })
+            {
+                continue;
+            }
+            let key = digest(&("improve", &baseline))?;
+            let done:bool=self.db.query_row("SELECT EXISTS(SELECT 1 FROM native_candidates WHERE fingerprint=?1 AND status!='pending')",[key],|r|r.get(0))?;
+            if !done {
+                return Ok(Some((id, baseline, owner)));
+            }
+        }
+        Ok(None)
+    }
+    fn improve_native(
+        &self,
+        cycle: i64,
+        client: Client,
+        executable: &Path,
+        task_id: &str,
+        baseline: &str,
+        owner: &str,
+    ) -> Result<Value> {
+        let task: Task = self.get("task", task_id)?;
+        let version: crate::store::Version = self.get("version", baseline)?;
+        let owner_revision = self.project(owner)?.revision;
+        let fingerprint = digest(&("improve", baseline))?;
+        self.db.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![fingerprint,json!({"kind":"improvement","task":task_id,"baseline":baseline}).to_string()])?;
+        let result = (|| -> Result<Value> {
+            let source=self.native_request(cycle,client,"improve",json!({"instruction":"Return source implementing the same immutable task with fewer redundant reads or lower runtime. Preserve behavior and capability requirements. One case is withheld. No tools, imports, or additional access.","sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"source":version.source,"cases":&task.cases[..task.cases.len()-1]}),"source",&fingerprint)?;
+            let candidate = self.submit(executable, task_id, source)?;
+            if candidate == baseline {
+                return Ok(json!({"status":"no_benefit","routine":task_id}));
+            }
+            let guard = || -> Result<()> {
+                self.check_native_cycle(cycle)?;
+                ensure!(
+                    self.project(owner)?.revision == owner_revision,
+                    "routine owner settings changed"
+                );
+                Ok(())
+            };
+            let measurements = self.compare_versions(executable, baseline, &candidate, guard)?;
+            if measurements["accepted"] != true {
+                return Ok(
+                    json!({"status":"no_benefit","routine":task_id,"measurements":measurements}),
+                );
+            }
+            guard()?;
+            self.ensure_integration()?;
+            let tx = rusqlite::Transaction::new_unchecked(
+                &self.db,
+                rusqlite::TransactionBehavior::Immediate,
+            )?;
+            self.check_native_cycle(cycle)?;
+            ensure!(tx.execute("UPDATE active SET version=?2 WHERE task=?1 AND version=?3 AND EXISTS(SELECT 1 FROM projects p JOIN project_routines r ON r.project=p.id WHERE p.id=?4 AND p.revision=?5 AND r.task=?1 AND r.paused=0 AND r.excluded=0)",params![task_id,candidate,baseline,owner,owner_revision])?==1,"routine changed during improvement");
+            tx.execute(
+                "UPDATE project_routines SET previous=?2 WHERE task=?1",
+                params![task_id, baseline],
+            )?;
+            tx.execute("INSERT INTO component_changes(project,task,version,previous,reason) VALUES(?1,?2,?3,?4,'improved')",params![owner,task_id,candidate,baseline])?;
+            tx.commit()?;
+            Ok(
+                json!({"status":"improved","routine":task_id,"version":candidate,"previous":baseline,"measurements":measurements}),
+            )
+        })();
+        let retryable = result.as_ref().is_err_and(|e| {
+            e.is::<crate::model::ClientUnavailable>()
+                || e.is::<crate::service::IntegrationUnavailable>()
+                || e.to_string().contains("allowance exhausted")
+                || e.to_string().contains("budget exhausted")
+        }) || self.check_native_cycle(cycle).is_err();
+        let report = match result {
+            Ok(v) => v,
+            Err(e) => {
+                json!({"status":"failed","error":e.to_string().chars().take(4096).collect::<String>()})
+            }
+        };
+        if !retryable {
+            self.db.execute(
+                "UPDATE native_candidates SET status=?2,report=?3 WHERE fingerprint=?1",
+                params![fingerprint, report["status"].as_str(), report.to_string()],
+            )?;
+        }
+        Ok(report)
     }
     fn promote_conversation(
         &self,
@@ -644,11 +873,12 @@ impl Store {
         applicability: Option<&str>,
     ) -> Result<()> {
         self.check_native_cycle(cycle)?;
+        self.ensure_integration()?;
         let tx = rusqlite::Transaction::new_unchecked(
             &self.db,
             rusqlite::TransactionBehavior::Immediate,
         )?;
-        let valid:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM native_cycles n JOIN projects p ON p.id=n.project WHERE n.id=?1 AND n.status='running' AND p.revision=n.project_revision AND n.revision=COALESCE((SELECT json_extract(body,'$.revision') FROM installation WHERE key='preferences'),1) AND EXISTS(SELECT 1 FROM project_routines r WHERE r.project=n.project AND r.task=?2 AND r.paused=0 AND r.excluded=0))",params![cycle,task],|r|r.get(0))?;
+        let valid:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM native_cycles n JOIN projects p ON p.id=n.project WHERE n.id=?1 AND n.status='running' AND p.revision=n.project_revision AND n.revision=COALESCE((SELECT json_extract(body,'$.work_revision') FROM installation WHERE key='preferences'),1) AND EXISTS(SELECT 1 FROM project_routines r WHERE r.project=n.project AND r.task=?2 AND r.paused=0 AND r.excluded=0))",params![cycle,task],|r|r.get(0))?;
         ensure!(
             valid,
             "learning was cancelled or settings changed before promotion"
@@ -676,7 +906,7 @@ impl Store {
         )?;
         let requests:Vec<Value>=statement.query_map([],|r|Ok(json!({"id":r.get::<_,i64>(0)?,"client":r.get::<_,String>(1)?,"purpose":r.get::<_,String>(2)?,"status":r.get::<_,String>(3)?,"usage":r.get::<_,Option<String>>(4)?.and_then(|s|serde_json::from_str::<Value>(&s).ok())})))?.collect::<rusqlite::Result<_>>()?;
         Ok(
-            json!({"preferences":self.preferences()?,"recent_cycles":cycles,"requests_today":count,"recent_requests":requests,"usage_kind":"client reported usage; request limits are not dollar guarantees"}),
+            json!({"preferences":self.preferences()?,"service":self.service_health()?,"recent_cycles":cycles,"requests_today":count,"recent_requests":requests,"usage_kind":"client reported usage; request limits are not dollar guarantees"}),
         )
     }
 }

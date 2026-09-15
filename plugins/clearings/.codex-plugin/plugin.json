@@ -1,7 +1,7 @@
 {
   "name": "clearings",
   "version": "0.1.0-alpha.3",
-  "description": "Save and reuse repeated work across your projects. Installation authorizes project and recent conversation reading; state and MCP setup are automatic.",
+  "description": "Reuse repeated work across projects. Installation enables recent local conversation reading and quiet daily learning through your signed-in coding client, with bounded requests and configurable defaults.",
   "author": {
     "name": "Clearings contributors"
   },
@@ -10,7 +10,7 @@
   "interface": {
     "displayName": "Clearings",
     "shortDescription": "Reuse repeated work across projects.",
-    "longDescription": "Install once, then save and reuse routines in any working project. Clearings sets up private storage and project read access automatically. Background model spending requires separate configuration.",
+    "longDescription": "Install once and work normally. Clearings reads recent local Codex and Claude Code conversations, learns daily through your existing client sign-in, and reuses evaluated routines. Defaults limit learning to three candidates and six authoring requests per day. Ask to pause learning, change the schedule, inspect use, or undo a change. Client plugin and hook trust still applies.",
     "developerName": "Clearings contributors",
     "category": "Productivity",
     "capabilities": [],

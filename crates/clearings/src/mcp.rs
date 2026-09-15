@@ -22,6 +22,8 @@ fn tool(
 pub fn tools() -> Value {
     let id = json!({"type":"string","pattern":"^[a-f0-9]{64}$"});
     json!({"tools":[
+        tool("learning_preferences","Change requested learning preferences without configuration files. Read learning_status for the current revision. Supported changes: learning_enabled, improve_enabled, suggestions_enabled, interval_seconds, lookback_days, max_candidates, max_requests_per_day, client, model, excluded_projects, excluded_workflows. Defaults already work; do not present a setup questionnaire. Project exclusions accept known names or absolute paths.",json!({"expected_revision":{"type":"integer","minimum":1},"changes":{"type":"object"}}),json!(["expected_revision","changes"]),false),
+        tool("undo_learning","Undo the latest still-active automatic change. Read learning_status for the expected version. Select all scope for user-wide background changes. Definitions and evidence remain inspectable.",json!({"expected_version":id,"scope":{"enum":["project","all"]}}),json!(["expected_version"]),false),
         tool("learn_now","Review recent conversations and create evaluated reusable routines through the installed signed-in client. Defaults to this project; all scope reviews across projects. Queues one bounded cycle and returns immediately. Inspect learning_status for completion. No API key or model setup is required. Report actual outcomes and partial coverage.",json!({"scope":{"enum":["project","all"]}}),json!([]),false),
         tool("learning_status","Inspect default learning preferences, recent cycles, failures, and consumed request allowance. Does not start work.",json!({}),json!([]),true),
         tool("prepare_conversation_task","Prepare immutable requirements from conversation records already read by Clearings. Pass evidence_ids from read_conversation. Task has contract and cases, optionally evaluation; evidence and project are host-assigned. Cases remain agent interpretations, not authenticated observations.",json!({"task":{"type":"object","required":["contract","cases"],"properties":{"contract":{"type":"object"},"cases":{"type":"array","minItems":1,"maxItems":100},"evaluation":{"enum":["exact_calls","read_only_behavior"]}},"additionalProperties":false},"evidence_ids":{"type":"array","minItems":1,"maxItems":20,"items":id},"scope":{"enum":["project","all"]}}),json!(["task","evidence_ids"]),false),
@@ -225,7 +227,7 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
                             if plugin && name == "clearings_open_project" {
                                 return crate::plugin::connect(&mut api, std::path::Path::new(original_args["path"].as_str().unwrap()));
                             }
-                            anyhow::ensure!(!plugin || api.project.is_some(), "call clearings_open_project with the host session's working directory first");
+                            anyhow::ensure!(!plugin || api.project.is_some() || matches!(name,"clearings_learning_status"|"clearings_learning_preferences"|"clearings_undo_learning"), "call clearings_open_project with the host session's working directory first");
                             operation.and_then(|op| api.call(op))
                         });
                     let (value, is_error) = match called {

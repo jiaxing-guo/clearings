@@ -7,7 +7,7 @@
     {
       "name": "clearings",
       "source": "./integrations/claude-code/plugins/clearings",
-      "description": "Save and reuse repeated work across your projects. Installation authorizes project and recent local conversation reading; state and MCP setup are automatic.",
+      "description": "Quiet reuse and daily learning from recent local conversations through your signed-in coding client, with configurable defaults.",
       "version": "0.1.0-alpha.3"
     }
   ]

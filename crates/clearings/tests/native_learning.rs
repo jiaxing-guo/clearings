@@ -30,13 +30,19 @@ impl Fixture {
 import sys,json,os,time
 root=os.environ['FIXTURE_ROOT']
 def emit(v):print(json.dumps(v),flush=True)
+if sys.argv[1]=='plugin':
+ enabled=os.environ.get('PLUGIN_DISABLED')!='1'
+ emit({'installed':[{'pluginId':'clearings@clearings','enabled':enabled}]} if os.path.basename(sys.argv[0])=='codex' else [{'id':'clearings@clearings','enabled':enabled}])
+ sys.exit(0)
 if sys.argv[1]=='app-server':
  for line in sys.stdin:
   v=json.loads(line)
   if 'id' not in v:continue
   method=v['method']
   if method=='initialize':r={}
-  elif method=='thread/list':r={'data':[{'id':'fixture-session','cwd':root,'updatedAt':int(time.time())+int(os.environ.get('NEW_EVIDENCE','0')),'name':'Double integer values'}],'nextCursor':None}
+  elif method=='thread/list':
+   total=int(os.environ.get('HISTORY_SESSIONS','1'));start=int(v['params'].get('cursor') or 0);end=min(total,start+20)
+   r={'data':[{'id':'fixture-session-'+str(i),'cwd':root,'updatedAt':int(time.time())+int(os.environ.get('NEW_EVIDENCE','0')),'name':'Double integer values'} for i in range(start,end)],'nextCursor':str(end) if end<total else None}
   elif method=='thread/read':r={'thread':{'cwd':root}}
   elif method=='thread/turns/list':r={'data':[{'id':'turn','items':[{'id':'user'+str(i)+os.environ.get('NEW_EVIDENCE',''),'type':'userMessage','content':[{'type':'text','text':'Double the integer '+str(i)+' to get '+str(i*2)}]} for i in [1,3,5]]}],'nextCursor':None}
   else:raise RuntimeError(method)
@@ -63,10 +69,11 @@ else:
   if os.environ.get('CHANGE_PREFS'):
    import sqlite3
    with sqlite3.connect(os.environ['FIXTURE_DB']) as db:
-    db.execute("INSERT OR REPLACE INTO installation(key,body) VALUES('preferences','{\"revision\":2}')")
+    db.execute("INSERT OR REPLACE INTO installation(key,body) VALUES('preferences','{\"revision\":2,\"work_revision\":2}')")
   assert '"input":5' not in prompt and '"output":10' not in prompt
   answer='export default async x=>({status:"completed",output:x*2})'
   if os.environ.get('BAD_SOURCE'):answer='export default async x=>({status:"completed",output:2})'
+  if os.environ.get('IMPROVE_SOURCE'):answer=os.environ['IMPROVE_SOURCE']
  if claude:
   emit({'type':'result','is_error':False,'structured_output':{field:answer},'usage':{'input_tokens':100,'output_tokens':50}})
  else:
@@ -424,4 +431,167 @@ fn concurrent_synchronous_callers_wait_for_the_same_terminal_cycle() {
     assert_eq!(first["cycle"], second["cycle"]);
     assert_eq!(second["report"]["outcomes"][0]["status"], "created");
     assert_eq!(f.run(&["learning-status"])["requests_today"], 2);
+}
+
+#[test]
+fn default_schedule_waits_then_coalesces_and_global_controls_preserve_reuse() {
+    let f = Fixture::new();
+    let tick = || f.run(&["learning-service", "--data-dir", f.data.to_str().unwrap()]);
+    assert_eq!(tick()["status"], "scheduled");
+    assert_eq!(tick()["status"], "not_due");
+    let store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
+    assert_eq!(store.preferences().unwrap().interval_seconds, 86400);
+    store
+        .update_preferences(1, json!({"suggestions_enabled":false}))
+        .unwrap();
+    assert!(store.preferences().unwrap().learning_enabled);
+    assert_eq!(store.preferences().unwrap().work_revision, 1);
+    store
+        .update_preferences(2, json!({"learning_enabled":false}))
+        .unwrap();
+    assert_eq!(tick()["status"], "paused");
+    assert!(
+        store
+            .update_preferences(2, json!({"learning_enabled":true}))
+            .is_err()
+    );
+    store
+        .update_preferences(3, json!({"learning_enabled":true}))
+        .unwrap();
+    let cycle = tick();
+    assert_eq!(cycle["report"]["scope"], "all", "{cycle}");
+    assert_eq!(
+        cycle["report"]["outcomes"][0]["status"], "created",
+        "{cycle}"
+    );
+    assert_eq!(tick()["status"], "not_due");
+    let status = store.learning_status().unwrap();
+    assert_eq!(status["requests_today"], 2);
+    let version = status["service"]["latest_automatic_change"]["version"]
+        .as_str()
+        .unwrap();
+    assert!(store.undo_learning(None, Some("stale")).is_err());
+    let undone = store.undo_learning(None, Some(version)).unwrap();
+    assert!(undone["active"].is_null());
+    assert!(store.inspect(version).is_ok());
+    assert!(store.undo_learning(None, None).is_err());
+    store.update_preferences(4,json!({"interval_seconds":604800,"excluded_projects":[f.root.file_name().unwrap().to_str().unwrap()]})).unwrap();
+    assert_eq!(store.preferences().unwrap().interval_seconds, 604800);
+    assert_eq!(
+        store.preferences().unwrap().excluded_projects,
+        vec![f.root.to_string_lossy()]
+    );
+}
+
+#[test]
+fn disabled_plugin_stops_learning_without_touching_os_services_in_fixture_stores() {
+    let f = Fixture::new();
+    let store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
+    store.bind_plugin_service(true).unwrap();
+    let output = f
+        .command()
+        .env("PLUGIN_DISABLED", "1")
+        .args(["learning-service", "--data-dir", f.data.to_str().unwrap()])
+        .output()
+        .unwrap();
+    let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(result["status"], "integration_unavailable", "{result}");
+    assert_eq!(store.learning_status().unwrap()["requests_today"], 0);
+    assert!(!f.home.join("Library/LaunchAgents").exists());
+    assert!(!f.home.join(".config/systemd").exists());
+    let output = f
+        .command()
+        .args(["learning-service", "--data-dir", f.data.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert_eq!(
+        serde_json::from_slice::<Value>(&output.stdout).unwrap()["status"],
+        "scheduled"
+    );
+}
+
+#[test]
+fn history_backlog_survives_request_limits_and_progresses_beyond_first_listing() {
+    let f = Fixture::new();
+    let store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
+    store
+        .update_preferences(1, json!({"max_requests_per_day":0}))
+        .unwrap();
+    for _ in 0..9 {
+        let output = f
+            .command()
+            .env("HISTORY_SESSIONS", "100")
+            .arg("learn-now")
+            .output()
+            .unwrap();
+        assert_eq!(
+            serde_json::from_slice::<Value>(&output.stdout).unwrap()["status"],
+            "failed"
+        );
+    }
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    let count: i64 = db
+        .query_row("SELECT count(*) FROM conversation_progress", [], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    assert_eq!(count, 100);
+    let pending: i64 = db
+        .query_row(
+            "SELECT count(*) FROM native_candidates WHERE status='pending'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(pending, 100);
+    assert_eq!(store.learning_status().unwrap()["requests_today"], 0);
+}
+
+#[test]
+fn usage_selects_improvement_and_undo_restores_the_previous_accepted_version() {
+    use clearings::store::Task;
+    let f = Fixture::new();
+    let mut store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
+    fs::write(f.root.join("value.txt"), "fresh").unwrap();
+    let task:Task=serde_json::from_value(json!({"evaluation":"read_only_behavior","contract":{"abi":1,"name":"read-value","description":"Read the current value","input_schema":{"type":"integer"},"output_schema":{"type":"string"},"capabilities":["files.read"]},"cases":(0..3).map(|i|json!({"name":i.to_string(),"input":i,"expected":{"status":"completed","output":"example"},"calls":[{"name":"files.read","input":{"root":"repo","path":"value.txt"},"result":{"text":"example"}},{"name":"files.read","input":{"root":"repo","path":"value.txt"},"result":{"text":"example"}}]})).collect::<Vec<_>>() })).unwrap();
+    let id = store.prepare_named(&f.project, task, "user").unwrap();
+    let bin = std::path::Path::new(env!("CARGO_BIN_EXE_clearings"));
+    let old=store.save_named(bin,&f.project,"read-value","export default async()=>{await clearings.call('files.read',{root:'repo',path:'value.txt'});const r=await clearings.call('files.read',{root:'repo',path:'value.txt'});return {status:'completed',output:r.text}}".into(),None).unwrap();
+    let old = old["version"].as_str().unwrap();
+    for _ in 0..3 {
+        store
+            .run_routine(
+                bin,
+                &f.project,
+                &id,
+                json!(1),
+                &store.project(&f.project).unwrap().settings.grants,
+            )
+            .unwrap();
+    }
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    db.execute(
+        "INSERT INTO installation(key,body) VALUES('next_learning_due','0')",
+        [],
+    )
+    .unwrap();
+    let output=f.command().env("IMPROVE_SOURCE","export default async()=>{const r=await clearings.call('files.read',{root:'repo',path:'value.txt'});return {status:'completed',output:r.text}}").args(["learning-service","--data-dir",f.data.to_str().unwrap()]).output().unwrap();
+    let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert!(
+        result["report"]["outcomes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|o| o["status"] == "improved"),
+        "{result}"
+    );
+    let current = store.active(&id).unwrap().unwrap();
+    assert_ne!(current, old);
+    store.undo_learning(None, Some(&current)).unwrap();
+    assert_eq!(store.active(&id).unwrap().unwrap(), old);
+    let usage = store.learning_status().unwrap();
+    assert_eq!(
+        usage["service"]["recent_routine_usage"][0]["usage"]["windows"]["7"]["calls"],
+        3
+    );
 }

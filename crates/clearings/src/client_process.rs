@@ -57,6 +57,7 @@ impl JsonProcess {
         let (sender, output) = mpsc::sync_channel(8);
         std::thread::spawn(move || {
             let mut total = 0;
+            let mut pending = vec![];
             loop {
                 let result = (|| -> Result<Option<Value>> {
                     let mut line = vec![];
@@ -71,12 +72,25 @@ impl JsonProcess {
                         n <= 4 * 1024 * 1024 && total <= 16 * 1024 * 1024,
                         "client output exceeds byte limit"
                     );
-                    Ok(Some(
-                        serde_json::from_slice(&line).context("client returned invalid JSON")?,
-                    ))
+                    pending.extend_from_slice(&line);
+                    ensure!(
+                        pending.len() <= 4 * 1024 * 1024,
+                        "client JSON value exceeds byte limit"
+                    );
+                    match serde_json::from_slice(&pending) {
+                        Ok(value) => {
+                            pending.clear();
+                            Ok(Some(value))
+                        }
+                        Err(e) if e.is_eof() => Ok(Some(Value::Null)),
+                        Err(e) => Err(e).context("client returned invalid JSON"),
+                    }
                 })();
                 match result {
                     Ok(Some(value)) => {
+                        if value.is_null() {
+                            continue;
+                        }
                         if sender.send(Ok(value)).is_err() {
                             break;
                         }

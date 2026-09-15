@@ -10,6 +10,15 @@ use std::path::PathBuf;
 #[derive(Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
+    LearningPreferences {
+        expected_revision: u64,
+        changes: Value,
+    },
+    UndoLearning {
+        expected_version: String,
+        #[serde(default)]
+        scope: crate::conversations::Scope,
+    },
     LearnNow {
         #[serde(default)]
         scope: crate::conversations::Scope,
@@ -147,7 +156,14 @@ impl Api {
     pub fn call(&mut self, op: Operation) -> Result<Value> {
         if let Some(project) = &self.project {
             let grants = self.store.project(project)?.settings.grants;
-            if !matches!(op, Operation::ProjectStatus | Operation::Sdk) {
+            if !matches!(
+                op,
+                Operation::ProjectStatus
+                    | Operation::Sdk
+                    | Operation::LearningStatus
+                    | Operation::LearningPreferences { .. }
+                    | Operation::UndoLearning { .. }
+            ) {
                 anyhow::ensure!(
                     serde_json::to_value(&self.policy)? == serde_json::to_value(grants)?,
                     "project grants changed; restart this session with the current policy"
@@ -179,6 +195,25 @@ impl Api {
             _ => {}
         }
         Ok(match op {
+            Operation::LearningPreferences {
+                expected_revision,
+                changes,
+            } => self.store.update_preferences(expected_revision, changes)?,
+            Operation::UndoLearning {
+                expected_version,
+                scope,
+            } => self.store.undo_learning(
+                if scope == crate::conversations::Scope::Project {
+                    Some(
+                        self.project
+                            .as_deref()
+                            .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                    )
+                } else {
+                    None
+                },
+                Some(&expected_version),
+            )?,
             Operation::LearnNow { scope } => self.store.start_learning(
                 self.project
                     .as_deref()

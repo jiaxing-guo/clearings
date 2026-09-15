@@ -2,9 +2,9 @@
 
 ## Purpose
 
-The next iteration follows the [default experience](default-experience.md): immediate use after installation, on-request conversation learning, daily learning across projects, quiet reuse, and natural-language controls. That page separates target defaults from the implementation described below.
+The implementation follows the [default experience](default-experience.md): immediate use after installation, on-request conversation learning, daily learning across projects, quiet reuse, and natural-language controls. That page records the requirements; host acceptance remains a separate launch gate.
 
-Turn authorized repeated agent work into reusable programs. The initial experience is: select completed work, describe what should vary, have the active agent author a TypeScript routine, evaluate it, and reuse it with new inputs. Users customize behavior through their existing Codex or Claude Code conversation. Plugin installation is user-wide: working projects receive their own identity, private state and read grant automatically, without per-project setup. Existing restrictions remain in force, and background model spending requires separate configuration.
+Turn authorized repeated agent work into reusable programs. The initial experience is: select completed work, describe what should vary, have the active agent author a TypeScript routine, evaluate it, and reuse it with new inputs. Users customize behavior through their existing Codex or Claude Code conversation. Plugin installation is user-wide: working projects receive their own identity, private state and read grant automatically, without per-project setup. Existing restrictions remain in force. Daily conversation learning uses the signed-in coding client without a separate model connection.
 
 The same execution interface supports repository context gathering, log grouping, data normalization and other read-and-transform work. These are examples, not special cases in the runtime. The first release does not require a specific SaaS integration or a prescribed workflow template.
 
@@ -45,11 +45,11 @@ Executing a routine against fresh inputs is different from caching its output. C
 
 Project-scoped observation scheduling and structured-observation synthesis are implemented. A completed cycle reports whether learning created a component, deferred work or found no eligible observations.
 
-The active host agent supplies selected task evidence and authors source using a bundled SDK. Clearings provides the execution and evaluation lifecycle through the same interface in each host. Historical transcript access is limited to user-selected available evidence. Reconstructed summaries are not exact tool recordings.
+The active host agent supplies selected task evidence and authors source using a bundled SDK. Clearings provides the execution and evaluation lifecycle through the same interface in each host. On-request review selects relevant local history; daily review considers recent local conversations across projects. Reconstructed summaries are not exact tool recordings.
 
-On-demand teaching remains available without a separate model connection. Project authorization also supports selected transcript imports, explicitly enabled conversational observation, background source proposals, evaluation, activation and measured improvement. Background generation requires a configured model connection and conservative spending cap. Shared routine definitions are available across local projects; execution grants stay project-specific. Remote workers remain outside this version.
+On-demand teaching remains available without a separate model connection. Project authorization also supports selected transcript imports, explicitly enabled conversational observation, background source proposals, evaluation, activation and measured improvement. Background conversation generation uses the coding client and bounded request allowance. Explicit HTTP model connections remain optional. Shared routine definitions are available across local projects; grants remain project-specific.
 
-Automatic eligibility currently uses structured observations with actual inputs, outcomes and tool fixtures. It does not reconstruct arbitrary workflows from free text or shell commands. See [background execution](background.md) for the acceptance limits and [management](management.md) for pause, exclusion, retirement, rollback and retention.
+Conversation learning proposes requirements and examples from transcript evidence, with interpretations labeled explicitly. It does not treat arbitrary shell commands as reproducible authenticated tool fixtures. The configured structured-observation path remains available. See [background execution](background.md) for the acceptance limits and [management](management.md) for pause, exclusion, retirement, rollback and retention.
 
 ## Success and limits
 

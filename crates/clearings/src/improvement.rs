@@ -91,28 +91,10 @@ impl Store {
                 "UPDATE improvement_trials SET candidate=?3 WHERE project=?1 AND baseline=?2",
                 params![project, baseline, candidate],
             )?;
-            ensure!(
-                self.evaluate(executable, &candidate)?["accepted"] == true,
-                "candidate fails frozen acceptance"
-            );
-            let mut before = vec![];
-            let mut after = vec![];
-            for i in 0..3 {
-                let guard = || self.check_job(project, job);
-                let (b, c) = if i % 2 == 0 {
-                    let b = self.evaluate_fresh(executable, &baseline, guard)?;
-                    let c = self.evaluate_fresh(executable, &candidate, guard)?;
-                    (b, c)
-                } else {
-                    let c = self.evaluate_fresh(executable, &candidate, guard)?;
-                    let b = self.evaluate_fresh(executable, &baseline, guard)?;
-                    (b, c)
-                };
-                before.push(metrics(&b)?);
-                after.push(metrics(&c)?);
-            }
-            let accepted = benefit(&before, &after);
-            let measurements = json!({"baseline":baseline,"candidate":candidate,"baseline_samples":before,"candidate_samples":after,"sample_fields":["capability_calls","elapsed_ms"],"accepted":accepted,"model_savings":null});
+            let measurements = self.compare_versions(executable, &baseline, &candidate, || {
+                self.check_job(project, job)
+            })?;
+            let accepted = measurements["accepted"] == true;
             if accepted {
                 self.promote_automatic(&p, job, &candidate, Some(&baseline), "improved")?;
             }
@@ -158,6 +140,37 @@ impl Store {
             params![project, baseline, status, report.to_string()],
         )?;
         Ok(json!({"status":status,"report":report}))
+    }
+    pub(crate) fn compare_versions(
+        &self,
+        executable: &Path,
+        baseline: &str,
+        candidate: &str,
+        guard: impl Fn() -> Result<()>,
+    ) -> Result<Value> {
+        ensure!(
+            self.evaluate(executable, candidate)?["accepted"] == true,
+            "candidate fails frozen acceptance"
+        );
+        let mut before = vec![];
+        let mut after = vec![];
+        for i in 0..3 {
+            let (b, c) = if i % 2 == 0 {
+                (
+                    self.evaluate_fresh(executable, baseline, &guard)?,
+                    self.evaluate_fresh(executable, candidate, &guard)?,
+                )
+            } else {
+                let c = self.evaluate_fresh(executable, candidate, &guard)?;
+                let b = self.evaluate_fresh(executable, baseline, &guard)?;
+                (b, c)
+            };
+            before.push(metrics(&b)?);
+            after.push(metrics(&c)?);
+        }
+        Ok(
+            json!({"baseline":baseline,"candidate":candidate,"baseline_samples":before,"candidate_samples":after,"sample_fields":["capability_calls","elapsed_ms"],"accepted":benefit(&before,&after),"model_savings":null}),
+        )
     }
     pub(crate) fn recover_regression(&self, task: &str, failed: &str) -> Result<Option<Value>> {
         let previous:Option<(String,String)>=self.db.query_row("SELECT project,previous FROM project_routines WHERE task=?1 AND previous IS NOT NULL AND EXISTS(SELECT 1 FROM component_changes WHERE task=?1 AND version=?2 AND reason='improved')",params![task,failed],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
