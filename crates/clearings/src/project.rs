@@ -174,7 +174,7 @@ pub struct Project {
 }
 
 impl Store {
-    /// Called only by the installation-authorized plugin connection path. Existing
+    /// Called only by the installation-authorized host SessionStart hook. Existing
     /// settings, including deliberately narrowed grants, always take precedence.
     pub(crate) fn ensure_plugin_project(&mut self, root: &Path) -> Result<Project> {
         let id = digest(&root)?;

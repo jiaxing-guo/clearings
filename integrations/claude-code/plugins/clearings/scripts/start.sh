@@ -2,9 +2,14 @@
 # Installed users need only the native executable and ordinary OS utilities.
 set -eu
 umask 077
+clearings_action=plugin-mcp
+if [ "${1:-}" = '--register-session' ]; then
+    clearings_action=plugin-register
+    shift
+fi
 clearings_plugin=$(CDPATH= cd -- "${0%/*}/.." && pwd -P)
 if [ -x "$clearings_plugin/bin/clearings" ]; then
-    exec "$clearings_plugin/bin/clearings" plugin-mcp --all-projects "$@"
+    exec "$clearings_plugin/bin/clearings" "$clearings_action" --all-projects "$@"
 fi
 
 IFS= read -r clearings_version < "$clearings_plugin/runtime-version"
@@ -37,7 +42,7 @@ if [ "$clearings_owner" != "$(id -u):700" ]; then
 fi
 clearings_destination=$clearings_cache_base/$clearings_version-$clearings_target
 if [ -x "$clearings_destination/clearings" ]; then
-    exec "$clearings_destination/clearings" plugin-mcp --all-projects "$@"
+    exec "$clearings_destination/clearings" "$clearings_action" --all-projects "$@"
 fi
 
 # Concurrent clients may download independently. Each publishes a complete,
@@ -69,4 +74,4 @@ if ! ln -s "$clearings_ready/package/clearings" "$clearings_destination/clearing
 fi
 rm -rf "$clearings_download"
 trap - EXIT HUP INT TERM
-exec "$clearings_destination/clearings" plugin-mcp --all-projects "$@"
+exec "$clearings_destination/clearings" "$clearings_action" --all-projects "$@"

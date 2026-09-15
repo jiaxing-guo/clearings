@@ -77,6 +77,30 @@ impl Drop for Client {
     }
 }
 
+fn register(data: &Path, cwd: &Path) {
+    let mut hook = Command::new(env!("CARGO_BIN_EXE_clearings"))
+        .args(["plugin-register", "--all-projects", "--data-dir"])
+        .arg(data)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    writeln!(
+        hook.stdin.take().unwrap(),
+        "{}",
+        json!({"hook_event_name":"SessionStart", "cwd":cwd})
+    )
+    .unwrap();
+    let output = hook.wait_with_output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(output.stdout.is_empty());
+}
+
 fn prepare_reader(client: &mut Client) -> String {
     client.ok("prepare_task", json!({"task":{
         "contract":{"abi":1,"name":"read-value","description":"Read a project file","input_schema":{"type":"string"},"output_schema":{"type":"string"},"capabilities":["files.read"]},
@@ -98,6 +122,7 @@ fn plugin_connects_projects_without_setup_and_preserves_isolation_and_history() 
     std::fs::write(other.join(".git"), "gitdir: /unused").unwrap();
     std::fs::write(other.join("value.txt"), "other").unwrap();
     let data = temp.path().join("private");
+    register(&data, &repo);
     let mut first = Client::new(&data, temp.path());
     assert_eq!(first.call("discover", json!({}))["isError"], true);
     let project = first.ok("open_project", json!({"path":repo.join("src")}))["project"].clone();
@@ -128,6 +153,7 @@ fn plugin_connects_projects_without_setup_and_preserves_isolation_and_history() 
         )["isError"],
         true
     );
+    register(&data, &other);
     let mut second = Client::new(&data, temp.path());
     let second_project = second.ok("open_project", json!({"path":other}))["project"].clone();
     assert_ne!(project["id"], second_project["id"]);
@@ -167,6 +193,7 @@ fn plugin_connection_does_not_overwrite_settings_or_accept_grant_arguments() {
     let repo = temp.path().join("project");
     std::fs::create_dir(&repo).unwrap();
     let data = temp.path().join("private");
+    register(&data, &repo);
     let mut client = Client::new(&data, temp.path());
     let project = client.ok("open_project", json!({"path":repo}))["project"].clone();
     let settings = temp.path().join("restricted.json");
@@ -232,4 +259,41 @@ fn plugin_entrypoint_requires_installation_authorization_and_private_storage() {
         std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
         assert!(clearings::plugin::data_directory(Some(path)).is_err());
     }
+}
+
+#[test]
+fn model_paths_cannot_register_unopened_directories() {
+    let temp = tempfile::tempdir().unwrap();
+    let working = temp.path().join("working");
+    let private = temp.path().join("private-other");
+    std::fs::create_dir(&working).unwrap();
+    std::fs::create_dir(&private).unwrap();
+    std::fs::write(private.join("secret"), "unrelated").unwrap();
+    let data = temp.path().join("state");
+    register(&data, &working);
+    let mut client = Client::new(&data, temp.path());
+    client.ok("open_project", json!({"path":working}));
+    assert_eq!(
+        client.call("open_project", json!({"path":private}))["isError"],
+        true
+    );
+    assert_eq!(client.call("discover", json!({}))["isError"], true);
+    assert!(
+        clearings::store::Store::open(&data.join("state.db"))
+            .unwrap()
+            .project(&clearings::store::digest(&private.canonicalize().unwrap()).unwrap())
+            .is_err()
+    );
+    let invalid = json!({"hook_event_name":"PreToolUse", "cwd":private}).to_string();
+    assert!(
+        clearings::plugin::register_session(
+            &mut clearings::store::Store::open(&data.join("state.db")).unwrap(),
+            invalid.as_bytes()
+        )
+        .is_err()
+    );
+    // A real host session can subsequently open a folder without Git, with no
+    // per-project CLI setup for the user, and the existing MCP connection sees it.
+    register(&data, &private);
+    client.ok("open_project", json!({"path":private}));
 }

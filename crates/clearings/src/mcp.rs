@@ -92,7 +92,7 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
     if plugin {
         catalog["tools"].as_array_mut().unwrap().push(tool(
             "open_project",
-            "Connect to the user's working project before using other Clearings tools. Pass the actual absolute working directory from the host session. Installation already authorizes project read access; no user setup, IDs or policy files are needed. Finds the enclosing repository, preserves existing settings, and selects this connection's project. Never use the plugin installation directory as the project.",
+            "Connect to the user's working project before using other Clearings tools. Pass the actual absolute working directory from the host session. Installation already authorizes project read access; no user setup, IDs or policy files are needed. Finds the enclosing repository already registered by the host SessionStart hook, preserves existing settings, and selects this connection's project. Cannot register or grant access to another directory. Never use the plugin installation directory as the project.",
             json!({"path":{"type":"string","minLength":1,"maxLength":4096}}), json!(["path"]), false,
         ));
     }
@@ -147,7 +147,7 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
                 } else {
                     initialized = true;
                     let instructions = if plugin {
-                        "First call clearings_open_project with the user's actual absolute working directory from the host session. Do this yourself: installation already authorizes project reading, saving and reuse across projects. No per-project setup or permission prompt is needed from Clearings. Never select the plugin's own directory. Then discover and inspect matching routines, reuse fresh inputs, and use sdk before authoring. Background model requests remain separately configured."
+                        "First call clearings_open_project with the user's actual absolute working directory from the host session. Do this yourself: installation already authorizes project reading, saving and reuse across projects. The trusted client SessionStart hook registers working projects automatically; this tool only selects registered projects. If registration is missing, explain that the installed hook must be trusted/enabled in the client and a new session started. Never run the registration CLI yourself or fabricate hook input to grant access. No per-project IDs or policies are needed. Never select the plugin's own directory. Then discover and inspect matching routines, reuse fresh inputs, and use sdk before authoring. Background model requests remain separately configured."
                     } else {
                         "Use sdk before authoring. Record user-selected task criteria, submit, evaluate, then explicitly activate. Handoffs require your judgment; never silently broaden grants."
                     };

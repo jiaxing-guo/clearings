@@ -86,6 +86,11 @@ with tempfile.TemporaryDirectory() as temporary:
         assert (plugin / 'licenses').is_dir()
         project_root = temp / f'working project {index}'
         project_root.mkdir()
+        hook = subprocess.run(['/bin/sh', str(plugin / 'scripts/start.sh'), '--register-session', '--data-dir', str(temp / 'plugin state')],
+                              cwd=plugin, env=environment, input=json.dumps({'hook_event_name': 'SessionStart', 'cwd': str(project_root)}),
+                              text=True, capture_output=True, timeout=30)
+        assert hook.returncode == 0, hook.stderr
+        assert hook.stdout == ''
         messages = [
             {'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {'protocolVersion': '2025-06-18', 'capabilities': {}, 'clientInfo': {'name': 'package-check', 'version': '1'}}},
             {'jsonrpc': '2.0', 'method': 'notifications/initialized'},

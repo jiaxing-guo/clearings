@@ -90,8 +90,16 @@ done
                 client.wait()
 
     def test_client_launchers_and_runtime_pins_match(self):
-        for relative in ['scripts/start.sh', 'runtime-version']:
+        for relative in ['scripts/start.sh', 'runtime-version', 'hooks/hooks.json']:
             self.assertEqual((PLUGINS[0] / relative).read_bytes(), (PLUGINS[1] / relative).read_bytes())
+
+    def test_hook_uses_the_same_verified_runtime(self):
+        self.assertEqual(self.run_launcher().returncode, 0)
+        self.curl.write_text('#!/bin/sh\nexit 99\n')
+        result = subprocess.run(['/bin/sh', str(self.plugin / 'scripts/start.sh'), '--register-session'],
+                                env=self.environment, text=True, capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, 'plugin-register\n--all-projects\n')
 
 
 if __name__ == '__main__':

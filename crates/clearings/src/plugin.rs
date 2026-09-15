@@ -4,8 +4,30 @@ use anyhow::{Context, Result, ensure};
 use serde_json::{Value, json};
 use std::{
     fs,
+    io::Read,
     path::{Path, PathBuf},
 };
+
+/// Only the trusted host hook calls this CLI path. MCP has no registration tool.
+pub fn register_session(store: &mut crate::store::Store, input: impl Read) -> Result<()> {
+    let mut bytes = Vec::new();
+    input.take(65_537).read_to_end(&mut bytes)?;
+    ensure!(
+        bytes.len() <= 65_536,
+        "session hook input exceeds byte limit"
+    );
+    let context: Value = serde_json::from_slice(&bytes)?;
+    ensure!(
+        context["hook_event_name"] == "SessionStart",
+        "expected a host SessionStart event"
+    );
+    let cwd = context["cwd"]
+        .as_str()
+        .context("host session has no working directory")?;
+    let root = project_root(Path::new(cwd))?;
+    store.ensure_plugin_project(&root)?;
+    Ok(())
+}
 
 pub fn data_directory(selected: Option<PathBuf>) -> Result<PathBuf> {
     let path = match selected.or_else(|| std::env::var_os("CLEARINGS_DATA_DIR").map(PathBuf::from))
@@ -89,7 +111,8 @@ pub fn connect(api: &mut Api, path: &Path) -> Result<Value> {
     api.project = None;
     api.policy = Default::default();
     let root = project_root(path)?;
-    let project = api.store.ensure_plugin_project(&root)?;
+    let project = api.store.project(&crate::store::digest(&root)?)
+        .context("project is not registered by the host; enable and trust the plugin SessionStart hook, then start a session in this project")?;
     api.policy = project.settings.grants.clone();
     api.project = Some(project.id.clone());
     Ok(

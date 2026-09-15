@@ -29,6 +29,13 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Action {
+    /// Host SessionStart hook: register the working directory supplied on stdin.
+    PluginRegister {
+        #[arg(long, required = true)]
+        all_projects: bool,
+        #[arg(long)]
+        data_dir: Option<PathBuf>,
+    },
     /// Plugin entry point: automatically provision the projects selected by the host agent.
     PluginMcp {
         /// Installation-wide permission to read projects opened with this plugin.
@@ -202,8 +209,13 @@ fn read_bytes(path: PathBuf, limit: usize) -> Result<Vec<u8>> {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let executable = std::env::current_exe()?;
+    let register_session = matches!(&cli.command, Action::PluginRegister { .. });
     match cli.command {
         Action::PluginMcp {
+            all_projects,
+            data_dir,
+        }
+        | Action::PluginRegister {
             all_projects,
             data_dir,
         } => {
@@ -216,8 +228,13 @@ fn main() -> Result<()> {
                 "plugin mode manages its own store and project selection"
             );
             let directory = clearings::plugin::data_directory(data_dir)?;
+            let mut store = Store::open(&directory.join("state.db"))?;
+            if register_session {
+                clearings::plugin::register_session(&mut store, std::io::stdin().lock())?;
+                return Ok(());
+            }
             let api = Api {
-                store: Store::open(&directory.join("state.db"))?,
+                store,
                 policy: Policy::default(),
                 project: None,
                 executable,
