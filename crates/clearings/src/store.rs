@@ -217,7 +217,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 11, "store was created by a newer version");
+        ensure!(schema <= 12, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -287,7 +287,44 @@ impl Store {
             }
         }
         tx.commit()?;
-        db.pragma_update(None, "user_version", 11)?;
+        let tx =
+            rusqlite::Transaction::new_unchecked(&db, rusqlite::TransactionBehavior::Immediate)?;
+        let current: i32 = tx.pragma_query_value(None, "user_version", |r| r.get(0))?;
+        if current < 12 {
+            tx.execute_batch(r#"
+CREATE VIRTUAL TABLE routine_search USING fts5(name,description,applicability,tokenize='unicode61 remove_diacritics 0');
+INSERT INTO routine_search(routine_search,rank) VALUES('rank','bm25(3.0,1.0,1.0)');
+INSERT INTO routine_search(rowid,name,description,applicability)
+ SELECT o.rowid,json_extract(o.body,'$.contract.name'),json_extract(o.body,'$.contract.description'),COALESCE(l.applicability,'')
+ FROM objects o LEFT JOIN routine_library l ON l.task=o.id WHERE o.kind='task' AND json_extract(o.body,'$.project') IS NOT NULL;
+CREATE TRIGGER routine_search_insert AFTER INSERT ON objects WHEN NEW.kind='task' BEGIN
+ INSERT INTO routine_search(rowid,name,description,applicability)
+ SELECT NEW.rowid,json_extract(NEW.body,'$.contract.name'),json_extract(NEW.body,'$.contract.description'),COALESCE((SELECT applicability FROM routine_library WHERE task=NEW.id),'')
+ WHERE json_extract(NEW.body,'$.project') IS NOT NULL;
+END;
+CREATE TRIGGER routine_search_delete AFTER DELETE ON objects WHEN OLD.kind='task' BEGIN
+ DELETE FROM routine_search WHERE rowid=OLD.rowid;
+END;
+CREATE TRIGGER routine_search_update AFTER UPDATE OF body,kind ON objects BEGIN
+ DELETE FROM routine_search WHERE rowid=OLD.rowid;
+ INSERT INTO routine_search(rowid,name,description,applicability)
+ SELECT NEW.rowid,json_extract(NEW.body,'$.contract.name'),json_extract(NEW.body,'$.contract.description'),COALESCE((SELECT applicability FROM routine_library WHERE task=NEW.id),'')
+ WHERE NEW.kind='task' AND json_extract(NEW.body,'$.project') IS NOT NULL;
+END;
+CREATE TRIGGER routine_search_share AFTER INSERT ON routine_library BEGIN
+ UPDATE routine_search SET applicability=NEW.applicability WHERE rowid=(SELECT rowid FROM objects WHERE id=NEW.task);
+END;
+CREATE TRIGGER routine_search_reshare AFTER UPDATE OF applicability ON routine_library BEGIN
+ UPDATE routine_search SET applicability=NEW.applicability WHERE rowid=(SELECT rowid FROM objects WHERE id=NEW.task);
+END;
+CREATE TRIGGER routine_search_unshare AFTER DELETE ON routine_library BEGIN
+ UPDATE routine_search SET applicability='' WHERE rowid=(SELECT rowid FROM objects WHERE id=OLD.task);
+END;
+PRAGMA user_version=12;
+"#)?;
+        }
+        tx.commit()?;
+        db.pragma_update(None, "user_version", 12)?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {

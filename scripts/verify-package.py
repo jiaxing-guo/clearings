@@ -8,6 +8,14 @@ from pathlib import Path
 
 package = Path(sys.argv[1]).resolve()
 binary = package / 'clearings'
+codex_plugin = package / 'plugins/clearings'
+claude_plugin = package / 'integrations/claude-code/plugins/clearings'
+version = json.loads((codex_plugin / '.codex-plugin/plugin.json').read_text())['version']
+assert json.loads((claude_plugin / '.claude-plugin/plugin.json').read_text())['version'] == version
+assert json.loads((package / '.claude-plugin/marketplace.json').read_text())['plugins'][0]['version'] == version
+for plugin in (codex_plugin, claude_plugin):
+    assert (plugin / 'runtime-version').read_text().strip() == 'v' + version
+    assert {p.name for p in (plugin / 'skills').iterdir()} == {'reuse-work', 'learn-from-conversations', 'manage-clearings'}
 with tempfile.TemporaryDirectory() as temporary:
     temp = Path(temporary)
     empty = temp / 'empty-path'
@@ -77,6 +85,46 @@ with tempfile.TemporaryDirectory() as temporary:
     assert scoped('background', '--once')['status'] == 'disabled'
     scoped('manage', name, 'retire', '--expected-active', saved['version'])
     assert scoped('routine', name)['controls']['excluded'] is True
+    # The ordinary standalone interface needs no store/project IDs or policy file.
+    default_project = temp / 'default project'
+    default_project.mkdir()
+    default_data = temp / 'default state'
+    default_env = {'PATH': str(empty), 'HOME': str(temp / 'isolated home'), 'CLEARINGS_DATA_DIR': str(default_data)}
+    Path(default_env['HOME']).mkdir()
+    def ordinary(*args, cwd=default_project):
+        result = subprocess.run([str(binary), *map(str, args)], cwd=cwd, env=default_env, text=True, capture_output=True, timeout=30)
+        if result.returncode:
+            raise RuntimeError(result.stderr + result.stdout)
+        return json.loads(result.stdout)
+    defaults = ordinary('learning-status')['preferences']
+    assert defaults['learning_enabled'] and defaults['interval_seconds'] == 86400
+    assert defaults['lookback_days'] == 7 and defaults['max_requests_per_day'] == 6
+    ordinary('install', '--no-service', '--no-client')
+    ordinary('learning-schedule', 'weekly')
+    ordinary('pause-learning')
+    assert ordinary('learning-status')['preferences']['learning_enabled'] is False
+    folder = package / 'examples/normalize-contacts'
+    task = ordinary('prepare-task', folder / 'task.json')['task']
+    saved = ordinary('save', 'normalize-contacts', '--source', folder / 'routine.ts')
+    assert saved['accepted']
+    ordinary('share-routine', 'normalize-contacts', '--applicability', 'Normalize contacts by email, trim names, preserve the first duplicate')
+    # A second project must discover the same definition and execute fresh input.
+    receiving = temp / 'receiving project'
+    receiving.mkdir()
+    fresh = temp / 'fresh-contact.json'
+    fresh.write_text(json.dumps({'rows': [{'name': ' Mia ', 'email': 'M@EXAMPLE.COM'}, {'name': 'Duplicate', 'email': 'm@example.com'}]}))
+    found = ordinary('find-routines', 'normalize contacts email duplicates', cwd=receiving)['routines']
+    assert found[0]['routine'] == task
+    assert ordinary('run-routine', task, '--input', fresh, cwd=receiving)['run']['outcome']['output'] == [{'name': 'Mia', 'email': 'm@example.com'}]
+    assert ordinary('library-routine', task, cwd=receiving)['usage']['windows']['7']['calls'] == 1
+    assert ordinary('find-routines', 'photosynthesis chloroplast sunlight', cwd=receiving)['routines'] == []
+    ordinary('pause-shared', task, cwd=receiving)
+    assert ordinary('find-routines', 'normalize contacts', cwd=receiving)['routines'] == []
+    ordinary('pause-shared', task, '--resume', cwd=receiving)
+    ordinary('resume-learning')
+    assert ordinary('learning-status')['preferences']['interval_seconds'] == 604800
+    assert not list(Path(default_env['HOME']).glob('Library/LaunchAgents/*'))
+    assert not list(Path(default_env['HOME']).glob('.config/systemd/user/*'))
     # Clients copy only the plugin directory into their own cache. Exercise that
     # copy with an unrelated process cwd and no tools or download on PATH.
     import shutil
@@ -106,4 +154,4 @@ with tempfile.TemporaryDirectory() as temporary:
         assert selected['root'] == str(project_root.resolve())
         assert selected['settings']['grants']['roots']['repo'] == selected['root']
         assert replies[2]['result']['structuredContent']['routines'] == []
-print('Packaged binary and both cached plugins: teaching, fresh reuse, handoff, project controls, automatic binding and private state, empty PATH.')
+print('Packaged binary and both cached plugins: default controls, cross-project fresh reuse, usage, handoff, project isolation, version pins and all three skills; empty PATH.')

@@ -4,7 +4,7 @@ Clearings is one Rust executable containing its TypeScript transformer, JavaScri
 
 ## Install once for all projects
 
-Plugin onboarding starts with **v0.1.0-alpha.3**. While that release is pending, use a Packages review artifact as described below. Alpha.2 does not provide `plugin-mcp` or automatic project setup.
+The default-experience review build pins **v0.1.0-alpha.4**. This version is not published. Use a Packages review artifact as described below; a source-only installation cannot download an unpublished runtime. Alpha.2 does not provide `plugin-mcp` or automatic project setup.
 
 With a Codex version that supports plugins, install the Clearings marketplace and plugin once:
 
@@ -31,6 +31,8 @@ On its first start, a source-installed plugin downloads its pinned native releas
 Disable old manually registered Clearings MCP entries after installing the plugin, so the agent sees one Clearings integration. Existing lab databases are kept; the plugin uses its own persistent store unless you deliberately select an existing store directory with `CLEARINGS_DATA_DIR`. Uninstalling or disabling the plugin stops its background learning at the next service check and before any new authoring or promotion. Saved routines and evidence remain stored.
 
 See [Codex plugins](https://developers.openai.com/codex/plugins) and [Claude Code plugin installation](https://code.claude.com/docs/en/plugin-marketplaces) for client support and marketplace management.
+
+See [launch readiness](launch-readiness.md) for measured acceptance and remaining gates.
 
 ## Review builds
 

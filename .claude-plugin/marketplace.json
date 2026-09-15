@@ -8,7 +8,7 @@
       "name": "clearings",
       "source": "./integrations/claude-code/plugins/clearings",
       "description": "Quiet reuse and daily learning from recent local conversations through your signed-in coding client, with configurable defaults.",
-      "version": "0.1.0-alpha.3"
+      "version": "0.1.0-alpha.4"
     }
   ]
 }

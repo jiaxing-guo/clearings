@@ -107,58 +107,91 @@ impl Store {
         Ok(json!({"routine":task,"project":project,"paused":paused}))
     }
     pub fn find_routines(&self, project: &str, query: &str) -> Result<Value> {
-        let settings = self.project(project)?;
+        self.project(project)?;
         ensure!(query.len() <= 16000, "routine query exceeds limit");
         let terms: Vec<_> = query
             .split(|c: char| !c.is_alphanumeric())
-            .filter(|s| s.len() >= 3)
+            .filter(|s| {
+                s.len() >= 3
+                    && !matches!(
+                        s.to_lowercase().as_str(),
+                        "the"
+                            | "and"
+                            | "for"
+                            | "with"
+                            | "from"
+                            | "that"
+                            | "this"
+                            | "are"
+                            | "was"
+                            | "has"
+                            | "have"
+                            | "into"
+                            | "then"
+                            | "each"
+                            | "its"
+                            | "any"
+                            | "can"
+                            | "you"
+                            | "your"
+                            | "use"
+                            | "using"
+                            | "return"
+                            | "show"
+                            | "give"
+                            | "please"
+                            | "why"
+                            | "how"
+                            | "what"
+                            | "when"
+                            | "which"
+                            | "where"
+                            | "one"
+                            | "all"
+                            | "just"
+                            | "instead"
+                            | "only"
+                    )
+            })
             .take(32)
-            .map(str::to_lowercase)
+            .map(str::to_owned)
             .collect();
         if terms.is_empty() {
             return Ok(json!({"routines":[]}));
         }
-        let mut stmt=self.db.prepare("SELECT o.id,o.body,l.applicability,a.version FROM objects o JOIN active a ON a.task=o.id JOIN project_routines p ON p.task=o.id AND p.project=json_extract(o.body,'$.project') LEFT JOIN routine_library l ON l.task=o.id WHERE o.kind='task' AND (p.project=?1 OR l.task IS NOT NULL) AND p.paused=0 AND p.excluded=0 AND NOT EXISTS(SELECT 1 FROM library_controls c WHERE c.project=?1 AND c.task=o.id AND c.paused=1) AND EXISTS(SELECT 1 FROM json_each(?2) term WHERE instr(lower(json_extract(o.body,'$.contract.name') || ' ' || json_extract(o.body,'$.contract.description') || ' ' || COALESCE(l.applicability,'')),term.value)>0) ORDER BY o.id LIMIT 500")?;
-        let rows = stmt.query_map(params![project, serde_json::to_string(&terms)?], |r| {
+        let query = terms
+            .iter()
+            .map(|s| format!("\"{}\"", s.replace('"', "\"\"")))
+            .collect::<Vec<_>>()
+            .join(" OR ");
+        // FTS ranks exact-token matches before the bound. Only those candidates
+        // reach the usage aggregate; task examples and source are not scanned.
+        let mut stmt=self.db.prepare("WITH candidates AS MATERIALIZED (SELECT o.id,routine_search.name,routine_search.description,json_extract(o.body,'$.contract.capabilities') AS capabilities,routine_search.applicability,a.version,p.project,routine_search.rank AS score FROM routine_search CROSS JOIN objects o ON o.rowid=routine_search.rowid JOIN active a ON a.task=o.id JOIN project_routines p ON p.task=o.id AND p.project=json_extract(o.body,'$.project') WHERE routine_search MATCH ?2 AND (p.project=?1 OR EXISTS(SELECT 1 FROM routine_library WHERE task=o.id)) AND p.paused=0 AND p.excluded=0 AND NOT EXISTS(SELECT 1 FROM library_controls c WHERE c.project=?1 AND c.task=o.id AND c.paused=1) ORDER BY routine_search.rank LIMIT 500) SELECT c.id,c.name,c.description,c.capabilities,c.applicability,c.version,c.project,COALESCE((SELECT sum(calls) FROM routine_usage u WHERE u.task=c.id AND u.project=?1 AND u.day>=date('now','-29 days')),0),c.score FROM candidates c")?;
+        let rows = stmt.query_map(params![project, query], |r| {
             Ok((
                 r.get::<_, String>(0)?,
                 r.get::<_, String>(1)?,
-                r.get::<_, Option<String>>(2)?,
+                r.get::<_, String>(2)?,
                 r.get::<_, String>(3)?,
+                r.get::<_, Option<String>>(4)?,
+                r.get::<_, String>(5)?,
+                r.get::<_, String>(6)?,
+                r.get::<_, u64>(7)?,
+                r.get::<_, f64>(8)?,
             ))
         })?;
         let mut matches = vec![];
         for row in rows {
-            let (id, body, applicability, version) = row?;
-            let task: Task = serde_json::from_str(&body)?;
-            if !task.cases.iter().flat_map(|c| &c.calls).all(|c| {
-                c.input["root"]
-                    .as_str()
-                    .is_none_or(|r| settings.settings.grants.roots.contains_key(r))
-            }) {
-                continue;
-            }
-            let name = task.contract.name.to_lowercase();
-            let description = format!(
-                "{} {}",
-                task.contract.description,
-                applicability.as_deref().unwrap_or("")
-            )
-            .to_lowercase();
-            let score: usize = terms
-                .iter()
-                .map(|term| {
-                    usize::from(name.contains(term)) * 3 + usize::from(description.contains(term))
-                })
-                .sum();
-            let usage = self.routine_usage(project, &id)?;
-            matches.push((score,usage["windows"]["30"]["calls"].as_u64().unwrap_or(0),json!({"routine":id,"name":task.contract.name,"description":task.contract.description,"applicability":applicability,"active":version,"origin_project":task.project,"capabilities":task.contract.capabilities})));
+            let (id, name, description, capabilities, applicability, version, owner, calls, score) =
+                row?;
+            matches.push((score,calls,json!({"routine":id,"name":name,"description":description,"applicability":applicability,"active":version,"origin_project":owner,"capabilities":serde_json::from_str::<Value>(&capabilities)?})));
+            matches.sort_by(|a, b| {
+                a.0.total_cmp(&b.0)
+                    .then(b.1.cmp(&a.1))
+                    .then(a.2["routine"].as_str().cmp(&b.2["routine"].as_str()))
+            });
+            matches.truncate(3);
         }
-        matches.sort_by(|a, b| {
-            b.0.cmp(&a.0)
-                .then(b.1.cmp(&a.1))
-                .then(a.2["routine"].as_str().cmp(&b.2["routine"].as_str()))
-        });
         Ok(
             json!({"routines":matches.into_iter().take(3).map(|(_,_,v)|v).collect::<Vec<_>>(),"selection":"text relevance; inspect requirements before running"}),
         )
