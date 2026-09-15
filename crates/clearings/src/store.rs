@@ -575,7 +575,9 @@ impl Store {
             .to_owned();
         tx.execute("INSERT INTO routine_usage(task,version,project,day,calls,completed,handoffs,failed,elapsed_ms,capability_calls,last_used) VALUES(?1,?2,?3,date('now'),1,?4,?5,?6,?7,?8,datetime('now')) ON CONFLICT(task,version,project,day) DO UPDATE SET calls=calls+1,completed=completed+excluded.completed,handoffs=handoffs+excluded.handoffs,failed=failed+excluded.failed,elapsed_ms=elapsed_ms+excluded.elapsed_ms,capability_calls=capability_calls+excluded.capability_calls,last_used=excluded.last_used",params![task_id,id,execution_project.unwrap_or(""),status=="completed",matches!(status.as_str(),"needs_agent"|"not_applicable"),status=="failed",i64::try_from(run.elapsed_ms)?,run.capability_calls])?;
         tx.commit()?;
-        let recovery = if candidate_failure {
+        // A receiving project's narrower grants must not roll back the owner's
+        // shared definition. Only owner executions can trigger global recovery.
+        let recovery = if candidate_failure && execution_project == task.project.as_deref() {
             self.recover_regression(task_id, &id)?
         } else {
             None

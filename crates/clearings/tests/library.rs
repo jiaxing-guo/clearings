@@ -66,17 +66,41 @@ fn shared_definition_reads_receiving_project_and_keeps_history_and_counts_separa
             .len(),
         1
     );
+    let first = store.active(&id).unwrap().unwrap();
+    let source = "export default async path=>({status:'completed',output:(await clearings.call('files.read',{root:'repo',path})).text}) /* second version */";
+    let second = store.submit(exe(), &id, source.into()).unwrap();
+    store.evaluate(exe(), &second).unwrap();
+    store.activate(&second, Some(&first)).unwrap();
+    let writer = rusqlite::Connection::open(&db).unwrap();
+    writer
+        .execute(
+            "UPDATE project_routines SET previous=?1 WHERE task=?2",
+            rusqlite::params![first, id],
+        )
+        .unwrap();
+    let denied = store
+        .run_routine(
+            exe(),
+            &pb.id,
+            &id,
+            json!("../a/value.txt"),
+            &pb.settings.grants,
+        )
+        .unwrap();
+    assert_eq!(denied["run"]["outcome"]["status"], "failed");
+    assert_eq!(store.active(&id).unwrap().as_deref(), Some(second.as_str()));
+    assert_eq!(denied["recovery"], serde_json::Value::Null);
     let writer = rusqlite::Connection::open(&db).unwrap();
     writer
         .execute("UPDATE runs SET created_at='2000-01-01'", [])
         .unwrap();
     assert_eq!(store.prune(&pa.id, true).unwrap()["run_records"], 0);
-    assert_eq!(store.prune(&pb.id, true).unwrap()["run_records"], 1);
+    assert_eq!(store.prune(&pb.id, true).unwrap()["run_records"], 2);
     drop(store);
     let store = Store::open(&db).unwrap();
     assert_eq!(
         store.routine_usage(&pb.id, &id).unwrap()["windows"]["30"]["calls"],
-        1
+        2
     );
     store.pause_shared(&pb.id, &id, true).unwrap();
     assert!(
