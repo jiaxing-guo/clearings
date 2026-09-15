@@ -406,12 +406,7 @@ impl Api {
             Operation::Runs { before } => self
                 .store
                 .runs_page_for_project(self.project.as_deref(), before)?,
-            Operation::Sdk => {
-                json!({"typescript":include_str!("../../../sdk/clearings.d.ts"),"task_example":{
-                    "contract":{"abi":1,"name":"double","description":"Double an integer","input_schema":{"type":"integer"},"output_schema":{"type":"integer"},"capabilities":[]},
-                    "cases":[{"name":"positive","input":3,"expected":{"status":"completed","output":6}},{"name":"negative","input":-2,"expected":{"status":"completed","output":-4}}]
-                }})
-            }
+            Operation::Sdk => sdk_definition(),
         })
     }
 }
@@ -419,4 +414,11 @@ pub fn failed(value: &Value) -> bool {
     value.get("status").and_then(Value::as_str) == Some("failed")
         || value.get("accepted") == Some(&Value::Bool(false))
         || value["run"]["outcome"]["status"] == "failed"
+}
+
+pub fn sdk_definition() -> Value {
+    json!({"typescript":include_str!("../../../sdk/clearings.d.ts"),"task_example":{
+        "contract":{"abi":1,"name":"double","description":"Double an integer","input_schema":{"type":"integer"},"output_schema":{"type":"integer"},"capabilities":[]},
+        "cases":[{"name":"positive","input":3,"expected":{"status":"completed","output":6}},{"name":"negative","input":-2,"expected":{"status":"completed","output":-4}}]
+    }})
 }

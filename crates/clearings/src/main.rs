@@ -40,7 +40,7 @@ enum Action {
     LearningStatus,
     PrepareConversationTask {
         file: PathBuf,
-        #[arg(long)]
+        #[arg(long, num_args=1.., value_name="EVIDENCE_ID")]
         evidence_ids: Vec<String>,
         #[arg(long)]
         all: bool,
@@ -191,7 +191,10 @@ enum Action {
         #[arg(long)]
         policy: PathBuf,
     },
-    Sdk,
+    Sdk {
+        #[arg(long)]
+        json: bool,
+    },
     List {
         /// Continue with next_after from the preceding task page.
         #[arg(long)]
@@ -324,8 +327,12 @@ fn main() -> Result<()> {
         }
         Action::Worker => clearings::worker_main(),
         Action::IsolationProbe { path } => clearings::isolation_probe(&path),
-        Action::Sdk => {
-            print!("{}", include_str!("../../../sdk/clearings.d.ts"));
+        Action::Sdk { json } => {
+            if json {
+                println!("{}", clearings::api::sdk_definition());
+            } else {
+                print!("{}", include_str!("../../../sdk/clearings.d.ts"));
+            }
             Ok(())
         }
         Action::RunSource {
