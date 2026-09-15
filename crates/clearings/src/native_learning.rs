@@ -61,6 +61,21 @@ impl Store {
         if let Some(client) = self.preferences()?.client {
             return Ok(client);
         }
+        let remembered: Option<String> = self
+            .db
+            .query_row(
+                "SELECT body FROM installation WHERE key='last_client'",
+                [],
+                |r| r.get(0),
+            )
+            .optional()?;
+        if let Some(client) = remembered
+            .map(|s| serde_json::from_str::<Client>(&s))
+            .transpose()?
+            && crate::client_process::executable(client.name()).is_ok()
+        {
+            return Ok(client);
+        }
         if crate::client_process::executable("codex").is_ok() {
             return Ok(Client::Codex);
         }
@@ -76,14 +91,7 @@ impl Store {
             None
         };
         if let Some(client) = client {
-            let mut prefs = self.preferences()?;
-            if prefs.client.is_none() {
-                prefs.client = Some(client);
-                self.db.execute(
-                    "INSERT OR IGNORE INTO installation(key,body) VALUES('preferences',?1)",
-                    [serde_json::to_string(&prefs)?],
-                )?;
-            }
+            self.db.execute("INSERT INTO installation(key,body) VALUES('last_client',?1) ON CONFLICT(key) DO UPDATE SET body=excluded.body",[serde_json::to_string(&client)?])?;
         }
         Ok(())
     }
@@ -136,8 +144,12 @@ impl Store {
         } else {
             client.name()
         };
+        let body = connection
+            .as_ref()
+            .map(|m| crate::model::configured_request(m, &packet, field))
+            .transpose()?;
         let amount = connection.as_ref().map_or(0, |m| {
-            (((packet.to_string().len() as u64 + 8192) * m.input_price
+            (((body.as_ref().map_or(0, Vec::len) as u64 + 8192) * m.input_price
                 + u64::from(m.max_output_tokens) * m.output_price)
                 .div_ceil(1_000_000))
             .max(1)
@@ -174,7 +186,11 @@ impl Store {
         let id = tx.last_insert_rowid();
         tx.commit()?;
         let result = if let Some(connection) = &connection {
-            crate::model::author_configured(connection, packet, field)
+            crate::model::author_configured(
+                connection,
+                body.context("configured request missing")?,
+                field,
+            )
         } else {
             crate::model::author_client(client, packet, field)
         };
@@ -529,6 +545,7 @@ impl Store {
                 continue;
             }
             self.db.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![fingerprint,json!({"project":project,"scope":scope,"packet":packet}).to_string()])?;
+            let mut prepared_task = None;
             let result = (|| -> Result<Value> {
                 let extracted=self.native_request(cycle,client,"extract",json!({"instruction":"Find one repeated read/transform workflow that can become reusable TypeScript. Return candidate_json containing JSON null when evidence is insufficient, otherwise an object with task (contract,cases,optional evaluation) and applicability. Use actual transcript evidence where available. Cases are interpretations: distinguish inferred rules in the contract description. Provide at least three varied cases, including a boundary or handoff. Do not put evidence or project in task. Do not invent observed results. Existing generated Clearings work is not new learning material. Select behavior that generalizes; do not hardcode outputs. Routine capabilities are files.read/files.list only or no capabilities. No shell or write effects.","sdk":include_str!("../../../sdk/clearings.d.ts"),"task_shape":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]},"conversations":packet}),"candidate_json",&fingerprint)?;
                 let proposed: Value =
@@ -572,6 +589,7 @@ impl Store {
                 let prepared =
                     self.prepare_conversation_task(project, task.clone(), &ids, scope)?;
                 let task_id = prepared["task"].as_str().context("task not prepared")?;
+                prepared_task = Some(task_id.to_owned());
                 let source=self.native_request(cycle,client,"source",json!({"instruction":"Return source: a default-exported async TypeScript function implementing this frozen contract. Use fresh inputs and SDK capabilities. One acceptance case is withheld. Never hardcode examples. Return needs_agent or not_applicable for unsupported cases. No imports, ambient Node APIs, shell, or direct network.","sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"cases":&task.cases[..task.cases.len()-1]}),"source",&fingerprint)?;
                 self.check_native_cycle(cycle)?;
                 let version = self.submit(executable, task_id, source)?;
@@ -590,7 +608,7 @@ impl Store {
             let report = match result {
                 Ok(v) => v,
                 Err(e) => {
-                    json!({"status":"failed","error":e.to_string().chars().take(4096).collect::<String>()})
+                    json!({"status":"failed","task":prepared_task,"error":e.to_string().chars().take(4096).collect::<String>()})
                 }
             };
             let is_budget = report["error"].as_str().is_some_and(|s| {
@@ -598,6 +616,11 @@ impl Store {
             });
             let interrupted = self.check_native_cycle(cycle).is_err();
             if !is_budget && !interrupted && !unavailable {
+                if report["status"] == "failed"
+                    && let Some(task) = &prepared_task
+                {
+                    self.db.execute("DELETE FROM project_routines WHERE project=?1 AND task=?2 AND origin='conversation' AND paused=0 AND excluded=0 AND previous IS NULL AND NOT EXISTS(SELECT 1 FROM active WHERE task=?2) AND NOT EXISTS(SELECT 1 FROM component_changes WHERE task=?2)",params![project,task])?;
+                }
                 self.db.execute(
                     "UPDATE native_candidates SET status=?2,report=?3 WHERE fingerprint=?1",
                     params![fingerprint, report["status"].as_str(), report.to_string()],
@@ -655,5 +678,86 @@ impl Store {
         Ok(
             json!({"preferences":self.preferences()?,"recent_cycles":cycles,"requests_today":count,"recent_requests":requests,"usage_kind":"client reported usage; request limits are not dollar guarantees"}),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn escaped_http_body_is_rejected_before_reservation() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut store = Store::open(&temp.path().join("state.db")).unwrap();
+        let settings=serde_json::from_value(json!({"model":{"url":"http://127.0.0.1:9/chat","model":"fixture","max_output_tokens":1024,"input_price":1,"output_price":1},"daily_budget_microusd":100})).unwrap();
+        let p = store
+            .configure_project(temp.path(), "P", settings, None)
+            .unwrap();
+        let cycle = store.queue_learning(&p.id, Scope::Project, false).unwrap();
+        store
+            .db
+            .execute(
+                "UPDATE native_cycles SET status='running' WHERE id=?1",
+                [cycle],
+            )
+            .unwrap();
+        let packet = json!({"text":"\\".repeat(180000)});
+        assert!(packet.to_string().len() < 480 * 1024);
+        let err = store
+            .native_request(
+                cycle,
+                Client::Codex,
+                "extract",
+                packet,
+                "candidate_json",
+                "fixture",
+            )
+            .unwrap_err();
+        assert!(err.is::<crate::model::RequestTooLarge>(), "{err}");
+        for table in ["native_requests", "budgets"] {
+            assert_eq!(
+                store
+                    .db
+                    .query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r
+                        .get::<_, i64>(0))
+                    .unwrap(),
+                0
+            );
+        }
+    }
+    #[test]
+    fn connected_client_does_not_overwrite_explicit_client_preference() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = Store::open(&temp.path().join("state.db")).unwrap();
+        store
+            .db
+            .execute(
+                "INSERT INTO installation(key,body) VALUES('preferences','{\"client\":null}')",
+                [],
+            )
+            .unwrap();
+        store.remember_client("claude").unwrap();
+        assert_eq!(
+            store
+                .db
+                .query_row(
+                    "SELECT body FROM installation WHERE key='last_client'",
+                    [],
+                    |r| r.get::<_, String>(0)
+                )
+                .unwrap(),
+            "\"claude\""
+        );
+        store
+            .db
+            .execute(
+                "UPDATE installation SET body='{\"client\":\"codex\"}' WHERE key='preferences'",
+                [],
+            )
+            .unwrap();
+        store.remember_client("claude").unwrap();
+        assert!(matches!(
+            store.preferences().unwrap().client,
+            Some(Client::Codex)
+        ));
     }
 }

@@ -36,9 +36,9 @@ if sys.argv[1]=='app-server':
   if 'id' not in v:continue
   method=v['method']
   if method=='initialize':r={}
-  elif method=='thread/list':r={'data':[{'id':'fixture-session','cwd':root,'updatedAt':int(time.time()),'name':'Double integer values'}],'nextCursor':None}
+  elif method=='thread/list':r={'data':[{'id':'fixture-session','cwd':root,'updatedAt':int(time.time())+int(os.environ.get('NEW_EVIDENCE','0')),'name':'Double integer values'}],'nextCursor':None}
   elif method=='thread/read':r={'thread':{'cwd':root}}
-  elif method=='thread/turns/list':r={'data':[{'id':'turn','items':[{'id':'user'+str(i),'type':'userMessage','content':[{'type':'text','text':'Double the integer '+str(i)+' to get '+str(i*2)}]} for i in [1,3,5]]}],'nextCursor':None}
+  elif method=='thread/turns/list':r={'data':[{'id':'turn','items':[{'id':'user'+str(i)+os.environ.get('NEW_EVIDENCE',''),'type':'userMessage','content':[{'type':'text','text':'Double the integer '+str(i)+' to get '+str(i*2)}]} for i in [1,3,5]]}],'nextCursor':None}
   else:raise RuntimeError(method)
   emit({'id':v['id'],'result':r})
 else:
@@ -177,7 +177,18 @@ fn failed_candidate_keeps_explicit_failure_and_is_not_activated() {
     assert!(!out.status.success());
     let report: Value = serde_json::from_slice(&out.stdout).unwrap();
     assert_eq!(report["status"], "failed", "{report}");
-    assert_eq!(f.run(&["discover"])["routines"][0]["active"], Value::Null);
+    assert_eq!(f.run(&["discover"])["routines"], json!([]));
+    let retry = f
+        .command()
+        .env("NEW_EVIDENCE", "1")
+        .arg("learn-now")
+        .output()
+        .unwrap();
+    let retry: Value = serde_json::from_slice(&retry.stdout).unwrap();
+    assert_eq!(
+        retry["report"]["outcomes"][0]["status"], "created",
+        "{retry}"
+    );
 }
 
 #[test]
