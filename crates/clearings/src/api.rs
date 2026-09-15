@@ -25,6 +25,7 @@ pub enum Operation {
     },
     LibraryRoutine {
         id: String,
+        part: Option<String>,
     },
     RunRoutine {
         id: String,
@@ -201,11 +202,12 @@ impl Api {
                 &name,
                 &applicability,
             )?,
-            Operation::LibraryRoutine { id } => self.store.library_routine(
+            Operation::LibraryRoutine { id, part } => self.store.library_part(
                 self.project
                     .as_deref()
                     .ok_or_else(|| anyhow::anyhow!("select a project"))?,
                 &id,
+                part.as_deref(),
             )?,
             Operation::RunRoutine { id, input } => self.store.run_routine(
                 &self.executable,

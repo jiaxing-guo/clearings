@@ -45,9 +45,37 @@ impl Store {
             )
             .optional()?;
         let active = self.active(task)?;
-        Ok(
-            json!({"routine":task,"task":self.inspect(task)?,"version":active.map(|v|self.inspect(&v)).transpose()?,"applicability":applicability,"usage":self.routine_usage(project,task)?}),
-        )
+        let examples: Vec<_> = t
+            .cases
+            .iter()
+            .take(3)
+            .map(|c| json!({"name":c.name,"input":c.input,"expected":c.expected}))
+            .collect();
+        let mut summary = json!({"routine":task,"task":task,"version":active,"contract":t.contract,"examples":examples,"case_count":t.cases.len(),"origin_project":t.project,"applicability":applicability,"usage":self.routine_usage(project,task)?,"details":"Use library_routine with part=task or part=version for complete requirements or source."});
+        if serde_json::to_vec(&summary)?.len() > 128 * 1024 {
+            summary["examples"] = Value::Null;
+            summary["contract"] = json!({"name":t.contract.name,"description":t.contract.description,"capabilities":t.contract.capabilities});
+            summary["details_required"] = json!(true);
+        }
+        Ok(summary)
+    }
+    pub fn library_part(&self, project: &str, task: &str, part: Option<&str>) -> Result<Value> {
+        if part.is_none() {
+            return self.library_routine(project, task);
+        }
+        let t: Task = self.get("task", task)?;
+        if t.project.as_deref() != Some(project) {
+            self.require_shared(project, task)?;
+        }
+        match part {
+            Some("task") => self.inspect(task),
+            Some("version") => self.inspect(
+                &self
+                    .active(task)?
+                    .ok_or_else(|| anyhow::anyhow!("routine has no active version"))?,
+            ),
+            _ => anyhow::bail!("inspection part must be task or version"),
+        }
     }
     pub fn run_routine(
         &self,
@@ -153,6 +181,9 @@ impl Store {
         let Some(prompt) = context["prompt"].as_str() else {
             return Ok(Value::Null);
         };
+        if prompt.len() > 16000 {
+            return Ok(Value::Null);
+        }
         let Some(session) = context["session_id"].as_str().filter(|s| s.len() <= 200) else {
             return Ok(Value::Null);
         };

@@ -46,6 +46,8 @@ enum Action {
     },
     LibraryRoutine {
         id: String,
+        #[arg(long,value_parser=["task","version"])]
+        part: Option<String>,
     },
     RunRoutine {
         id: String,
@@ -406,7 +408,7 @@ fn main() -> Result<()> {
                     name,
                     applicability,
                 },
-                Action::LibraryRoutine { id } => Operation::LibraryRoutine { id },
+                Action::LibraryRoutine { id, part } => Operation::LibraryRoutine { id, part },
                 Action::RunRoutine { id, input } => Operation::RunRoutine {
                     id,
                     input: read(input)?,

@@ -123,3 +123,42 @@ fn shared_definition_reads_receiving_project_and_keeps_history_and_counts_separa
     assert!(store.suggest(&context).unwrap().is_null());
     assert!(store.suggest(&json!({"hook_event_name":"UserPromptSubmit","cwd":b,"session_id":"other","prompt":"explain photosynthesis"})).unwrap().is_null());
 }
+
+#[test]
+fn large_shared_inspection_remains_readable_in_individual_parts() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let mut store = Store::open(&root.join("state.db")).unwrap();
+    let project = store
+        .configure_project(&root, "P", Settings::default(), None)
+        .unwrap();
+    let text = "\\\"".repeat(120000);
+    let task:Task=serde_json::from_value(json!({"contract":{"abi":1,"name":"echo","description":"Echo input","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"large","input":text,"expected":{"status":"completed","output":1}}]})).unwrap();
+    let id = store.prepare_named(&project.id, task, "user").unwrap();
+    let source = format!(
+        "export default async x=>({{status:'completed',output:1}}); /* {} */",
+        "x".repeat(150000)
+    );
+    let version = store.submit(exe(), &id, source).unwrap();
+    assert_eq!(store.evaluate(exe(), &version).unwrap()["accepted"], true);
+    store.activate(&version, None).unwrap();
+    let other = root.join("other");
+    fs::create_dir(&other).unwrap();
+    let receiving = store
+        .configure_project(&other, "Receiving", Settings::default(), None)
+        .unwrap();
+    assert!(
+        store
+            .library_part(&receiving.id, &id, Some("version"))
+            .is_err()
+    );
+    store
+        .share_routine(&project.id, "echo", "Return a constant for the fixture")
+        .unwrap();
+    for part in [None, Some("task"), Some("version")] {
+        let value = store.library_part(&receiving.id, &id, part).unwrap();
+        let wire = json!({"result":{"content":[{"type":"text","text":value.to_string()}],"structuredContent":value}});
+        assert!(serde_json::to_vec(&wire).unwrap().len() < clearings::contract::MAX_WIRE_BYTES);
+    }
+    assert!(store.suggest(&json!({"hook_event_name":"UserPromptSubmit","cwd":root,"session_id":"s","prompt":"é".repeat(10000)})).unwrap().is_null());
+}

@@ -271,6 +271,7 @@ impl Store {
             }
             tx.commit()?;
         }
+        db.execute_batch("CREATE INDEX IF NOT EXISTS runs_project_expiration ON runs(project,created_at); CREATE INDEX IF NOT EXISTS runs_project_page ON runs(project,id); CREATE INDEX IF NOT EXISTS offers_expiration ON routine_offers(created_at);")?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {
