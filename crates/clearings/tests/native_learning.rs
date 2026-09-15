@@ -43,7 +43,10 @@ if sys.argv[1]=='app-server':
   elif method=='thread/list':
    total=int(os.environ.get('HISTORY_SESSIONS','1'));start=int(v['params'].get('cursor') or 0);end=min(total,start+20)
    r={'data':[{'id':'fixture-session-'+str(i),'cwd':root,'updatedAt':int(time.time())+int(os.environ.get('NEW_EVIDENCE','0')),'name':'Double integer values'} for i in range(start,end)],'nextCursor':str(end) if end<total else None}
-  elif method=='thread/read':r={'thread':{'cwd':root}}
+  elif method=='thread/read':r={'thread':{'cwd':root,'historyMode':'paginated' if os.environ.get('PAGED_TOTAL') else 'full'}}
+  elif method=='thread/items/list':
+   end=int(v['params'].get('cursor') or os.environ['PAGED_TOTAL']);start=max(0,end-20)
+   r={'data':[{'turnId':'turn','item':{'id':str(i),'type':'userMessage','content':[{'type':'text','text':'Double '+str(i)}]}} for i in range(end,start,-1)],'nextCursor':str(start) if start else None}
   elif method=='thread/turns/list':r={'data':[{'id':'turn','items':[{'id':'user'+str(i)+os.environ.get('NEW_EVIDENCE',''),'type':'userMessage','content':[{'type':'text','text':'Double the integer '+str(i)+' to get '+str(i*2)}]} for i in ([1] if os.environ.get('SHORT_SESSION') else [1,3,5])]}],'nextCursor':None}
   else:raise RuntimeError(method)
   emit({'id':v['id'],'result':r})
@@ -575,6 +578,34 @@ fn usage_selects_improvement_and_undo_restores_the_previous_accepted_version() {
         [],
     )
     .unwrap();
+    store
+        .update_preferences(1, json!({"client":"claude"}))
+        .unwrap();
+    let missing = f
+        .command()
+        .env("AUTH_MISSING", "1")
+        .args(["learning-service", "--data-dir", f.data.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert!(!missing.status.success());
+    assert_eq!(
+        db.query_row(
+            "SELECT count(*) FROM native_requests WHERE status='unavailable'",
+            [],
+            |r| r.get::<_, i64>(0)
+        )
+        .unwrap(),
+        1
+    );
+    assert_eq!(store.active(&id).unwrap().as_deref(), Some(old));
+    store
+        .update_preferences(2, json!({"client":"codex"}))
+        .unwrap();
+    db.execute(
+        "UPDATE installation SET body='0' WHERE key='next_learning_due'",
+        [],
+    )
+    .unwrap();
     let output=f.command().env("IMPROVE_SOURCE","export default async()=>{const r=await clearings.call('files.read',{root:'repo',path:'value.txt'});return {status:'completed',output:r.text}}").args(["learning-service","--data-dir",f.data.to_str().unwrap()]).output().unwrap();
     let result: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert!(
@@ -675,4 +706,86 @@ fn on_request_installation_cannot_silently_install_a_service_later() {
         "disabled"
     );
     assert!(!f.home.join("Library/LaunchAgents").exists());
+}
+
+#[test]
+fn refreshed_head_pages_do_not_skip_the_gap_before_an_existing_tail() {
+    let f = Fixture::new();
+    let store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
+    store
+        .update_preferences(1, json!({"max_requests_per_day":0}))
+        .unwrap();
+    let call = |total: &str, new: &str| {
+        let r = f
+            .command()
+            .env("PAGED_TOTAL", total)
+            .env("NEW_EVIDENCE", new)
+            .arg("learn-now")
+            .output()
+            .unwrap();
+        assert!(
+            !r.stdout.is_empty(),
+            "{}",
+            String::from_utf8_lossy(&r.stderr)
+        );
+    };
+    call("60", "0");
+    for _ in 0..9 {
+        call("120", "1");
+    }
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM conversation_evidence", [], |r| r
+            .get::<_, i64>(0))
+            .unwrap(),
+        120
+    );
+    assert_eq!(db.query_row("SELECT count(*) FROM conversation_progress WHERE tail_cursor IS NOT NULL OR head_cursor IS NOT NULL",[],|r|r.get::<_,i64>(0)).unwrap(),0);
+}
+
+#[test]
+fn excluded_packets_do_not_block_the_pending_queue_or_its_allowed_parts() {
+    let f = Fixture::new();
+    let store = clearings::store::Store::open(&f.data.join("state.db")).unwrap();
+    let excluded = f.root.parent().unwrap().join("excluded");
+    fs::create_dir(&excluded).unwrap();
+    store
+        .update_preferences(
+            1,
+            json!({"excluded_projects":[excluded],"max_requests_per_day":0}),
+        )
+        .unwrap();
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    for (id, root) in [("bad", &excluded), ("good", &f.root)] {
+        db.execute("INSERT INTO conversations(id,client,host_id,root,updated,body) VALUES(?1,'claude',?1,?2,?3,'{}')",rusqlite::params![id,root.to_str(),now]).unwrap();
+    }
+    let allowed = json!({"conversation":"good","project":f.root,"items":[{"evidence_id":"a".repeat(64),"kind":"user","content":"allowed"}]});
+    for i in 0..27 {
+        let denied = json!({"conversation":"bad","project":excluded,"items":[{"evidence_id":format!("{i:064x}"),"kind":"user","content":"excluded"}]});
+        db.execute(
+            "INSERT INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",
+            rusqlite::params![
+                format!("bad-{i}"),
+                json!({"project":f.project,"scope":"all","packet":[denied,allowed]}).to_string()
+            ],
+        )
+        .unwrap();
+    }
+    let _ = f.command().args(["learn-now", "--all"]).output().unwrap();
+    assert_eq!(
+        db.query_row(
+            "SELECT count(*) FROM native_candidates WHERE status='excluded'",
+            [],
+            |r| r.get::<_, i64>(0)
+        )
+        .unwrap(),
+        27
+    );
+    let unsafe_pending:i64=db.query_row("SELECT count(*) FROM native_candidates c,json_each(c.report,'$.packet') p WHERE c.status='pending' AND json_extract(p.value,'$.project')=?1",[excluded.to_str()],|r|r.get(0)).unwrap();
+    assert_eq!(unsafe_pending, 0);
+    assert!(db.query_row("SELECT EXISTS(SELECT 1 FROM native_candidates WHERE status='pending' AND instr(report,'allowed')>0)",[],|r|r.get::<_,bool>(0)).unwrap());
 }

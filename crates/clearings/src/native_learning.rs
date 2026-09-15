@@ -407,6 +407,51 @@ impl Store {
     }
     fn pending_conversation_groups(&self, project: &str, scope: Scope) -> Result<Vec<Vec<Value>>> {
         self.db.execute("UPDATE native_candidates SET status='expired',report='{}' WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2 AND NOT EXISTS(SELECT 1 FROM json_each(report,'$.packet') page JOIN conversations c ON c.id=json_extract(page.value,'$.conversation') WHERE c.updated>=?3)",params![project,if scope==Scope::All{"all"}else{"project"},crate::background::now()? - i64::from(self.preferences()?.lookback_days)*86400])?;
+        let prefs = self.preferences()?;
+        let mut excluded=self.db.prepare("SELECT fingerprint,report FROM native_candidates WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2")?;
+        let rows = excluded
+            .query_map(
+                params![
+                    project,
+                    if scope == Scope::All {
+                        "all"
+                    } else {
+                        "project"
+                    }
+                ],
+                |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)),
+            )?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        drop(excluded);
+        for (key, body) in rows {
+            let mut body: Value = serde_json::from_str(&body)?;
+            let pages = body["packet"]
+                .as_array_mut()
+                .context("pending candidate lacks packet")?;
+            let before = pages.len();
+            pages.retain(|p| !prefs.excludes(p["project"].as_str().unwrap_or("")));
+            if pages.len() == before {
+                continue;
+            }
+            let tx = rusqlite::Transaction::new_unchecked(
+                &self.db,
+                rusqlite::TransactionBehavior::Immediate,
+            )?;
+            tx.execute(
+                "UPDATE native_candidates SET status='excluded',report='{}' WHERE fingerprint=?1",
+                [&key],
+            )?;
+            if !pages.is_empty() {
+                let ids: Vec<_> = pages
+                    .iter()
+                    .flat_map(|p| p["items"].as_array().unwrap())
+                    .filter_map(|i| i["evidence_id"].as_str())
+                    .collect();
+                let next = digest(&(project, &ids))?;
+                tx.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![next,body.to_string()])?;
+            }
+            tx.commit()?;
+        }
         let mut statement=self.db.prepare("SELECT fingerprint,report,EXISTS(SELECT 1 FROM native_requests r WHERE r.fingerprint=c.fingerprint) FROM native_candidates c WHERE status='pending' AND json_extract(report,'$.project')=?1 AND json_extract(report,'$.scope')=?2 ORDER BY rowid LIMIT 24")?;
         let rows = statement
             .query_map(
@@ -516,7 +561,12 @@ impl Store {
                     cursor.as_deref(),
                 )?;
                 coverage.extend(page["errors"].as_array().unwrap().iter().cloned());
-                if !page["errors"].as_array().unwrap().is_empty() {
+                if page["errors"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|e| e.get("source").is_none())
+                {
                     // Opaque cursors can expire when a host deletes or compacts history.
                     self.db
                         .execute("DELETE FROM installation WHERE key=?1", [&key])?;
@@ -543,7 +593,7 @@ impl Store {
             }
         }
         let selected = self.project(project)?;
-        let mut statement = self.db.prepare("SELECT c.id,c.updated,c.root,COALESCE(p.head_updated,0),p.tail_cursor,COALESCE(p.tail_next,0) FROM conversations c LEFT JOIN conversation_progress p ON p.conversation=c.id WHERE c.updated>=?1 AND (?2 OR c.root=?3) AND (p.conversation IS NULL OR c.updated>p.head_updated OR p.tail_cursor IS NOT NULL) ORDER BY COALESCE(p.reviewed_at,0),c.updated DESC,c.id LIMIT 96")?;
+        let mut statement = self.db.prepare("SELECT c.id,c.updated,c.root,COALESCE(p.head_updated,0),p.tail_cursor,COALESCE(p.tail_next,0),p.head_cursor,p.head_anchor FROM conversations c LEFT JOIN conversation_progress p ON p.conversation=c.id WHERE c.updated>=?1 AND (?2 OR c.root=?3) AND (p.conversation IS NULL OR c.updated>p.head_updated OR p.tail_cursor IS NOT NULL OR p.head_cursor IS NOT NULL) ORDER BY COALESCE(p.reviewed_at,0),c.updated DESC,c.id LIMIT 96")?;
         let sessions = statement
             .query_map(
                 params![
@@ -559,18 +609,30 @@ impl Store {
                         r.get::<_, i64>(3)?,
                         r.get::<_, Option<String>>(4)?,
                         r.get::<_, bool>(5)?,
+                        r.get::<_, Option<String>>(6)?,
+                        r.get::<_, Option<String>>(7)?,
                     ))
                 },
             )?
             .collect::<rusqlite::Result<Vec<_>>>()?;
         drop(statement);
         let mut used_bytes = 0;
-        for (id, updated, _root, head, tail, tail_next) in
+        for (id, updated, _root, head, tail, tail_next, refresh, anchor) in
             sessions.iter().filter(|s| !prefs.excludes(&s.2)).take(12)
         {
             self.check_native_cycle(cycle)?;
-            let reading_tail = tail.is_some() && (*tail_next || head >= updated);
-            let cursor = if reading_tail { tail.as_deref() } else { None };
+            let refresh: Option<Value> =
+                refresh.as_deref().map(serde_json::from_str).transpose()?;
+            let reading_refresh = refresh.is_some();
+            let reading_tail =
+                !reading_refresh && tail.is_some() && (*tail_next || head >= updated);
+            let cursor = if let Some(refresh) = &refresh {
+                refresh["cursor"].as_str()
+            } else if reading_tail {
+                tail.as_deref()
+            } else {
+                None
+            };
             match self.read_conversation(project, id, scope, cursor) {
                 Ok(page) => {
                     let size = page.to_string().len();
@@ -602,19 +664,41 @@ impl Store {
                         tx.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![fingerprint,json!({"project":project,"scope":scope,"packet":[packet]}).to_string()])?;
                     }
                     let next = page["next_cursor"].as_str();
-                    let next_tail = if reading_tail || tail.is_none() {
+                    let stop = if let Some(refresh) = &refresh {
+                        refresh["stop"].as_str()
+                    } else {
+                        anchor.as_deref()
+                    };
+                    let reached =
+                        stop.is_some_and(|stop| items.iter().any(|i| i["evidence_id"] == stop));
+                    let fresh_head = !reading_tail && !reading_refresh;
+                    let next_refresh =
+                        if !reading_tail && (*head > 0 || reading_refresh) && !reached {
+                            next.map(|cursor| json!({"cursor":cursor,"stop":stop}).to_string())
+                        } else {
+                            None
+                        };
+                    let next_tail = if reading_tail || (fresh_head && *head == 0) {
                         next
                     } else {
                         tail.as_deref()
                     };
-                    tx.execute("INSERT INTO conversation_progress(conversation,head_updated,tail_cursor,tail_next,reviewed_at) VALUES(?1,?2,?3,?4,?5) ON CONFLICT(conversation) DO UPDATE SET head_updated=excluded.head_updated,tail_cursor=excluded.tail_cursor,tail_next=excluded.tail_next,reviewed_at=excluded.reviewed_at",params![id,if reading_tail{*head}else{*updated},next_tail,!reading_tail,crate::background::now()?])?;
+                    let next_anchor = if fresh_head {
+                        items
+                            .first()
+                            .and_then(|i| i["evidence_id"].as_str())
+                            .or(anchor.as_deref())
+                    } else {
+                        anchor.as_deref()
+                    };
+                    tx.execute("INSERT INTO conversation_progress(conversation,head_updated,tail_cursor,tail_next,reviewed_at,head_cursor,head_anchor) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(conversation) DO UPDATE SET head_updated=excluded.head_updated,tail_cursor=excluded.tail_cursor,tail_next=excluded.tail_next,reviewed_at=excluded.reviewed_at,head_cursor=excluded.head_cursor,head_anchor=excluded.head_anchor",params![id,if fresh_head{*updated}else{*head},next_tail,!reading_tail,crate::background::now()?,next_refresh,next_anchor])?;
                     tx.commit()?;
                 }
                 Err(e) => {
                     coverage.push(json!({"conversation":id,"error":e.to_string()}));
                     // Retry an expired content cursor from the newest page next time.
-                    if reading_tail {
-                        self.db.execute("UPDATE conversation_progress SET tail_cursor=NULL,head_updated=0 WHERE conversation=?1",[id])?;
+                    if reading_tail || reading_refresh {
+                        self.db.execute("UPDATE conversation_progress SET tail_cursor=NULL,head_cursor=NULL,head_anchor=NULL,head_updated=0 WHERE conversation=?1",[id])?;
                     }
                 }
             }
@@ -638,6 +722,7 @@ impl Store {
             .max_candidates
             .saturating_sub(usize::from(improvement.is_some()));
         let mut attempts = 0;
+        let mut author_unavailable = false;
         for packet in &groups {
             if attempts >= new_limit {
                 break;
@@ -682,7 +767,7 @@ impl Store {
                 continue;
             }
             attempts += 1;
-            let mut prepared_task=None;
+            let mut prepared_task = None;
             let result = (|| -> Result<Value> {
                 let extracted=self.native_request(cycle,client,"extract",json!({"instruction":"Find one repeated read/transform workflow that can become reusable TypeScript. Return candidate_json containing JSON null when evidence is insufficient, otherwise an object with task (contract,cases,optional evaluation) and applicability. Use actual transcript evidence where available. Cases are interpretations: distinguish inferred rules in the contract description. Provide at least three varied cases, including a boundary or handoff. Do not put evidence or project in task. Do not invent observed results. Existing generated Clearings work is not new learning material. Select behavior that generalizes; do not hardcode outputs. Routine capabilities are files.read/files.list only or no capabilities. No shell or write effects.","sdk":include_str!("../../../sdk/clearings.d.ts"),"task_shape":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]},"excluded_workflows":prefs.excluded_workflows,"conversations":packet}),"candidate_json",&fingerprint)?;
                 let proposed: Value =
@@ -792,10 +877,13 @@ impl Store {
             }
             outcomes.push(report);
             if is_budget || interrupted || unavailable {
+                author_unavailable = unavailable;
                 break;
             }
         }
-        if let Some((task, baseline, owner)) = improvement {
+        if let Some((task, baseline, owner)) = improvement
+            && !author_unavailable
+        {
             self.check_native_cycle(cycle)?;
             outcomes
                 .push(self.improve_native(cycle, client, executable, &task, &baseline, &owner)?);

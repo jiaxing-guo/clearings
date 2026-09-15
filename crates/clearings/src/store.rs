@@ -217,7 +217,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 10, "store was created by a newer version");
+        ensure!(schema <= 11, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -276,7 +276,18 @@ impl Store {
             tx.commit()?;
         }
         db.execute_batch("CREATE INDEX IF NOT EXISTS runs_project_expiration ON runs(project,created_at); CREATE INDEX IF NOT EXISTS runs_project_page ON runs(project,id); CREATE INDEX IF NOT EXISTS offers_expiration ON routine_offers(created_at);")?;
-        db.pragma_update(None, "user_version", 10)?;
+        let tx =
+            rusqlite::Transaction::new_unchecked(&db, rusqlite::TransactionBehavior::Immediate)?;
+        for column in ["head_cursor", "head_anchor"] {
+            let exists:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM pragma_table_info('conversation_progress') WHERE name=?1)",[column],|r|r.get(0))?;
+            if !exists {
+                tx.execute_batch(&format!(
+                    "ALTER TABLE conversation_progress ADD COLUMN {column} TEXT;"
+                ))?;
+            }
+        }
+        tx.commit()?;
+        db.pragma_update(None, "user_version", 11)?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {

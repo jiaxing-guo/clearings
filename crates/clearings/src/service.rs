@@ -286,7 +286,9 @@ impl Store {
             }
             return Ok(json!({"status":"integration_unavailable","error":error.to_string()}));
         }
+        self.db.execute("UPDATE installation SET body='{\"status\":\"available\"}' WHERE key='service_health' AND json_extract(body,'$.status')='unavailable'",[])?;
         if !prefs.service_enabled {
+            stop_service(self)?;
             return Ok(json!({"status":"disabled"}));
         }
         if !prefs.learning_enabled {
@@ -391,12 +393,25 @@ fn quoted(text: &str) -> Result<String> {
     Ok(format!(
         "\"{}\"",
         text.replace('%', "%%")
+            .replace('$', "$$")
             .replace('\\', "\\\\")
             .replace('"', "\\\"")
     ))
 }
 pub fn service_files(
     home: &Path,
+    directory: &Path,
+    executable: &Path,
+    platform: &str,
+) -> Result<Vec<(PathBuf, String)>> {
+    let config = std::env::var_os("XDG_CONFIG_HOME")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from);
+    service_files_in(home, config.as_deref(), directory, executable, platform)
+}
+fn service_files_in(
+    home: &Path,
+    config: Option<&Path>,
     directory: &Path,
     executable: &Path,
     platform: &str,
@@ -421,7 +436,11 @@ pub fn service_files(
             body,
         )])
     } else if platform == "linux" {
-        let base = home.join(".config/systemd/user");
+        let config = config
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| home.join(".config"));
+        ensure!(config.is_absolute(), "XDG_CONFIG_HOME must be absolute");
+        let base = config.join("systemd/user");
         Ok(vec![
             (
                 base.join(format!("{label}.service")),
@@ -443,6 +462,14 @@ pub fn service_files(
     }
 }
 fn run(command: &mut Command) -> Result<()> {
+    let status = run_status(command)?;
+    ensure!(
+        status.success(),
+        "client or service manager rejected the operation ({status})"
+    );
+    Ok(())
+}
+fn run_status(command: &mut Command) -> Result<std::process::ExitStatus> {
     use std::os::unix::process::CommandExt;
     let mut child = command
         .stdin(Stdio::null())
@@ -453,11 +480,7 @@ fn run(command: &mut Command) -> Result<()> {
     let deadline = Instant::now() + Duration::from_secs(60);
     loop {
         if let Some(status) = child.try_wait()? {
-            ensure!(
-                status.success(),
-                "client or service manager rejected the operation ({status})"
-            );
-            return Ok(());
+            return Ok(status);
         }
         if Instant::now() >= deadline {
             unsafe {
@@ -490,6 +513,49 @@ pub fn install_service(store: &Store, directory: &Path, executable: &Path) -> Re
         return Ok(json!({"status":"disabled"}));
     }
     let home = PathBuf::from(std::env::var_os("HOME").context("home directory unavailable")?);
+    let files = service_files(
+        &home,
+        directory,
+        &directory.join("bin/clearings"),
+        std::env::consts::OS,
+    )?;
+    install_service_files(store, directory, executable, &files, |label, changed| {
+        if cfg!(target_os = "macos") {
+            let domain = format!("gui/{}", unsafe { libc::geteuid() });
+            let service = format!("{domain}/{label}");
+            run(Command::new("/bin/launchctl").args(["enable", &service]))?;
+            let present =
+                run_status(Command::new("/bin/launchctl").args(["print", &service]))?.success();
+            if changed || !present {
+                if present {
+                    run(Command::new("/bin/launchctl").args(["bootout", &service]))?;
+                }
+                run(Command::new("/bin/launchctl")
+                    .arg("bootstrap")
+                    .arg(domain)
+                    .arg(&files[0].0))?;
+            }
+        } else if cfg!(target_os = "linux") {
+            if changed {
+                run(Command::new("/usr/bin/systemctl").args(["--user", "daemon-reload"]))?;
+            }
+            run(Command::new("/usr/bin/systemctl").args([
+                "--user",
+                "enable",
+                "--now",
+                &format!("{label}.timer"),
+            ]))?;
+        }
+        Ok(())
+    })
+}
+fn install_service_files(
+    store: &Store,
+    directory: &Path,
+    executable: &Path,
+    files: &[(PathBuf, String)],
+    mut reconcile: impl FnMut(&str, bool) -> Result<()>,
+) -> Result<Value> {
     let source = executable.canonicalize()?;
     let meta = fs::metadata(&source)?;
     let signature = digest(&(
@@ -508,44 +574,57 @@ pub fn install_service(store: &Store, directory: &Path, executable: &Path) -> Re
             |r| r.get(0),
         )
         .optional()?;
-    if old.as_deref() == Some(&signature) {
-        return Ok(json!({"status":"installed"}));
-    }
     let target = directory.join("bin/clearings");
     fs::create_dir_all(target.parent().unwrap())?;
-    if target != source {
+    use std::os::unix::fs::PermissionsExt;
+    let binary_ok = fs::symlink_metadata(&target)
+        .is_ok_and(|m| m.is_file() && m.len() == meta.len() && m.permissions().mode() & 0o111 != 0);
+    if target != source && (old.as_deref() != Some(&signature) || !binary_ok) {
         let mut temp = tempfile::NamedTempFile::new_in(target.parent().unwrap())?;
         std::io::copy(&mut fs::File::open(&source)?, &mut temp)?;
         fs::set_permissions(temp.path(), meta.permissions())?;
         temp.persist(&target).map_err(|e| e.error)?;
     }
-    let label = service_label(directory)?;
-    let files = service_files(&home, directory, &target, std::env::consts::OS)?;
     let changed = files
         .iter()
-        .any(|(path, body)| fs::read(path).ok().as_deref() != Some(body.as_bytes()));
-    for (path, body) in &files {
+        .any(|(p, b)| fs::read(p).ok().as_deref() != Some(b.as_bytes()));
+    for (path, body) in files {
         if changed {
             write_private(path, body.as_bytes())?;
         }
     }
-    if cfg!(target_os = "macos") && (changed || old.is_none()) {
-        let domain = format!("gui/{}", unsafe { libc::geteuid() });
-        let service = format!("{domain}/{label}");
-        let _ = run(Command::new("/bin/launchctl").args(["bootout", &service]));
-        run(Command::new("/bin/launchctl")
-            .arg("bootstrap")
-            .arg(domain)
-            .arg(&files[0].0))?;
-    } else if cfg!(target_os = "linux") {
-        run(Command::new("/usr/bin/systemctl").args(["--user", "daemon-reload"]))?;
-        run(Command::new("/usr/bin/systemctl").args([
-            "--user",
-            "enable",
-            "--now",
-            &format!("{label}.timer"),
-        ]))?;
+    let paths: Vec<_> = files.iter().map(|(p, _)| p.clone()).collect();
+    let previous: Option<String> = store
+        .db
+        .query_row(
+            "SELECT body FROM installation WHERE key='service_files'",
+            [],
+            |r| r.get(0),
+        )
+        .optional()?;
+    let mut managed = paths.clone();
+    if let Some(previous) = &previous {
+        for p in serde_json::from_str::<Vec<PathBuf>>(previous)? {
+            if !managed.contains(&p) {
+                managed.push(p);
+            }
+        }
     }
+    // Record cleanup intent before enabling a timer, including partially failed installs.
+    store.db.execute(
+        "INSERT OR IGNORE INTO installation(key,body) VALUES('service_source','pending')",
+        [],
+    )?;
+    store.db.execute("INSERT INTO installation(key,body) VALUES('service_files',?1) ON CONFLICT(key) DO UPDATE SET body=excluded.body",[serde_json::to_string(&managed)?])?;
+    reconcile(&service_label(directory)?, changed)?;
+    if let Some(previous) = previous {
+        for p in serde_json::from_str::<Vec<PathBuf>>(&previous)? {
+            if !paths.contains(&p) && p.is_file() {
+                fs::remove_file(p)?;
+            }
+        }
+    }
+    store.db.execute("INSERT INTO installation(key,body) VALUES('service_files',?1) ON CONFLICT(key) DO UPDATE SET body=excluded.body",[serde_json::to_string(&paths)?])?;
     store.db.execute("INSERT INTO installation(key,body) VALUES('service_source',?1) ON CONFLICT(key) DO UPDATE SET body=excluded.body",[signature])?;
     let status = json!({"status":"installed","platform":std::env::consts::OS,"timer":"hourly due check; daily learning by default"});
     store.db.execute("INSERT INTO installation(key,body) VALUES('service_health',?1) ON CONFLICT(key) DO UPDATE SET body=excluded.body",[status.to_string()])?;
@@ -658,13 +737,6 @@ pub fn stop_service(store: &Store) -> Result<()> {
         [],
         |r| r.get(0),
     )?;
-    store
-        .db
-        .execute("DELETE FROM installation WHERE key='service_source'", [])?;
-    store.db.execute(
-        "UPDATE native_cycles SET status='cancelled' WHERE status IN ('queued','running')",
-        [],
-    )?;
     if !installed {
         return Ok(());
     }
@@ -672,37 +744,179 @@ pub fn stop_service(store: &Store) -> Result<()> {
         .parent()
         .context("store directory unavailable")?;
     let label = service_label(directory)?;
-    let home = PathBuf::from(std::env::var_os("HOME").context("home directory unavailable")?);
-    for (path, _) in service_files(
-        &home,
-        directory,
-        &directory.join("bin/clearings"),
-        std::env::consts::OS,
-    )? {
-        if path.is_file() {
-            fs::remove_file(path)?;
-        }
-    }
-    if cfg!(target_os = "macos") {
-        run(Command::new("/bin/launchctl").args([
-            "bootout",
-            &format!("gui/{}/{label}", unsafe { libc::geteuid() }),
-        ]))
-    } else if cfg!(target_os = "linux") {
-        run(Command::new("/usr/bin/systemctl").args([
-            "--user",
-            "disable",
-            "--now",
-            &format!("{label}.timer"),
-        ]))
+    let recorded: Option<String> = store
+        .db
+        .query_row(
+            "SELECT body FROM installation WHERE key='service_files'",
+            [],
+            |r| r.get(0),
+        )
+        .optional()?;
+    let paths = if let Some(recorded) = recorded {
+        serde_json::from_str::<Vec<PathBuf>>(&recorded)?
     } else {
+        let home = PathBuf::from(std::env::var_os("HOME").context("home directory unavailable")?);
+        service_files(
+            &home,
+            directory,
+            &directory.join("bin/clearings"),
+            std::env::consts::OS,
+        )?
+        .into_iter()
+        .map(|(p, _)| p)
+        .collect()
+    };
+    stop_service_files(store, &paths, cfg!(target_os = "macos"), || {
+        if cfg!(target_os = "macos") {
+            let service = format!("gui/{}/{label}", unsafe { libc::geteuid() });
+            let status = run_status(Command::new("/bin/launchctl").args(["print", &service]))?;
+            if status.code() != Some(113) {
+                ensure!(
+                    status.success(),
+                    "cannot inspect the service before stopping it"
+                );
+                run(Command::new("/bin/launchctl").args(["bootout", &service]))?;
+            }
+        } else if cfg!(target_os = "linux") {
+            run(Command::new("/usr/bin/systemctl").args([
+                "--user",
+                "stop",
+                &format!("{label}.timer"),
+            ]))?;
+            run(Command::new("/usr/bin/systemctl").args([
+                "--user",
+                "disable",
+                &format!("{label}.timer"),
+            ]))?;
+        }
         Ok(())
+    })
+}
+fn stop_service_files(
+    store: &Store,
+    paths: &[PathBuf],
+    remove_before_stop: bool,
+    stop: impl FnOnce() -> Result<()>,
+) -> Result<()> {
+    store.db.execute(
+        "UPDATE native_cycles SET status='cancelled' WHERE status IN ('queued','running')",
+        [],
+    )?;
+    let remove = || -> Result<()> {
+        for path in paths {
+            if path.is_file() {
+                fs::remove_file(path)?;
+            }
+        }
+        Ok(())
+    };
+    // launchd may terminate this process during bootout. Remove its launch file
+    // first to prevent restart at login; retain the marker if completion is uncertain.
+    if remove_before_stop {
+        remove()?;
     }
+    stop()?;
+    if !remove_before_stop {
+        remove()?;
+    }
+    store.db.execute(
+        "DELETE FROM installation WHERE key IN ('service_source','service_files')",
+        [],
+    )?;
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn reconciliation_repairs_missing_files_and_shutdown_failure_keeps_its_marker() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let home = temp.path().canonicalize().unwrap();
+        let data = home.join("data");
+        fs::create_dir(&data).unwrap();
+        let store = Store::open(&data.join("state.db")).unwrap();
+        let source = home.join("source");
+        fs::write(&source, "binary").unwrap();
+        fs::set_permissions(&source, fs::Permissions::from_mode(0o700)).unwrap();
+        let config = home.join("custom-config");
+        let files = service_files_in(
+            &home,
+            Some(&config),
+            &data,
+            &data.join("bin/clearings"),
+            "linux",
+        )
+        .unwrap();
+        assert!(files[0].0.starts_with(config.join("systemd/user")));
+        let calls = std::cell::Cell::new(0);
+        let install = || {
+            install_service_files(&store, &data, &source, &files, |_, _| {
+                calls.set(calls.get() + 1);
+                Ok(())
+            })
+        };
+        install().unwrap();
+        fs::remove_file(&files[0].0).unwrap();
+        install().unwrap();
+        assert!(files[0].0.exists());
+        fs::remove_file(data.join("bin/clearings")).unwrap();
+        install().unwrap();
+        assert!(data.join("bin/clearings").exists());
+        install().unwrap();
+        assert_eq!(calls.get(), 4);
+        let paths: Vec<_> = files.iter().map(|(p, _)| p.clone()).collect();
+        assert!(
+            stop_service_files(&store, &paths, false, || anyhow::bail!(
+                "manager unavailable"
+            ))
+            .is_err()
+        );
+        assert!(
+            store
+                .db
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM installation WHERE key='service_source')",
+                    [],
+                    |r| r.get::<_, bool>(0)
+                )
+                .unwrap()
+        );
+        assert!(paths.iter().all(|p| p.exists()));
+        stop_service_files(&store, &paths, false, || Ok(())).unwrap();
+        assert!(
+            !store
+                .db
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM installation WHERE key='service_source')",
+                    [],
+                    |r| r.get::<_, bool>(0)
+                )
+                .unwrap()
+        );
+        assert!(paths.iter().all(|p| !p.exists()));
+    }
+    #[test]
+    fn successful_schedule_check_clears_stale_integration_health() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut store = Store::open(&temp.path().join("state.db")).unwrap();
+        store
+            .record_service_error("temporary integration error")
+            .unwrap();
+        assert!(!store.learning_notice().unwrap().is_null());
+        assert_eq!(
+            store
+                .default_tick(temp.path(), Path::new("unused"))
+                .unwrap()["status"],
+            "scheduled"
+        );
+        assert_eq!(
+            store.service_health().unwrap()["installation"]["status"],
+            "available"
+        );
+        assert!(store.learning_notice().unwrap().is_null());
+    }
     #[test]
     fn unchanged_learning_failures_are_announced_once() {
         let temp = tempfile::tempdir().unwrap();
