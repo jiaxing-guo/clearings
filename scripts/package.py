@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Build-time packaging only; the installed executable has no Python dependency."""
 import hashlib
+import http.client
 import json
 import re
+import ssl
+import time
 import urllib.error
 import urllib.request
 import shutil
@@ -12,6 +15,34 @@ import tarfile
 import tempfile
 from package_sources import copy_sources
 from pathlib import Path
+
+
+def fetch_license(url: str) -> bytes | None:
+    """Retry transient transport failures without treating them as missing files."""
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(url, timeout=15) as response:
+                body = response.read(1024 * 1024 + 1)
+            if len(body) > 1024 * 1024:
+                raise RuntimeError('Oversized upstream license: ' + url)
+            return body
+        except urllib.error.HTTPError as error:
+            error.close()
+            if error.code == 404:
+                return None
+            if error.code not in (408, 429, 500, 502, 503, 504):
+                raise
+            failure = error
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as error:
+            if isinstance(getattr(error, 'reason', None), ssl.SSLCertVerificationError):
+                raise
+            failure = error
+        if attempt == 3:
+            raise RuntimeError(f'Upstream license download failed after 4 attempts: {url}') from failure
+        delay = 2 ** attempt
+        print(f'Retrying upstream license download in {delay}s: {url} ({failure})', file=sys.stderr)
+        time.sleep(delay)
+
 
 binary = Path(sys.argv[1]).resolve()
 output = Path(sys.argv[2]).resolve()
@@ -52,15 +83,9 @@ for item in metadata['packages']:
         if match and re.fullmatch(r'[a-f0-9]{40}', commit):
             for filename in ['LICENSE', 'LICENSE-MIT', 'LICENSE-APACHE', 'LICENSE.md', 'LICENSE.txt', 'COPYING', 'NOTICE']:
                 url = f'https://raw.githubusercontent.com/{match.group(1)}/{commit}/{filename}'
-                try:
-                    with urllib.request.urlopen(url, timeout=15) as response:
-                        body = response.read(1024 * 1024 + 1)
-                except urllib.error.HTTPError as error:
-                    if error.code == 404:
-                        continue
-                    raise
-                if len(body) > 1024 * 1024:
-                    raise RuntimeError('Oversized upstream license: ' + url)
+                body = fetch_license(url)
+                if body is None:
+                    continue
                 target = licenses / name / filename
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(body)
