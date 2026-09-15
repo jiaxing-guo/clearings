@@ -217,7 +217,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 8, "store was created by a newer version");
+        ensure!(schema <= 9, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -243,6 +243,9 @@ impl Store {
             CREATE TABLE IF NOT EXISTS conversations(id TEXT PRIMARY KEY,client TEXT NOT NULL,host_id TEXT NOT NULL,root TEXT NOT NULL,source TEXT,updated INTEGER NOT NULL,body TEXT NOT NULL);
             CREATE INDEX IF NOT EXISTS conversations_recent ON conversations(updated DESC,id);
             CREATE TABLE IF NOT EXISTS conversation_evidence(id TEXT PRIMARY KEY,body TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS native_cycles(id INTEGER PRIMARY KEY,project TEXT NOT NULL,started INTEGER NOT NULL,status TEXT NOT NULL,revision INTEGER NOT NULL,project_revision INTEGER NOT NULL,scope TEXT NOT NULL DEFAULT 'project',automatic INTEGER NOT NULL DEFAULT 0,report TEXT NOT NULL DEFAULT '{}');
+            CREATE TABLE IF NOT EXISTS native_requests(id INTEGER PRIMARY KEY,cycle INTEGER NOT NULL REFERENCES native_cycles(id),started INTEGER NOT NULL,client TEXT NOT NULL,purpose TEXT NOT NULL,status TEXT NOT NULL,usage TEXT,fingerprint TEXT NOT NULL,response TEXT,reserved_microusd INTEGER NOT NULL DEFAULT 0);
+            CREATE TABLE IF NOT EXISTS native_candidates(fingerprint TEXT PRIMARY KEY,status TEXT NOT NULL,report TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS routine_library(task TEXT PRIMARY KEY REFERENCES objects(id),applicability TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS library_controls(project TEXT NOT NULL REFERENCES projects(id),task TEXT NOT NULL REFERENCES objects(id),paused INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(project,task));
             CREATE TABLE IF NOT EXISTS routine_usage(task TEXT NOT NULL,version TEXT NOT NULL,project TEXT NOT NULL,day TEXT NOT NULL,calls INTEGER NOT NULL,completed INTEGER NOT NULL,handoffs INTEGER NOT NULL,failed INTEGER NOT NULL,elapsed_ms INTEGER NOT NULL,capability_calls INTEGER NOT NULL,last_used TEXT NOT NULL,PRIMARY KEY(task,version,project,day));
@@ -272,6 +275,7 @@ impl Store {
             tx.commit()?;
         }
         db.execute_batch("CREATE INDEX IF NOT EXISTS runs_project_expiration ON runs(project,created_at); CREATE INDEX IF NOT EXISTS runs_project_page ON runs(project,id); CREATE INDEX IF NOT EXISTS offers_expiration ON routine_offers(created_at);")?;
+        db.pragma_update(None, "user_version", 9)?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {

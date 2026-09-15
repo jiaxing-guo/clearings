@@ -29,9 +29,18 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Action {
+    #[command(hide = true)]
+    LearningJob {
+        id: i64,
+    },
+    LearnNow {
+        #[arg(long)]
+        all: bool,
+    },
+    LearningStatus,
     PrepareConversationTask {
         file: PathBuf,
-        #[arg(long)]
+        #[arg(long, num_args=1.., value_name="EVIDENCE_ID")]
         evidence_ids: Vec<String>,
         #[arg(long)]
         all: bool,
@@ -182,7 +191,10 @@ enum Action {
         #[arg(long)]
         policy: PathBuf,
     },
-    Sdk,
+    Sdk {
+        #[arg(long)]
+        json: bool,
+    },
     List {
         /// Continue with next_after from the preceding task page.
         #[arg(long)]
@@ -315,8 +327,12 @@ fn main() -> Result<()> {
         }
         Action::Worker => clearings::worker_main(),
         Action::IsolationProbe { path } => clearings::isolation_probe(&path),
-        Action::Sdk => {
-            print!("{}", include_str!("../../../sdk/clearings.d.ts"));
+        Action::Sdk { json } => {
+            if json {
+                println!("{}", clearings::api::sdk_definition());
+            } else {
+                print!("{}", include_str!("../../../sdk/clearings.d.ts"));
+            }
             Ok(())
         }
         Action::RunSource {
@@ -345,6 +361,36 @@ fn main() -> Result<()> {
                 Store::open(&cli.store.ok_or_else(|| {
                     anyhow::anyhow!("provide --store /path/to/private/state.db")
                 })?)?;
+            if let Action::LearningJob { id } = action {
+                let value = store.execute_learning(id, &executable)?;
+                println!("{value}");
+                anyhow::ensure!(
+                    !clearings::api::failed(&value),
+                    "learning failed; inspect learning-status"
+                );
+                return Ok(());
+            }
+            if let Action::LearnNow { all } = action {
+                let project = cli
+                    .project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select --project"))?;
+                let value = store.learn_now(
+                    project,
+                    if all {
+                        clearings::conversations::Scope::All
+                    } else {
+                        clearings::conversations::Scope::Project
+                    },
+                    &executable,
+                )?;
+                println!("{value}");
+                anyhow::ensure!(
+                    !clearings::api::failed(&value),
+                    "learning failed; inspect learning-status"
+                );
+                return Ok(());
+            }
             if let Action::ProjectConfigure {
                 root,
                 name,
@@ -387,6 +433,14 @@ fn main() -> Result<()> {
                 executable,
             };
             let operation = match action {
+                Action::LearnNow { all } => Operation::LearnNow {
+                    scope: if all {
+                        clearings::conversations::Scope::All
+                    } else {
+                        clearings::conversations::Scope::Project
+                    },
+                },
+                Action::LearningStatus => Operation::LearningStatus,
                 Action::PrepareConversationTask {
                     file,
                     evidence_ids,

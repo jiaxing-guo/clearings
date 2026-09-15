@@ -29,7 +29,7 @@ pub enum Client {
     Claude,
 }
 impl Client {
-    fn name(self) -> &'static str {
+    pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Codex => "codex",
             Self::Claude => "claude",

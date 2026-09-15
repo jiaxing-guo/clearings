@@ -11,11 +11,11 @@ use std::{
 pub(crate) fn now() -> Result<i64> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as i64)
 }
-struct ProjectLock {
-    _file: File,
+pub(crate) struct ProjectLock {
+    file: File,
 }
 impl ProjectLock {
-    fn acquire(store: &Store, project: &str) -> Result<Self> {
+    pub(crate) fn acquire(store: &Store, project: &str) -> Result<Self> {
         use std::os::{fd::AsRawFd, unix::fs::OpenOptionsExt};
         let path = std::path::Path::new(
             store
@@ -45,7 +45,17 @@ impl ProjectLock {
             unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0,
             "background cycle already running"
         );
-        Ok(Self { _file: file })
+        Ok(Self { file })
+    }
+}
+impl Drop for ProjectLock {
+    fn drop(&mut self) {
+        use std::os::fd::AsRawFd;
+        // A concurrent fork can briefly inherit this open file description before
+        // exec closes it. Closing only our descriptor would keep that lock alive.
+        unsafe {
+            libc::flock(self.file.as_raw_fd(), libc::LOCK_UN);
+        }
     }
 }
 impl Store {
@@ -280,6 +290,17 @@ mod tests {
         (store, p.id)
     }
     use std::path::Path;
+    #[test]
+    fn dropping_guard_unlocks_even_with_an_inherited_descriptor() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = Store::open(&temp.path().join("state.db")).unwrap();
+        let held = ProjectLock::acquire(&store, "project").unwrap();
+        let inherited = held.file.try_clone().unwrap();
+        assert!(ProjectLock::acquire(&store, "project").is_err());
+        drop(held);
+        assert!(ProjectLock::acquire(&store, "project").is_ok());
+        drop(inherited);
+    }
     #[test]
     fn hard_linked_databases_are_rejected_before_alias_sidecars_are_created() {
         let d = tempfile::tempdir().unwrap();

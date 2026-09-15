@@ -14,6 +14,7 @@ pub mod library;
 pub mod management;
 pub mod mcp;
 mod model;
+pub mod native_learning;
 pub mod plugin;
 pub mod project;
 pub mod reuse;
