@@ -154,7 +154,7 @@ impl Store {
                     )
             })
             .take(32)
-            .map(str::to_lowercase)
+            .map(str::to_owned)
             .collect();
         if terms.is_empty() {
             return Ok(json!({"routines":[]}));

@@ -376,6 +376,13 @@ fn search_index_updates_sharing_and_backfills_existing_objects() {
         store.find_routines(&project.id, "quasar").unwrap()["routines"],
         json!([])
     );
+    store
+        .share_routine(&project.id, "echo", "İSTANBUL nebula transformations")
+        .unwrap();
+    assert_eq!(
+        store.find_routines(&project.id, "İSTANBUL").unwrap()["routines"][0]["routine"],
+        id
+    );
     drop(store);
     let conn = rusqlite::Connection::open(&db).unwrap();
     conn.execute_batch("DROP TRIGGER routine_search_insert; DROP TRIGGER routine_search_delete; DROP TRIGGER routine_search_update; DROP TRIGGER routine_search_share; DROP TRIGGER routine_search_reshare; DROP TRIGGER routine_search_unshare; DROP TABLE routine_search; PRAGMA user_version=11;").unwrap();
