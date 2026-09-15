@@ -159,10 +159,15 @@ impl Store {
         if terms.is_empty() {
             return Ok(json!({"routines":[]}));
         }
-        // Stream metadata and retain only the best three results. Limiting a
-        // substring prefilter first can hide valid whole-word matches later on.
-        let mut stmt=self.db.prepare("SELECT o.id,json_extract(o.body,'$.contract.name'),json_extract(o.body,'$.contract.description'),json_extract(o.body,'$.contract.capabilities'),l.applicability,a.version,p.project,COALESCE((SELECT sum(calls) FROM routine_usage u WHERE u.task=o.id AND u.project=?1 AND u.day>=date('now','-29 days')),0) FROM objects o JOIN active a ON a.task=o.id JOIN project_routines p ON p.task=o.id AND p.project=json_extract(o.body,'$.project') LEFT JOIN routine_library l ON l.task=o.id WHERE o.kind='task' AND (p.project=?1 OR l.task IS NOT NULL) AND p.paused=0 AND p.excluded=0 AND NOT EXISTS(SELECT 1 FROM library_controls c WHERE c.project=?1 AND c.task=o.id AND c.paused=1)")?;
-        let rows = stmt.query_map([project], |r| {
+        let query = terms
+            .iter()
+            .map(|s| format!("\"{}\"", s.replace('"', "\"\"")))
+            .collect::<Vec<_>>()
+            .join(" OR ");
+        // FTS ranks exact-token matches before the bound. Only those candidates
+        // reach the usage aggregate; task examples and source are not scanned.
+        let mut stmt=self.db.prepare("WITH candidates AS MATERIALIZED (SELECT o.id,routine_search.name,routine_search.description,json_extract(o.body,'$.contract.capabilities') AS capabilities,routine_search.applicability,a.version,p.project,routine_search.rank AS score FROM routine_search CROSS JOIN objects o ON o.rowid=routine_search.rowid JOIN active a ON a.task=o.id JOIN project_routines p ON p.task=o.id AND p.project=json_extract(o.body,'$.project') WHERE routine_search MATCH ?2 AND (p.project=?1 OR EXISTS(SELECT 1 FROM routine_library WHERE task=o.id)) AND p.paused=0 AND p.excluded=0 AND NOT EXISTS(SELECT 1 FROM library_controls c WHERE c.project=?1 AND c.task=o.id AND c.paused=1) ORDER BY routine_search.rank LIMIT 500) SELECT c.id,c.name,c.description,c.capabilities,c.applicability,c.version,c.project,COALESCE((SELECT sum(calls) FROM routine_usage u WHERE u.task=c.id AND u.project=?1 AND u.day>=date('now','-29 days')),0),c.score FROM candidates c")?;
+        let rows = stmt.query_map(params![project, query], |r| {
             Ok((
                 r.get::<_, String>(0)?,
                 r.get::<_, String>(1)?,
@@ -172,35 +177,16 @@ impl Store {
                 r.get::<_, String>(5)?,
                 r.get::<_, String>(6)?,
                 r.get::<_, u64>(7)?,
+                r.get::<_, f64>(8)?,
             ))
         })?;
         let mut matches = vec![];
         for row in rows {
-            let (id, name, description, capabilities, applicability, version, owner, calls) = row?;
-            // Acceptance examples can vary a resource parameter. They do not
-            // establish resources required by every future invocation.
-            let name_lower = name.to_lowercase();
-            let description_lower =
-                format!("{} {}", description, applicability.as_deref().unwrap_or(""))
-                    .to_lowercase();
-            let name_words: std::collections::BTreeSet<_> =
-                name_lower.split(|c: char| !c.is_alphanumeric()).collect();
-            let description_words: std::collections::BTreeSet<_> = description_lower
-                .split(|c: char| !c.is_alphanumeric())
-                .collect();
-            let score: usize = terms
-                .iter()
-                .map(|term| {
-                    usize::from(name_words.contains(term.as_str())) * 3
-                        + usize::from(description_words.contains(term.as_str()))
-                })
-                .sum();
-            if score == 0 {
-                continue;
-            }
+            let (id, name, description, capabilities, applicability, version, owner, calls, score) =
+                row?;
             matches.push((score,calls,json!({"routine":id,"name":name,"description":description,"applicability":applicability,"active":version,"origin_project":owner,"capabilities":serde_json::from_str::<Value>(&capabilities)?})));
             matches.sort_by(|a, b| {
-                b.0.cmp(&a.0)
+                a.0.total_cmp(&b.0)
                     .then(b.1.cmp(&a.1))
                     .then(a.2["routine"].as_str().cmp(&b.2["routine"].as_str()))
             });

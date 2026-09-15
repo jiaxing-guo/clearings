@@ -64,3 +64,7 @@ The automatic lifecycle has deterministic local HTTP-fixture tests, including wi
 The plugin's prompt hook performs a bounded local lookup and supplies up to three matching accepted routines. It does not call a model, block ordinary work, or announce an empty result. A candidate is offered once per session/version; the reuse-work skill inspects its requirements and executes a suitable match on fresh input. Matching remains an agent decision and requires real host-interaction testing.
 
 `find_routines`, `library_routine`, and `run_routine` support this flow. After saving generic behavior, the agent can call `share_routine` with its applicability. The same definition and version then become discoverable in other projects. Source-project grants do not transfer: execution uses the receiving project's grants and named resources. `pause_shared` pauses use in one receiving project. The originating routine's pause/exclusion and active-version controls still apply.
+
+Discovery uses a local full-text index of routine names, descriptions, and applicability. At most 500 eligible exact-token matches reach usage ranking, and only three are returned. The index is populated during migration and maintained when metadata changes; prompt hooks do not scan complete task bodies.
+
+`library_routine` returns a compact requirements summary and usage. Its optional `part: task` or `part: version` returns one complete stored object, preserving shared/current-project authorization and transport limits. Large summaries explicitly request a detailed task read before reuse.

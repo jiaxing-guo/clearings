@@ -341,3 +341,48 @@ fn substring_distractors_cannot_hide_a_later_exact_word_match() {
     assert_eq!(found["routines"].as_array().unwrap().len(), 1);
     assert_eq!(found["routines"][0]["routine"], target);
 }
+
+#[test]
+fn search_index_updates_sharing_and_backfills_existing_objects() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let db = root.join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let project = store
+        .configure_project(&root, "P", Settings::default(), None)
+        .unwrap();
+    let task:Task=serde_json::from_value(json!({"contract":{"abi":1,"name":"echo","description":"Echo input","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":1}}]})).unwrap();
+    let id = store.prepare_named(&project.id, task, "user").unwrap();
+    store
+        .save_named(
+            exe(),
+            &project.id,
+            "echo",
+            "export default async x=>({status:'completed',output:x})".into(),
+            None,
+        )
+        .unwrap();
+    store
+        .share_routine(&project.id, "echo", "Quasar transformations")
+        .unwrap();
+    assert_eq!(
+        store.find_routines(&project.id, "QUASAR").unwrap()["routines"][0]["routine"],
+        id
+    );
+    store
+        .share_routine(&project.id, "echo", "Nebula transformations")
+        .unwrap();
+    assert_eq!(
+        store.find_routines(&project.id, "quasar").unwrap()["routines"],
+        json!([])
+    );
+    drop(store);
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    conn.execute_batch("DROP TRIGGER routine_search_insert; DROP TRIGGER routine_search_delete; DROP TRIGGER routine_search_update; DROP TRIGGER routine_search_share; DROP TRIGGER routine_search_reshare; DROP TRIGGER routine_search_unshare; DROP TABLE routine_search; PRAGMA user_version=11;").unwrap();
+    drop(conn);
+    let store = Store::open(&db).unwrap();
+    assert_eq!(
+        store.find_routines(&project.id, "nebula").unwrap()["routines"][0]["routine"],
+        id
+    );
+}
