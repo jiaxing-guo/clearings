@@ -56,7 +56,7 @@ pub(crate) fn parse(value: Value) -> Result<Option<Candidate>> {
 }
 
 /// Preserve extraction evidence and constraints, using repair-specific instructions.
-/// The shorter instruction reserves room even at the native request byte boundary.
+/// At the byte boundary, omit only illustrative SDK examples to reserve repair space.
 pub(crate) fn repair_packet(
     mut extraction: Value,
     invalid: Value,
@@ -76,6 +76,7 @@ pub(crate) fn repair_packet(
         }
         Ok(true)
     };
+    extraction["original_instruction"] = extraction["instruction"].take();
     extraction["instruction"] = json!(crate::prompts::REPAIR_CANDIDATE);
     extraction["validation_error"] = json!(error.chars().take(128).collect::<String>());
     extraction["invalid_response"] = invalid.clone();
@@ -84,6 +85,16 @@ pub(crate) fn repair_packet(
     }
     let text = invalid.to_string();
     extraction["invalid_response"] = json!({"excerpt":"","truncated":true});
+    if !fits(&extraction)? {
+        // These are bundled illustrations, not conversation evidence or task rules.
+        // Preserve SDK types, response schema, mode, exclusions and original instructions.
+        if let Some(sdk) = extraction["sdk"].as_object_mut() {
+            for key in ["file_wrapper_example", "file_task_example", "task_example"] {
+                sdk.remove(key);
+            }
+            extraction["omitted_sdk_examples"] = json!(true);
+        }
+    }
     ensure!(fits(&extraction)?, "repair evidence exceeds request limit");
     // Bound the encoded JSON, including quotes, escapes and Unicode boundaries.
     let mut low = 0;
@@ -147,7 +158,7 @@ mod tests {
     use super::*;
     #[test]
     fn repair_preserves_boundary_sized_evidence_and_bounds_escaped_diagnostics() {
-        let mut extraction = json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"conversations":"","sdk":{"kept":true},"learning_mode":"explicit"});
+        let mut extraction = json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"conversations":"","sdk":crate::api::sdk_definition(),"learning_mode":"explicit"});
         let overhead = serde_json::to_vec(&extraction).unwrap().len();
         extraction["conversations"] = json!("x".repeat(480 * 1024 - overhead));
         assert_eq!(serde_json::to_vec(&extraction).unwrap().len(), 480 * 1024);
@@ -155,7 +166,9 @@ mod tests {
         let repair = repair_packet(extraction.clone(), invalid, &"\n".repeat(2048), None).unwrap();
         assert!(serde_json::to_vec(&repair).unwrap().len() <= 480 * 1024);
         assert_eq!(repair["conversations"], extraction["conversations"]);
-        assert_eq!(repair["sdk"], extraction["sdk"]);
+        assert_eq!(repair["sdk"]["typescript"], extraction["sdk"]["typescript"]);
+        assert_eq!(repair["original_instruction"], extraction["instruction"]);
+        assert_eq!(repair["omitted_sdk_examples"], true);
         assert_eq!(repair["learning_mode"], "explicit");
         assert_eq!(repair["invalid_response"]["truncated"], true);
         assert!(
@@ -193,6 +206,10 @@ mod tests {
         )
         .unwrap();
         assert_eq!(configured["conversations"], extraction["conversations"]);
+        assert_eq!(
+            configured["original_instruction"],
+            extraction["instruction"]
+        );
         assert!(serde_json::to_vec(&configured).unwrap().len() <= 480 * 1024);
         assert!(
             crate::model::configured_request(&connection, &configured, "candidate")
