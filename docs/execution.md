@@ -1,42 +1,48 @@
-# Embedded routine execution
+# Execution and permissions
 
-## Interface
+A saved routine is a default-exported async TypeScript function. It receives JSON input and returns an explicit outcome. Oxc prepares the source; QuickJS executes the derived JavaScript in an OS-isolated worker.
 
-`clearings run-source` reads a source file, contract, input and host policy. Source preparation, execution, and input/output validation use isolated internal workers. Preparation returns generated JavaScript and a source map; the source-running command prepares on each invocation. The [routine store](routines.md) saves prepared versions and reuses them through the Rust API and [CLI/MCP lifecycle](agents.md).
+## Outcomes
 
-The routine default-exports an async function. Its result is one of the four outcomes in the [product requirements](product.md). JSON schemas validate inputs and completed outputs. The worker converts JSON values directly without invoking JSON.stringify or custom toJSON methods. Non-finite numbers and non-JSON values are rejected before they can become null or disappear. Numbers must be finite and within JavaScript's safe numeric magnitude; use strings for large identifiers. Undefined values, functions and symbols are outside the interchange contract.
+| Status           | Meaning                                             |
+| ---------------- | --------------------------------------------------- |
+| `completed`      | Output satisfies the routine's output schema        |
+| `needs_agent`    | The routine needs interpretation or additional work |
+| `not_applicable` | The input is outside the routine's intended scope   |
+| `failed`         | Execution could not complete correctly              |
 
-`clearings sdk` prints the bundled authoring declarations. TypeScript annotations are transformed, not fully type-checked. Syntax and transformation errors are reported before execution. Module imports requiring a loader fail; no Node package resolution or runtime dependency installation is provided.
+A completed execution is not proof that a task is correct for every possible input. A failed read, timeout, missing observation, or unsupported format must not become an empty successful result.
 
-## Grants
+## Capabilities
 
-The routine's `capabilities` list is a request. The caller independently supplies a policy mapping root names to local directories. `files.read` accepts `{root, path}` and returns `{text}`. `files.list` accepts the same input and returns sorted immediate entry names. Paths must be relative and contain no parent traversal. Capability-scoped directory handles prevent symlinks from escaping the granted root. Only regular UTF-8 files are read; nonblocking opens prevent a named pipe from blocking the broker.
+A capability is a named operation a routine can request through `clearings.call`. The host checks both the routine's declaration and the current project grant.
 
-A caught capability error cannot be turned into a completed run; an explicit handoff or non-applicable outcome remains available.
+### Read and list files
 
-Reads and directory listings are bounded by output bytes; directories also have an entry limit. No project scripts are executed. Grants are supplied per invocation and never stored inside generated source.
+`files.read` accepts a granted root alias and a relative path, then returns UTF-8 text. `files.list` lists bounded entries under a granted directory. Absolute paths, parent traversal, and escapes through symlinks are rejected. Files must remain within the granted roots.
 
-## Process boundary
+Prefer `{root, path}` inputs when the source is an artifact. Read and parse it inside the routine instead of copying its contents into model-generated arguments. Returned data still needs to fit the task and output limits.
 
-The host launches its own executable in worker mode with a cleared environment and anonymous input/output pipes. Worker stdout carries only bounded protocol messages. The worker cannot access the host database or credentials. On Linux, a syscall allowlist permits computation and existing descriptors, while denying file opens, sockets, child processes and filesystem mutation. On macOS, a Seatbelt profile restricts the worker after executable loading. Failure to install the sandbox prevents execution.
+### Configured HTTP operations
 
-One deadline starts at invocation entry and covers isolated input/schema validation, execution and isolated outcome validation. Expensive schema work cannot occupy the privileged host after that deadline. QuickJS heap and stack limits supplement that deadline and protocol/output limits. Linux applies an address-space limit to the worker; macOS does not claim an equivalent whole-process memory limit. The supervisor kills and reaps its worker on completion or failure. OS isolation and library correctness require platform-specific tests; merely using Rust or a subprocess is not a sandbox.
+A named binding permits JSON GET requests to a fixed endpoint. The policy specifies allowed query keys, response schema, timeout/body bounds, and an optional credential environment-variable reference. Query values must be strings. The routine cannot select another URL or supply credentials.
 
-Capability calls cross the pipe to the broker. File operations use a process-wide pool of four I/O threads with at most four queued requests. Waiting for a result respects the remaining invocation deadline. An operating-system file call already in progress may outlive its caller; its pool slot remains occupied until it returns. Saturation fails explicitly, and queued work whose deadline has expired is skipped. This bounds lingering read-only work without creating a thread for every timed-out call. Opening granted roots during policy construction is setup work outside the invocation deadline. The initial implementation services calls serially, including calls written through `Promise.all`; it does not yet claim concurrent dispatch or batching. The host applies the declaration and its own grants independently for each operation.
+HTTPS is required except for explicit loopback endpoints. Redirects and environment proxies are disabled. Missing credentials, bad responses, and schema failures remain explicit.
 
-## Measurement
+## Isolation
 
-Each run returns an outcome, elapsed milliseconds, a capability request count and optional model usage. This execution engine makes no model calls. Usage of the surrounding agent session is unknown unless captured separately. Source preparation is outside the run interval for this command and must be included separately in an end-to-end comparison.
+Generated code has no ambient Node APIs, module imports, package installer, direct filesystem access, or direct network access. A separate native worker enforces the supported OS boundary. If isolation cannot be established, Clearings fails closed.
 
-## Technical references
+The host owns the capability broker and grants. The worker can request operations, but it cannot create permissions. Approval from the coding client and permission from the Clearings policy are separate checks.
 
-- [Oxc transformation](https://oxc.rs/docs/guide/usage/transformer/typescript.html)
-- [rquickjs embedding](https://docs.rs/rquickjs/latest/rquickjs/)
-- [QuickJS runtime controls](https://bellard.org/quickjs/quickjs.html)
-- [Capability-scoped filesystem API](https://docs.rs/cap-std/latest/cap_std/fs/struct.Dir.html)
+## Limits
 
-The invocation deadline also bounds writes to worker pipes. Blocking I/O uses a fixed four-worker pool with four queued jobs; timeout releases the caller, and a stalled operation can occupy only a bounded slot. CLI file loading and host-policy construction are setup operations outside the invocation's `wall_ms` limit.
+A contract sets wall time, JavaScript heap size, output bytes, and capability-call count. Runtime ranges are enforced when the contract is prepared and used. IPC messages are bounded to 4 MiB, including their framing; source is bounded to 256 KiB. The same invocation deadline covers validation, execution, and broker work.
 
-Worker request serialization runs inside the same bounded write operation. Host-generated failure diagnostics are limited to a 4 KiB UTF-8 prefix with an explicit truncation marker, so a rejected large input cannot inflate the returned or stored run report.
+JSON boundaries reject values that cannot be represented safely, including non-finite numbers and unsafe integer values. Output schemas are checked separately from TypeScript transpilation. Transpilation does not perform full TypeScript type checking.
 
-`wall_ms` governs execution and deadline-aware waits; it is not a hard real-time guarantee for OS process startup, host bookkeeping or cleanup. Their overhead is included in `elapsed_ms`. Expired work is rejected before launching another worker and at subsequent enforced boundaries. The native Rust API accepts trusted caller-owned in-memory values; its callers must respect the protocol-size limits. CLI/MCP enforce input-size boundaries before accepting external data.
+## Run evidence
+
+A run records the active version, input digest, outcome, elapsed native time, capability count, and purpose. Normal use is labelled `reuse`; explicit trials are `test`. Test failures do not trigger automatic regression rollback. Test fixture capture is bounded and reports unavailable evidence rather than inventing it.
+
+Runtime timing does not include the whole coding-agent conversation. See [performance](performance.md) and [activity](activity.md) for the measurement boundary.

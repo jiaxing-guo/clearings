@@ -1,63 +1,39 @@
-# Routine versions and acceptance
+# Routines and acceptance
 
-A task contains a contract and acceptance cases. Record it before submitting candidate source. Changing either creates a different task ID. Each candidate refers to that task and contains its source, prepared JavaScript, source map and engine identity. IDs are SHA-256 digests of canonical JSON objects; records live in a local SQLite database using WAL transactions.
+A routine consists of frozen requirements and one or more executable versions. Its contract declares inputs, outputs, requested capabilities, limits, and behavior. Acceptance cases pair inputs with exact expected outcomes and recorded capability fixtures.
 
-The `store` module exposes preparation, submission, evaluation, activation, execution, inspection and deactivation. The command and MCP interfaces build on this same implementation.
+## Prepare before authoring
 
-## Acceptance
+The agent prepares the task before submitting candidate source. This fixes the criteria the source must satisfy. Cases may be user-defined or constructed from conversation evidence; interpretations must be labelled and must not be presented as authenticated traces.
 
-Each case supplies input, an exact expected outcome and an ordered list of expected capability calls and fixture results. Evaluation has no live credentials or filesystem grants. Wrong, extra or missing calls reject the candidate, even if the code catches the fixture error. Acceptance cases must include at least one completed result. Passing these cases is evidence for those cases, not proof of general correctness.
+A fixture contains the capability name, input, and result. Fixture data is not a grant. Evaluation uses fixtures without live credentials or filesystem permissions.
 
-The first evaluation of a version is retained. Activation is a separate operation, and requires that evaluation to pass. Replacing an active version requires the caller to name the version it expects to replace; a concurrent change causes an error. Deactivation has the same requirement. Submitting a revision does not change the active version.
+`exact_calls` requires the recorded call sequence. `read_only_behavior` allows reordering, repetition, or omission of recorded file reads while requiring the same expected outcome. It supports only `files.read` and `files.list`; unrecorded reads and conflicting fixtures are rejected.
 
-Stored object hashes are checked when loaded for execution. This protects against accidental corruption. The database is trusted local state, not a security boundary against its owner modifying both records and hashes. Engine identity changes require source re-submission and evaluation.
+## Submit, evaluate, activate
 
-## Live capabilities
+Submission stores original TypeScript, prepared JavaScript, source map, and engine identity as an immutable version. Evaluation runs the frozen cases. The first evaluation for that version and engine is retained.
 
-Each invocation receives its own policy. Stored code can request capabilities but cannot grant them. File roots work as described in [Execution](execution.md).
+Only a passing version can be activated. Replacing an active version requires the expected current version, so concurrent updates cannot silently overwrite one another. Failed evaluation preserves the existing active version.
 
-A named HTTP binding allows a GET request to a fixed endpoint, with explicitly listed query keys whose values must be strings. The policy declares the expected JSON response schema. HTTPS is required except for explicitly configured loopback endpoints. Redirects are rejected. Requests inherit the remaining execution deadline and response byte limit. Credentials are referenced by an environment variable name and are attached only by the host.
+Runtime input/output schemas and bounded execution are separate from behavioral acceptance. Passing a few examples does not establish generality. Use independent cases, fresh inputs, and relevant failure conditions.
 
-```json
-{
-  "roots": {},
-  "http": {
-    "tickets.list": {
-      "url": "https://api.example.com/tickets",
-      "query_keys": ["status"],
-      "output_schema": { "type": "array" },
-      "bearer_token_env": "TICKETS_READ_TOKEN"
-    }
-  }
-}
-```
+## Reuse
 
-The matching routine requests `tickets.list` in its contract and calls `clearings.call('tickets.list', {status: 'open'})`. Endpoint administrators must choose read operations: HTTP GET alone cannot guarantee an arbitrary service has no effects. Clearings does not expose arbitrary URLs, shell execution or write methods to routines.
+Run the active version on fresh input. Complete invocation hints include the contract and expected version/capabilities, so a matching request needs no preparatory lookup. The host checks the registered project, active version, current grants, and pause/exclusion state before execution.
 
-## Run records
+A stale hint produces an error. Inspect the current routine before retrying; do not omit version checks to force a call through.
 
-Runs retain the selected version, input digest, outcome, elapsed execution time and capability-call count. Policy failures and runtime failures remain visible. Input bodies and credentials are not recorded; returned output and handoff context are recorded and may contain sensitive data. Keep the database in a private directory. It is local to the user and is not uploaded.
+## Change requirements
 
-`model_usage: null` means no measured model usage is attached. It does not mean the surrounding coding-agent turn cost zero tokens. Routine reuse is executable reuse; results are read and computed again for each invocation.
+The [workbench](workbench.md) can add examples and revise input/output schemas without editing source. It creates a new immutable task, preserves existing cases, withholds one new case from authoring, and stages the evaluated version. The user applies a passing update explicitly.
 
-HTTP endpoints and output schemas are validated during policy construction, before any request. One redirect-disabled client reuses its connection pool for that broker; each request has the remaining invocation timeout. Fixture inputs and results must both fit the JSON numeric range.
+Undo restores the preceding task and version. Shared pause controls move with the definition. Prior records remain inspectable to their owning project; read access does not grant activation rights to an unbound definition.
 
-The execution identity includes a semantics revision. Versions prepared under the previous identity must be resubmitted and evaluated before activation.
+For active-agent authoring, a new requirement set also needs a new prepared task. Repair source against its criteria rather than changing frozen expected results to make a candidate pass.
 
-Repeated evaluation of a version returns its immutable existing report without running cases again. New evaluations enforce an aggregate report budget while collecting cases; exceeding it returns an explicit error and does not persist or activate a partial evaluation. The SDK retains input/output types for built-in file operations, with JSON input/output for user-named operations. SDK type checking uses TypeScript 5.4 or later.
+## Persistence and recovery
 
-HTTP bindings ignore ambient proxy variables and connect directly to the granted endpoint. The bounded blocking-I/O pool covers the request, JSON parsing and response-schema validation under the remaining invocation deadline. A timed-out operation may occupy a pool slot until it returns; capacity remains fixed. Acceptance preparation rejects fixture responses and expected outcomes that exceed their corresponding live byte limits.
+Tasks and versions have content-derived IDs. Stored hashes are checked when records are loaded. The database owner can edit local data, so these checks detect corruption rather than defend against that owner.
 
-User-named capabilities currently use HTTP GET bindings, so their fixture inputs must be objects of string query values. Fixture preparation and live execution share this shape check; endpoint-specific permitted keys remain host policy.
-
-Task validation compiles its input and output schemas once and reuses them across acceptance cases. Other `files.*` names are reserved and rejected. SDK types enforce the supported file names and string-valued HTTP query objects; the documentation CI workflow runs the corresponding positive and negative type checks.
-
-Stored tasks and versions each have a byte budget below one third of the worker message limit. This reserves room for acceptance inputs and prepared code to travel together and keeps inspection responses bounded. Oversized objects are rejected before persistence and are not loaded from storage.
-
-## Named project routines
-
-With a configured `--project`, prepare requirements once with `prepare-task`, then use `save NAME --source routine.ts` to prepare, evaluate and activate the candidate. A failed evaluation leaves the previous active version in place. To revise source, pass `--expected-active VERSION`. Use `discover`, `inspect` and `reuse NAME --input input.json` in later sessions. Identical requirements in different projects have separate task identities and active versions. Changed requirements need a new name; existing acceptance cases remain immutable.
-
-The corresponding MCP tools are `clearings_discover`, `clearings_save` and `clearings_reuse`. The agent decides when existing authorization covers saving; these tools do not add a mandatory confirmation to every workflow.
-
-Tasks default to `exact_calls` evaluation. Explicit `evaluation: "read_only_behavior"` permits reordering, repetition or omission of recorded file reads while requiring the same outcome on every acceptance case. Unrecorded reads, malformed calls, and conflicting responses for the same read are rejected. This mode only supports `files.read` and `files.list`. It demonstrates agreement on the recorded cases, not correctness for all future inputs.
+Automatic improvement preserves the contract and its cases. A candidate must pass evaluation and measured benefit checks before replacing the baseline. Only an owning project's qualifying execution failures can trigger automatic regression recovery; narrower receiving-project grants must not undo a shared definition globally.

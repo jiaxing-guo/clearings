@@ -1,53 +1,55 @@
 # Clearings
 
-**Turn repeated agent work into reusable TypeScript routines.**
+**Turn repeated agent work into reusable routines.**
 
-Clearings gives Codex and Claude Code a local execution boundary for work that should not need to be rediscovered on every run. The agent writes a parameterized routine; Clearings prepares it, checks its behavior, and executes it through explicitly granted tool operations. Unfamiliar cases return to the agent with structured context.
+Clearings helps your coding agent save the parts of a workflow that can run as code: collecting files, parsing records, checking results, and comparing changes. The next time that work comes up, the agent can run a tested routine on fresh inputs.
 
-The native Rust executable embeds the TypeScript transformer and JavaScript engine. Installed users do not need Node, Python, npm, or a Rust compiler. The project being worked on can use any language. Install the plugin once, then use Clearings in any working project; it handles project identity, private storage and project read grants. See [plugin installation and alpha availability](docs/installation.md).
+Use a **skill** for instructions and judgment. Use a **routine** for executable steps. Skills bundled with Clearings help the agent learn, find, run, and manage those routines.
 
-## Status
+## Start with useful repetition
 
-The implementation includes isolated TypeScript execution, scoped file and HTTP capabilities, immutable routine versions, acceptance checking, activation, run records, CLI and MCP interfaces, and Codex/Claude Code plugins with MCP registration and automatic project setup. Project authorization, named saving/reuse, incremental activity imports, scheduled component creation, measured replacement, rollback, local digests and retention controls extend that lifecycle. Three user-defined examples exercise the complete teach-and-reuse flow. See [workflows](docs/workflows.md), [installation](docs/installation.md), and [agent integration](docs/agents.md).
+Good candidates include research-run audits, log summaries, file-backed data cleanup, and recurring checks against known sources. A routine is most useful when it replaces several model-driven steps. A tiny calculation may be faster without one.
 
-The plugin reads recent local Codex and Claude Code conversations, learns daily through the existing signed-in coding client, and quietly suggests evaluated routines for fresh requests. On-request review starts with the current project; daily review covers recent work across projects. Bundled skills handle learning, reuse, status, preferences, and undo. Default limits are three candidate workflows per cycle and six authoring requests per UTC day. These limits are not a dollar spending guarantee. See [project setup](docs/projects.md), [background work](docs/background.md), and [management](docs/management.md).
+Tell your agent:
 
-The implementation is under development. Passing runtime tests does not establish general-purpose task correctness or token savings. See [execution](docs/execution.md) for the supported boundary and [development](docs/development.md) for checks.
+> Make this workflow reusable with Clearings.
 
-## Build and run
+Or:
 
-Building from source requires Rust and a C toolchain; these are developer dependencies. Rustup selects the pinned toolchain.
+> Review recent work in this project and find a useful routine to save.
 
-```sh
-cargo build --locked --release
-./target/release/clearings sdk
-./target/release/clearings run-source --source examples/read-file/routine.ts --contract examples/read-file/contract.json --input examples/read-file/input.json --policy examples/read-file/policy.json
-```
+Clearings reads supported local Codex and Claude Code conversations, prepares acceptance examples, and checks generated TypeScript before activation. Daily learning uses your existing coding client. No separate model connection or setup interview is required.
 
-Routines default-export an async function and return an explicit outcome:
+## Inspect and improve your routines
 
-```typescript
-export default async function (input: { root: string; path: string }) {
-  const result = await clearings.call('files.read', input);
-  return { status: 'completed', output: result.text };
-}
-```
+Ask **“Open the Clearings workbench.”** The local UI brings together examples, test inputs, results, recent use, pause controls, and undo. Describe an extension, add an example, review the test results, and apply the update. You do not need to edit source or manage IDs.
 
-The host grants named directory roots separately from the routine contract. File access cannot escape those roots. The worker has no Node APIs, direct network access, or package installation. TypeScript transformation does not perform full type checking; runtime schemas and behavioral cases serve different checks.
+The agent can also handle these requests directly:
 
-## Documentation
+- “What did you learn?”
+- “Pause learning.”
+- “Learn weekly.”
+- “Undo the last automatic change.”
 
-Authored reference lives in `docs/`; Fumadocs renders it. Documentation development retains its existing Node toolchain, independently of the distributed runtime.
+## Install
 
-```sh
-npm ci --ignore-scripts
-npm --prefix website ci --ignore-scripts
-npm run docs:dev
-npm run check
-```
+Use a bundled package from a successful [Packages build](https://github.com/jiaxing-guo/clearings/actions/workflows/package.yml) for the revision you want to try. Your coding agent can download, verify, and install it. The plugin's pinned public runtime is not published yet, so a source-only marketplace installation cannot complete its first download.
 
-The earlier analyzer, Program IR and compiler remain at their [historical revision](docs/history.md). Their evidence does not describe the new runtime.
+[Installation](docs/installation.md) explains the working preview-package path and client trust steps. Installed packages include the runtime; users do not need Node, Python, npm, or a Rust compiler.
 
-## License
+## How it runs
 
-[Apache License 2.0](LICENSE). See [third-party notices](THIRD_PARTY_NOTICES.md).
+Rust owns permissions, storage, and process supervision. Oxc prepares TypeScript; QuickJS executes it in a separate OS-isolated worker. Routines request named file or HTTP operations, while the host supplies the actual grants. Changed inputs are read again. Saved code is reused; results are not silently cached.
+
+Acceptance checks establish behavior on recorded examples. They do not prove general correctness or guarantee savings on every task. See [performance](docs/performance.md) for workload selection and measurement.
+
+## Learn more
+
+- [Documentation](docs/README.md)
+- [Daily use](docs/default-experience.md)
+- [Personal workbench](docs/workbench.md)
+- [Runtime and permissions](docs/execution.md)
+- [Development](docs/development.md)
+- [Contributing](CONTRIBUTING.md)
+
+[Apache License 2.0](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)

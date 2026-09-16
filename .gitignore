@@ -15,7 +15,7 @@ website/*.tsbuildinfo
 website/content/docs/
 website/public/reference.json
 
-# User-owned records and checkouts from historical versions.
+# User-owned records and local benchmark checkouts.
 .clearings/
 runs/
 benchmark-checkouts/

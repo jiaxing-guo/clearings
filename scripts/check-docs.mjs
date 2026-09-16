@@ -124,34 +124,21 @@ for (const page of reference.pages) {
   visit(document);
   assert.deepEqual(headings, [page.title], `Missing or duplicate page title: ${page.url}`);
 }
-const historicalRoutes = JSON.parse(readFileSync('website/lib/historical-routes.json', 'utf8'));
-const historicalRevision = readFileSync('website/lib/history.ts', 'utf8').match(
-  /historicalRevision = '([a-f0-9]{40})'/,
-)?.[1];
-assert(
-  historicalRevision && readFileSync('docs/history.md', 'utf8').includes(historicalRevision),
-  'Historical revision must agree with the retrieval guide.',
-);
-for (const [url, source] of Object.entries(historicalRoutes)) {
-  const file = target(base + url, join(root, 'index.html'));
-  assert(
-    tree(file).links.includes(
-      `https://github.com/jiaxing-guo/clearings/blob/${historicalRevision}/${source}`,
-    ),
-    `Historical page has no original source link: ${url}`,
-  );
-  assert(
-    readFileSync(file, 'utf8').includes('Historical documentation'),
-    `Historical page is not labeled: ${url}`,
-  );
-}
 const navigation = tree(join(root, 'docs/index.html')).links.map((link) => link.replace(/\/$/, ''));
 for (const page of reference.pages)
   assert(
     navigation.includes(base + page.url),
     `Reference page is missing from navigation: ${page.url}`,
   );
-const queries = ['routine', 'TypeScript', 'capability', 'execution', 'handoff'];
+const queries = [
+  'routine',
+  'TypeScript',
+  'capability',
+  'execution',
+  'handoff',
+  'workbench',
+  'file',
+];
 const searchFile = join(root, 'search-index.json');
 assert(existsSync(searchFile), 'Static search index missing.');
 const originalFetch = globalThis.fetch;
@@ -167,12 +154,11 @@ try {
     const results = await client.search(query);
     assert(results.length > 0, `Search has no results for ${query}`);
     for (const item of results) target(item.url, join(root, 'index.html'), false);
+    const currentRoutes = new Set(reference.pages.map((page) => page.url));
     for (const item of results) {
-      const path = new URL(item.url, 'https://local.invalid').pathname.replace(/\/$/, '');
-      assert(
-        !Object.hasOwn(historicalRoutes, path),
-        `Historical redirect polluted current search: ${path}`,
-      );
+      let path = new URL(item.url, 'https://local.invalid').pathname.replace(/\/$/, '');
+      if (base && path.startsWith(base + '/')) path = path.slice(base.length);
+      assert(currentRoutes.has(path), `Search result is not a maintained page: ${path}`);
     }
   }
 } finally {
@@ -185,7 +171,6 @@ console.log(
     links_checked: links,
     base_path: base,
     reference_pages: reference.pages.length,
-    historical_routes: Object.keys(historicalRoutes).length,
     static_search_queries: queries.length,
     external_html_asset_references: 0,
     asset_check_scope:

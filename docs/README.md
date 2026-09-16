@@ -1,25 +1,35 @@
-# Clearings documentation
+# Clearings guide
 
-Clearings turns user-selected repeated agent work into reusable TypeScript routines. A Rust host prepares and executes each routine in an isolated worker with explicit inputs, outputs and capabilities.
+Clearings turns repeatable agent steps into tested code. Your coding agent handles judgment and unfamiliar cases; saved routines handle work that can be specified, checked, and run again on fresh inputs.
 
-## Current status
+## Get started
 
-The embedded execution boundary supports parameterized TypeScript, JSON schemas, bounded file capabilities and explicit handoff outcomes. SQLite persistence, recorded acceptance cases, version activation, CLI/MCP and Codex/Claude Code skill plugins are implemented. Three user-defined workflows exercise reuse and handoff. Oxc removes TypeScript syntax; it does not perform full type checking. Token savings remain unmeasured.
+1. [Install a bundled package](installation.md) through your existing coding client.
+2. Ask the agent to [save a useful workflow](workflows.md) or review recent conversations.
+3. Let the agent reuse matching routines, or [try one in the workbench](workbench.md).
 
-| Read                               | Purpose                                          |
-| ---------------------------------- | ------------------------------------------------ |
-| [Product requirements](product.md) | Product direction and implementation boundaries  |
-| [Execution](execution.md)          | Implemented runtime, capabilities and limits     |
-| [Development](development.md)      | Build and check the repository                   |
-| [Routine versions](routines.md)    | Acceptance, activation and run records           |
-| [Agent integration](agents.md)     | CLI, MCP and coding-agent setup                  |
-| [Workflows](workflows.md)          | Three complete examples                          |
-| [Installation](installation.md)    | Packaged binaries and source builds              |
-| [History](history.md)              | Retrieve earlier implementations and experiments |
+A skill preserves guidance. A routine preserves executable work. Clearings uses both: its skills guide discovery and teaching, while the native runtime executes accepted routines.
 
-## Project automation
+## Use and control
 
-- [Project authorization](projects.md): identity, scope, model settings and spending limits.
-- [Activity records](activity.md): selected Codex/Claude usage and structured observations.
-- [Background execution](background.md): automatic creation, measured improvement and recovery.
-- [Management](management.md): inspection, controls, digests, retention and model usage.
+| Guide                                | What it covers                                           |
+| ------------------------------------ | -------------------------------------------------------- |
+| [Daily use](default-experience.md)   | Natural-language requests and defaults                   |
+| [Workbench](workbench.md)            | Examples, test inputs, proposed updates and undo         |
+| [Management](management.md)          | Pause, exclusions, history, retention and usage          |
+| [Background learning](background.md) | Conversation review, candidate validation and scheduling |
+| [Performance](performance.md)        | Suitable workloads and honest measurement                |
+
+## Technical reference
+
+| Reference                                 | What it covers                                       |
+| ----------------------------------------- | ---------------------------------------------------- |
+| [Product](product.md)                     | Purpose, supported behavior and product boundaries   |
+| [Architecture](architecture.md)           | Client, host, worker and storage responsibilities    |
+| [Execution](execution.md)                 | Capabilities, isolation, limits and outcomes         |
+| [Routines](routines.md)                   | Frozen criteria, versions, evaluation and activation |
+| [Projects](projects.md)                   | Identity, grants and cross-project reuse             |
+| [Agent integration](agents.md)            | CLI, MCP, hooks and the SDK                          |
+| [Activity](activity.md)                   | Conversation sources, usage and run evidence         |
+| [Development](development.md)             | Builds, tests, packages and documentation            |
+| [Release validation](launch-readiness.md) | Checks needed for a distributable release            |

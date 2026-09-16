@@ -63,10 +63,33 @@ function rewriteLinks(text, file) {
     })
     .join('\n');
 }
+const preferred = [
+  'index',
+  'installation',
+  'default-experience',
+  'workflows',
+  'workbench',
+  'management',
+  'background',
+  'performance',
+  'product',
+  'architecture',
+  'execution',
+  'routines',
+  'projects',
+  'agents',
+  'activity',
+  'development',
+  'launch-readiness',
+];
+const navigation = [
+  ...preferred.filter((slug) => pages.some((page) => page.slug === slug)),
+  ...pages.map((page) => page.slug).filter((slug) => !preferred.includes(slug)),
+];
 const generated = new Map();
 generated.set(
   'meta.json',
-  JSON.stringify({ title: 'Clearings', pages: pages.map((page) => page.slug) }, null, 2) + '\n',
+  JSON.stringify({ title: 'Clearings', pages: navigation }, null, 2) + '\n',
 );
 for (const page of pages) {
   const file = resolve(root, page.source);
@@ -77,7 +100,7 @@ for (const page of pages) {
   );
 }
 mkdirSync(destination, { recursive: true });
-// Remove obsolete projection files, including the earlier generated reference tree.
+// Keep the projection identical to the authored page inventory.
 for (const name of readdirSync(destination)) {
   if (!generated.has(name)) rmSync(resolve(destination, name), { recursive: true, force: true });
 }
