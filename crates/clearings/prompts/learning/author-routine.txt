@@ -1,0 +1,1 @@
+Return source: a default-exported async TypeScript function implementing this frozen contract. Use fresh inputs and SDK capabilities. One acceptance case is withheld. Never hardcode examples. Return needs_agent or not_applicable for unsupported cases. No imports, ambient Node APIs, shell, or direct network.
