@@ -34,7 +34,7 @@ Keep inputs, model, effort, permissions, required output and machine conditions 
 
 ## Count tokens carefully
 
-Report total input, cached input, uncached input, output and reasoning counters where available. Cached input is already included in input. Reasoning output is already included in output. Sum per-response usage once, not repeated cumulative counters.
+Report the provider’s input, cache-read, cache-write, output, and reasoning counters where available. For Codex, cached input is included in input and reasoning output is included in output; do not add those subsets again. Claude Code can report `cache_read_input_tokens` and `cache_creation_input_tokens` separately from `input_tokens`; retain these fields and use their provider-specific meaning when deriving totals. Sum per-response usage once, not repeated cumulative counters.
 
 Fewer total input tokens do not establish proportional billing savings. Report authoring, repair, installation and maintenance separately from reuse. If a routine is never selected, that is a product outcome, not a trial to discard.
 
