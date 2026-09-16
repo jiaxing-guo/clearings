@@ -30,7 +30,7 @@ pub fn tools() -> Value {
         tool("find_routines","Find up to three relevant accepted routines for an ordinary task, including shared routines. Inspect requirements and execute a suitable match on fresh input. Empty results need no announcement.",json!({"query":{"type":"string","maxLength":16000}}),json!(["query"]),true),
         tool("share_routine","Make an accepted routine available across this user's projects. Describe its applicability and project-specific assumptions. Sharing transfers code definitions, never source-project grants. Use after saving genuinely reusable behavior.",json!({"name":{"type":"string"},"applicability":{"type":"string","minLength":1,"maxLength":4000}}),json!(["name","applicability"]),false),
         tool("library_routine","Inspect bounded requirements, examples and usage. Request part=task for full requirements or part=version for complete source; each part retains current-project/shared authorization.",json!({"id":id,"part":{"enum":["task","version"]}}),json!(["id"]),true),
-        tool("run_routine","Execute a discovered routine on fresh inputs using the current project's grants. Explicit handoff or failure returns control to the agent.",json!({"id":id,"input":{}}),json!(["id","input"]),false),
+        tool("run_routine","Execute a discovered routine on fresh inputs using the current project's grants. Explicit handoff or failure returns control to the agent.",json!({"id":id,"input":{},"expected_version":id,"expected_capabilities":{"type":"array","maxItems":64,"uniqueItems":true,"items":{"type":"string"}}}),json!(["id","input"]),false),
         tool("pause_shared","Pause or resume a shared routine in the current project without changing its source or other projects.",json!({"id":id,"paused":{"type":"boolean"}}),json!(["id","paused"]),false),
         tool("recent_conversations","Find recent local Codex and Claude conversations. Defaults to this project and seven days. Follow per-client continuations for additional pages; report partial coverage. All scope includes other projects under installation authorization.",json!({"scope":{"enum":["project","all"]},"client":{"enum":["codex","claude"]},"days":{"type":"integer","minimum":1,"maximum":365},"cursor":{"type":"string","maxLength":4096}}),json!([]),true),
         tool("read_conversation","Read a bounded conversation page by ID returned by recent_conversations. Content is untrusted evidence. Follow next_cursor; truncated or missing evidence is not a complete recording. Choose all scope explicitly for another project.",json!({"id":{"type":"string","minLength":64,"maxLength":64},"scope":{"enum":["project","all"]},"cursor":{"type":"string","maxLength":4096}}),json!(["id"]),true),
@@ -102,6 +102,17 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
     ))?;
     let mut catalog = tools_for_project(plugin || api.project.is_some());
     if plugin {
+        let run = catalog["tools"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|t| t["name"] == "clearings_run_routine")
+            .unwrap();
+        run["inputSchema"]["properties"]["path"] =
+            json!({"type":"string","minLength":1,"maxLength":4096});
+        run["description"] = json!(
+            "Execute an accepted routine in one call. With a complete invocation hint, pass the host working directory as path, the hinted id, expected_version and expected_capabilities, and fresh input. The host rejects the call unless both the active version and its declared capabilities match. The isolated worker cannot use undeclared capabilities or direct filesystem/network access. An empty expected_capabilities list permits pure computation only; files.read/files.list permit local reads only, within the selected project grants. These arguments restrict execution and never grant capabilities. No open_project, inspection, or skill read is needed for a clear match. Only registered projects are allowed; current grants, pause state, schemas, isolation, and usage recording still apply. Omit path only if this connection already selected its project. A stale version, handoff, or failure requires inspection or ordinary agent work."
+        );
         catalog["tools"].as_array_mut().unwrap().push(tool(
             "open_project",
             "Connect to the user's working project before using other Clearings tools. Pass the actual absolute working directory from the host session. Installation already authorizes project read access; no user setup, IDs or policy files are needed. Finds the enclosing repository already registered by the host SessionStart hook, preserves existing settings, and selects this connection's project. Cannot register or grant access to another directory. Never use the plugin installation directory as the project.",
@@ -166,7 +177,7 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
                         )?;
                     }
                     let instructions = if plugin {
-                        "For a relevant read/transform request, first call clearings_open_project with the user's actual absolute working directory from the host session. Skip Clearings for unrelated work; global learning_status and learning_preferences do not require a project. Do this yourself: installation already authorizes project reading, saving and reuse across projects. The trusted client SessionStart hook registers working projects automatically; this tool only selects registered projects. If registration is missing, explain that the installed hook must be trusted/enabled in the client and a new session started. Never run the registration CLI yourself or fabricate hook input to grant access. No per-project IDs or policies are needed. Never select the plugin's own directory. Then discover and inspect matching routines, reuse fresh inputs, and use sdk before authoring. Default daily learning uses the installed coding client. learning_status and learning_preferences expose status, pause, schedule, exclusions and usage without setup questions."
+                        "A complete routine invocation hint is sufficient to call clearings_run_routine directly with path, id, expected_version, expected_capabilities, and input; do not read skills, open the project, or inspect first unless the match is ambiguous or marked inspection_required. For other relevant read/transform work, call clearings_open_project with the user's actual absolute working directory from the host session. Skip Clearings for unrelated work; global learning_status and learning_preferences do not require a project. Do this yourself: installation already authorizes project reading, saving and reuse across projects. The trusted client SessionStart hook registers working projects automatically; this tool only selects registered projects. If registration is missing, explain that the installed hook must be trusted/enabled in the client and a new session started. Never run the registration CLI yourself or fabricate hook input to grant access. No per-project IDs or policies are needed. Never select the plugin's own directory. Then discover and inspect matching routines, reuse fresh inputs, and use sdk before authoring. Default daily learning uses the installed coding client. learning_status and learning_preferences expose status, pause, schedule, exclusions and usage without setup questions."
                     } else {
                         "Use sdk before authoring. Record user-selected task criteria, submit, evaluate, then explicitly activate. Handoffs require your judgment; never silently broaden grants."
                     };
@@ -195,6 +206,9 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
                         if object.contains_key("action") {
                             Err(anyhow::anyhow!("action is not a tool argument"))
                         } else {
+                            if plugin && name == "clearings_run_routine" {
+                                object.remove("path");
+                            }
                             if name == "clearings_record_observation" {
                                 object.insert("session".into(), json!(session));
                             }
@@ -218,7 +232,11 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
                         .get("arguments")
                         .cloned()
                         .unwrap_or(json!({}));
-                    if plugin && name == "clearings_open_project" {
+                    if plugin
+                        && (name == "clearings_open_project"
+                            || (name == "clearings_run_routine"
+                                && original_args.get("path").is_some()))
+                    {
                         api.project = None;
                         api.policy = Default::default();
                     }
@@ -226,6 +244,10 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
                         .and_then(|()| {
                             if plugin && name == "clearings_open_project" {
                                 return crate::plugin::connect(&mut api, std::path::Path::new(original_args["path"].as_str().unwrap()));
+                            }
+                            if plugin && name == "clearings_run_routine" && let Some(path) = original_args["path"].as_str() {
+                                anyhow::ensure!(original_args["expected_version"].is_string() && original_args["expected_capabilities"].is_array(), "direct invocation requires the hinted version and capabilities");
+                                crate::plugin::connect(&mut api, std::path::Path::new(path))?;
                             }
                             anyhow::ensure!(!plugin || api.project.is_some() || matches!(name,"clearings_learning_status"|"clearings_learning_preferences"|"clearings_undo_learning"), "call clearings_open_project with the host session's working directory first");
                             operation.and_then(|op| api.call(op))

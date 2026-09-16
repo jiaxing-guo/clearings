@@ -103,7 +103,7 @@ fn register(data: &Path, cwd: &Path) {
 
 fn prepare_reader(client: &mut Client) -> String {
     client.ok("prepare_task", json!({"task":{
-        "contract":{"abi":1,"name":"read-value","description":"Read a project file","input_schema":{"type":"string"},"output_schema":{"type":"string"},"capabilities":["files.read"]},
+        "contract":{"abi":1,"name":"read-value","description":"Read a project file","input_schema":{"type":"string"},"output_schema":{"type":"string"},"capabilities":["files.read","files.read"]},
         "cases":[{"name":"read","input":"value.txt","expected":{"status":"completed","output":"one"},"calls":[{"name":"files.read","input":{"root":"repo","path":"value.txt"},"result":{"text":"one"}}]}]
     }}));
     client.ok("save", json!({"name":"read-value","source":"export default async function(input: string) { const result = await clearings.call('files.read', {root: 'repo', path: input}); return {status: 'completed', output: result.text}; }","expected_active":null}))["version"].as_str().unwrap().to_owned()
@@ -296,4 +296,98 @@ fn model_paths_cannot_register_unopened_directories() {
     // per-project CLI setup for the user, and the existing MCP connection sees it.
     register(&data, &private);
     client.ok("open_project", json!({"path":private}));
+}
+
+#[test]
+fn routine_hint_executes_in_one_call_without_selecting_or_inspecting() {
+    let temp = tempfile::tempdir().unwrap();
+    let origin = temp.path().join("origin");
+    let receiving = temp.path().join("receiving");
+    let unopened = temp.path().join("unopened");
+    for root in [&origin, &receiving, &unopened] {
+        std::fs::create_dir(root).unwrap();
+        std::fs::write(root.join("value.txt"), "one").unwrap();
+    }
+    let data = temp.path().join("data");
+    register(&data, &origin);
+    register(&data, &receiving);
+    let mut author = Client::new(&data, temp.path());
+    author.ok("open_project", json!({"path":origin}));
+    let version = prepare_reader(&mut author);
+    let shared = author.ok("share_routine", json!({"name":"read-value","applicability":"Read a selected text file from the current project's repo root"}));
+    let id = shared["routine"].as_str().unwrap();
+    let mut store = clearings::store::Store::open(&data.join("state.db")).unwrap();
+    let hint = store.suggest(&json!({"hook_event_name":"UserPromptSubmit","cwd":receiving,"session_id":"direct","prompt":"read value file"})).unwrap();
+    let text = hint["hookSpecificOutput"]["additionalContext"]
+        .as_str()
+        .unwrap();
+    let hints: Value = serde_json::from_str(text.split_once("\n").unwrap().1).unwrap();
+    let item = &hints["routines"][0];
+    assert_eq!(item["contract"]["input_schema"]["type"], "string");
+    assert_eq!(hints["resources"]["file_roots"], json!(["repo"]));
+    assert_eq!(item["expected_version"], version);
+    // Repeated declarations are legal; the invocation schema uses a capability set.
+    assert_eq!(item["expected_capabilities"], json!(["files.read"]));
+    assert!(item.get("examples").is_none());
+    let args = json!({"path":hints["path"],"id":item["id"],"expected_version":item["expected_version"],"expected_capabilities":item["expected_capabilities"],"input":"value.txt"});
+    let mut client = Client::new(&data, temp.path());
+    std::fs::write(receiving.join("value.txt"), "fresh receiving data").unwrap();
+    let result = client.ok("run_routine", args.clone());
+    assert_eq!(result["version"], version);
+    assert_eq!(result["run"]["outcome"]["output"], "fresh receiving data");
+    assert_eq!(
+        client.ok("runs", json!({}))["runs"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    let mut wrong = args.clone();
+    wrong["expected_capabilities"] = json!([]);
+    assert_eq!(client.call("run_routine", wrong)["isError"], true);
+    let mut wrong = args.clone();
+    wrong
+        .as_object_mut()
+        .unwrap()
+        .remove("expected_capabilities");
+    assert_eq!(client.call("run_routine", wrong)["isError"], true);
+    let mut wrong = args.clone();
+    wrong["expected_version"] = json!("0".repeat(64));
+    assert_eq!(client.call("run_routine", wrong)["isError"], true);
+    assert_eq!(
+        client.ok("runs", json!({}))["runs"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    let newer = author.ok("save", json!({"name":"read-value","source":"export default async p=>({status:'completed',output:(await clearings.call('files.read',{root:'repo',path:p})).text}); // revision","expected_active":version}))["version"].clone();
+    assert_eq!(client.call("run_routine", args.clone())["isError"], true);
+    let mut latest = args.clone();
+    latest["expected_version"] = newer;
+    assert_eq!(
+        client.ok("run_routine", latest.clone())["run"]["outcome"]["output"],
+        "fresh receiving data"
+    );
+    client.ok("pause_shared", json!({"id":id,"paused":true}));
+    assert_eq!(client.call("run_routine", latest.clone())["isError"], true);
+    client.ok("pause_shared", json!({"id":id,"paused":false}));
+    let mut invalid = latest.clone();
+    invalid["path"] = json!(unopened);
+    assert_eq!(client.call("run_routine", invalid)["isError"], true);
+    assert_eq!(client.call("discover", json!({}))["isError"], true);
+    invalid = latest.clone();
+    invalid["grants"] = json!({"roots":{"repo":"/"}});
+    assert_eq!(client.call("run_routine", invalid)["isError"], true);
+    let receiving_id = clearings::store::digest(&receiving.canonicalize().unwrap()).unwrap();
+    let project = store.project(&receiving_id).unwrap();
+    store
+        .configure_project(
+            &receiving.canonicalize().unwrap(),
+            "Restricted",
+            Default::default(),
+            Some(project.revision),
+        )
+        .unwrap();
+    assert_eq!(client.call("run_routine", latest)["isError"], true);
 }

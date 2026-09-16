@@ -616,6 +616,8 @@ fn main() -> Result<()> {
                 Action::RunRoutine { id, input } => Operation::RunRoutine {
                     id,
                     input: read(input)?,
+                    expected_version: None,
+                    expected_capabilities: None,
                 },
                 Action::PauseShared { id, resume } => Operation::PauseShared {
                     id,

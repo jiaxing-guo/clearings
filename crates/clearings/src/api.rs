@@ -44,6 +44,8 @@ pub enum Operation {
     RunRoutine {
         id: String,
         input: Value,
+        expected_version: Option<String>,
+        expected_capabilities: Option<Vec<String>>,
     },
     PauseShared {
         id: String,
@@ -257,15 +259,38 @@ impl Api {
                 &id,
                 part.as_deref(),
             )?,
-            Operation::RunRoutine { id, input } => self.store.run_routine(
-                &self.executable,
-                self.project
-                    .as_deref()
-                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
-                &id,
+            Operation::RunRoutine {
+                id,
                 input,
-                &self.policy,
-            )?,
+                expected_version,
+                expected_capabilities,
+            } => {
+                let expected = match (
+                    expected_version.as_deref(),
+                    expected_capabilities.as_deref(),
+                ) {
+                    (Some(version), Some(capabilities)) => Some(crate::store::ExpectedRoutine {
+                        version,
+                        capabilities,
+                    }),
+                    (None, None) => None,
+                    _ => {
+                        anyhow::bail!("provide expected_version and expected_capabilities together")
+                    }
+                };
+                self.store.run_in_project(
+                    &self.executable,
+                    &id,
+                    input,
+                    &self.policy,
+                    Some(
+                        self.project
+                            .as_deref()
+                            .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                    ),
+                    expected,
+                )?
+            }
             Operation::PauseShared { id, paused } => self.store.pause_shared(
                 self.project
                     .as_deref()
