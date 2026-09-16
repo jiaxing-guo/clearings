@@ -158,6 +158,36 @@ function empty(type) {
     type
   ];
 }
+function inputForSchema(value, schema, state, depth = 0) {
+  if (++state.count > 400 || depth > 12) return value;
+  const types = Array.isArray(schema.type) ? schema.type : schema.type ? [schema.type] : [];
+  const matches = (type) =>
+    type === 'null'
+      ? value === null
+      : type === 'array'
+        ? Array.isArray(value)
+        : type === 'object'
+          ? value !== null && typeof value === 'object' && !Array.isArray(value)
+          : type === 'integer'
+            ? Number.isInteger(value)
+            : typeof value === type;
+  if (types.length && !types.some(matches)) {
+    value = empty(types.find((type) => type !== 'null') || 'null');
+    state.resets++;
+  }
+  if (Array.isArray(value)) {
+    if (value.length > 50) return value;
+    return value.map((item) => inputForSchema(item, schema.items || {}, state, depth + 1));
+  }
+  if (value !== null && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [
+        key,
+        inputForSchema(item, schema.properties?.[key] || {}, state, depth + 1),
+      ]),
+    );
+  return value;
+}
 // A bounded form editor for JSON values. Unsupported schema rules remain enforced by the host.
 function editor(value, schema = {}, depth = 0, budget = { count: 0 }) {
   const node = el('div', undefined, 'value-editor');
@@ -720,7 +750,10 @@ function renderRoutine(row, data) {
     button(
       'Update input form',
       () => {
-        input = editor(input.get(), inputSchema.get());
+        const schema = inputSchema.get();
+        const state = { count: 0, resets: 0 };
+        input = editor(inputForSchema(input.get(), schema, state), schema);
+        if (state.resets) message('Some input values were reset to match the edited contract.');
         inputArea.replaceChildren(el('h3', 'Try a new input'), input.node, test);
         lastTest = null;
       },

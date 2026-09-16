@@ -245,6 +245,17 @@ try {
   await schema.getByRole('button', { name: 'Add field', exact: true }).click();
   await schema.getByLabel('Field name', { exact: true }).last().fill('factor');
   await schema.locator('.schema-row select').last().selectOption('integer');
+  await schema.locator('.schema-row select').first().selectOption('string');
+  await page.getByRole('button', { name: 'Update input form', exact: true }).click();
+  assert.equal(await page.getByLabel('value', { exact: true }).evaluate((el) => el.type), 'text');
+  assert.equal(await page.getByLabel('value', { exact: true }).inputValue(), '');
+  assert.equal(await page.getByLabel('factor', { exact: true }).inputValue(), '3');
+  await page.getByLabel('value', { exact: true }).fill('eight');
+  await schema.locator('.schema-row select').first().selectOption('integer');
+  await page.getByRole('button', { name: 'Update input form', exact: true }).click();
+  assert.equal(await page.getByLabel('value', { exact: true }).evaluate((el) => el.type), 'number');
+  await page.getByLabel('value', { exact: true }).fill('7');
+  assert.equal(await page.getByLabel('factor', { exact: true }).inputValue(), '3');
 
   await page
     .getByLabel('What should change?')
