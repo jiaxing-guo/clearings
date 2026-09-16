@@ -901,7 +901,7 @@ impl Store {
             attempts += 1;
             let mut prepared_task = None;
             let result = (|| -> Result<Value> {
-                let extracted=self.native_request(cycle,client,"extract",json!({"instruction":include_str!("../prompts/learning/extract-workflow.txt"),"learning_mode":if automatic {"scheduled"} else {"explicit"},"sdk":crate::api::sdk_definition(),"candidate_shape":{"applicability":"Plain-text description of suitable inputs, assumptions, and limits","task":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]}},"excluded_workflows":prefs.excluded_workflows,"conversations":packet}),"candidate_json",fingerprint)?;
+                let extracted=self.native_request(cycle,client,"extract",json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"learning_mode":if automatic {"scheduled"} else {"explicit"},"sdk":crate::api::sdk_definition(),"candidate_shape":{"applicability":"Plain-text description of suitable inputs, assumptions, and limits","task":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]}},"excluded_workflows":prefs.excluded_workflows,"conversations":packet}),"candidate_json",fingerprint)?;
                 let proposed: Value =
                     serde_json::from_str(&extracted).context("candidate extraction is not JSON")?;
                 if proposed.is_null() {
@@ -971,7 +971,7 @@ impl Store {
                 let task_id = prepared["task"].as_str().context("task not prepared")?;
                 prepared_task = Some(task_id.to_owned());
                 self.db.execute("UPDATE native_candidates SET report=json_set(report,'$.prepared_task',?2) WHERE fingerprint=?1 AND status='pending'",params![fingerprint,task_id])?;
-                let source=self.native_request(cycle,client,"source",json!({"instruction":"Return source: a default-exported async TypeScript function implementing this frozen contract. Use fresh inputs and SDK capabilities. One acceptance case is withheld. Never hardcode examples. Return needs_agent or not_applicable for unsupported cases. No imports, ambient Node APIs, shell, or direct network.","sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"cases":&task.cases[..task.cases.len()-1]}),"source",fingerprint)?;
+                let source=self.native_request(cycle,client,"source",json!({"instruction":crate::prompts::AUTHOR_ROUTINE,"sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"cases":&task.cases[..task.cases.len()-1]}),"source",fingerprint)?;
                 self.check_native_cycle(cycle)?;
                 let version = self.submit(executable, task_id, source)?;
                 ensure!(
@@ -1088,7 +1088,7 @@ impl Store {
         let fingerprint = digest(&("improve", baseline))?;
         self.db.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![fingerprint,json!({"kind":"improvement","task":task_id,"baseline":baseline}).to_string()])?;
         let result = (|| -> Result<Value> {
-            let source=self.native_request(cycle,client,"improve",json!({"instruction":"Return source implementing the same immutable task with fewer redundant reads or lower runtime. Preserve behavior and capability requirements. One case is withheld. No tools, imports, or additional access.","sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"source":version.source,"cases":&task.cases[..task.cases.len()-1]}),"source",&fingerprint)?;
+            let source=self.native_request(cycle,client,"improve",json!({"instruction":crate::prompts::IMPROVE_ROUTINE,"sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"source":version.source,"cases":&task.cases[..task.cases.len()-1]}),"source",&fingerprint)?;
             let candidate = self.submit(executable, task_id, source)?;
             if candidate == baseline {
                 return Ok(json!({"status":"no_benefit","routine":task_id}));

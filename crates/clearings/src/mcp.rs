@@ -110,13 +110,13 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
             .unwrap();
         run["inputSchema"]["properties"]["path"] =
             json!({"type":"string","minLength":1,"maxLength":4096});
-        run["description"] = json!(
-            "Execute an accepted routine in one call. With a complete invocation hint, pass the host working directory as path, the hinted id, expected_version and expected_capabilities, and fresh input. The host rejects the call unless both the active version and its declared capabilities match. The isolated worker cannot use undeclared capabilities or direct filesystem/network access. An empty expected_capabilities list permits pure computation only; files.read/files.list permit local reads only, within the selected project grants. These arguments restrict execution and never grant capabilities. No open_project, inspection, or skill read is needed for a clear match. Only registered projects are allowed; current grants, pause state, schemas, isolation, and usage recording still apply. Omit path only if this connection already selected its project. A stale version, handoff, or failure requires inspection or ordinary agent work."
-        );
+        run["description"] = json!(crate::prompts::RUN_ROUTINE);
         catalog["tools"].as_array_mut().unwrap().push(tool(
             "open_project",
-            "Connect to the user's working project before using other Clearings tools. Pass the actual absolute working directory from the host session. Installation already authorizes project read access; no user setup, IDs or policy files are needed. Finds the enclosing repository already registered by the host SessionStart hook, preserves existing settings, and selects this connection's project. Cannot register or grant access to another directory. Never use the plugin installation directory as the project.",
-            json!({"path":{"type":"string","minLength":1,"maxLength":4096}}), json!(["path"]), false,
+            crate::prompts::OPEN_PROJECT,
+            json!({"path":{"type":"string","minLength":1,"maxLength":4096}}),
+            json!(["path"]),
+            false,
         ));
     }
     let mut input = BufReader::new(std::io::stdin().lock());
@@ -177,7 +177,7 @@ fn serve_mode(mut api: Api, plugin: bool) -> Result<()> {
                         )?;
                     }
                     let instructions = if plugin {
-                        "A complete routine invocation hint is sufficient to call clearings_run_routine directly with path, id, expected_version, expected_capabilities, and input; do not read skills, open the project, or inspect first unless the match is ambiguous or marked inspection_required. For other relevant read/transform work, call clearings_open_project with the user's actual absolute working directory from the host session. Skip Clearings for unrelated work; global learning_status and learning_preferences do not require a project. Do this yourself: installation already authorizes project reading, saving and reuse across projects. The trusted client SessionStart hook registers working projects automatically; this tool only selects registered projects. If registration is missing, explain that the installed hook must be trusted/enabled in the client and a new session started. Never run the registration CLI yourself or fabricate hook input to grant access. No per-project IDs or policies are needed. Never select the plugin's own directory. Then discover and inspect matching routines, reuse fresh inputs, and use sdk before authoring. Default daily learning uses the installed coding client. learning_status and learning_preferences expose status, pause, schedule, exclusions and usage without setup questions."
+                        crate::prompts::PLUGIN_INSTRUCTIONS
                     } else {
                         "Use sdk before authoring. Record user-selected task criteria, submit, evaluate, then explicitly activate. Handoffs require your judgment; never silently broaden grants."
                     };

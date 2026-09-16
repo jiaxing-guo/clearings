@@ -17,6 +17,14 @@ Release builds use one code generation unit with thin LTO. This avoids the undef
 
 QuickJS and the TypeScript transformer are compiled into the binary. Installed users do not need either development toolchain. See [execution](execution.md) for platform isolation and supported interfaces.
 
+## Agent prompts
+
+Long host-owned instructions live in `crates/clearings/prompts/`, grouped by learning, agent integration and model requests. `src/prompts.rs` embeds them at build time with `include_str!`; installed users need no prompt files or additional configuration.
+
+Prompt files contain exact text, including whitespace, and use plain text to avoid Markdown formatting changes. Client request assembly adds its separator explicitly. The configured response prompt has one `{field}` placeholder, replaced by its dedicated Rust function. Keep conversations, contracts, schemas and acceptance cases as structured data in the calling modules. Permission checks and execution limits remain enforced in Rust.
+
+Keep short tool descriptions beside their schemas. Bundled skills remain in the plugin skill directories because they guide the coding agent outside these internal calls. Review wording changes separately from file moves, and run the runtime checks after either change.
+
 ## Setup
 
 Use Node.js 24 and npm 11.9.0. From the repository root:

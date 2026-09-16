@@ -1,0 +1,1 @@
+Return source implementing the same immutable task with fewer redundant reads or lower runtime. Preserve behavior and capability requirements. One case is withheld. No tools, imports, or additional access.
