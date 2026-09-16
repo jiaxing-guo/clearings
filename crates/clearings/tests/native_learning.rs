@@ -569,7 +569,9 @@ fn usage_selects_improvement_and_undo_restores_the_previous_accepted_version() {
     let task:Task=serde_json::from_value(json!({"evaluation":"read_only_behavior","contract":{"abi":1,"name":"read-value","description":"Read the current value","input_schema":{"type":"integer"},"output_schema":{"type":"string"},"capabilities":["files.read"]},"cases":(0..3).map(|i|json!({"name":i.to_string(),"input":i,"expected":{"status":"completed","output":"example"},"calls":[{"name":"files.read","input":{"root":"repo","path":"value.txt"},"result":{"text":"example"}},{"name":"files.read","input":{"root":"repo","path":"value.txt"},"result":{"text":"example"}}]})).collect::<Vec<_>>() })).unwrap();
     let id = store.prepare_named(&f.project, task, "user").unwrap();
     let bin = std::path::Path::new(env!("CARGO_BIN_EXE_clearings"));
-    let old=store.save_named(bin,&f.project,"read-value","export default async()=>{await clearings.call('files.read',{root:'repo',path:'value.txt'});const r=await clearings.call('files.read',{root:'repo',path:'value.txt'});return {status:'completed',output:r.text}}".into(),None).unwrap();
+    // Keep the timing gate meaningful under CI load: removing one local read alone
+    // is too small a difference for this selection-and-undo integration test.
+    let old=store.save_named(bin,&f.project,"read-value","export default async()=>{const until=Date.now()+200;while(Date.now()<until){}await clearings.call('files.read',{root:'repo',path:'value.txt'});const r=await clearings.call('files.read',{root:'repo',path:'value.txt'});return {status:'completed',output:r.text}}".into(),None).unwrap();
     let old = old["version"].as_str().unwrap();
     for _ in 0..3 {
         store
