@@ -222,6 +222,9 @@
     transform 0.15s ease,
     filter 0.15s ease;
 }
+.direction .concept-button:focus-visible {
+  outline-color: var(--fg);
+}
 .concept-button:hover {
   filter: brightness(0.95);
   transform: translateY(-2px);
