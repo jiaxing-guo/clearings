@@ -284,6 +284,23 @@ try {
     await page.getByRole('button', { name: 'Try input', exact: true }).isDisabled(),
     false,
   );
+  command(
+    '--project',
+    project,
+    'share-routine',
+    later.name,
+    '--applicability',
+    'Pagination sample',
+  );
+  command('--project', project, 'pause-shared', later.id);
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await page.getByRole('button', { name: 'Resume', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Resume', exact: true }).click();
+  await page.getByRole('button', { name: 'Pause', exact: true }).waitFor();
+  assert.equal(
+    await page.getByRole('button', { name: 'Try input', exact: true }).isDisabled(),
+    false,
+  );
   assert.equal(sourceRequests, 1, 'tests and controls must not call a model');
   assert.deepEqual(errors, []);
   await page.route('**/api/library', (route) =>

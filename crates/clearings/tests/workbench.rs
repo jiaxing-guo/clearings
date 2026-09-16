@@ -747,3 +747,50 @@ fn early_revision_errors_restart_queued_learning() {
         Some(f.version.as_str())
     );
 }
+
+#[test]
+fn owner_resume_clears_its_shared_pause_without_resuming_receivers() {
+    let f = Fixture::new();
+    let mut store = Store::open(&f.db).unwrap();
+    let root = f.root.join("receiver");
+    std::fs::create_dir(&root).unwrap();
+    let receiver = store
+        .configure_project(&root, "Receiver", Settings::default(), None)
+        .unwrap();
+    store
+        .share_routine(&f.project, "multiply", "Double a number")
+        .unwrap();
+    store.pause_shared(&f.project, &f.task, true).unwrap();
+    store.pause_shared(&receiver.id, &f.task, true).unwrap();
+    store
+        .manage(&f.project, "multiply", Control::Pause, None)
+        .unwrap();
+    let (server, listener) =
+        Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+    let url = server.url();
+    let (origin, token) = url.split_once("/#").unwrap();
+    let resume = json!({"id":f.task,"expected_version":f.version,"action":"resume"});
+    assert_eq!(
+        exchange(
+            &server,
+            &listener,
+            request(
+                &listener,
+                token,
+                "POST",
+                "/api/control",
+                Some(origin),
+                &resume
+            )
+        )
+        .0,
+        200
+    );
+    let owner = store.routine_library_page(&f.project, None).unwrap();
+    assert_eq!(owner["routines"][0]["owner_paused"], false);
+    assert_eq!(owner["routines"][0]["local_paused"], false);
+    assert_eq!(
+        store.routine_library_page(&receiver.id, None).unwrap()["routines"][0]["local_paused"],
+        true
+    );
+}

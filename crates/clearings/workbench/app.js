@@ -483,12 +483,12 @@ function renderRoutine(row, data) {
     [
       row.owned && row.excluded
         ? 'Include'
-        : (row.owned ? row.owner_paused : row.local_paused)
+        : (row.owned ? row.paused : row.local_paused)
           ? 'Resume'
           : 'Pause',
       row.owned && row.excluded
         ? 'include'
-        : (row.owned ? row.owner_paused : row.local_paused)
+        : (row.owned ? row.paused : row.local_paused)
           ? 'resume'
           : 'pause',
     ],
