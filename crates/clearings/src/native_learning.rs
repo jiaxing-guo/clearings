@@ -128,7 +128,7 @@ impl Store {
         packet: Value,
         field: &str,
         fingerprint: &str,
-    ) -> Result<String> {
+    ) -> Result<Value> {
         self.check_native_cycle(cycle)?;
         ensure!(
             serde_json::to_vec(&packet)?.len() <= 480 * 1024,
@@ -136,10 +136,7 @@ impl Store {
         );
         let cached:Option<String>=self.db.query_row("SELECT response FROM native_requests WHERE fingerprint=?1 AND purpose=?2 AND status='completed' ORDER BY id DESC LIMIT 1",params![fingerprint,purpose],|r|r.get(0)).optional()?;
         if let Some(body) = cached {
-            return serde_json::from_str::<Value>(&body)?[field]
-                .as_str()
-                .map(str::to_owned)
-                .context("cached response lacks requested field");
+            return Ok(serde_json::from_str::<Value>(&body)?);
         }
         self.ensure_integration()?;
         let now = crate::background::now()?;
@@ -181,7 +178,7 @@ impl Store {
             [fingerprint],
             |r| r.get(0),
         )?;
-        ensure!(group_count < 2, "candidate authoring attempts exhausted");
+        ensure!(group_count < 3, "candidate authoring attempts exhausted");
         ensure!(
             count < prefs.max_requests_per_day,
             "daily authoring request allowance exhausted"
@@ -210,10 +207,7 @@ impl Store {
             Ok((value, usage)) => {
                 self.db.execute("UPDATE native_requests SET status='completed',usage=?2,response=?3 WHERE id=?1",params![id,usage.map(|v|json!({"client":author,"provenance":if connection.is_some(){"provider_reported"}else{"client_reported"},"usage":v}).to_string()),value.to_string()])?;
                 self.check_native_cycle(cycle)?;
-                Ok(value[field]
-                    .as_str()
-                    .context("missing authoring field")?
-                    .to_owned())
+                Ok(value)
             }
             Err(e) => {
                 self.db.execute(
@@ -901,35 +895,37 @@ impl Store {
             attempts += 1;
             let mut prepared_task = None;
             let result = (|| -> Result<Value> {
-                let extracted=self.native_request(cycle,client,"extract",json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"learning_mode":if automatic {"scheduled"} else {"explicit"},"sdk":crate::api::sdk_definition(),"candidate_shape":{"applicability":"Plain-text description of suitable inputs, assumptions, and limits","task":{"contract":{"abi":1,"name":"short-name","description":"Precise behavior and limits","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"example","input":{},"expected":{"status":"completed","output":{}}}]}},"excluded_workflows":prefs.excluded_workflows,"conversations":packet}),"candidate_json",fingerprint)?;
-                let proposed: Value =
-                    serde_json::from_str(&extracted).context("candidate extraction is not JSON")?;
-                if proposed.is_null() {
+                let extraction = json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"learning_mode":if automatic {"scheduled"} else {"explicit"},"sdk":crate::api::sdk_definition(),"response_schema":crate::proposal::response_schema("candidate"),"excluded_workflows":prefs.excluded_workflows,"conversations":packet});
+                let extracted = self.native_request(
+                    cycle,
+                    client,
+                    "extract",
+                    extraction.clone(),
+                    "candidate",
+                    fingerprint,
+                )?;
+                let proposal = match crate::proposal::parse(extracted.clone()) {
+                    Ok(candidate) => candidate,
+                    Err(error) => {
+                        let feedback = format!("{error:#}").chars().take(2048).collect::<String>();
+                        let repair = json!({"instruction":crate::prompts::REPAIR_CANDIDATE,"validation_error":feedback,"invalid_response":extracted,"original_request":extraction,"response_schema":crate::proposal::response_schema("candidate")});
+                        let repaired = self.native_request(
+                            cycle,
+                            client,
+                            "repair_candidate",
+                            repair,
+                            "candidate",
+                            fingerprint,
+                        )?;
+                        crate::proposal::parse(repaired)
+                            .context("candidate remains invalid after one repair")?
+                    }
+                };
+                let Some(candidate) = proposal else {
                     return Ok(json!({"status":"no_candidate"}));
-                }
-                let task: Task = serde_json::from_value(proposed["task"].clone())?;
-                ensure!(
-                    task.cases.len() >= 3 && task.cases.len() <= 8,
-                    "candidate needs 3 to 8 varied acceptance cases"
-                );
-                ensure!(
-                    task.contract
-                        .capabilities
-                        .iter()
-                        .all(|c| matches!(c.as_str(), "files.read" | "files.list")),
-                    "automatic candidate requests unsupported effects"
-                );
-                let applicability = proposed["applicability"]
-                    .as_str()
-                    .filter(|s| !s.trim().is_empty());
-                ensure!(
-                    applicability.is_none_or(|s| s.len() <= 4000),
-                    "routine applicability exceeds 4000 bytes"
-                );
-                ensure!(
-                    !(automatic || scope == Scope::All) || applicability.is_some(),
-                    "cross-project learning requires an applicability description"
-                );
+                };
+                let task = candidate.task;
+                let applicability = Some(candidate.applicability.as_str());
                 let name = task.contract.name.clone();
                 if prefs
                     .excluded_workflows
@@ -973,7 +969,14 @@ impl Store {
                 self.db.execute("UPDATE native_candidates SET report=json_set(report,'$.prepared_task',?2) WHERE fingerprint=?1 AND status='pending'",params![fingerprint,task_id])?;
                 let source=self.native_request(cycle,client,"source",json!({"instruction":crate::prompts::AUTHOR_ROUTINE,"sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"cases":&task.cases[..task.cases.len()-1]}),"source",fingerprint)?;
                 self.check_native_cycle(cycle)?;
-                let version = self.submit(executable, task_id, source)?;
+                let version = self.submit(
+                    executable,
+                    task_id,
+                    source["source"]
+                        .as_str()
+                        .context("missing source")?
+                        .to_owned(),
+                )?;
                 ensure!(
                     self.evaluate(executable, &version)?["accepted"] == true,
                     "candidate failed acceptance"
@@ -1089,7 +1092,14 @@ impl Store {
         self.db.execute("INSERT OR IGNORE INTO native_candidates(fingerprint,status,report) VALUES(?1,'pending',?2)",params![fingerprint,json!({"kind":"improvement","task":task_id,"baseline":baseline}).to_string()])?;
         let result = (|| -> Result<Value> {
             let source=self.native_request(cycle,client,"improve",json!({"instruction":crate::prompts::IMPROVE_ROUTINE,"sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"source":version.source,"cases":&task.cases[..task.cases.len()-1]}),"source",&fingerprint)?;
-            let candidate = self.submit(executable, task_id, source)?;
+            let candidate = self.submit(
+                executable,
+                task_id,
+                source["source"]
+                    .as_str()
+                    .context("missing source")?
+                    .to_owned(),
+            )?;
             if candidate == baseline {
                 return Ok(json!({"status":"no_benefit","routine":task_id}));
             }

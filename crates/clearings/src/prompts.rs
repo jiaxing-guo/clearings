@@ -1,6 +1,8 @@
 //! Host-owned instructions, embedded at build time. Structured task data stays with callers.
 
 pub(crate) const EXTRACT_WORKFLOW: &str = include_str!("../prompts/learning/extract-workflow.txt");
+pub(crate) const REPAIR_CANDIDATE: &str = include_str!("../prompts/learning/repair-candidate.txt");
+pub(crate) const CANDIDATE_RESPONSE: &str = include_str!("../prompts/model/candidate-response.txt");
 pub(crate) const AUTHOR_ROUTINE: &str = include_str!("../prompts/learning/author-routine.txt");
 pub(crate) const IMPROVE_ROUTINE: &str = include_str!("../prompts/learning/improve-routine.txt");
 pub(crate) const CONFIGURED_AUTHORING: &str =

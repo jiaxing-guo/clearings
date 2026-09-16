@@ -135,25 +135,28 @@ pub(crate) fn author_client(
     };
     use std::process::Command;
     let directory = tempfile::tempdir()?;
-    let schema = json!({"type":"object","properties":{field:{"type":"string"}},"required":[field],"additionalProperties":false});
+    let schema = crate::proposal::response_schema(field);
     let mut command = Command::new(client_process::executable(client.name())?);
     command.current_dir(directory.path());
     match client {
         Client::Codex => {
-            let path = directory.path().join("response-schema.json");
-            std::fs::write(&path, serde_json::to_vec(&schema)?)?;
-            command
-                .args([
-                    "exec",
-                    "--ignore-user-config",
-                    "--ephemeral",
-                    "--json",
-                    "--skip-git-repo-check",
-                    "-s",
-                    "read-only",
-                    "--output-schema",
-                ])
-                .arg(path);
+            command.args([
+                "exec",
+                "--ignore-user-config",
+                "--ephemeral",
+                "--json",
+                "--skip-git-repo-check",
+                "-s",
+                "read-only",
+            ]);
+            // Candidate contracts contain arbitrary JSON schemas and example values.
+            // Codex strict output schemas cannot represent these open objects.
+            // Request native JSON, then validate and repair once in the host.
+            if field != "candidate" {
+                let path = directory.path().join("response-schema.json");
+                std::fs::write(&path, serde_json::to_vec(&schema)?)?;
+                command.arg("--output-schema").arg(path);
+            }
             for feature in [
                 "hooks",
                 "plugins",
@@ -178,15 +181,10 @@ pub(crate) fn author_client(
             ]);
         }
         Client::Claude => {
-            command
-                .args([
-                    "-p",
-                    "--output-format",
-                    "stream-json",
-                    "--verbose",
-                    "--json-schema",
-                ])
-                .arg(schema.to_string());
+            command.args(["-p", "--output-format", "stream-json", "--verbose"]);
+            if field != "candidate" {
+                command.arg("--json-schema").arg(schema.to_string());
+            }
             command.args([
                 "--tools",
                 "",
@@ -222,13 +220,14 @@ pub(crate) fn author_client(
             "authoring client attempted a tool operation"
         );
         if event["type"] == "turn.completed" {
-            let value: Value = serde_json::from_str(
+            let value: Value = crate::proposal::decode(
                 output
                     .as_deref()
                     .context("client did not return a final answer")?,
+                field,
             )?;
             ensure!(
-                value[field].is_string(),
+                field == "candidate" || value[field].is_string(),
                 "client output does not match requested schema"
             );
             return Ok((value, event.get("usage").cloned()));
@@ -252,11 +251,11 @@ pub(crate) fn author_client(
                 .or_else(|| {
                     event["result"]
                         .as_str()
-                        .and_then(|s| serde_json::from_str(s).ok())
+                        .and_then(|s| crate::proposal::decode(s, field).ok())
                 })
                 .context("Claude did not return structured output")?;
             ensure!(
-                value[field].is_string(),
+                field == "candidate" || value[field].is_string(),
                 "client output does not match requested schema"
             );
             return Ok((value, event.get("usage").cloned()));
@@ -279,7 +278,12 @@ pub(crate) fn configured_request(
     packet: &Value,
     field: &str,
 ) -> Result<Vec<u8>> {
-    let prompt = json!({"model":connection.model,"messages":[{"role":"system","content":crate::prompts::configured_response(field)},{"role":"user","content":packet.to_string()}],"max_tokens":connection.max_output_tokens,"response_format":{"type":"json_object"}});
+    let instruction = if field == "candidate" {
+        crate::prompts::CANDIDATE_RESPONSE.to_owned()
+    } else {
+        crate::prompts::configured_response(field)
+    };
+    let prompt = json!({"model":connection.model,"messages":[{"role":"system","content":instruction},{"role":"user","content":packet.to_string()}],"max_tokens":connection.max_output_tokens,"response_format":{"type":"json_object"}});
     let bytes = serde_json::to_vec(&prompt)?;
     if bytes.len() > 512 * 1024 {
         anyhow::bail!(RequestTooLarge);
@@ -320,13 +324,14 @@ pub(crate) fn author_configured(
         "configured response exceeds limit"
     );
     let response: Value = serde_json::from_slice(&body)?;
-    let value: Value = serde_json::from_str(
+    let value: Value = crate::proposal::decode(
         response["choices"][0]["message"]["content"]
             .as_str()
             .context("configured model lacks output")?,
+        field,
     )?;
     ensure!(
-        value[field].is_string(),
+        field == "candidate" || value[field].is_string(),
         "configured model output has the wrong shape"
     );
     Ok((value, response.get("usage").cloned()))
