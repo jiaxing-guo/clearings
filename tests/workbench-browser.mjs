@@ -266,7 +266,10 @@ try {
   await page.goto('about:blank');
   await page.goto(connection.url);
   await page.getByRole('button', { name: 'Load more', exact: true }).click();
-  await page.getByRole('button', { name: new RegExp(later.name.replaceAll('-', ' ')) }).click();
+  await page
+    .locator('#library button')
+    .filter({ has: page.getByText(later.name.replaceAll('-', ' '), { exact: true }) })
+    .click();
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   await page.getByRole('button', { name: 'Resume', exact: true }).waitFor();
   assert.equal(

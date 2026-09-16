@@ -736,7 +736,9 @@ fn early_revision_errors_restart_queued_learning() {
     );
     let marker = std::path::PathBuf::from(format!("{}.launched", f.db.display()));
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
-    while !marker.exists() && std::time::Instant::now() < deadline {
+    while std::fs::read_to_string(&marker).ok().as_deref() != Some(cycle.to_string().as_str())
+        && std::time::Instant::now() < deadline
+    {
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
     assert_eq!(std::fs::read_to_string(marker).unwrap(), cycle.to_string());
