@@ -31,11 +31,23 @@ Use Node.js 24 and npm 11.9.0. From the repository root:
 
 ```sh
 npm ci --ignore-scripts
-npm --prefix website ci --ignore-scripts
+npm run dev:setup
 npm run docs:dev
 ```
 
 The server binds to `127.0.0.1` and prints its local address. Markdown changes in `docs/` regenerate the site content. Pass Next.js development options after `--`, for example `npm run docs:dev -- --port 3100`.
+
+## Commit checks
+
+After installing root npm dependencies, `npm run dev:setup` installs website dependencies, pinned Ruff in `.venv-tools/`, and the Husky Git hook. It uses Python 3.10 or newer. The existing pinned Rust toolchain is also required for Rust changes. An agent can complete setup for the contributor. These are developer dependencies only.
+
+Normal root npm installation enables Husky through `prepare`. Installation with `--ignore-scripts` skips that step, so run developer setup explicitly. Hooks apply to CLI and graphical Git clients that use this checkout. Node.js 24 must be available to the client. Missing tools block the commit with a setup message; hooks never install tools or download Cargo dependencies.
+
+The hook formats supported staged files with Prettier and Python files with Ruff, checks basic JavaScript/TypeScript and Python lint rules, and checks shell syntax. Plain-text prompts are not formatted. Rust changes trigger workspace formatting checks and strict Clippy once. Website source or configuration changes trigger type generation and TypeScript checks; SDK changes trigger SDK type checks. Shared check configuration changes also check existing tracked files. Workspace checks do not rewrite Rust files.
+
+Lint-staged backs up changes and hides unstaged tracked edits while checks run, then restores them. A failed check blocks the commit and restores the original staged changes. New untracked files remain in the working directory; these checks do not claim a fully isolated reproduction of the Git index. CI validates the committed checkout.
+
+Use `npm run lint` for all tracked non-Rust source checks and `npm run test:hooks` for disposable-repository hook tests. Full Rust tests, Python packaging tests and documentation builds remain separate checks and run in CI. Local hooks are a convenience; CI remains required even when a hook is bypassed.
 
 ## Validation
 

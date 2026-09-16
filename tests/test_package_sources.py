@@ -24,7 +24,10 @@ class PackageSources(unittest.TestCase):
             (root / 'docs/guide.md').write_text('current tracked edit')
             copy_sources(root, package)
             self.assertEqual((package / 'docs/guide.md').read_text(), 'current tracked edit')
-            self.assertEqual([p.relative_to(package).as_posix() for p in package.rglob('*') if p.is_file()], ['docs/guide.md'])
+            self.assertEqual(
+                [p.relative_to(package).as_posix() for p in package.rglob('*') if p.is_file()],
+                ['docs/guide.md'],
+            )
 
     def test_source_symlinks_are_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:

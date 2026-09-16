@@ -16,3 +16,7 @@ website/package-lock.json
 .clearings/
 runs/
 benchmark-checkouts/
+
+# Local developer tools.
+.venv-tools/
+.ruff_cache/

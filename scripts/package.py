@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build-time packaging only; the installed executable has no Python dependency."""
+
 import hashlib
 import http.client
 import json
@@ -33,13 +34,20 @@ def fetch_license(url: str) -> bytes | None:
             if error.code not in (408, 429, 500, 502, 503, 504):
                 raise
             failure = error
-        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as error:
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            ConnectionError,
+            http.client.IncompleteRead,
+        ) as error:
             if isinstance(getattr(error, 'reason', None), ssl.SSLCertVerificationError):
                 raise
             failure = error
         if attempt == 3:
-            raise RuntimeError(f'Upstream license download failed after 4 attempts: {url}') from failure
-        delay = 2 ** attempt
+            raise RuntimeError(
+                f'Upstream license download failed after 4 attempts: {url}'
+            ) from failure
+        delay = 2**attempt
         print(f'Retrying upstream license download in {delay}s: {url} ({failure})', file=sys.stderr)
         time.sleep(delay)
 
@@ -55,7 +63,9 @@ licenses_only = '--licenses-only' in sys.argv[3:]
 if not licenses_only:
     shutil.copy2(binary, package / 'clearings')
     copy_sources(root, package)
-metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--format-version=1'], cwd=root))
+metadata = json.loads(
+    subprocess.check_output(['cargo', 'metadata', '--locked', '--format-version=1'], cwd=root)
+)
 licenses = package / 'licenses'
 licenses.mkdir(exist_ok=True)
 manifest = []
@@ -65,7 +75,18 @@ for item in metadata['packages']:
     if item.get('source') is None:
         continue
     name = item['name'] + '-' + item['version']
-    matches = [p for p in source.rglob('*') if p.is_file() and (p.name.upper().startswith(('LICENSE', 'LICENCE', 'COPYING', 'NOTICE', 'AUTHORS')) or any(part.upper() in ('LICENSES', 'LICENCES') for part in p.relative_to(source).parts[:-1]))]
+    matches = [
+        p
+        for p in source.rglob('*')
+        if p.is_file()
+        and (
+            p.name.upper().startswith(('LICENSE', 'LICENCE', 'COPYING', 'NOTICE', 'AUTHORS'))
+            or any(
+                part.upper() in ('LICENSES', 'LICENCES')
+                for part in p.relative_to(source).parts[:-1]
+            )
+        )
+    ]
     if item.get('license_file'):
         declared = source / item['license_file']
         if declared.is_file() and declared not in matches:
@@ -81,7 +102,15 @@ for item in metadata['packages']:
         repository = (item.get('repository') or '').removesuffix('.git').rstrip('/')
         match = re.fullmatch(r'https://github.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)', repository)
         if match and re.fullmatch(r'[a-f0-9]{40}', commit):
-            for filename in ['LICENSE', 'LICENSE-MIT', 'LICENSE-APACHE', 'LICENSE.md', 'LICENSE.txt', 'COPYING', 'NOTICE']:
+            for filename in [
+                'LICENSE',
+                'LICENSE-MIT',
+                'LICENSE-APACHE',
+                'LICENSE.md',
+                'LICENSE.txt',
+                'COPYING',
+                'NOTICE',
+            ]:
                 url = f'https://raw.githubusercontent.com/{match.group(1)}/{commit}/{filename}'
                 body = fetch_license(url)
                 if body is None:
@@ -96,23 +125,34 @@ for item in metadata['packages']:
             # license or copyright notice, including in their recorded upstream tree.
             # Preserve their complete published source and original declaration;
             # supply standard MIT terms without inventing a copyright holder or year.
-            declaration_only = name in ('escape-simd-0.1.0', 'json-escape-simd-3.1.2') and commit == '4f54347555d2f520ac38b406cf69ff66d9570a57' and item.get('license') == 'MIT'
+            declaration_only = (
+                name in ('escape-simd-0.1.0', 'json-escape-simd-3.1.2')
+                and commit == '4f54347555d2f520ac38b406cf69ff66d9570a57'
+                and item.get('license') == 'MIT'
+            )
             if declaration_only:
                 target = licenses / name
                 target.mkdir(parents=True, exist_ok=True)
                 shutil.copytree(source, target / 'published-source', dirs_exist_ok=True)
                 shutil.copy2(root / 'scripts/license-texts/MIT.txt', target / 'MIT.txt')
-                (target / 'NOTICE.txt').write_text('Upstream declares SPDX MIT in Cargo.toml. No standalone license or copyright notice was supplied. The complete published source and its declaration are included; MIT.txt provides the standard license terms. Source: https://spdx.org/licenses/MIT.html\n')
+                (target / 'NOTICE.txt').write_text(
+                    'Upstream declares SPDX MIT in Cargo.toml. No standalone license or copyright notice was supplied. The complete published source and its declaration are included; MIT.txt provides the standard license terms. Source: https://spdx.org/licenses/MIT.html\n'
+                )
                 material = 'spdx-declaration-and-complete-source'
             else:
                 missing.append(name)
-
 
     for file in matches:
         target = licenses / name / file.relative_to(source)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(file, target)
-    manifest.append({**{k: item.get(k) for k in ['name', 'version', 'license', 'repository']}, 'upstream_license_sources': upstream, 'license_material': material})
+    manifest.append(
+        {
+            **{k: item.get(k) for k in ['name', 'version', 'license', 'repository']},
+            'upstream_license_sources': upstream,
+            'license_material': material,
+        }
+    )
 if missing:
     raise RuntimeError('No license material found for: ' + ', '.join(missing))
 (package / 'dependencies.json').write_text(json.dumps(manifest, indent=2) + '\n')
@@ -132,5 +172,7 @@ for relative in ['plugins/clearings', 'integrations/claude-code/plugins/clearing
 archive = output / 'clearings.tar.gz'
 with tarfile.open(archive, 'w:gz') as tar:
     tar.add(package, arcname='clearings')
-(output / 'SHA256SUMS').write_text(hashlib.sha256(archive.read_bytes()).hexdigest() + '  clearings.tar.gz\n')
+(output / 'SHA256SUMS').write_text(
+    hashlib.sha256(archive.read_bytes()).hexdigest() + '  clearings.tar.gz\n'
+)
 print(archive)
