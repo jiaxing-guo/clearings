@@ -407,7 +407,7 @@ function schemaEditor(schema) {
     get: () => {
       if (!modified) return structuredClone(original);
       const result = { ...original };
-      if (kindChanged) result.type = kind.value;
+      if (kindChanged || !Object.hasOwn(original, 'type')) result.type = kind.value;
       if (kind.value === 'object') {
         const names = entries.map((e) => e.input.value.trim());
         if (names.some((n) => !n) || new Set(names).size !== names.length)

@@ -320,6 +320,27 @@ try {
   await page.locator('.change-panel').getByText('Empty value', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'Use example', exact: true }).nth(2).click();
   assert.equal(await input.getByLabel('root', { exact: true }).inputValue(), 'math');
+  await page.getByText('Input and output contract', { exact: true }).click();
+  const untyped = page.locator('.schema-editor').first();
+  await untyped.getByRole('button', { name: 'Add field', exact: true }).click();
+  await untyped.getByLabel('Field name', { exact: true }).last().fill('comment');
+  await page
+    .getByLabel('What should change?', { exact: true })
+    .fill('Preserve objects with a comment field.');
+  await page.getByRole('button', { name: 'Add this example', exact: true }).click();
+  let proposedSchema;
+  await page.route('**/api/propose', async (route) => {
+    proposedSchema = route.request().postDataJSON().input_schema;
+    await route.fulfill({ status: 400, json: { error: 'Schema inspected for test' } });
+  });
+  await page.getByRole('button', { name: 'Propose update', exact: true }).click();
+  await page
+    .locator('.proposal-result')
+    .getByText('Schema inspected for test', { exact: true })
+    .waitFor();
+  assert.equal(proposedSchema.type, 'object');
+  assert.equal(proposedSchema.properties.comment.type, 'string');
+  await page.unroute('**/api/propose');
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),

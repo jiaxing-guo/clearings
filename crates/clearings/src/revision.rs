@@ -141,11 +141,16 @@ impl Store {
         executable: &Path,
         project: &str,
         request: RevisionRequest,
+        expected_project_revision: u64,
     ) -> Result<Value> {
         let lock = crate::background::ProjectLock::acquire(self, "user-conversation-learning")?;
         let result = (|| -> Result<Value> {
             let prefs = self.preferences()?;
             let owner = self.project(project)?;
+            ensure!(
+                owner.revision == expected_project_revision,
+                "project settings changed; open a fresh workbench link"
+            );
             ensure!(
                 !prefs.excludes(owner.root.to_string_lossy().as_ref()),
                 "project is excluded from learning"

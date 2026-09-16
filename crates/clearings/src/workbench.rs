@@ -340,8 +340,12 @@ impl Workbench {
             }
             ("POST", "/api/propose") => {
                 let input: crate::revision::RevisionRequest = serde_json::from_slice(body)?;
-                api.store
-                    .propose_revision(&self.executable, &self.project, input)
+                api.store.propose_revision(
+                    &self.executable,
+                    &self.project,
+                    input,
+                    self.project_revision,
+                )
             }
             ("POST", "/api/apply") => {
                 let input: ApplyInput = serde_json::from_slice(body)?;

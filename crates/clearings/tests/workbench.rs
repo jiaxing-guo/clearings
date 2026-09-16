@@ -730,7 +730,7 @@ fn early_revision_errors_restart_queued_learning() {
     request.examples.clear();
     assert!(
         store
-            .propose_revision(&launcher, &f.project, request)
+            .propose_revision(&launcher, &f.project, request, 1)
             .unwrap_err()
             .to_string()
             .contains("add 1 to 8 examples")
@@ -865,5 +865,37 @@ fn workbench_launch_rejects_grants_changed_inside_the_child_startup_window() {
     assert_eq!(
         api.store.project(&f.project).unwrap().revision,
         original.revision + 1
+    );
+}
+
+#[test]
+fn stale_workbench_proposals_cannot_use_new_model_settings_or_budget() {
+    let f = Fixture::new();
+    let mut store = Store::open(&f.db).unwrap();
+    let original = store.project(&f.project).unwrap();
+    let mut settings = original.settings;
+    settings.model = Some(clearings::project::ModelConnection {
+        url: "http://127.0.0.1:9/chat".into(),
+        model: "new-model".into(),
+        bearer_token_env: None,
+        max_output_tokens: 1024,
+        input_price: 1,
+        output_price: 1,
+    });
+    settings.daily_budget_microusd = 100;
+    store
+        .configure_project(&f.root, "New model", settings, Some(original.revision))
+        .unwrap();
+    let error = store
+        .propose_revision(exe(), &f.project, f.request(), original.revision)
+        .unwrap_err();
+    assert!(
+        error.to_string().contains("project settings changed"),
+        "{error:#}"
+    );
+    assert_eq!(store.learning_status().unwrap()["requests_today"], 0);
+    assert_eq!(
+        store.active(&f.task).unwrap().as_deref(),
+        Some(f.version.as_str())
     );
 }
