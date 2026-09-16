@@ -428,3 +428,51 @@ fn oversized_invocation_contract_requires_inspection_instead_of_truncating() {
         assert!(hints["routines"][0]["active"].is_string());
     }
 }
+
+#[test]
+fn aggregate_hint_budget_includes_routines_resources_and_json_escaping() {
+    for oversized_resources in [false, true] {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let mut store = Store::open(&root.join("state.db")).unwrap();
+        let mut settings = Settings::default();
+        if oversized_resources {
+            settings
+                .grants
+                .roots
+                .insert("quoted-\"alias".repeat(3_000), root.clone());
+        }
+        let project = store
+            .configure_project(&root, "Example", settings, None)
+            .unwrap();
+        for index in 0..3 {
+            let name = format!("echo-integer-{index}");
+            let task: Task = serde_json::from_value(json!({"contract":{"abi":1,"name":name,"description":"Echo integer","input_schema":{"type":"integer","description":if oversized_resources {String::new()} else {"schema ".repeat(1700)}},"output_schema":{"type":"integer"},"capabilities":[]},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":1}}]})).unwrap();
+            store.prepare_named(&project.id, task, "user").unwrap();
+            store
+                .save_named(
+                    exe(),
+                    &project.id,
+                    &name,
+                    "export default async input=>({status:'completed',output:input})".into(),
+                    None,
+                )
+                .unwrap();
+        }
+        let request = json!({"hook_event_name":"UserPromptSubmit","cwd":root,"session_id":"aggregate","prompt":"echo integer"});
+        let response = store.suggest(&request).unwrap();
+        assert!(serde_json::to_vec(&response).unwrap().len() <= 16 * 1024);
+        let content = response["hookSpecificOutput"]["additionalContext"]
+            .as_str()
+            .unwrap();
+        let hints: serde_json::Value =
+            serde_json::from_str(content.split_once('\n').unwrap().1).unwrap();
+        assert_eq!(hints["routines"].as_array().unwrap().len(), 3);
+        assert_eq!(hints["resources"], json!({}));
+        for routine in hints["routines"].as_array().unwrap() {
+            assert_eq!(routine["inspection_required"], true);
+            assert!(routine.get("contract").is_none());
+        }
+        assert!(store.suggest(&request).unwrap().is_null());
+    }
+}
