@@ -321,6 +321,8 @@ fn routine_hint_executes_in_one_call_without_selecting_or_inspecting() {
     let text = hint["hookSpecificOutput"]["additionalContext"]
         .as_str()
         .unwrap();
+    assert!(text.contains("tools.mcp__clearings__clearings_run_routine"));
+    assert!(text.contains("expected_capabilities: string[]"));
     let hints: Value = serde_json::from_str(text.split_once("\n").unwrap().1).unwrap();
     let item = &hints["routines"][0];
     assert_eq!(item["contract"]["input_schema"]["type"], "string");
