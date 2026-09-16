@@ -919,8 +919,11 @@ impl Store {
                 let proposal = match crate::proposal::parse(extracted.clone()) {
                     Ok(candidate) => candidate,
                     Err(error) => {
-                        let feedback = format!("{error:#}").chars().take(2048).collect::<String>();
-                        let repair = json!({"instruction":crate::prompts::REPAIR_CANDIDATE,"validation_error":feedback,"invalid_response":extracted,"original_request":extraction,"response_schema":crate::proposal::response_schema("candidate")});
+                        let repair = crate::proposal::repair_packet(
+                            extraction,
+                            extracted,
+                            &format!("{error:#}"),
+                        )?;
                         let repaired = self.native_request(
                             cycle,
                             client,

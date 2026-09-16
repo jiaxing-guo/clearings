@@ -55,6 +55,45 @@ pub(crate) fn parse(value: Value) -> Result<Option<Candidate>> {
     Ok(envelope.candidate)
 }
 
+/// Preserve extraction evidence and constraints, using repair-specific instructions.
+/// The shorter instruction reserves room even at the native request byte boundary.
+pub(crate) fn repair_packet(mut extraction: Value, invalid: Value, error: &str) -> Result<Value> {
+    const LIMIT: usize = 480 * 1024;
+    extraction["instruction"] = json!(crate::prompts::REPAIR_CANDIDATE);
+    extraction["validation_error"] = json!(error.chars().take(128).collect::<String>());
+    extraction["invalid_response"] = invalid.clone();
+    if serde_json::to_vec(&extraction)?.len() <= LIMIT {
+        return Ok(extraction);
+    }
+    let text = invalid.to_string();
+    extraction["invalid_response"] = json!({"excerpt":"","truncated":true});
+    ensure!(
+        serde_json::to_vec(&extraction)?.len() <= LIMIT,
+        "repair evidence exceeds request limit"
+    );
+    // Bound the encoded JSON, including quotes, escapes and Unicode boundaries.
+    let mut low = 0;
+    let mut high = text.len();
+    while low < high {
+        let middle = low + (high - low).div_ceil(2);
+        let mut end = middle;
+        while !text.is_char_boundary(end) {
+            end -= 1;
+        }
+        extraction["invalid_response"]["excerpt"] = json!(&text[..end]);
+        if serde_json::to_vec(&extraction)?.len() <= LIMIT {
+            low = middle;
+        } else {
+            high = middle - 1;
+        }
+    }
+    while !text.is_char_boundary(low) {
+        low -= 1;
+    }
+    extraction["invalid_response"]["excerpt"] = json!(&text[..low]);
+    Ok(extraction)
+}
+
 pub(crate) fn response_schema(field: &str) -> Value {
     if field != "candidate" {
         return json!({"type":"object","properties":{field:{"type":"string"}},"required":[field],"additionalProperties":false});
@@ -92,6 +131,26 @@ pub(crate) fn decode(text: &str, field: &str) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn repair_preserves_boundary_sized_evidence_and_bounds_escaped_diagnostics() {
+        let mut extraction = json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"conversations":"","sdk":{"kept":true},"learning_mode":"explicit"});
+        let overhead = serde_json::to_vec(&extraction).unwrap().len();
+        extraction["conversations"] = json!("x".repeat(480 * 1024 - overhead));
+        assert_eq!(serde_json::to_vec(&extraction).unwrap().len(), 480 * 1024);
+        let invalid = json!({"bad":"\\\"\n雪".repeat(100_000)});
+        let repair = repair_packet(extraction.clone(), invalid, &"\n".repeat(2048)).unwrap();
+        assert!(serde_json::to_vec(&repair).unwrap().len() <= 480 * 1024);
+        assert_eq!(repair["conversations"], extraction["conversations"]);
+        assert_eq!(repair["sdk"], extraction["sdk"]);
+        assert_eq!(repair["learning_mode"], "explicit");
+        assert_eq!(repair["invalid_response"]["truncated"], true);
+        assert!(
+            !repair["invalid_response"]["excerpt"]
+                .as_str()
+                .unwrap()
+                .is_empty()
+        );
+    }
     #[test]
     fn no_candidate_requires_an_explicit_version_and_field() {
         assert!(

@@ -73,7 +73,7 @@ else:
   packet=json.loads(prompt[prompt.index('{'):])
   repairing='validation_error' in packet
   if repairing:
-   assert 'original_request' in packet and 'invalid_response' in packet
+   assert 'conversations' in packet and 'invalid_response' in packet
    assert packet['validation_error']
   if os.environ.get('ALWAYS_BAD_CANDIDATE') or (os.environ.get('BAD_CANDIDATE_ONCE') and not repairing):answer={'schema_version':1,'candidate':'not a structured candidate'}
   if os.environ.get('EXPECT_LEARNING_MODE'):
