@@ -67,8 +67,11 @@ fn work(request: Request) -> Result<Event> {
         Request::Validate { contract, boundary } => {
             match boundary {
                 Validation::Input(value) => {
-                    contract.validate()?;
-                    contract.check_input(&value)?;
+                    let (input_schema, _) = contract.checked_schemas()?;
+                    crate::contract::check_json(&value)?;
+                    input_schema
+                        .validate(&value)
+                        .map_err(|error| anyhow::anyhow!("schema mismatch: {error}"))?;
                 }
                 Validation::Outcome(outcome) => contract.check_outcome(&outcome)?,
             }

@@ -118,3 +118,22 @@ fn populated_v7_runs_backfill_ownership_and_daily_usage_once() {
         assert_eq!(totals, (3, 1, 1, 1, 13, 3));
     }
 }
+
+#[test]
+fn opening_a_current_store_does_not_require_a_schema_write_lock() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("state.db");
+    drop(Store::open(&path).unwrap());
+    let writer = rusqlite::Connection::open(&path).unwrap();
+    writer.execute_batch("BEGIN IMMEDIATE; INSERT INTO installation(key,body) VALUES('preferences','{\"learning_enabled\":false}');").unwrap();
+    let reader = Store::open(&path).unwrap();
+    assert!(
+        reader.preferences().unwrap().learning_enabled,
+        "uncommitted preferences leaked"
+    );
+    writer.execute_batch("COMMIT").unwrap();
+    assert!(
+        !reader.preferences().unwrap().learning_enabled,
+        "preferences were cached across calls"
+    );
+}

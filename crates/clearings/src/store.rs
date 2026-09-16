@@ -271,6 +271,12 @@ impl Store {
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
         ensure!(schema <= 14, "store was created by a newer version");
+        // Schema migrations are complete for this store. Connection-local settings
+        // and WAL mode still apply, but reads need no schema write transaction.
+        if schema == 14 {
+            db.execute_batch("PRAGMA journal_mode=WAL;")?;
+            return Ok(Self { db });
+        }
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
