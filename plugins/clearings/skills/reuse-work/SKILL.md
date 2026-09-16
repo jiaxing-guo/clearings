@@ -1,11 +1,13 @@
 ---
 name: reuse-work
-description: Use saved Clearings routines for matching read and transform tasks, including repeated context gathering, log summaries, and data normalization on fresh inputs.
+description: Find or inspect saved Clearings routines when no complete invocation hint is available, or handle ambiguous matches, stale versions, failures, and handoffs. Complete matching hints already support direct execution without loading this skill.
 ---
 
-Connect to the actual working project with `clearings_open_project`. The trusted startup hook registers projects; do not fabricate registration input if it is missing.
+When a hook provides a complete matching contract, call `clearings_run_routine` directly with the actual working-project `path`, hinted `id`, `expected_version` and `expected_capabilities`, and fresh `input`. The host selects the registered project and enforces its current grants. No preparatory tool or skill read is needed. Keep using that signature for later matching inputs.
 
-When a hook supplies candidate routines, or the request involves a repeated read/transform task, use `clearings_find_routines` if needed. Inspect a plausible match with `clearings_library_routine`. Check its requirements, examples, applicability, and resource names against the current request. Use `clearings_run_routine` on fresh input when it fits. Source-project permissions never transfer to this project.
+When no complete hint is available, or applicability is ambiguous, connect to the actual working project with `clearings_open_project`. The trusted startup hook registers projects; do not fabricate registration input if it is missing.
+
+For this inspection path, use `clearings_find_routines` if needed. Inspect a plausible match with `clearings_library_routine`. Check its requirements, examples, applicability, and resource names against the current request. Use `clearings_run_routine` on fresh input when it fits, with the inspected active version as `expected_version` and its contract capabilities as `expected_capabilities`. A stale-version error requires a fresh inspection; do not silently omit the version to bypass it. Source-project permissions never transfer to this project.
 
 When the requirements fit, execute the routine to perform the repeatable intermediate work. Do not merely mention it and perform its steps again. Continue ordinary agent work for unmatched requests, explicit handoffs, and failures; never broaden requirements or grants just to force a match.
 

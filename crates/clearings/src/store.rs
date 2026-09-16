@@ -14,6 +14,11 @@ use std::{path::Path, time::Duration};
 const REPORT_BYTES: usize = (MAX_WIRE_BYTES - 4096) / 3;
 pub(crate) const OBJECT_BYTES: usize = REPORT_BYTES - 4096;
 
+pub(crate) struct ExpectedRoutine<'a> {
+    pub version: &'a str,
+    pub capabilities: &'a [String],
+}
+
 pub const ENGINE: &str = "clearings-0.1/abi-1/oxc-0.140/rquickjs-0.13/execution-8";
 
 pub fn digest(value: &impl Serialize) -> Result<String> {
@@ -541,7 +546,14 @@ PRAGMA user_version=12;
         policy: &Policy,
     ) -> Result<Value> {
         let task: Task = self.get("task", task_id)?;
-        self.run_in_project(executable, task_id, input, policy, task.project.as_deref())
+        self.run_in_project(
+            executable,
+            task_id,
+            input,
+            policy,
+            task.project.as_deref(),
+            None,
+        )
     }
     pub(crate) fn run_in_project(
         &self,
@@ -550,16 +562,30 @@ PRAGMA user_version=12;
         input: Value,
         policy: &Policy,
         execution_project: Option<&str>,
+        expected: Option<ExpectedRoutine<'_>>,
     ) -> Result<Value> {
         let id = self
             .active(task_id)?
             .context("task has no active version")?;
+        ensure!(
+            expected
+                .as_ref()
+                .is_none_or(|expected| expected.version == id),
+            "active version changed; inspect the current routine before running"
+        );
         let version = self.version(&id)?;
         ensure!(
             version.task == task_id,
             "active version belongs to a different task"
         );
         let task: Task = self.get("task", task_id)?;
+        if let Some(expected) = expected {
+            let actual: std::collections::BTreeSet<_> = task.contract.capabilities.iter().collect();
+            ensure!(
+                actual == expected.capabilities.iter().collect(),
+                "routine capabilities differ from the invocation hint"
+            );
+        }
         if let Some(project) = &task.project {
             ensure!(
                 self.named_task(project, &task.contract.name, true)? == task_id,
