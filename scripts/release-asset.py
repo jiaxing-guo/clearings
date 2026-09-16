@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Name a verified package for the plugin's pinned release bootstrap."""
+
 import hashlib
 import re
 import shutil
@@ -22,4 +23,6 @@ if target not in ['x86_64-unknown-linux-gnu', 'aarch64-apple-darwin']:
 output.mkdir(parents=True, exist_ok=True)
 name = f'clearings-{tag}-{target}.tar.gz'
 shutil.copyfile(archive, output / name)
-(output / f'{name}.sha256').write_text(hashlib.sha256(archive.read_bytes()).hexdigest() + f'  {name}\n')
+(output / f'{name}.sha256').write_text(
+    hashlib.sha256(archive.read_bytes()).hexdigest() + f'  {name}\n'
+)

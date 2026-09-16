@@ -1,9 +1,21 @@
 """Copy the tracked, regular source files selected for a runtime package."""
+
 import shutil
 import subprocess
 from pathlib import Path
 
-PACKAGE_PATHS = ['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'sdk', 'examples', 'integrations', 'plugins', '.agents/plugins', '.claude-plugin', 'docs']
+PACKAGE_PATHS = [
+    'README.md',
+    'LICENSE',
+    'THIRD_PARTY_NOTICES.md',
+    'sdk',
+    'examples',
+    'integrations',
+    'plugins',
+    '.agents/plugins',
+    '.claude-plugin',
+    'docs',
+]
 
 
 def copy_sources(root: Path, package: Path) -> None:
