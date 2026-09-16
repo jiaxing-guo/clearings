@@ -33,3 +33,11 @@ Change the input and run again. For a real task, ask your existing coding agent 
 The package check teaches all three routines using the CLI, evaluates and activates them, then makes seven executions. It verifies a file changed after activation, an unseen log sample, an unseen contact input and an explicit handoff. Each executable invocation receives an empty `PATH`, with no Node, Python, npm or Rust compiler available. Python orchestrates the build-time check outside the installed runtime.
 
 `runs` records results, elapsed execution time and capability-call counts. Missing model usage is `null`; token savings are not inferred from a successful run or a shorter output. The runtime itself calls no model, while authoring, choosing a routine and interpreting its result still consume agent work. These examples establish reusable execution, not a measured reduction in total agent cost.
+
+## Normalize a file-backed contact export
+
+`examples/normalize-contact-file/` wraps the contact transformation around a granted JSON file. The caller supplies only `{root, path}`. The worker reads the current document, validates its shape, and transforms its rows. Missing files and malformed JSON return to the agent explicitly.
+
+This keeps the input document out of model-generated tool arguments. A routine still returns the complete requested output; file-backed input alone does not guarantee fewer output tokens. For audits and monitoring, design a compact result with counts, exceptions and source paths when that matches the user's request.
+
+The SDK exposes the wrapper source and a small acceptance task. Prepare a new task for a wrapper rather than changing an existing inline-input contract. The existing `files.read` capability supplies all required access; no search, shell, or new grant is introduced.

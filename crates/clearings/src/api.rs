@@ -489,7 +489,12 @@ pub fn failed(value: &Value) -> bool {
 }
 
 pub fn sdk_definition() -> Value {
-    json!({"typescript":include_str!("../../../sdk/clearings.d.ts"),"task_format":"cases is an array of JSON objects, not JSON-encoded strings. Each call fixture uses name, input, and result. Fixtures are constructed test data, not real capability grants.","file_task_example":serde_json::from_str::<Value>(include_str!("../../../examples/repository-context/task.json")).expect("bundled task example is valid JSON"),"task_example":{
+    let mut wrapper: Value = serde_json::from_str(include_str!(
+        "../../../examples/normalize-contact-file/task.json"
+    ))
+    .expect("bundled wrapper task is valid JSON");
+    wrapper["cases"].as_array_mut().unwrap().truncate(3);
+    json!({"typescript":include_str!("../../../sdk/clearings.d.ts"),"file_wrapper_example":{"task":wrapper,"source":include_str!("../../../examples/normalize-contact-file/routine.ts"),"guidance":"Pass a granted root alias and relative file path. File contents remain in the runtime; return only the result the user needs. These acceptance fixtures are illustrative, not grants."},"task_format":"cases is an array of JSON objects, not JSON-encoded strings. Each call fixture uses name, input, and result. Fixtures are constructed test data, not real capability grants.","file_task_example":serde_json::from_str::<Value>(include_str!("../../../examples/repository-context/task.json")).expect("bundled task example is valid JSON"),"task_example":{
         "contract":{"abi":1,"name":"double","description":"Double an integer","input_schema":{"type":"integer"},"output_schema":{"type":"integer"},"capabilities":[]},
         "cases":[{"name":"positive","input":3,"expected":{"status":"completed","output":6}},{"name":"negative","input":-2,"expected":{"status":"completed","output":-4}}]
     }})

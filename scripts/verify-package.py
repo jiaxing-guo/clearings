@@ -44,7 +44,12 @@ with tempfile.TemporaryDirectory() as temporary:
             raise RuntimeError(result.stderr + result.stdout)
         return json.loads(result.stdout)
 
-    for name in ['repository-context', 'group-logs', 'normalize-contacts']:
+    for name in [
+        'repository-context',
+        'group-logs',
+        'normalize-contacts',
+        'normalize-contact-file',
+    ]:
         folder = package / 'examples' / name
         task = run('prepare-task', folder / 'task.json')['task']
         version = run('submit', '--task', task, '--source', folder / 'routine.ts')['version']
@@ -108,8 +113,8 @@ with tempfile.TemporaryDirectory() as temporary:
             new_input.write_text('{"rows":[{}]}')
             handoff = run('run', task, '--input', new_input, '--policy', folder / 'policy.json')
             assert handoff['run']['outcome']['status'] == 'needs_agent'
-    assert len(run('list')['tasks']) == 3
-    assert len(run('runs')['runs']) == 7
+    assert len(run('list')['tasks']) == 4
+    assert len(run('runs')['runs']) == 8
     settings = temp / 'settings.json'
     settings.write_text('{}')
     project = run(
