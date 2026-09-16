@@ -13,3 +13,7 @@ The inventory identifies original license files, files recovered from pinned ups
 The documentation site uses Next.js, React, Fumadocs and Tailwind CSS. Development checks use tools including TypeScript, Prettier, ESLint, Ruff and Playwright. Installed npm and Python dependencies retain their own licenses. These toolchains are separate from the native runtime distributed to users.
 
 The workbench UI is authored in this repository and embedded in the native executable. Its browser tests use Playwright as a development dependency.
+
+## Design preview typography
+
+The visual review pages use self-hosted Geist and Geist Mono font files supplied with the pinned Next.js package. The fonts are licensed under the [SIL Open Font License 1.1](website/public/directions/font-license.txt). Their concept artwork and workbench screenshot are project-authored assets. Asset provenance and generation prompts are recorded in `website/app/directions/design-notes.json`.

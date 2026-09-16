@@ -1,0 +1,50 @@
+{
+  "skill": {
+    "url": "https://github.com/Leonxlnx/taste-skill",
+    "revision": "e79ca9ec7e071eb3a3b623c4fb752e853fc3ed58",
+    "entry": "skills/taste-skill/SKILL.md"
+  },
+  "design_read": "Landing pages and documentation for coding-agent users; distinct technical, editorial, and expressive directions. Native CSS with existing Next.js and self-hosted Geist.",
+  "directions": {
+    "signal": {
+      "variance": 7,
+      "motion": 3,
+      "density": 4,
+      "theme": "dark",
+      "rationale": "Strong developer-tool identity with a precise grid and graphite/lime palette."
+    },
+    "fieldwork": {
+      "variance": 6,
+      "motion": 3,
+      "density": 3,
+      "theme": "light",
+      "rationale": "Reading-first editorial layout for research and a personal routine library."
+    },
+    "studio": {
+      "variance": 8,
+      "motion": 4,
+      "density": 4,
+      "theme": "light",
+      "rationale": "Larger launch typography and a cobalt visual anchor; restrained reading surface."
+    }
+  },
+  "image_generation": {
+    "tool": "built-in ImageGen",
+    "prompts": {
+      "signal": "Use case: stylized-concept. Asset type: wide 3:2 hero artwork for Clearings, a developer tool that turns repeated agent workflows into reusable code. Create a high-end architectural product photograph of a precision-machined graphite plate with many fine parallel channels that converge into one clean reusable track. One acid-lime inset follows the final track. Matte graphite and brushed black aluminum, razor-sharp machining, subtle directional light, deep almost-black background. An abstract but tangible engineering object, not a circuit board. Asymmetric composition with the object spanning the right and center, clean left negative space. Sophisticated, restrained, technically credible. No screens, no interface, no text, no logos, no neon glow, no purple, no gradient blobs. This is the Signal visual direction.",
+      "fieldwork": "Use case: photorealistic-natural. Asset type: wide 3:2 editorial hero artwork for Clearings, a developer tool for saving reusable work. Create a beautiful overhead studio photograph of a small collection of pale translucent architectural tracing sheets, aligned to reveal the same deep forest-green route drawn across their layers. A single solid green metal guide lies alongside, suggesting a repeatable path. Cool off-white matte surface, daylight, gentle real shadows, crisp analog materiality, understated editorial design, plenty of clean space. Minimal and tangible, modern scientific studio rather than nostalgic stationery. No readable text, no numbers, no screens, no interface, no decorative labels, no logos, no gold or brown. This is the Fieldwork direction.",
+      "studio": "Use case: stylized-concept. Asset type: wide 3:2 landing-page hero artwork for Clearings, a tool that turns repeated agent work into reusable routines. A striking modern still-life photograph: several narrow brushed-silver modular rails converge into one continuous cobalt-blue ribbon, on a cool white architectural plinth. The ribbon folds once and continues cleanly, precise engineered geometry with a playful oversized scale. High-key gallery lighting, physically plausible brushed aluminum and matte blue polymer, clean white background, bold asymmetric composition, sharp material detail. No screens, no UI, no text, no labels, no logos, no gradients or blobs, no purple. This is the Studio direction."
+    }
+  },
+  "workbench_image": "Screenshot of the actual local workbench using disposable sample routines; no claimed customer data.",
+  "fonts": {
+    "source": "Next.js 16.3.4 bundled Geist Latin and Geist Mono Latin WOFF2 files",
+    "license": "/directions/font-license.txt",
+    "upstream": {
+      "repository": "https://github.com/vercel/geist-font",
+      "revision": "10dc7658f13c38a474cde201bb09a4617267545b",
+      "font_source": "Next.js installed package, next-devtools/server/font/geist-latin.woff2"
+    }
+  },
+  "status": "Review alternatives. The main landing page and Fumadocs theme are not replaced by a chosen direction."
+}
