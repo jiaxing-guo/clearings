@@ -18,9 +18,9 @@ Workbench tests can capture successful capability results for an example. Captur
 
 ## Run records
 
-Runs record the receiving project, version, input digest, outcome, native elapsed time, capability count, and purpose. Detailed history is paginated and subject to retention. Compact daily totals survive run pruning.
+Runs record the receiving project, version, input digest, outcome, native elapsed time, capability count, and purpose. Detailed history is paginated. Project-scoped run records can be pruned under the project retention setting; compact daily totals survive that pruning.
 
-Run outcomes include completed output and handoff context. This returned data remains in the local SQLite store until run-history pruning removes it. An input digest does not hide sensitive data returned by a routine. Keep the state directory private and return only the data needed for the task.
+Run outcomes include completed output and handoff context. This returned data remains in the local SQLite store. Project-scoped run-history pruning can remove expired records. Standalone runs without a selected project are not covered by that pruning and remain until their store is removed; use disposable stores for standalone experiments. An input digest does not hide sensitive data returned by a routine. Keep the state directory private and return only the data needed for the task.
 
 Acceptance examples and captured file fixtures remain with immutable tasks. Pruning run history does not remove that acceptance data.
 
