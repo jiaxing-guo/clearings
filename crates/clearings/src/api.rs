@@ -189,12 +189,15 @@ impl Api {
                 .check_version_scope(self.project.as_deref(), version)?,
             Operation::Inspect { id } => {
                 let inspected = self.store.inspect(id)?;
-                if inspected["kind"] == "version" {
-                    self.store
-                        .check_version_scope(self.project.as_deref(), id)?;
+                let task = if inspected["kind"] == "version" {
+                    inspected["object"]["task"]
+                        .as_str()
+                        .ok_or_else(|| anyhow::anyhow!("version lacks its task"))?
                 } else {
-                    self.store.check_task_scope(self.project.as_deref(), id)?;
-                }
+                    id.as_str()
+                };
+                self.store
+                    .check_task_read_scope(self.project.as_deref(), task)?;
             }
             Operation::PrepareTask { task } => anyhow::ensure!(
                 task.project.is_none(),

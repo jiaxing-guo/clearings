@@ -445,3 +445,38 @@ fn accepted_nonblocking_sockets_wait_for_the_browser_request() {
         assert!(response.starts_with("HTTP/1.1 200"), "{response}");
     });
 }
+
+#[test]
+fn prior_versions_remain_readable_without_becoming_mutable() {
+    let f = Fixture::new();
+    let store = Store::open(&f.db).unwrap();
+    let (task, version) = f.draft(&store);
+    store.apply_revision(&f.project, &task, &version).unwrap();
+    let mut api = Api {
+        store,
+        project: Some(f.project.clone()),
+        policy: Default::default(),
+        executable: exe().into(),
+    };
+    assert!(
+        api.call(Operation::Inspect {
+            id: f.version.clone()
+        })
+        .is_ok()
+    );
+    assert!(
+        api.call(Operation::Activate {
+            version: f.version.clone(),
+            expected_active: None
+        })
+        .is_err()
+    );
+    let other = f.root.join("other");
+    std::fs::create_dir(&other).unwrap();
+    let project = api
+        .store
+        .configure_project(&other, "Other", Settings::default(), None)
+        .unwrap();
+    api.project = Some(project.id);
+    assert!(api.call(Operation::Inspect { id: f.version }).is_err());
+}
