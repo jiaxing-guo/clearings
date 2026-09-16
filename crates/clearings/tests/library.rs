@@ -396,30 +396,35 @@ fn search_index_updates_sharing_and_backfills_existing_objects() {
 
 #[test]
 fn oversized_invocation_contract_requires_inspection_instead_of_truncating() {
-    let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().canonicalize().unwrap();
-    let mut store = Store::open(&root.join("state.db")).unwrap();
-    let project = store
-        .configure_project(&root, "Example", Settings::default(), None)
-        .unwrap();
-    let task: Task = serde_json::from_value(json!({"contract":{"abi":1,"name":"large-schema","description":"Echo integer with a large schema","input_schema":{"type":"integer","description":"large schema details ".repeat(1500)},"output_schema":{"type":"integer"},"capabilities":[]},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":1}}]})).unwrap();
-    store.prepare_named(&project.id, task, "user").unwrap();
-    store
-        .save_named(
-            exe(),
-            &project.id,
-            "large-schema",
-            "export default async input=>({status:'completed',output:input})".into(),
-            None,
-        )
-        .unwrap();
-    let value = store.suggest(&json!({"hook_event_name":"UserPromptSubmit","cwd":root,"session_id":"large","prompt":"echo integer large schema"})).unwrap();
-    let content = value["hookSpecificOutput"]["additionalContext"]
-        .as_str()
-        .unwrap();
-    assert!(content.len() < 16 * 1024);
-    let hints: serde_json::Value =
-        serde_json::from_str(content.split_once('\n').unwrap().1).unwrap();
-    assert_eq!(hints["routines"][0]["inspection_required"], true);
-    assert!(hints["routines"][0].get("contract").is_none());
+    for capabilities in [vec![], vec!["custom.".to_owned() + &"x".repeat(100_000)]] {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let mut store = Store::open(&root.join("state.db")).unwrap();
+        let project = store
+            .configure_project(&root, "Example", Settings::default(), None)
+            .unwrap();
+        let task: Task = serde_json::from_value(json!({"contract":{"abi":1,"name":"large-schema","description":"Echo integer with a large schema","input_schema":{"type":"integer","description":"large schema details ".repeat(1500)},"output_schema":{"type":"integer"},"capabilities":capabilities},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":1}}]})).unwrap();
+        store.prepare_named(&project.id, task, "user").unwrap();
+        store
+            .save_named(
+                exe(),
+                &project.id,
+                "large-schema",
+                "export default async input=>({status:'completed',output:input})".into(),
+                None,
+            )
+            .unwrap();
+        let value = store.suggest(&json!({"hook_event_name":"UserPromptSubmit","cwd":root,"session_id":"large","prompt":"echo integer large schema"})).unwrap();
+        let content = value["hookSpecificOutput"]["additionalContext"]
+            .as_str()
+            .unwrap();
+        assert!(content.len() < 16 * 1024);
+        let hints: serde_json::Value =
+            serde_json::from_str(content.split_once('\n').unwrap().1).unwrap();
+        assert_eq!(hints["routines"][0]["inspection_required"], true);
+        assert!(hints["routines"][0].get("contract").is_none());
+        assert!(hints["routines"][0].get("capabilities").is_none());
+        assert!(hints["routines"][0]["routine"].is_string());
+        assert!(hints["routines"][0]["active"].is_string());
+    }
 }

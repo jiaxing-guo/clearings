@@ -240,8 +240,7 @@ impl Store {
                 task.contract.capabilities.iter().collect();
             let mut invocation = json!({"id":item["routine"],"expected_version":item["active"],"expected_capabilities":capabilities,"contract":task.contract,"applicability":item["applicability"]});
             if serde_json::to_vec(&invocation)?.len() > 16 * 1024 {
-                invocation = item.clone();
-                invocation["inspection_required"] = json!(true);
+                invocation = json!({"routine":item["routine"],"active":item["active"],"name":item["name"],"inspection_required":true});
             }
             let inserted=self.db.execute("INSERT OR IGNORE INTO routine_offers(session,project,task,version) VALUES(?1,?2,?3,?4)",params![session,project,item["routine"].as_str(),item["active"].as_str()])?;
             if inserted == 1 {
