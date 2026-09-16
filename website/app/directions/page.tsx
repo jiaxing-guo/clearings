@@ -17,13 +17,14 @@ export default function Directions() {
         </p>
       </section>
       <div className="review-options">
-        {(Object.keys(designs) as Direction[]).map((key) => {
+        {(Object.keys(designs) as Direction[]).map((key, index) => {
           const design = designs[key];
           return (
             <section className={`review-option review-${key}`} key={key}>
               <Link className="option-art" href={`/directions/${key}`}>
                 <img
                   src={assetPath(`/directions/${design.image}`)}
+                  loading={index === 0 ? 'eager' : 'lazy'}
                   width={1536}
                   height={1024}
                   alt={design.alt}
