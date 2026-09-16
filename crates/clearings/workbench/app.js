@@ -540,13 +540,21 @@ function renderRoutine(row, data) {
     return;
   }
   const first = data.examples?.[0];
-  let inputValue = first?.input;
-  if (inputValue && typeof inputValue === 'object' && !Array.isArray(inputValue)) {
-    inputValue = structuredClone(inputValue);
-    if ('root' in inputValue && data.roots?.length === 1 && !data.roots.includes(inputValue.root))
-      inputValue.root = data.roots[0];
+  function exampleInput(value) {
+    const input = structuredClone(value);
+    if (
+      input &&
+      typeof input === 'object' &&
+      !Array.isArray(input) &&
+      typeof input.root === 'string' &&
+      data.contract.capabilities.some((name) => name === 'files.read' || name === 'files.list') &&
+      data.roots?.length === 1 &&
+      !data.roots.includes(input.root)
+    )
+      input.root = data.roots[0];
+    return input;
   }
-  let input = editor(inputValue, data.contract.input_schema);
+  let input = editor(exampleInput(first?.input), data.contract.input_schema);
   let lastTest = null;
   let expected = editor(first?.expected?.output, data.contract.output_schema);
   const expectedArea = el('div');
@@ -560,9 +568,13 @@ function renderRoutine(row, data) {
     option.value = value;
     expectedStatus.append(option);
   }
+  if (['completed', 'needs_agent', 'not_applicable'].includes(first?.expected?.status))
+    expectedStatus.value = first.expected.status;
   const expectedReason = el('input');
   expectedReason.value = first?.expected?.reason || '';
-  let expectedContext = editor(first?.expected?.context || {});
+  let expectedContext = editor(
+    first?.expected?.context === undefined ? {} : first.expected.context,
+  );
   function renderExpected() {
     expectedArea.replaceChildren();
     if (expectedStatus.value === 'completed') expectedArea.append(expected.node);
@@ -617,7 +629,7 @@ function renderRoutine(row, data) {
       } else if (['needs_agent', 'not_applicable'].includes(outcome.status)) {
         expectedStatus.value = outcome.status;
         expectedReason.value = outcome.reason || '';
-        expectedContext = editor(outcome.context || {});
+        expectedContext = editor(outcome.context === undefined ? {} : outcome.context);
         renderExpected();
       }
       const refreshed = await api(`routine/${row.id}`);
@@ -654,8 +666,17 @@ function renderRoutine(row, data) {
       button(
         'Use example',
         () => {
-          input = editor(sample.input, data.contract.input_schema);
+          input = editor(exampleInput(sample.input), data.contract.input_schema);
           inputArea.replaceChildren(el('h3', 'Try a new input'), input.node, test);
+          if (['completed', 'needs_agent', 'not_applicable'].includes(sample.expected?.status)) {
+            expectedStatus.value = sample.expected.status;
+            expected = editor(sample.expected.output, data.contract.output_schema);
+            expectedReason.value = sample.expected.reason || '';
+            expectedContext = editor(
+              sample.expected.context === undefined ? {} : sample.expected.context,
+            );
+            renderExpected();
+          }
           lastTest = null;
         },
         'small quiet',

@@ -59,7 +59,7 @@ try {
   await writeFile(
     settings,
     JSON.stringify({
-      grants: { roots: { repo: projectRoot, contacts: projectRoot } },
+      grants: { roots: { repo: projectRoot } },
       model: {
         url: `http://127.0.0.1:${model.address().port}/chat`,
         model: 'browser-fixture',
@@ -133,6 +133,37 @@ try {
     },
     "export default async x=>({status:'completed',output:null})",
   );
+  await seed(
+    {
+      contract: {
+        abi: 1,
+        name: 'handoff-context',
+        description: 'Preserve handoff values',
+        input_schema: {},
+        output_schema: {},
+        capabilities: [],
+      },
+      cases: [
+        {
+          name: 'False',
+          input: false,
+          expected: { status: 'needs_agent', reason: 'Review', context: false },
+        },
+        {
+          name: 'Null',
+          input: null,
+          expected: { status: 'needs_agent', reason: 'Review', context: null },
+        },
+        {
+          name: 'Non-file root',
+          input: { root: 'math' },
+          expected: { status: 'needs_agent', reason: 'Review', context: { root: 'math' } },
+        },
+        { name: 'Complete', input: true, expected: { status: 'completed', output: true } },
+      ],
+    },
+    "export default async x=>x===true?({status:'completed',output:true}):({status:'needs_agent',reason:'Review',context:x})",
+  );
   const folder = path.join(repo, 'examples/normalize-contact-file');
   await writeFile(
     path.join(projectRoot, 'contacts.json'),
@@ -169,6 +200,21 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(connection.url);
   await page.getByRole('button', { name: /scale number/ }).click();
+  await page.getByText(/^Accepted examples \(/).click();
+  await page
+    .locator('.example')
+    .filter({ has: page.getByRole('heading', { name: 'Zero', exact: true }) })
+    .getByRole('button', { name: 'Use example', exact: true })
+    .click();
+  assert.equal(await page.getByLabel('value', { exact: true }).inputValue(), '0');
+  assert.equal(await page.locator('.change-panel .value-editor input').first().inputValue(), '0');
+  await page
+    .locator('.example')
+    .filter({ has: page.getByRole('heading', { name: 'Two', exact: true }) })
+    .getByRole('button', { name: 'Use example', exact: true })
+    .click();
+  assert.equal(await page.locator('.change-panel .value-editor input').first().inputValue(), '4');
+
   await page.getByLabel('value', { exact: true }).fill('9007199254740993');
   await page.getByRole('button', { name: 'Try input', exact: true }).click();
   await page
@@ -212,6 +258,19 @@ try {
   // Switching immediately catches late control responses that used to steal selection.
   await page.getByRole('button', { name: 'Resume', exact: true }).click();
   await page.getByRole('button', { name: /normalize contact file/ }).click();
+  await page.getByText(/^Accepted examples \(/).click();
+  await page.getByRole('button', { name: 'Use example', exact: true }).nth(2).click();
+  assert.equal(
+    await page.getByLabel('Expected outcome', { exact: true }).inputValue(),
+    'needs_agent',
+  );
+  await page.getByRole('button', { name: 'Use example', exact: true }).first().click();
+  assert.equal(await page.getByLabel('root', { exact: true }).inputValue(), 'repo');
+  assert.equal(
+    await page.getByLabel('Expected outcome', { exact: true }).inputValue(),
+    'completed',
+  );
+
   await page.getByRole('button', { name: 'Try input', exact: true }).click();
   await page.locator('.result-area').getByText('iris@example.test', { exact: true }).waitFor();
   await input.getByLabel('path', { exact: true }).fill('missing.json');
@@ -236,6 +295,20 @@ try {
   await page.getByRole('button', { name: /empty result/ }).click();
   await page.getByRole('button', { name: 'Try input', exact: true }).click();
   await page.locator('.result-area').getByText('Empty', { exact: true }).waitFor();
+  await page.getByRole('button', { name: /handoff context/ }).click();
+  assert.equal(
+    await page.getByLabel('Expected outcome', { exact: true }).inputValue(),
+    'needs_agent',
+  );
+  assert.equal(await page.getByLabel('Details for the agent', { exact: true }).isChecked(), false);
+  await page.getByText(/^Accepted examples \(/).click();
+  await page.getByRole('button', { name: 'Use example', exact: true }).nth(1).click();
+  await page.locator('.change-panel').getByText('Empty value', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Try input', exact: true }).click();
+  await page.getByRole('heading', { name: 'Needs your agent', exact: true }).waitFor();
+  await page.locator('.change-panel').getByText('Empty value', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Use example', exact: true }).nth(2).click();
+  assert.equal(await input.getByLabel('root', { exact: true }).inputValue(), 'math');
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(
     await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
