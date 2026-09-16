@@ -70,8 +70,8 @@
     {
       "name": "empty list",
       "input": {
-        "root": "contacts",
-        "path": "contacts.json"
+        "root": "archive",
+        "path": "exports/empty.json"
       },
       "expected": {
         "status": "completed",
@@ -81,8 +81,8 @@
         {
           "name": "files.read",
           "input": {
-            "root": "contacts",
-            "path": "contacts.json"
+            "root": "archive",
+            "path": "exports/empty.json"
           },
           "result": {
             "text": "{\"rows\": []}"

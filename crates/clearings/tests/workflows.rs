@@ -100,6 +100,16 @@ fn file_wrapper_reads_fresh_documents_and_never_needs_inline_contents() {
     let id = store.prepare_task(&task).unwrap();
     let source =
         std::fs::read_to_string(root.join("examples/normalize-contact-file/routine.ts")).unwrap();
+    let hardcoded = source.replace(
+        "clearings.call('files.read', input)",
+        "clearings.call('files.read', {root:'contacts',path:'contacts.json'})",
+    );
+    assert_ne!(hardcoded, source);
+    let fixed_reference = store.submit(exe, &id, hardcoded).unwrap();
+    assert_eq!(
+        store.evaluate(exe, &fixed_reference).unwrap()["accepted"],
+        false
+    );
     let version = store.submit(exe, &id, source).unwrap();
     assert_eq!(store.evaluate(exe, &version).unwrap()["accepted"], true);
     store.activate(&version, None).unwrap();
