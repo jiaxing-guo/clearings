@@ -70,6 +70,14 @@ else:
  if field=='candidate_json':
   task={'contract':{'abi':1,'name':'double-integer','description':'Double any integer input','input_schema':{'type':'integer'},'output_schema':{'type':'integer'},'capabilities':[]},'cases':[{'name':str(i),'input':i,'expected':{'status':'completed','output':i*2}} for i in [1,3,5]]}
   answer=json.dumps({'task':task,'applicability':'X'*4001 if os.environ.get('INVALID_SHARING') else 'Double integer inputs in any project'})
+  if os.environ.get('EXPECT_LEARNING_MODE'):
+   packet=json.loads(prompt[prompt.index('{'):])
+   mode=os.environ['EXPECT_LEARNING_MODE']
+   assert packet['learning_mode']==mode
+   assert 'one demonstrated mechanical step' in packet['instruction']
+   assert 'scheduled' in packet['instruction'] and 'repeated' in packet['instruction']
+   if mode=='scheduled':answer='null'
+
  else:
   if os.environ.get('CHANGE_PREFS'):
    import sqlite3
@@ -929,4 +937,46 @@ fn long_conversations_share_the_page_budget_before_repeating() {
     let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
     let counts:Vec<i64> = db.prepare("SELECT count(*) FROM conversation_evidence GROUP BY json_extract(body,'$.conversation') ORDER BY json_extract(body,'$.conversation')").unwrap().query_map([], |r| r.get(0)).unwrap().map(Result::unwrap).collect();
     assert_eq!(counts, vec![80, 80, 80]);
+}
+
+#[test]
+fn explicit_and_scheduled_extraction_receive_distinct_learning_criteria() {
+    for automatic in [false, true] {
+        let f = Fixture::new();
+        let mut command = f.command();
+        if automatic {
+            let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+            db.execute(
+                "INSERT INTO installation(key,body) VALUES('next_learning_due','0')",
+                [],
+            )
+            .unwrap();
+            command.env("EXPECT_LEARNING_MODE", "scheduled").args([
+                "learning-service",
+                "--data-dir",
+                f.data.to_str().unwrap(),
+            ]);
+        } else {
+            command
+                .env("EXPECT_LEARNING_MODE", "explicit")
+                .env("SHORT_SESSION", "1")
+                .arg("learn-now");
+        }
+        let output = command.output().unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let cycle: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(
+            cycle["report"]["outcomes"][0]["status"],
+            if automatic { "no_candidate" } else { "created" },
+            "{cycle}"
+        );
+        assert_eq!(
+            f.run(&["learning-status"])["requests_today"],
+            if automatic { 1 } else { 2 }
+        );
+    }
 }
