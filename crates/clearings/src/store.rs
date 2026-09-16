@@ -270,10 +270,10 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 14, "store was created by a newer version");
+        ensure!(schema <= 15, "store was created by a newer version");
         // Schema migrations are complete for this store. Connection-local settings
         // and WAL mode still apply, but reads need no schema write transaction.
-        if schema == 14 {
+        if schema == 15 {
             db.execute_batch("PRAGMA journal_mode=WAL;")?;
             return Ok(Self { db });
         }
@@ -407,7 +407,11 @@ PRAGMA user_version=12;
         }
         tx.commit()?;
         db.execute_batch("CREATE TABLE IF NOT EXISTS workbench_drafts(task TEXT PRIMARY KEY REFERENCES objects(id),project TEXT NOT NULL REFERENCES projects(id),body TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);")?;
-        db.pragma_update(None, "user_version", 14)?;
+        let tx =
+            rusqlite::Transaction::new_unchecked(&db, rusqlite::TransactionBehavior::Immediate)?;
+        tx.execute_batch("CREATE INDEX IF NOT EXISTS objects_version_task ON objects(json_extract(body,'$.task')) WHERE kind='version'; CREATE INDEX IF NOT EXISTS runs_project_version_page ON runs(project,version,id);")?;
+        tx.pragma_update(None, "user_version", 15)?;
+        tx.commit()?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {

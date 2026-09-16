@@ -4,9 +4,15 @@ use anyhow::{Result, ensure};
 use rusqlite::params;
 use serde_json::{Value, json};
 
+const RECENT_CALLS: &str = "SELECT r.id,r.purpose,json_extract(r.report,'$.outcome.status'),json_extract(r.report,'$.elapsed_ms'),r.created_at
+    FROM objects v CROSS JOIN runs r ON r.id IN (
+        SELECT id FROM runs WHERE project=?1 AND version=v.id ORDER BY id DESC LIMIT 5
+    ) WHERE v.kind='version' AND json_extract(v.body,'$.task')=?2 ORDER BY r.id DESC LIMIT 5";
+
 impl Store {
     pub(crate) fn routine_recent_calls(&self, project: &str, id: &str) -> Result<Value> {
-        let mut recent = self.db.prepare("SELECT r.id,r.purpose,json_extract(r.report,'$.outcome.status'),json_extract(r.report,'$.elapsed_ms'),r.created_at FROM runs r JOIN objects v ON v.id=r.version WHERE r.project=?1 AND json_extract(v.body,'$.task')=?2 ORDER BY r.id DESC LIMIT 5")?;
+        // Seek at most five calls per version before merging the recent results.
+        let mut recent = self.db.prepare(RECENT_CALLS)?;
         Ok(json!(recent.query_map(params![project,id], |r| Ok(json!({"id":r.get::<_,i64>(0)?,"purpose":r.get::<_,String>(1)?,"status":r.get::<_,String>(2)?,"elapsed_ms":r.get::<_,u64>(3)?,"created_at":r.get::<_,String>(4)?})))?.collect::<rusqlite::Result<Vec<_>>>()?))
     }
     pub fn routine_library_page(&self, project: &str, after: Option<&str>) -> Result<Value> {
@@ -66,5 +72,70 @@ impl Store {
         Ok(
             json!({"schema_version":1,"project":{"id":owner.id,"name":owner.name},"routines":routines,"next_after":next,"usage_note":"Reuse and test counts are caller-labelled. Older unclassified calls are not evidence of real reuse. Acceptance evaluations are separate."}),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn recent_calls_seek_by_version_and_merge_projects_and_versions_correctly() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut store = Store::open(&temp.path().join("state.db")).unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let project = store
+            .configure_project(&root, "Recent calls", Default::default(), None)
+            .unwrap();
+        let other = root.join("other");
+        std::fs::create_dir(&other).unwrap();
+        let other = store
+            .configure_project(&other, "Other", Default::default(), None)
+            .unwrap();
+        for (id, task) in [("v1", "target"), ("v2", "target"), ("noise", "unrelated")] {
+            store
+                .db
+                .execute(
+                    "INSERT INTO objects(id,kind,body) VALUES(?1,'version',?2)",
+                    params![id, json!({"task":task}).to_string()],
+                )
+                .unwrap();
+        }
+        let report = json!({"outcome":{"status":"completed"},"elapsed_ms":1}).to_string();
+        for n in 1..=12 {
+            store.db.execute("INSERT INTO runs(id,version,input_digest,report,project,purpose) VALUES(?1,?2,'fixture',?3,?4,'test')",params![n,if n%2==0{"v1"}else{"v2"},report,project.id]).unwrap();
+        }
+        store.db.execute("WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i+1 FROM n WHERE i<2000) INSERT INTO runs(version,input_digest,report,project,purpose) SELECT 'noise','fixture',?1,?2,'test' FROM n",params![report,project.id]).unwrap();
+        store.db.execute("INSERT INTO runs(version,input_digest,report,project,purpose) VALUES('v1','fixture',?1,?2,'test')",params![report,other.id]).unwrap();
+        let recent = store.routine_recent_calls(&project.id, "target").unwrap();
+        assert_eq!(
+            recent
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|r| r["id"].as_i64().unwrap())
+                .collect::<Vec<_>>(),
+            vec![12, 11, 10, 9, 8]
+        );
+        assert_eq!(
+            store
+                .routine_recent_calls(&project.id, "never-called")
+                .unwrap(),
+            json!([])
+        );
+        let mut statement = store
+            .db
+            .prepare(&format!("EXPLAIN QUERY PLAN {RECENT_CALLS}"))
+            .unwrap();
+        let plan = statement
+            .query_map(params![project.id, "target"], |r| r.get::<_, String>(3))
+            .unwrap()
+            .collect::<rusqlite::Result<Vec<_>>>()
+            .unwrap()
+            .join("\n");
+        assert!(
+            plan.contains("objects_version_task") && plan.contains("runs_project_version_page"),
+            "{plan}"
+        );
+        assert!(!plan.contains("SCAN r"), "{plan}");
     }
 }

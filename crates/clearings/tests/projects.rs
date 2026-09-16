@@ -76,7 +76,7 @@ fn incomplete_background_authorization_is_rejected_and_legacy_database_migrates(
     assert_eq!(
         conn.pragma_query_value(None, "user_version", |r| r.get::<_, i32>(0))
             .unwrap(),
-        14
+        15
     );
     conn.pragma_update(None, "user_version", 99).unwrap();
     assert!(Store::open(&db).is_err());
@@ -136,4 +136,22 @@ fn opening_a_current_store_does_not_require_a_schema_write_lock() {
         !reader.preferences().unwrap().learning_enabled,
         "preferences were cached across calls"
     );
+}
+
+#[test]
+fn version_fourteen_stores_gain_recent_call_indexes() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("state.db");
+    drop(clearings::store::Store::open(&path).unwrap());
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch("DROP INDEX objects_version_task; DROP INDEX runs_project_version_page; PRAGMA user_version=14;").unwrap();
+    drop(db);
+    drop(clearings::store::Store::open(&path).unwrap());
+    let db = rusqlite::Connection::open(&path).unwrap();
+    assert_eq!(
+        db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))
+            .unwrap(),
+        15
+    );
+    assert_eq!(db.query_row("SELECT count(*) FROM sqlite_master WHERE type='index' AND name IN ('objects_version_task','runs_project_version_page')",[],|r|r.get::<_,u32>(0)).unwrap(),2);
 }
