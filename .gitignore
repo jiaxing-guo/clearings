@@ -20,3 +20,7 @@ website/public/reference.json
 runs/
 benchmark-checkouts/
 __pycache__/
+
+# Local developer tools.
+.venv-tools/
+.ruff_cache/

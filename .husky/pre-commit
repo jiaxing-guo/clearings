@@ -1,0 +1,3 @@
+command -v node >/dev/null 2>&1 || { echo 'Clearings checks need Node.js 24. Ask your agent to run developer setup.' >&2; exit 1; }
+test -d node_modules/lint-staged || { echo 'Clearings checks are missing. Run npm ci --ignore-scripts and npm run dev:setup.' >&2; exit 1; }
+node scripts/pre-commit.mjs

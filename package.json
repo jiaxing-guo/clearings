@@ -16,9 +16,18 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "node scripts/clean.mjs",
-    "sdk:check": "node website/node_modules/typescript/bin/tsc --strict --noEmit --skipLibCheck --target ES2022 --module ESNext sdk/clearings.d.ts tests/sdk-types.ts"
+    "sdk:check": "node website/node_modules/typescript/bin/tsc --strict --noEmit --skipLibCheck --target ES2022 --module ESNext sdk/clearings.d.ts tests/sdk-types.ts",
+    "prepare": "husky",
+    "dev:setup": "node scripts/setup-dev.mjs",
+    "lint": "node scripts/checks.mjs",
+    "test:hooks": "node --test tests/check-hooks.test.mjs",
+    "web:typecheck": "node scripts/prepare-docs.mjs && npm --prefix website run typegen && npm --prefix website run typecheck"
   },
   "devDependencies": {
+    "@typescript-eslint/parser": "8.70.0",
+    "eslint": "10.10.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.5.1",
     "prettier": "3.9.6"
   },
   "license": "Apache-2.0"

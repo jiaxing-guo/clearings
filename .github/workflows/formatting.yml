@@ -1,4 +1,4 @@
-name: Formatting
+name: Formatting and lint
 
 on:
   pull_request:
@@ -22,4 +22,10 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Install pinned Python checks
+        run: |
+          python3 -m venv .venv-tools
+          .venv-tools/bin/python -m pip install -r requirements-dev.txt
       - run: npm run format:check
+      - run: npm run lint
+      - run: npm run test:hooks
