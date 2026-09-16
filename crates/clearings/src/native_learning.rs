@@ -178,7 +178,19 @@ impl Store {
             [fingerprint],
             |r| r.get(0),
         )?;
-        ensure!(group_count < 3, "candidate authoring attempts exhausted");
+        let repairs: u64 = tx.query_row(
+            "SELECT count(*) FROM native_requests WHERE status!='unavailable' AND fingerprint=?1 AND purpose='repair_candidate'",
+            [fingerprint], |row| row.get(0),
+        )?;
+        ensure!(
+            purpose != "repair_candidate" || repairs == 0,
+            "candidate repair already attempted"
+        );
+        let limit = if repairs > 0 { 3 } else { 2 };
+        ensure!(
+            group_count < limit,
+            "candidate authoring attempts exhausted"
+        );
         ensure!(
             count < prefs.max_requests_per_day,
             "daily authoring request allowance exhausted"
@@ -1342,5 +1354,50 @@ mod tests {
             store.preferences().unwrap().client,
             Some(Client::Codex)
         ));
+    }
+}
+
+#[cfg(test)]
+mod request_allowance_tests {
+    use super::*;
+    #[test]
+    fn interrupted_source_does_not_gain_a_third_slot_and_repair_does_not_repeat() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut store = Store::open(&temp.path().join("state.db")).unwrap();
+        let p = store
+            .configure_project(temp.path(), "P", crate::project::Settings::default(), None)
+            .unwrap();
+        store.db.execute("INSERT INTO native_cycles(project,started,status,revision,project_revision,scope) VALUES(?1,?2,'running',1,1,'project')",params![p.id,crate::background::now().unwrap()]).unwrap();
+        let cycle = store.db.last_insert_rowid();
+        for (purpose, status) in [("extract", "completed"), ("source", "interrupted")] {
+            store.db.execute("INSERT INTO native_requests(cycle,started,client,purpose,status,fingerprint,response) VALUES(?1,?2,'codex',?3,?4,'plain','{}')",params![cycle,crate::background::now().unwrap(),purpose,status]).unwrap();
+        }
+        let error = store
+            .native_request(cycle, Client::Codex, "source", json!({}), "source", "plain")
+            .unwrap_err();
+        assert!(error.to_string().contains("attempts exhausted"), "{error}");
+        store.db.execute("INSERT INTO native_requests(cycle,started,client,purpose,status,fingerprint) VALUES(?1,?2,'codex','repair_candidate','interrupted','repair')",params![cycle,crate::background::now().unwrap()]).unwrap();
+        let error = store
+            .native_request(
+                cycle,
+                Client::Codex,
+                "repair_candidate",
+                json!({}),
+                "candidate",
+                "repair",
+            )
+            .unwrap_err();
+        assert!(
+            error.to_string().contains("repair already attempted"),
+            "{error}"
+        );
+        assert_eq!(
+            store
+                .db
+                .query_row("SELECT count(*) FROM native_requests", [], |r| r
+                    .get::<_, i64>(0))
+                .unwrap(),
+            3
+        );
     }
 }
