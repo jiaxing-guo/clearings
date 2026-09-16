@@ -25,7 +25,7 @@ Prefer `{root, path}` inputs when the source is an artifact. Read and parse it i
 
 ### Configured HTTP operations
 
-A named binding permits JSON GET requests to a fixed endpoint. The policy specifies allowed query keys, response schema, timeout/body bounds, and an optional credential environment-variable reference. Query values must be strings. The routine cannot select another URL or supply credentials.
+A named binding permits JSON GET requests to a fixed endpoint. The policy specifies the endpoint, allowed query keys, response schema, and an optional credential environment-variable reference. The routine contract bounds requests through the remaining invocation deadline (`wall_ms`) and response size (`output_bytes`). Query values must be strings. The routine cannot select another URL or supply credentials.
 
 HTTPS is required except for explicit loopback endpoints. Redirects and environment proxies are disabled. Missing credentials, bad responses, and schema failures remain explicit.
 
