@@ -57,20 +57,34 @@ pub(crate) fn parse(value: Value) -> Result<Option<Candidate>> {
 
 /// Preserve extraction evidence and constraints, using repair-specific instructions.
 /// The shorter instruction reserves room even at the native request byte boundary.
-pub(crate) fn repair_packet(mut extraction: Value, invalid: Value, error: &str) -> Result<Value> {
-    const LIMIT: usize = 480 * 1024;
+pub(crate) fn repair_packet(
+    mut extraction: Value,
+    invalid: Value,
+    error: &str,
+    connection: Option<&crate::project::ModelConnection>,
+) -> Result<Value> {
+    let fits = |packet: &Value| -> Result<bool> {
+        if serde_json::to_vec(packet)?.len() > 480 * 1024 {
+            return Ok(false);
+        }
+        if let Some(connection) = connection {
+            match crate::model::configured_request(connection, packet, "candidate") {
+                Ok(_) => {}
+                Err(error) if error.is::<crate::model::RequestTooLarge>() => return Ok(false),
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(true)
+    };
     extraction["instruction"] = json!(crate::prompts::REPAIR_CANDIDATE);
     extraction["validation_error"] = json!(error.chars().take(128).collect::<String>());
     extraction["invalid_response"] = invalid.clone();
-    if serde_json::to_vec(&extraction)?.len() <= LIMIT {
+    if fits(&extraction)? {
         return Ok(extraction);
     }
     let text = invalid.to_string();
     extraction["invalid_response"] = json!({"excerpt":"","truncated":true});
-    ensure!(
-        serde_json::to_vec(&extraction)?.len() <= LIMIT,
-        "repair evidence exceeds request limit"
-    );
+    ensure!(fits(&extraction)?, "repair evidence exceeds request limit");
     // Bound the encoded JSON, including quotes, escapes and Unicode boundaries.
     let mut low = 0;
     let mut high = text.len();
@@ -81,7 +95,7 @@ pub(crate) fn repair_packet(mut extraction: Value, invalid: Value, error: &str) 
             end -= 1;
         }
         extraction["invalid_response"]["excerpt"] = json!(&text[..end]);
-        if serde_json::to_vec(&extraction)?.len() <= LIMIT {
+        if fits(&extraction)? {
             low = middle;
         } else {
             high = middle - 1;
@@ -138,7 +152,7 @@ mod tests {
         extraction["conversations"] = json!("x".repeat(480 * 1024 - overhead));
         assert_eq!(serde_json::to_vec(&extraction).unwrap().len(), 480 * 1024);
         let invalid = json!({"bad":"\\\"\n雪".repeat(100_000)});
-        let repair = repair_packet(extraction.clone(), invalid, &"\n".repeat(2048)).unwrap();
+        let repair = repair_packet(extraction.clone(), invalid, &"\n".repeat(2048), None).unwrap();
         assert!(serde_json::to_vec(&repair).unwrap().len() <= 480 * 1024);
         assert_eq!(repair["conversations"], extraction["conversations"]);
         assert_eq!(repair["sdk"], extraction["sdk"]);
@@ -149,6 +163,42 @@ mod tests {
                 .as_str()
                 .unwrap()
                 .is_empty()
+        );
+    }
+    #[test]
+    fn repair_bounds_the_final_configured_body_after_double_escaping() {
+        let connection = crate::project::ModelConnection {
+            url: "http://127.0.0.1/chat".into(),
+            model: "test".into(),
+            bearer_token_env: None,
+            max_output_tokens: 1024,
+            input_price: 1,
+            output_price: 1,
+        };
+        let extraction = json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"conversations":"x".repeat(400 * 1024)});
+        let invalid = json!({"bad":"\"\\".repeat(100_000)});
+        let native = repair_packet(
+            extraction.clone(),
+            invalid.clone(),
+            "Invalid candidate",
+            None,
+        )
+        .unwrap();
+        assert!(crate::model::configured_request(&connection, &native, "candidate").is_err());
+        let configured = repair_packet(
+            extraction.clone(),
+            invalid,
+            "Invalid candidate",
+            Some(&connection),
+        )
+        .unwrap();
+        assert_eq!(configured["conversations"], extraction["conversations"]);
+        assert!(serde_json::to_vec(&configured).unwrap().len() <= 480 * 1024);
+        assert!(
+            crate::model::configured_request(&connection, &configured, "candidate")
+                .unwrap()
+                .len()
+                <= 512 * 1024
         );
     }
     #[test]

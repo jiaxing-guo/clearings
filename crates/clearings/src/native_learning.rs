@@ -923,6 +923,7 @@ impl Store {
                             extraction,
                             extracted,
                             &format!("{error:#}"),
+                            self.project(project)?.settings.model.as_ref(),
                         )?;
                         let repaired = self.native_request(
                             cycle,
