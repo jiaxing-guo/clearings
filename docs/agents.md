@@ -72,3 +72,7 @@ Discovery uses a local full-text index of routine names, descriptions, and appli
 Direct invocation uses the same execution result and approval annotations as ordinary routine execution. Direct calls supply `expected_version` and `expected_capabilities` together. Both must match the selected active routine; stale or inconsistent hints fail before execution. The capability list restricts execution rather than granting access. Passing `path` is available only in the user-wide plugin and cannot register a new directory or accept grants from the caller. Pause, exclusion, shared-definition and current-project policy checks remain in force.
 
 A hint whose contract and applicability exceed 16 KiB requests inspection instead of supplying a truncated contract. Detailed examples, provenance and usage remain available through inspection tools.
+
+### Callable invocation hints
+
+Complete hints include the argument declaration for the bundled Codex code-mode callable, `tools.mcp__clearings__clearings_run_routine`. The agent can invoke it without a separate declaration lookup. Other clients use their exposed MCP tool; a renamed or unavailable callable still requires client-side discovery. The hint supplies no new permission: host approval, version checks, capability matching and current project grants remain in force.
