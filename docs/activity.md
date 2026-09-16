@@ -20,6 +20,10 @@ Workbench tests can capture successful capability results for an example. Captur
 
 Runs record the receiving project, version, input digest, outcome, native elapsed time, capability count, and purpose. Detailed history is paginated and subject to retention. Compact daily totals survive run pruning.
 
+Run outcomes include completed output and handoff context. This returned data remains in the local SQLite store until run-history pruning removes it. An input digest does not hide sensitive data returned by a routine. Keep the state directory private and return only the data needed for the task.
+
+Acceptance examples and captured file fixtures remain with immutable tasks. Pruning run history does not remove that acceptance data.
+
 Purposes distinguish real reuse, explicit tests, and unclassified records. A routine suggestion is not an execution. An attempted call rejected before execution is not successful use. A passing acceptance case is not real reuse.
 
 ## Model usage
