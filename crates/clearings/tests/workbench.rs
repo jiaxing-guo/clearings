@@ -652,3 +652,60 @@ fn paused_shared_routines_remain_inspectable_and_can_resume_without_owner_contro
         400
     );
 }
+
+#[test]
+fn pending_revision_follows_preparation_order_even_when_timestamps_tie() {
+    let f = Fixture::new();
+    let store = Store::open(&f.db).unwrap();
+    let first = f.request();
+    let mut second = f.request();
+    second.request.push_str(" Keep the same numeric result.");
+    let source = "export default async x=>({status:'completed',output:x.value*(x.factor??2)})";
+    let a = store.prepare_revision(&f.project, &first).unwrap();
+    assert_eq!(
+        store
+            .evaluate_revision(exe(), &f.project, &a, source.into())
+            .unwrap()["accepted"],
+        true
+    );
+    let b = store.prepare_revision(&f.project, &second).unwrap();
+    assert_ne!(a, b);
+    assert_eq!(
+        store
+            .evaluate_revision(exe(), &f.project, &b, source.into())
+            .unwrap()["accepted"],
+        true
+    );
+    let same_timestamp = || {
+        rusqlite::Connection::open(&f.db)
+            .unwrap()
+            .execute(
+                "UPDATE workbench_drafts SET created_at='2026-01-01 00:00:00'",
+                [],
+            )
+            .unwrap();
+    };
+    same_timestamp();
+    assert_eq!(
+        store
+            .pending_revision(&f.project, &f.task)
+            .unwrap()
+            .unwrap()["task"],
+        b
+    );
+    assert_eq!(store.prepare_revision(&f.project, &first).unwrap(), a);
+    assert_eq!(
+        store
+            .evaluate_revision(exe(), &f.project, &a, source.into())
+            .unwrap()["accepted"],
+        true
+    );
+    same_timestamp();
+    assert_eq!(
+        store
+            .pending_revision(&f.project, &f.task)
+            .unwrap()
+            .unwrap()["task"],
+        a
+    );
+}

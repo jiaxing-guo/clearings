@@ -242,6 +242,45 @@ try {
     false,
     'mobile overflow',
   );
+  // Exercise a real second library page and preserve its selection after controls.
+  for (let i = 0; i < 21; i++) {
+    await seed(
+      {
+        contract: {
+          abi: 1,
+          name: `paged-routine-${i}`,
+          description: 'Pagination sample',
+          input_schema: { type: 'integer' },
+          output_schema: { type: 'integer' },
+          capabilities: [],
+        },
+        cases: [{ name: 'One', input: 1, expected: { status: 'completed', output: 2 } }],
+      },
+      "export default async x=>({status:'completed',output:x*2})",
+    );
+  }
+  const firstPage = command('--project', project, 'library');
+  const secondPage = command('--project', project, 'library', '--after', firstPage.next_after);
+  const later = secondPage.routines.find((r) => r.name.startsWith('paged-routine-'));
+  assert.ok(later);
+  await page.goto('about:blank');
+  await page.goto(connection.url);
+  await page.getByRole('button', { name: 'Load more', exact: true }).click();
+  await page.getByRole('button', { name: new RegExp(later.name.replaceAll('-', ' ')) }).click();
+  await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  await page.getByRole('button', { name: 'Resume', exact: true }).waitFor();
+  assert.equal(
+    await page.getByRole('button', { name: 'Try input', exact: true }).isDisabled(),
+    true,
+  );
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await page.getByRole('button', { name: 'Resume', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Resume', exact: true }).click();
+  await page.getByRole('button', { name: 'Pause', exact: true }).waitFor();
+  assert.equal(
+    await page.getByRole('button', { name: 'Try input', exact: true }).isDisabled(),
+    false,
+  );
   assert.equal(sourceRequests, 1, 'tests and controls must not call a model');
   assert.deepEqual(errors, []);
   await page.route('**/api/library', (route) =>

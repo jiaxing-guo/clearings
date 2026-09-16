@@ -107,15 +107,28 @@ function renderLibrary() {
 }
 async function load(more = false) {
   const serial = ++libraryRequest;
-  const page = await api(
-    more && cursor ? `library?after=${encodeURIComponent(cursor)}` : 'library',
-  );
+  const previousCount = routines.length;
+  const wanted = routines.find((r) => r.id === selected);
+  let page = await api(more && cursor ? `library?after=${encodeURIComponent(cursor)}` : 'library');
   if (serial !== libraryRequest) return;
-  routines = more ? [...routines, ...page.routines] : page.routines;
+  const refreshed = more ? [...routines, ...page.routines] : [...page.routines];
+  while (
+    !more &&
+    page.next_after &&
+    (refreshed.length < previousCount ||
+      (wanted &&
+        !refreshed.some((r) => r.name === wanted.name && r.owner_project === wanted.owner_project)))
+  ) {
+    page = await api(`library?after=${encodeURIComponent(page.next_after)}`);
+    if (serial !== libraryRequest) return;
+    refreshed.push(...page.routines);
+  }
+  routines = refreshed;
   cursor = page.next_after;
   document.querySelector('#project-name').textContent = page.project.name;
   renderLibrary();
 }
+
 let fieldId = 0;
 function field(label, control) {
   const wrap = el('div', undefined, 'field');

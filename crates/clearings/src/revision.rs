@@ -81,7 +81,7 @@ impl Store {
             self.active(&request.id)?.as_deref() == Some(&request.expected_version),
             "routine changed; refresh before proposing an update"
         );
-        tx.execute("INSERT INTO workbench_drafts(task,project,body) VALUES(?1,?2,?3) ON CONFLICT(task) DO UPDATE SET body=excluded.body,created_at=CURRENT_TIMESTAMP WHERE project=excluded.project",params![id,project,body.to_string()])?;
+        tx.execute("INSERT INTO workbench_drafts(task,project,body) VALUES(?1,?2,?3) ON CONFLICT(task) DO UPDATE SET rowid=(SELECT COALESCE(MAX(rowid),0)+1 FROM workbench_drafts),body=excluded.body,created_at=CURRENT_TIMESTAMP WHERE project=excluded.project",params![id,project,body.to_string()])?;
         tx.commit()?;
         Ok(id)
     }
@@ -97,7 +97,7 @@ impl Store {
         Ok(serde_json::from_str(&body)?)
     }
     pub fn pending_revision(&self, project: &str, task: &str) -> Result<Option<Value>> {
-        let row:Option<(String,String)>=self.db.query_row("SELECT task,body FROM workbench_drafts WHERE project=?1 AND json_extract(body,'$.base_task')=?2 AND json_extract(body,'$.status')='accepted' ORDER BY created_at DESC,task DESC LIMIT 1",params![project,task],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
+        let row:Option<(String,String)>=self.db.query_row("SELECT task,body FROM workbench_drafts WHERE project=?1 AND json_extract(body,'$.base_task')=?2 AND json_extract(body,'$.status')='accepted' ORDER BY rowid DESC LIMIT 1",params![project,task],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
         row.map(|(id, body)| -> Result<Value> {
             let mut value: Value = serde_json::from_str(&body)?;
             value["task"] = json!(id);
