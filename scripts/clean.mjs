@@ -11,6 +11,9 @@ const generated = [
   'website/tsconfig.tsbuildinfo',
   'website/content/docs',
   'website/public/reference.json',
+  'website/public/demo',
+  'website/public/technical-reference.json',
+  'website/public/operation-explorer.json',
 ];
 for (const path of generated)
   rmSync(new URL(`../${path}`, import.meta.url), { recursive: true, force: true });
