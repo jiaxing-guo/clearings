@@ -727,6 +727,24 @@ function renderRoutine(row, data) {
       'quiet',
     ),
   );
+  if (row.owned && data.version) {
+    contract.append(
+      button(
+        'Reset expected result form',
+        () => {
+          expectedStatus.value = 'completed';
+          expected = editor(undefined, outputSchema.get());
+          renderExpected();
+        },
+        'quiet',
+      ),
+      el(
+        'p',
+        'Use after output-contract changes. This clears the entered expected result.',
+        'subtle',
+      ),
+    );
+  }
   detail.append(contract);
   const change = el('section', undefined, 'panel change-panel');
   change.append(el('h3', 'Make it handle this too'));

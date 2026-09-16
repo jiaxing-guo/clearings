@@ -325,12 +325,25 @@ try {
   await untyped.getByRole('button', { name: 'Add field', exact: true }).click();
   await untyped.getByLabel('Field name', { exact: true }).last().fill('comment');
   await page
+    .locator('.schema-editor')
+    .nth(1)
+    .getByLabel('Kind of value', { exact: true })
+    .selectOption('string');
+  await page.getByRole('button', { name: 'Reset expected result form', exact: true }).click();
+  await page.locator('.change-panel .value-editor input').first().fill('New expected result');
+
+  await page
     .getByLabel('What should change?', { exact: true })
     .fill('Preserve objects with a comment field.');
   await page.getByRole('button', { name: 'Add this example', exact: true }).click();
   let proposedSchema;
+  let proposedOutput;
+  let proposedExpected;
   await page.route('**/api/propose', async (route) => {
-    proposedSchema = route.request().postDataJSON().input_schema;
+    const body = route.request().postDataJSON();
+    proposedSchema = body.input_schema;
+    proposedOutput = body.output_schema;
+    proposedExpected = body.examples[0].expected;
     await route.fulfill({ status: 400, json: { error: 'Schema inspected for test' } });
   });
   await page.getByRole('button', { name: 'Propose update', exact: true }).click();
@@ -340,6 +353,8 @@ try {
     .waitFor();
   assert.equal(proposedSchema.type, 'object');
   assert.equal(proposedSchema.properties.comment.type, 'string');
+  assert.equal(proposedOutput.type, 'string');
+  assert.deepEqual(proposedExpected, { status: 'completed', output: 'New expected result' });
   await page.unroute('**/api/propose');
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(
