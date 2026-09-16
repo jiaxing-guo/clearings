@@ -311,7 +311,11 @@ impl Api {
                             .as_deref()
                             .ok_or_else(|| anyhow::anyhow!("select a project"))?,
                     ),
-                    crate::store::RunOptions { expected, purpose },
+                    crate::store::RunOptions {
+                        expected,
+                        purpose,
+                        capture_fixtures: false,
+                    },
                 )?
             }
             Operation::PauseShared { id, paused } => self.store.pause_shared(

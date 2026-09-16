@@ -399,15 +399,34 @@ fn recorded_file_fixtures_are_bounded_and_missing_reads_are_explicit() {
         policy: project.settings.grants,
         executable: exe().into(),
     };
-    let mut run = || {
-        api.call(Operation::RunRoutine {
+    std::fs::write(f.root.join("data.txt"), "ok").unwrap();
+    let compact = api
+        .call(Operation::RunRoutine {
             id: id.clone(),
             input: json!("data.txt"),
             expected_version: None,
             expected_capabilities: None,
             purpose: RunPurpose::Test,
         })
-        .unwrap()
+        .unwrap();
+    assert!(
+        compact.get("fixtures").is_none(),
+        "agent test calls must not return file fixtures"
+    );
+    let version = api.store.active(&id).unwrap().unwrap();
+    let (server, listener) =
+        Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+    let url = server.url();
+    let (origin, token) = url.split_once("/#").unwrap();
+    let run = || -> Value {
+        let body = json!({"id":id,"expected_version":version,"input":"data.txt"});
+        let (status, response) = exchange(
+            &server,
+            &listener,
+            request(&listener, token, "POST", "/api/run", Some(origin), &body),
+        );
+        assert_eq!(status, 200);
+        serde_json::from_str(response.split_once("\r\n\r\n").unwrap().1).unwrap()
     };
     std::fs::write(f.root.join("data.txt"), "ok").unwrap();
     assert_eq!(run()["fixtures"]["calls"][0]["result"]["text"], "ok");

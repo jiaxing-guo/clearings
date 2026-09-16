@@ -257,6 +257,7 @@ impl RunPurpose {
 pub(crate) struct RunOptions<'a> {
     pub expected: Option<ExpectedRoutine<'a>>,
     pub purpose: RunPurpose,
+    pub capture_fixtures: bool,
 }
 
 pub struct Store {
@@ -644,6 +645,7 @@ PRAGMA user_version=12;
             RunOptions {
                 expected,
                 purpose: RunPurpose::Reuse,
+                capture_fixtures: false,
             },
         )
     }
@@ -656,7 +658,11 @@ PRAGMA user_version=12;
         execution_project: Option<&str>,
         options: RunOptions<'_>,
     ) -> Result<Value> {
-        let RunOptions { expected, purpose } = options;
+        let RunOptions {
+            expected,
+            purpose,
+            capture_fixtures,
+        } = options;
         let id = self
             .active(task_id)?
             .context("task has no active version")?;
@@ -706,7 +712,7 @@ PRAGMA user_version=12;
                     inner,
                     environment_failed: false,
                     candidate_failed: false,
-                    fixtures: (purpose == RunPurpose::Test).then(Vec::new),
+                    fixtures: (purpose == RunPurpose::Test && capture_fixtures).then(Vec::new),
                     fixture_bytes: 0,
                     fixtures_available: true,
                 };

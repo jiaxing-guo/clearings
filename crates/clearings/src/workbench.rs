@@ -271,13 +271,21 @@ impl Workbench {
                 let detail = api.store.library_part(&self.project, &input.id, None)?;
                 let capabilities: Vec<String> =
                     serde_json::from_value(detail["contract"]["capabilities"].clone())?;
-                api.call(Operation::RunRoutine {
-                    id: input.id,
-                    input: input.input,
-                    expected_version: Some(input.expected_version),
-                    expected_capabilities: Some(capabilities),
-                    purpose: RunPurpose::Test,
-                })
+                api.store.run_selected(
+                    &self.executable,
+                    &input.id,
+                    input.input,
+                    &api.policy,
+                    Some(&self.project),
+                    crate::store::RunOptions {
+                        expected: Some(crate::store::ExpectedRoutine {
+                            version: &input.expected_version,
+                            capabilities: &capabilities,
+                        }),
+                        purpose: RunPurpose::Test,
+                        capture_fixtures: true,
+                    },
+                )
             }
             ("POST", "/api/control") => {
                 let input: ControlInput = serde_json::from_slice(body)?;
