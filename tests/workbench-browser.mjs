@@ -70,7 +70,7 @@ try {
       daily_budget_microusd: 100,
     }),
   );
-  const project = command(
+  const registered = command(
     'project-configure',
     '--root',
     projectRoot,
@@ -78,7 +78,8 @@ try {
     'Browser test',
     '--settings',
     settings,
-  ).id;
+  );
+  const project = registered.id;
   async function seed(task, source) {
     const taskFile = path.join(temporary, 'task.json');
     const sourceFile = path.join(temporary, 'routine.ts');
@@ -175,7 +176,17 @@ try {
   );
   child = spawn(
     binary,
-    ['--store', database, '--project', project, 'workbench-serve', '--session-dir', session],
+    [
+      '--store',
+      database,
+      '--project',
+      project,
+      'workbench-serve',
+      '--session-dir',
+      session,
+      '--expected-revision',
+      String(registered.revision),
+    ],
     { stdio: 'ignore', detached: true },
   );
   let connection;

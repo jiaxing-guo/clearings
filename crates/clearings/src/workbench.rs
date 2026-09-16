@@ -21,9 +21,17 @@ use std::{
 const REQUEST_LIMIT: usize = 2 * 1024 * 1024;
 const HEADER_LIMIT: usize = 16 * 1024;
 
-pub fn launch(store: &Store, project: &str, executable: &Path) -> Result<Value> {
+pub fn launch(
+    store: &Store,
+    project: &str,
+    executable: &Path,
+    expected_revision: u64,
+) -> Result<Value> {
     use std::os::unix::process::CommandExt;
-    store.project(project)?;
+    ensure!(
+        store.project(project)?.revision == expected_revision,
+        "project settings changed; open a fresh workbench link"
+    );
     let database = store
         .db
         .path()
@@ -42,6 +50,8 @@ pub fn launch(store: &Store, project: &str, executable: &Path) -> Result<Value> 
             "--session-dir",
         ])
         .arg(&session)
+        .arg("--expected-revision")
+        .arg(expected_revision.to_string())
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
@@ -84,8 +94,13 @@ impl Workbench {
         database: PathBuf,
         project: String,
         executable: PathBuf,
+        expected_revision: Option<u64>,
     ) -> Result<(Self, TcpListener)> {
         let project_revision = Store::open(&database)?.project(&project)?.revision;
+        ensure!(
+            expected_revision.is_none_or(|expected| expected == project_revision),
+            "project settings changed before workbench startup; open a fresh link"
+        );
         let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))?;
         let mut random = [0u8; 32];
         std::fs::File::open("/dev/urandom")?.read_exact(&mut random)?;

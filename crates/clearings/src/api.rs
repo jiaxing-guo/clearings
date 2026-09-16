@@ -2,7 +2,7 @@ use crate::{
     contract::Policy,
     store::{Store, Task},
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -162,8 +162,11 @@ fn history_days() -> u32 {
 }
 impl Api {
     pub fn call(&mut self, op: Operation) -> Result<Value> {
+        let mut project_revision = None;
         if let Some(project) = &self.project {
-            let grants = self.store.project(project)?.settings.grants;
+            let selected = self.store.project(project)?;
+            project_revision = Some(selected.revision);
+            let grants = selected.settings.grants;
             if !matches!(
                 op,
                 Operation::ProjectStatus
@@ -251,6 +254,7 @@ impl Api {
                     .as_deref()
                     .ok_or_else(|| anyhow::anyhow!("select a project"))?,
                 &self.executable,
+                project_revision.context("select a project")?,
             )?,
             Operation::Library { after } => self.store.routine_library_page(
                 self.project

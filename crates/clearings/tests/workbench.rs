@@ -287,7 +287,7 @@ fn request(
 fn loopback_api_checks_host_token_origin_and_keeps_runs_scoped() {
     let f = Fixture::new();
     let (server, listener) =
-        Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+        Workbench::bind(f.db.clone(), f.project.clone(), exe().into(), None).unwrap();
     assert!(listener.local_addr().unwrap().ip().is_loopback());
     let url = server.url();
     let (origin, token) = url.split_once("/#").unwrap();
@@ -415,7 +415,7 @@ fn recorded_file_fixtures_are_bounded_and_missing_reads_are_explicit() {
     );
     let version = api.store.active(&id).unwrap().unwrap();
     let (server, listener) =
-        Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+        Workbench::bind(f.db.clone(), f.project.clone(), exe().into(), None).unwrap();
     let url = server.url();
     let (origin, token) = url.split_once("/#").unwrap();
     let run = || -> Value {
@@ -445,7 +445,7 @@ fn recorded_file_fixtures_are_bounded_and_missing_reads_are_explicit() {
 fn accepted_nonblocking_sockets_wait_for_the_browser_request() {
     let f = Fixture::new();
     let (server, listener) =
-        Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+        Workbench::bind(f.db.clone(), f.project.clone(), exe().into(), None).unwrap();
     std::thread::scope(|scope| {
         scope.spawn(|| {
             let (mut socket, _) = listener.accept().unwrap();
@@ -504,7 +504,7 @@ fn prior_versions_remain_readable_without_becoming_mutable() {
 fn existing_workbench_tokens_do_not_inherit_changed_project_grants() {
     let f = Fixture::new();
     let (server, listener) =
-        Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+        Workbench::bind(f.db.clone(), f.project.clone(), exe().into(), None).unwrap();
     let url = server.url();
     let (origin, token) = url.split_once("/#").unwrap();
     let mut store = Store::open(&f.db).unwrap();
@@ -528,7 +528,8 @@ fn existing_workbench_tokens_do_not_inherit_changed_project_grants() {
         store.routine_usage(&f.project, &f.task).unwrap()["windows"]["30"]["calls"],
         0
     );
-    let (fresh, next) = Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+    let (fresh, next) =
+        Workbench::bind(f.db.clone(), f.project.clone(), exe().into(), None).unwrap();
     let url = fresh.url();
     let (origin, token) = url.split_once("/#").unwrap();
     assert_eq!(
@@ -556,7 +557,7 @@ fn paused_shared_routines_remain_inspectable_and_can_resume_without_owner_contro
         .unwrap();
     store.pause_shared(&receiver.id, &f.task, true).unwrap();
     let (server, listener) =
-        Workbench::bind(f.db.clone(), receiver.id.clone(), exe().into()).unwrap();
+        Workbench::bind(f.db.clone(), receiver.id.clone(), exe().into(), None).unwrap();
     let url = server.url();
     let (origin, token) = url.split_once("/#").unwrap();
     let detail = format!("/api/routine/{}", f.task);
@@ -766,7 +767,7 @@ fn owner_resume_clears_its_shared_pause_without_resuming_receivers() {
         .manage(&f.project, "multiply", Control::Pause, None)
         .unwrap();
     let (server, listener) =
-        Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+        Workbench::bind(f.db.clone(), f.project.clone(), exe().into(), None).unwrap();
     let url = server.url();
     let (origin, token) = url.split_once("/#").unwrap();
     let resume = json!({"id":f.task,"expected_version":f.version,"action":"resume"});
@@ -792,5 +793,77 @@ fn owner_resume_clears_its_shared_pause_without_resuming_receivers() {
     assert_eq!(
         store.routine_library_page(&receiver.id, None).unwrap()["routines"][0]["local_paused"],
         true
+    );
+}
+
+#[test]
+fn launch_and_child_binding_reject_an_outdated_permission_snapshot() {
+    let f = Fixture::new();
+    let mut store = Store::open(&f.db).unwrap();
+    let original = store.project(&f.project).unwrap();
+    let mut settings = original.settings;
+    settings.grants.roots.insert("new".into(), f.root.clone());
+    let current = store
+        .configure_project(&f.root, "New grants", settings, Some(original.revision))
+        .unwrap();
+    assert!(clearings::workbench::launch(&store, &f.project, exe(), original.revision).is_err());
+    assert!(
+        Workbench::bind(
+            f.db.clone(),
+            f.project.clone(),
+            exe().into(),
+            Some(original.revision)
+        )
+        .is_err()
+    );
+    assert!(
+        Workbench::bind(
+            f.db.clone(),
+            f.project.clone(),
+            exe().into(),
+            Some(current.revision)
+        )
+        .is_ok()
+    );
+}
+
+#[test]
+fn workbench_launch_rejects_grants_changed_inside_the_child_startup_window() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = Fixture::new();
+    let store = Store::open(&f.db).unwrap();
+    let original = store.project(&f.project).unwrap();
+    let mut changed = original.settings.clone();
+    changed.grants.roots.insert("new".into(), f.root.clone());
+    let settings = f.root.join("changed.json");
+    std::fs::write(&settings, serde_json::to_vec(&changed).unwrap()).unwrap();
+    let quote = |p: &Path| format!("'{}'", p.to_string_lossy().replace('\'', "'\\''"));
+    let wrapper = f.root.join("startup-race");
+    std::fs::write(&wrapper, format!("#!/bin/sh\nset -e\nprintf '%s' \"$$\" > \"$2.child-pid\"\n{} --store \"$2\" project-configure --root {} --name Changed --settings {} --expected-revision 1 >/dev/null\nexec {} \"$@\"\n",quote(exe()),quote(&f.root),quote(&settings),quote(exe()))).unwrap();
+    std::fs::set_permissions(&wrapper, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let mut api = Api {
+        store,
+        project: Some(f.project.clone()),
+        policy: original.settings.grants,
+        executable: wrapper,
+    };
+    let result = api.call(Operation::Workbench);
+    if result.is_ok() {
+        // A regression would leave our test server running; stop only its own group.
+        let pid: i32 = std::fs::read_to_string(format!("{}.child-pid", f.db.display()))
+            .unwrap()
+            .parse()
+            .unwrap();
+        unsafe {
+            libc::kill(-pid, libc::SIGTERM);
+        }
+    }
+    assert!(
+        result.is_err(),
+        "old client received a token after grants changed"
+    );
+    assert_eq!(
+        api.store.project(&f.project).unwrap().revision,
+        original.revision + 1
     );
 }
