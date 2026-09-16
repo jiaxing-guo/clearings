@@ -7,6 +7,8 @@ Read `clearings_learning_status` to resolve the current preferences, service hea
 
 For “what did you learn?” or “show my routines,” select the working project and read `clearings_library`. Follow `next_after` when the user wants the full library. It shows examples, active and paused state, recent calls, and whether undo is available. Explain reuse, tests, and older unclassified calls separately. Acceptance evaluations are not real use, and unclassified history must not justify automatic cleanup. Use `purpose: test` on `clearings_run_routine` when the user is trying an example or checking a routine, rather than completing their normal task.
 
+For “open my library” or requests to try or edit a routine visually, select the actual project and call `clearings_workbench`. Open its returned local URL with the client's browser, or give the user the link when no browser tool is available. The page supports test inputs, examples, simple contract fields, proposed updates, pause and undo. It uses existing grants. New requirements remain separate immutable tasks, and the user applies a passing update explicitly. Do not invent an external URL or ask the user to manage routine IDs.
+
 Use `clearings_learning_preferences` with the returned revision and only the requested changes. Preserve all other settings and list entries. The defaults already work; do not ask users to choose a model, budget, source, or schedule during setup.
 
 | User intent                                | Change                                                                                                |

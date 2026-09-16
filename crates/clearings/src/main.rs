@@ -70,6 +70,12 @@ enum Action {
         #[arg(long)]
         all: bool,
     },
+    Workbench,
+    #[command(hide = true)]
+    WorkbenchServe {
+        #[arg(long)]
+        session_dir: PathBuf,
+    },
     Library {
         #[arg(long)]
         after: Option<String>,
@@ -324,6 +330,17 @@ fn main() -> Result<()> {
     let executable = std::env::current_exe()?;
     let register_session = matches!(&cli.command, Action::PluginRegister { .. });
     match cli.command {
+        Action::WorkbenchServe { session_dir } => {
+            let database = cli
+                .store
+                .ok_or_else(|| anyhow::anyhow!("workbench requires a store"))?;
+            let project = cli
+                .project
+                .ok_or_else(|| anyhow::anyhow!("workbench requires a project"))?;
+            let (server, listener) =
+                clearings::workbench::Workbench::bind(database, project, executable)?;
+            server.serve(listener, session_dir)
+        }
         Action::Install {
             data_dir,
             no_service,
@@ -610,6 +627,7 @@ fn main() -> Result<()> {
                         clearings::conversations::Scope::Project
                     },
                 },
+                Action::Workbench => Operation::Workbench,
                 Action::Library { after } => Operation::Library { after },
                 Action::FindRoutines { query } => Operation::FindRoutines { query },
                 Action::ShareRoutine {

@@ -21,9 +21,11 @@ pub mod project;
 mod prompts;
 mod proposal;
 pub mod reuse;
+pub mod revision;
 pub mod service;
 pub mod store;
 mod transform;
+pub mod workbench;
 mod worker;
 
 pub use worker::worker_main;

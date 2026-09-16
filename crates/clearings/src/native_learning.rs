@@ -106,7 +106,7 @@ impl Store {
         }
         Ok(())
     }
-    fn check_native_cycle(&self, cycle: i64) -> Result<()> {
+    pub(crate) fn check_native_cycle(&self, cycle: i64) -> Result<()> {
         let (project,started,status,revision,project_revision):(String,i64,String,u64,u64)=self.db.query_row("SELECT project,started,status,revision,project_revision FROM native_cycles WHERE id=?1",[cycle],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?)))?;
         ensure!(
             status == "running"
@@ -120,7 +120,7 @@ impl Store {
         );
         Ok(())
     }
-    fn native_request(
+    pub(crate) fn native_request(
         &self,
         cycle: i64,
         client: Client,
@@ -269,7 +269,7 @@ impl Store {
         tx.commit()?;
         Ok(id)
     }
-    fn launch_learning(&self, cycle: i64, executable: &Path) -> Result<()> {
+    pub(crate) fn launch_learning(&self, cycle: i64, executable: &Path) -> Result<()> {
         use std::os::unix::process::CommandExt;
         let path = self
             .db

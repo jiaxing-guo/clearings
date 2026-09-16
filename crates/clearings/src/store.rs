@@ -199,10 +199,37 @@ struct FailureTrackingBroker {
     inner: LocalBroker,
     environment_failed: bool,
     candidate_failed: bool,
+    fixtures: Option<Vec<FixtureCall>>,
+    fixture_bytes: usize,
+    fixtures_available: bool,
 }
 impl Broker for FailureTrackingBroker {
     fn call(&mut self, name: &str, input: Value, remaining: Duration) -> Result<Value> {
+        let recorded_input = self
+            .fixtures
+            .as_ref()
+            .filter(|_| self.fixtures_available)
+            .map(|_| input.clone());
         let result = self.inner.call(name, input, remaining);
+        if let Some(input) = recorded_input {
+            if let Ok(value) = &result {
+                let fixture = FixtureCall {
+                    name: name.to_owned(),
+                    input,
+                    result: value.clone(),
+                };
+                self.fixture_bytes += serde_json::to_vec(&fixture)?.len();
+                if self.fixture_bytes <= 128 * 1024 && self.fixtures_available {
+                    self.fixtures.as_mut().unwrap().push(fixture);
+                } else {
+                    self.fixtures_available = false;
+                    self.fixtures.as_mut().unwrap().clear();
+                }
+            } else {
+                self.fixtures_available = false;
+                self.fixtures.as_mut().unwrap().clear();
+            }
+        }
         if let Err(error) = &result {
             let invalid_call = error.is::<crate::capabilities::InvalidCall>();
             self.candidate_failed |= invalid_call;
@@ -242,7 +269,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 13, "store was created by a newer version");
+        ensure!(schema <= 14, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -372,6 +399,8 @@ PRAGMA user_version=12;
             tx.pragma_update(None, "user_version", 13)?;
         }
         tx.commit()?;
+        db.execute_batch("CREATE TABLE IF NOT EXISTS workbench_drafts(task TEXT PRIMARY KEY REFERENCES objects(id),project TEXT NOT NULL REFERENCES projects(id),body TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);")?;
+        db.pragma_update(None, "user_version", 14)?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {
@@ -671,12 +700,15 @@ PRAGMA user_version=12;
             ensure!(task.project.is_none(), "select an execution project");
         }
         let input_digest = digest(&input)?;
-        let (run, candidate_failure) = match LocalBroker::new(&task.contract, policy) {
+        let (run, candidate_failure, fixtures) = match LocalBroker::new(&task.contract, policy) {
             Ok(inner) => {
                 let mut broker = FailureTrackingBroker {
                     inner,
                     environment_failed: false,
                     candidate_failed: false,
+                    fixtures: (purpose == RunPurpose::Test).then(Vec::new),
+                    fixture_bytes: 0,
+                    fixtures_available: true,
                 };
                 let (run, execution_failure) = execute::run_with_candidate_failure(
                     executable,
@@ -687,7 +719,10 @@ PRAGMA user_version=12;
                 );
                 let candidate_failure =
                     !broker.environment_failed && (execution_failure || broker.candidate_failed);
-                (run, candidate_failure)
+                let fixtures = broker
+                    .fixtures
+                    .map(|calls| json!({"available":broker.fixtures_available,"calls":calls}));
+                (run, candidate_failure, fixtures)
             }
             Err(error) => (
                 Run {
@@ -697,6 +732,7 @@ PRAGMA user_version=12;
                     model_usage: None,
                 },
                 false,
+                None,
             ),
         };
         let tx = rusqlite::Transaction::new_unchecked(
@@ -730,9 +766,11 @@ PRAGMA user_version=12;
         } else {
             None
         };
-        Ok(
-            json!({"id":run_id,"version":id,"input_digest":input_digest,"run":run,"recovery":recovery,"purpose":purpose.as_str()}),
-        )
+        let mut report = json!({"id":run_id,"version":id,"input_digest":input_digest,"run":run,"recovery":recovery,"purpose":purpose.as_str()});
+        if let Some(fixtures) = fixtures {
+            report["fixtures"] = fixtures;
+        }
+        Ok(report)
     }
     pub fn list(&self) -> Result<Value> {
         self.list_page(None)

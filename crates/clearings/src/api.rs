@@ -30,6 +30,7 @@ pub enum Operation {
         #[serde(default)]
         scope: crate::conversations::Scope,
     },
+    Workbench,
     Library {
         after: Option<String>,
     },
@@ -240,6 +241,13 @@ impl Api {
                 task,
                 &evidence_ids,
                 scope,
+            )?,
+            Operation::Workbench => crate::workbench::launch(
+                &self.store,
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                &self.executable,
             )?,
             Operation::Library { after } => self.store.routine_library_page(
                 self.project

@@ -89,7 +89,15 @@ impl Store {
                     )
                     .context("no previous automatic version is available")?;
                 let version: Version = self.get("version", &previous)?;
-                ensure!(version.task == task, "rollback belongs to another task");
+                if version.task != task {
+                    return self.undo_requirement_revision(
+                        project,
+                        &task,
+                        expected_active
+                            .context("supply the current active version before rollback")?,
+                        &previous,
+                    );
+                }
                 ensure!(
                     version.engine == crate::store::ENGINE
                         && self.inspect(&previous)?["evaluation"]["accepted"] == true,

@@ -36,3 +36,5 @@ Retirement records the last active version in the component digest, so its sourc
 Ask “what did you learn?” to see the project library. `clearings_library` and the `library` CLI command return the same bounded view: names, examples, active versions, pause state, undo availability, and recent calls. Follow `next_after` to continue.
 
 `run-routine --purpose test` and `clearings_run_routine` with `purpose: test` try fresh inputs under the same grants and isolation as normal reuse. Tests do not trigger automatic regression rollback. Usage reports separate `reuse_calls`, `test_calls`, and `unclassified_calls`; older records remain unclassified. These caller-labelled counts do not prove savings. Only labelled reuse influences matching frequency and eligibility for automatic improvement.
+
+Open the [personal workbench](workbench.md) to inspect the same library, try inputs, and propose tested updates without editing source or managing IDs.
