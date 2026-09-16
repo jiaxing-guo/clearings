@@ -18,6 +18,8 @@ When the user asks to make recent work reusable, the active agent reads recent c
 
 The agent identifies variable inputs, expected outputs, applicable conditions, and exceptions. It prepares the task and independent acceptance examples before writing source. It then evaluates and saves suitable routines. It asks about missing task rules only when the available evidence cannot establish them. It does not ask the user to locate transcript files or write code.
 
+A conversation is a container, not an occurrence count. One long project conversation can contain many repeated workflows. The agent must inspect relevant content pages rather than reject a project because it has only one conversation. On request, one demonstrated mechanical step can justify a useful parameterized routine; inferred generality and constructed examples must remain distinct from observed repeated use.
+
 ### Scheduled learning
 
 Background learning runs once every 24 hours by default and considers recent conversations across projects. The initial lookback is seven days. Later runs use persistent cursors, revisit unresolved candidates within that window, and avoid reprocessing completed work. A configurable wider historical review remains available on request.
