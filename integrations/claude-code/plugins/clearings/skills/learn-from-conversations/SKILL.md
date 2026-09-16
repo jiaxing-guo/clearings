@@ -22,3 +22,5 @@ The user has already requested saving or reviewing work: do not ask permission t
 After acceptance, use `clearings_share_routine` when the behavior is useful across projects. Describe the input conditions and assumptions. Keep project-specific behavior local unless its dependencies are explicit. Shared definitions execute under each receiving project's own grants; do not copy resource permissions or hardcode private examples.
 
 For a request to run a broad automatic review now, `clearings_learn_now` queues a bounded cycle through the existing signed-in client. Use `clearings_learning_status` to inspect its result after useful intervening work. Do not repeatedly announce that it is still running. For a specific selected workflow, the preparation and saving path above uses the active agent directly and avoids an unnecessary second authoring session.
+
+When root or path is intended to vary, acceptance cases must use distinct file references and matching read fixtures; varying only fixture contents does not test that parameter.
