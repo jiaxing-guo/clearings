@@ -25,7 +25,7 @@ A test can capture successful capability results as fixtures for a new example. 
 
 ## Local access
 
-The workbench binds only to the loopback interface. Its link contains a random session token; API requests require that token, the expected host, and the same origin for changes. Pages load no external assets. The server stops after 30 minutes without connections or 12 hours of operation once requests finish. Open a fresh link if it expires.
+The workbench binds only to the loopback interface. Its link contains a random session token; API requests require that token, the expected host, and the same origin for changes. Pages load no external assets. The server stops after 30 minutes without connections or 12 hours of operation once requests finish. Open a fresh link if it expires or project settings change.
 
 The page runs on the machine hosting Clearings. Remote workspaces need a browser on that host or a separately configured tunnel. The local runtime does not publish the page or expose a public endpoint.
 

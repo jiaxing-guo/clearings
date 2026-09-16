@@ -499,3 +499,45 @@ fn prior_versions_remain_readable_without_becoming_mutable() {
     api.project = Some(project.id);
     assert!(api.call(Operation::Inspect { id: f.version }).is_err());
 }
+
+#[test]
+fn existing_workbench_tokens_do_not_inherit_changed_project_grants() {
+    let f = Fixture::new();
+    let (server, listener) =
+        Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+    let url = server.url();
+    let (origin, token) = url.split_once("/#").unwrap();
+    let mut store = Store::open(&f.db).unwrap();
+    let mut settings = Settings::default();
+    settings
+        .grants
+        .roots
+        .insert("new-root".into(), f.root.clone());
+    store
+        .configure_project(&f.root, "My routines", settings, Some(1))
+        .unwrap();
+    let body = json!({"id":f.task,"expected_version":f.version,"input":{"value":7}});
+    let (status, response) = exchange(
+        &server,
+        &listener,
+        request(&listener, token, "POST", "/api/run", Some(origin), &body),
+    );
+    assert_eq!(status, 400);
+    assert!(response.contains("Open a fresh workbench link"));
+    assert_eq!(
+        store.routine_usage(&f.project, &f.task).unwrap()["windows"]["30"]["calls"],
+        0
+    );
+    let (fresh, next) = Workbench::bind(f.db.clone(), f.project.clone(), exe().into()).unwrap();
+    let url = fresh.url();
+    let (origin, token) = url.split_once("/#").unwrap();
+    assert_eq!(
+        exchange(
+            &fresh,
+            &next,
+            request(&next, token, "POST", "/api/run", Some(origin), &body)
+        )
+        .0,
+        200
+    );
+}

@@ -169,6 +169,12 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(connection.url);
   await page.getByRole('button', { name: /scale number/ }).click();
+  await page.getByLabel('value', { exact: true }).fill('9007199254740993');
+  await page.getByRole('button', { name: 'Try input', exact: true }).click();
+  await page
+    .locator('#notice')
+    .getByText(/cannot be represented exactly/)
+    .waitFor();
   await page.getByLabel('value', { exact: true }).fill('7');
   await page.getByRole('button', { name: 'Try input', exact: true }).click();
   await page.locator('.result-area').getByText('14', { exact: true }).waitFor();

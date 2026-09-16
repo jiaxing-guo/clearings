@@ -77,6 +77,7 @@ pub struct Workbench {
     pub executable: PathBuf,
     token: String,
     origin: String,
+    project_revision: u64,
 }
 impl Workbench {
     pub fn bind(
@@ -84,7 +85,7 @@ impl Workbench {
         project: String,
         executable: PathBuf,
     ) -> Result<(Self, TcpListener)> {
-        Store::open(&database)?.project(&project)?;
+        let project_revision = Store::open(&database)?.project(&project)?.revision;
         let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, 0))?;
         let mut random = [0u8; 32];
         std::fs::File::open("/dev/urandom")?.read_exact(&mut random)?;
@@ -97,6 +98,7 @@ impl Workbench {
                 executable,
                 token,
                 origin,
+                project_revision,
             },
             listener,
         ))
@@ -105,14 +107,10 @@ impl Workbench {
         format!("{}/#{}", self.origin, self.token)
     }
     pub fn serve(self, listener: TcpListener, session: PathBuf) -> Result<()> {
-        use std::os::unix::fs::OpenOptionsExt;
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .open(session.join("ready.json"))?;
-        file.write_all(serde_json::to_string(&json!({"url":self.url(),"project":self.project,"scope":"local project workbench","expires":"after 30 minutes idle or 12 hours"}))?.as_bytes())?;
-        file.sync_all()?;
+        publish_ready(
+            &session,
+            &json!({"url":self.url(),"project":self.project,"scope":"local project workbench","expires":"after 30 minutes idle or 12 hours"}),
+        )?;
         listener.set_nonblocking(true)?;
         let started = Instant::now();
         let mut activity = Instant::now();
@@ -245,6 +243,10 @@ impl Workbench {
     fn api(&self, method: &str, path: &str, body: &[u8]) -> Result<Value> {
         let store = Store::open(&self.database)?;
         let project = store.project(&self.project)?;
+        ensure!(
+            project.revision == self.project_revision,
+            "Project settings changed. Open a fresh workbench link from your coding client."
+        );
         let mut api = Api {
             store,
             project: Some(self.project.clone()),
@@ -442,6 +444,14 @@ fn read_request(socket: &mut TcpStream) -> Result<Request> {
         body: bytes[boundary..].to_vec(),
     })
 }
+fn publish_ready(session: &Path, value: &Value) -> Result<()> {
+    let mut file = tempfile::NamedTempFile::new_in(session)?;
+    file.write_all(&serde_json::to_vec(value)?)?;
+    file.as_file().sync_all()?;
+    file.persist_noclobber(session.join("ready.json"))?;
+    Ok(())
+}
+
 fn remove_session(session: &Path) -> Result<()> {
     match std::fs::remove_file(session.join("ready.json")) {
         Ok(()) => {}
@@ -476,6 +486,27 @@ fn respond(socket: &mut TcpStream, status: u16, kind: &str, body: &[u8]) -> Resu
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn readiness_is_published_complete_and_never_overwrites_an_existing_file() {
+        let temp = tempfile::tempdir().unwrap();
+        let value = serde_json::json!({"url":"x".repeat(100000)});
+        super::publish_ready(temp.path(), &value).unwrap();
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(
+                &std::fs::read(temp.path().join("ready.json")).unwrap()
+            )
+            .unwrap(),
+            value
+        );
+        assert!(super::publish_ready(temp.path(), &serde_json::json!({})).is_err());
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(
+                &std::fs::read(temp.path().join("ready.json")).unwrap()
+            )
+            .unwrap(),
+            value
+        );
+    }
     #[test]
     fn session_cleanup_preserves_unrelated_files() {
         let temp = tempfile::tempdir().unwrap();

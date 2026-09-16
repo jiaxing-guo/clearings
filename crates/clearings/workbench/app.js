@@ -287,8 +287,20 @@ function editor(value, schema = {}, depth = 0, budget = { count: 0 }) {
     node,
     get: () => {
       if (type === 'number' || type === 'integer') {
+        if (type === 'integer' || schema.type === 'integer') {
+          if (!/^[+-]?\d+$/.test(control.value))
+            throw new Error('Enter a whole number without decimals or exponent notation.');
+          const exact = BigInt(control.value);
+          if (exact > BigInt(Number.MAX_SAFE_INTEGER) || exact < BigInt(Number.MIN_SAFE_INTEGER))
+            throw new Error(
+              'That integer cannot be represented exactly. Use a smaller value or ask your agent for a string-based input.',
+            );
+          return Number(exact);
+        }
         const result = Number(control.value);
         if (!control.value || !Number.isFinite(result)) throw new Error('Enter a valid number.');
+        if (Number.isInteger(result) && !Number.isSafeInteger(result))
+          throw new Error('That integer cannot be represented exactly.');
         return result;
       }
       return control.value;
