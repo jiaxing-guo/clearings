@@ -12,6 +12,10 @@ use std::{
 fn exe() -> &'static Path {
     Path::new(env!("CARGO_BIN_EXE_clearings"))
 }
+// Prior real-use summaries survive pruning of their detailed run records.
+fn qualify_active_reuse(db: &Path, project: &str) {
+    rusqlite::Connection::open(db).unwrap().execute("INSERT OR REPLACE INTO routine_usage(task,version,project,day,calls,completed,handoffs,failed,elapsed_ms,capability_calls,last_used,reuse_calls,test_calls) SELECT p.task,a.version,p.project,date('now'),3,3,0,0,0,0,datetime('now'),3,0 FROM project_routines p JOIN active a ON a.task=p.task WHERE p.project=?1",[project]).unwrap();
+}
 fn model(source: &str) -> (String, std::thread::JoinHandle<Value>) {
     model_with(source, || {})
 }
@@ -522,6 +526,7 @@ fn check_candidate_regression(fresh_failure: &str) {
     let task_id = store.prepare_named(&p.id, task, "user").unwrap();
     // Make the fixture benefit large enough to distinguish it from worker startup noise.
     let baseline=store.save_named(exe(),&p.id,"read","export default async x=>{for(let i=0;i<31;i++)await clearings.call('files.read',x);return {status:'completed',output:(await clearings.call('files.read',x)).text}}".into(),None).unwrap()["version"].as_str().unwrap().to_owned();
+    qualify_active_reuse(&d.path().join("state.db"), &p.id);
     let result = store.background_tick(&p.id, exe()).unwrap();
     handle.join().unwrap();
     let improvement = &result["report"]["improvement"];
@@ -685,6 +690,7 @@ fn interrupted_measurement_resumes_past_excluded_routines_without_a_model_reques
         [&p.id],
     )
     .unwrap();
+    qualify_active_reuse(&db, &p.id);
     let rejected = store.background_tick(&p.id, exe()).unwrap();
     assert_eq!(
         rejected["report"]["improvement"]["status"], "failed",
@@ -888,6 +894,7 @@ fn expired_improvement_trials_are_terminal_and_do_not_request_again() {
             None,
         )
         .unwrap();
+    qualify_active_reuse(&d.path().join("state.db"), &p.id);
     let result = store.background_tick(&p.id, exe()).unwrap();
     handle.join().unwrap();
     assert_eq!(result["status"], "failed");
@@ -1048,6 +1055,7 @@ fn oversized_improvement_requests_do_not_starve_later_routines() {
             None,
         )
         .unwrap();
+    qualify_active_reuse(&d.path().join("state.db"), &p.id);
     let result = store.background_tick(&p.id, exe()).unwrap();
     assert_eq!(
         result["report"]["improvement"]["status"], "failed",
@@ -1073,6 +1081,68 @@ fn oversized_improvement_requests_do_not_starve_later_routines() {
     assert_eq!(
         conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
             .get::<_, u64>(0))
+            .unwrap(),
+        1
+    );
+}
+
+#[test]
+fn configured_improvement_requires_real_reuse_not_tests_or_unclassified_calls() {
+    let d = tempfile::tempdir().unwrap();
+    let db = d.path().join("state.db");
+    let mut store = Store::open(&db).unwrap();
+    let (url, handle) = model("export default async x=>({status:'completed',output:x+x})");
+    let mut options = settings(url);
+    options.improve = true;
+    let p = store
+        .configure_project(d.path(), "P", options, None)
+        .unwrap();
+    let task:clearings::store::Task=serde_json::from_value(json!({"contract":observation(1).contract,"cases":(1..=3).map(|i| { let mut c=observation(i).case;c.name=i.to_string();c }).collect::<Vec<_>>()})).unwrap();
+    let id = store.prepare_named(&p.id, task, "user").unwrap();
+    let v = store
+        .save_named(
+            exe(),
+            &p.id,
+            "double",
+            "export default async x=>({status:'completed',output:x*2})".into(),
+            None,
+        )
+        .unwrap()["version"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let conn = rusqlite::Connection::open(&db).unwrap();
+    for (calls, test_calls) in [(0, 0), (3, 3), (3, 0)] {
+        conn.execute("INSERT OR REPLACE INTO routine_usage(task,version,project,day,calls,completed,handoffs,failed,elapsed_ms,capability_calls,last_used,reuse_calls,test_calls) VALUES(?1,?2,?3,date('now'),?5,?5,0,0,0,0,datetime('now'),0,?4)",rusqlite::params![id,v,p.id,test_calls,calls]).unwrap();
+        conn.execute("UPDATE schedule SET next_due=0 WHERE project=?1", [&p.id])
+            .unwrap();
+        let result = store.background_tick(&p.id, exe()).unwrap();
+        assert_eq!(
+            result["report"]["improvement"]["status"], "no_candidate",
+            "{result}"
+        );
+        assert_eq!(
+            conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+    }
+    qualify_active_reuse(&db, &p.id);
+    conn.execute("UPDATE schedule SET next_due=0 WHERE project=?1", [&p.id])
+        .unwrap();
+    let result = store.background_tick(&p.id, exe()).unwrap();
+    assert!(
+        matches!(
+            result["report"]["improvement"]["status"].as_str(),
+            Some("improved" | "no_benefit")
+        ),
+        "{result}"
+    );
+    handle.join().unwrap();
+    assert_eq!(
+        conn.query_row("SELECT count(*) FROM model_requests", [], |r| r
+            .get::<_, i64>(0))
             .unwrap(),
         1
     );
