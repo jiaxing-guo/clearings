@@ -212,6 +212,26 @@ impl Broker for FailureTrackingBroker {
     }
 }
 
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, clap::ValueEnum, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum RunPurpose {
+    #[default]
+    Reuse,
+    Test,
+}
+impl RunPurpose {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Reuse => "reuse",
+            Self::Test => "test",
+        }
+    }
+}
+pub(crate) struct RunOptions<'a> {
+    pub expected: Option<ExpectedRoutine<'a>>,
+    pub purpose: RunPurpose,
+}
+
 pub struct Store {
     pub(crate) db: Connection,
 }
@@ -222,7 +242,7 @@ impl Store {
         db.busy_timeout(Duration::from_secs(5))?;
         db.pragma_update(None, "foreign_keys", true)?;
         let schema: i32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        ensure!(schema <= 12, "store was created by a newer version");
+        ensure!(schema <= 13, "store was created by a newer version");
         db.execute_batch("PRAGMA journal_mode=WAL;
             CREATE TABLE IF NOT EXISTS objects (id TEXT PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS evaluations (version TEXT NOT NULL, engine TEXT NOT NULL, report TEXT NOT NULL, PRIMARY KEY(version, engine), FOREIGN KEY(version) REFERENCES objects(id));
@@ -329,7 +349,29 @@ PRAGMA user_version=12;
 "#)?;
         }
         tx.commit()?;
-        db.pragma_update(None, "user_version", 12)?;
+        let tx =
+            rusqlite::Transaction::new_unchecked(&db, rusqlite::TransactionBehavior::Immediate)?;
+        let current: i32 = tx.pragma_query_value(None, "user_version", |r| r.get(0))?;
+        if current < 13 {
+            for (table, column, definition) in [
+                ("runs", "purpose", "TEXT NOT NULL DEFAULT 'unknown'"),
+                ("routine_usage", "reuse_calls", "INTEGER NOT NULL DEFAULT 0"),
+                ("routine_usage", "test_calls", "INTEGER NOT NULL DEFAULT 0"),
+            ] {
+                let exists: bool = tx.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM pragma_table_info(?1) WHERE name=?2)",
+                    params![table, column],
+                    |r| r.get(0),
+                )?;
+                if !exists {
+                    tx.execute_batch(&format!(
+                        "ALTER TABLE {table} ADD COLUMN {column} {definition};"
+                    ))?;
+                }
+            }
+            tx.pragma_update(None, "user_version", 13)?;
+        }
+        tx.commit()?;
         Ok(Self { db })
     }
     pub(crate) fn check_database_links(path: &Path) -> Result<()> {
@@ -564,6 +606,28 @@ PRAGMA user_version=12;
         execution_project: Option<&str>,
         expected: Option<ExpectedRoutine<'_>>,
     ) -> Result<Value> {
+        self.run_selected(
+            executable,
+            task_id,
+            input,
+            policy,
+            execution_project,
+            RunOptions {
+                expected,
+                purpose: RunPurpose::Reuse,
+            },
+        )
+    }
+    pub(crate) fn run_selected(
+        &self,
+        executable: &Path,
+        task_id: &str,
+        input: Value,
+        policy: &Policy,
+        execution_project: Option<&str>,
+        options: RunOptions<'_>,
+    ) -> Result<Value> {
+        let RunOptions { expected, purpose } = options;
         let id = self
             .active(task_id)?
             .context("task has no active version")?;
@@ -640,12 +704,13 @@ PRAGMA user_version=12;
             rusqlite::TransactionBehavior::Immediate,
         )?;
         tx.execute(
-            "INSERT INTO runs(version,input_digest,report,project) VALUES(?1,?2,?3,?4)",
+            "INSERT INTO runs(version,input_digest,report,project,purpose) VALUES(?1,?2,?3,?4,?5)",
             params![
                 id,
                 input_digest,
                 serde_json::to_string(&run)?,
-                execution_project
+                execution_project,
+                purpose.as_str()
             ],
         )?;
         let run_id = tx.last_insert_rowid();
@@ -653,17 +718,20 @@ PRAGMA user_version=12;
             .as_str()
             .unwrap_or("failed")
             .to_owned();
-        tx.execute("INSERT INTO routine_usage(task,version,project,day,calls,completed,handoffs,failed,elapsed_ms,capability_calls,last_used) VALUES(?1,?2,?3,date('now'),1,?4,?5,?6,?7,?8,datetime('now')) ON CONFLICT(task,version,project,day) DO UPDATE SET calls=calls+1,completed=completed+excluded.completed,handoffs=handoffs+excluded.handoffs,failed=failed+excluded.failed,elapsed_ms=elapsed_ms+excluded.elapsed_ms,capability_calls=capability_calls+excluded.capability_calls,last_used=excluded.last_used",params![task_id,id,execution_project.unwrap_or(""),status=="completed",matches!(status.as_str(),"needs_agent"|"not_applicable"),status=="failed",i64::try_from(run.elapsed_ms)?,run.capability_calls])?;
+        tx.execute("INSERT INTO routine_usage(task,version,project,day,calls,completed,handoffs,failed,elapsed_ms,capability_calls,last_used,reuse_calls,test_calls) VALUES(?1,?2,?3,date('now'),1,?4,?5,?6,?7,?8,datetime('now'),?9,?10) ON CONFLICT(task,version,project,day) DO UPDATE SET calls=calls+1,completed=completed+excluded.completed,handoffs=handoffs+excluded.handoffs,failed=failed+excluded.failed,elapsed_ms=elapsed_ms+excluded.elapsed_ms,capability_calls=capability_calls+excluded.capability_calls,last_used=excluded.last_used,reuse_calls=reuse_calls+excluded.reuse_calls,test_calls=test_calls+excluded.test_calls",params![task_id,id,execution_project.unwrap_or(""),status=="completed",matches!(status.as_str(),"needs_agent"|"not_applicable"),status=="failed",i64::try_from(run.elapsed_ms)?,run.capability_calls,purpose==RunPurpose::Reuse,purpose==RunPurpose::Test])?;
         tx.commit()?;
         // A receiving project's narrower grants must not roll back the owner's
         // shared definition. Only owner executions can trigger global recovery.
-        let recovery = if candidate_failure && execution_project == task.project.as_deref() {
+        let recovery = if purpose == RunPurpose::Reuse
+            && candidate_failure
+            && execution_project == task.project.as_deref()
+        {
             self.recover_regression(task_id, &id)?
         } else {
             None
         };
         Ok(
-            json!({"id":run_id,"version":id,"input_digest":input_digest,"run":run,"recovery":recovery}),
+            json!({"id":run_id,"version":id,"input_digest":input_digest,"run":run,"recovery":recovery,"purpose":purpose.as_str()}),
         )
     }
     pub fn list(&self) -> Result<Value> {
@@ -736,7 +804,7 @@ PRAGMA user_version=12;
         );
         let mut stmt = self.db.prepare(
             "SELECT id,version,input_digest,length(CAST(report AS BLOB)),
-             CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at
+             CASE WHEN length(CAST(report AS BLOB)) <= ?2 THEN report END,created_at,purpose
              FROM runs WHERE project IS ?3 AND (?1 IS NULL OR id < ?1) ORDER BY id DESC LIMIT 101",
         )?;
         let mut rows = stmt.query(params![before, PAGE_BYTES, project])?;
@@ -752,7 +820,7 @@ PRAGMA user_version=12;
                 break;
             }
             let report: String = row.get(4)?;
-            let entry = json!({"id":id,"version":row.get::<_,String>(1)?,"input_digest":row.get::<_,String>(2)?,"run":serde_json::from_str::<Value>(&report)?,"created_at":row.get::<_,String>(5)?});
+            let entry = json!({"id":id,"version":row.get::<_,String>(1)?,"input_digest":row.get::<_,String>(2)?,"run":serde_json::from_str::<Value>(&report)?,"created_at":row.get::<_,String>(5)?,"purpose":row.get::<_,String>(6)?});
             bytes += serde_json::to_vec(&entry)?.len() + 1;
             ensure!(bytes <= PAGE_BYTES, "history page exceeds byte limit");
             runs.push(entry);

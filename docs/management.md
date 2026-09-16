@@ -30,3 +30,9 @@ Authorized background cycles apply the configured retention period to raw observ
 Rollback compares the current active and previous versions atomically, clears the consumed previous-version pointer and records the manual change in the digest. Digests expose job reports as structured JSON. Ungranted observation groups are reported as blocked while other eligible work and retention continue; evidence records identify the exact cases selected after deduplication.
 
 Retirement records the last active version in the component digest, so its source remains discoverable even without run history. Authorized background cycles apply retention before learning or improvement; a later optimization error remains explicit and cannot indefinitely block expiry.
+
+## Routine library
+
+Ask “what did you learn?” to see the project library. `clearings_library` and the `library` CLI command return the same bounded view: names, examples, active versions, pause state, undo availability, and recent calls. Follow `next_after` to continue.
+
+`run-routine --purpose test` and `clearings_run_routine` with `purpose: test` try fresh inputs under the same grants and isolation as normal reuse. Tests do not trigger automatic regression rollback. Usage reports separate `reuse_calls`, `test_calls`, and `unclassified_calls`; older records remain unclassified. These caller-labelled counts do not prove savings. Only labelled reuse influences matching frequency and eligibility for automatic improvement.

@@ -5,6 +5,8 @@ description: Inspect Clearings learning and routine use, change its schedule or 
 
 Read `clearings_learning_status` to resolve the current preferences, service health, recent learning results, and actual routine use. This works before selecting a project. Explain only the information relevant to the request. Missing usage is unknown; execution counts do not prove savings.
 
+For “what did you learn?” or “show my routines,” select the working project and read `clearings_library`. Follow `next_after` when the user wants the full library. It shows examples, active and paused state, recent calls, and whether undo is available. Explain reuse, tests, and older unclassified calls separately. Acceptance evaluations are not real use, and unclassified history must not justify automatic cleanup. Use `purpose: test` on `clearings_run_routine` when the user is trying an example or checking a routine, rather than completing their normal task.
+
 Use `clearings_learning_preferences` with the returned revision and only the requested changes. Preserve all other settings and list entries. The defaults already work; do not ask users to choose a model, budget, source, or schedule during setup.
 
 | User intent                                | Change                                                                                                |
