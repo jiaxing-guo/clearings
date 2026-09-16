@@ -35,7 +35,7 @@ const rustChange = (file) =>
 const webChange = (file) => /^website\/.*\.(?:tsx?|m?js|json)$/.test(file);
 const sdkChange = (file) => /^(?:sdk\/|tests\/sdk-types\.ts$)/.test(file);
 const checkConfig = (file) =>
-  /^(?:package(?:-lock)?\.json|eslint\.config\.mjs|ruff\.toml|requirements-dev\.txt|\.prettier(?:rc\.json|ignore)|scripts\/(?:checks|pre-commit)\.mjs)$/.test(
+  /^(?:package(?:-lock)?\.json|eslint\.config\.mjs|ruff\.toml|requirements-dev\.txt|\.prettier(?:rc\.json|ignore)|scripts\/(?:checks|lint|pre-commit)\.mjs)$/.test(
     file,
   );
 
@@ -106,13 +106,4 @@ export async function checkFiles(changed, { fix = false, workspace = false } = {
   }
   if (configChanged || relative.some(webChange)) run('npm', ['run', 'web:typecheck']);
   if (configChanged || relative.some(sdkChange)) run('npm', ['run', 'sdk:check']);
-}
-
-if (import.meta.main) {
-  try {
-    await checkFiles(trackedFiles());
-  } catch (error) {
-    console.error(error.message);
-    process.exitCode = 1;
-  }
 }

@@ -31,6 +31,7 @@ function fixture(t) {
   for (const file of [
     'scripts/pre-commit.mjs',
     'scripts/checks.mjs',
+    'scripts/lint.mjs',
     '.husky/pre-commit',
     '.prettierrc.json',
     '.prettierignore',
@@ -41,7 +42,7 @@ function fixture(t) {
     copyFileSync(path.join(source, file), path.join(root, file));
   }
   writeFileSync(path.join(root, '.gitignore'), 'node_modules\n.venv-tools\n');
-  writeFileSync(path.join(root, 'package.json'), '{"type":"module"}\n');
+  writeFileSync(path.join(root, 'package.json'), '{\n  "type": "module"\n}\n');
   symlinkSync(path.join(source, 'node_modules'), path.join(root, 'node_modules'));
   symlinkSync(path.join(source, '.venv-tools'), path.join(root, '.venv-tools'));
   git('add', '.');
@@ -168,4 +169,23 @@ test('SDK typecheck failures block TypeScript commits', (t) => {
   f.git('add', 'sdk/input.ts');
   assert.notEqual(f.commit().status, 0);
   assert.equal(readFileSync(f.env.HOOK_LOG, 'utf8'), 'run sdk:check\n');
+});
+
+test('lint command executes checks and rejects invalid code', (t) => {
+  const f = fixture(t);
+  const clean = spawnSync(process.execPath, ['scripts/lint.mjs'], {
+    cwd: f.root,
+    env: f.env,
+    encoding: 'utf8',
+  });
+  assert.equal(clean.status, 0, clean.stdout + clean.stderr);
+  f.write('bad.mjs', 'export function bad() {\n  return 1;\n  return 2;\n}\n');
+  f.git('add', 'bad.mjs');
+  const invalid = spawnSync(process.execPath, ['scripts/lint.mjs'], {
+    cwd: f.root,
+    env: f.env,
+    encoding: 'utf8',
+  });
+  assert.notEqual(invalid.status, 0);
+  assert.match(invalid.stdout + invalid.stderr, /Unreachable code/);
 });

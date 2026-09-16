@@ -29,3 +29,9 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run test:hooks
+      - name: Use the minimum supported Node version
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.0.0'
+      - run: npm run lint
+      - run: node --test --test-name-pattern='lint command' tests/check-hooks.test.mjs
