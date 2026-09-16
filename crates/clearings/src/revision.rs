@@ -143,66 +143,69 @@ impl Store {
         request: RevisionRequest,
     ) -> Result<Value> {
         let lock = crate::background::ProjectLock::acquire(self, "user-conversation-learning")?;
-        let prefs = self.preferences()?;
-        let owner = self.project(project)?;
-        ensure!(
-            !prefs.excludes(owner.root.to_string_lossy().as_ref()),
-            "project is excluded from learning"
-        );
-        let task_id = self.prepare_revision(project, &request)?;
-        let task: Task = self.get("task", &task_id)?;
-        let previous: Version = self.get("version", &request.expected_version)?;
-        let fingerprint = digest(&(
-            "user-revision",
-            &task_id,
-            &request.expected_version,
-            &request.request,
-        ))?;
-        let client = if owner.settings.model.is_some() {
-            crate::conversations::Client::Codex
-        } else {
-            self.default_client()?
-        };
-        self.db.execute("INSERT INTO native_cycles(project,started,status,revision,project_revision,scope,automatic,report) VALUES(?1,?2,'running',?3,?4,'project',0,?5)",params![project,crate::background::now()?,prefs.work_revision,owner.revision,json!({"kind":"user_revision","task":task_id}).to_string()])?;
-        let cycle = self.db.last_insert_rowid();
         let result = (|| -> Result<Value> {
-            let packet = json!({"instruction":crate::prompts::REVISE_ROUTINE,"request":request.request,"sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"source":previous.source,"cases":&task.cases[..task.cases.len()-1]});
-            let response = self.native_request(
-                cycle,
-                client,
-                "user_revision",
-                packet,
-                "source",
-                &fingerprint,
-            )?;
-            self.check_native_cycle(cycle)?;
-            self.evaluate_revision(
-                executable,
-                project,
+            let prefs = self.preferences()?;
+            let owner = self.project(project)?;
+            ensure!(
+                !prefs.excludes(owner.root.to_string_lossy().as_ref()),
+                "project is excluded from learning"
+            );
+            let task_id = self.prepare_revision(project, &request)?;
+            let task: Task = self.get("task", &task_id)?;
+            let previous: Version = self.get("version", &request.expected_version)?;
+            let fingerprint = digest(&(
+                "user-revision",
                 &task_id,
-                response["source"]
-                    .as_str()
-                    .context("missing revised source")?
-                    .to_owned(),
-            )
+                &request.expected_version,
+                &request.request,
+            ))?;
+            let client = if owner.settings.model.is_some() {
+                crate::conversations::Client::Codex
+            } else {
+                self.default_client()?
+            };
+            self.db.execute("INSERT INTO native_cycles(project,started,status,revision,project_revision,scope,automatic,report) VALUES(?1,?2,'running',?3,?4,'project',0,?5)",params![project,crate::background::now()?,prefs.work_revision,owner.revision,json!({"kind":"user_revision","task":task_id}).to_string()])?;
+            let cycle = self.db.last_insert_rowid();
+            let result = (|| -> Result<Value> {
+                let packet = json!({"instruction":crate::prompts::REVISE_ROUTINE,"request":request.request,"sdk":include_str!("../../../sdk/clearings.d.ts"),"contract":task.contract,"source":previous.source,"cases":&task.cases[..task.cases.len()-1]});
+                let response = self.native_request(
+                    cycle,
+                    client,
+                    "user_revision",
+                    packet,
+                    "source",
+                    &fingerprint,
+                )?;
+                self.check_native_cycle(cycle)?;
+                self.evaluate_revision(
+                    executable,
+                    project,
+                    &task_id,
+                    response["source"]
+                        .as_str()
+                        .context("missing revised source")?
+                        .to_owned(),
+                )
+            })();
+            let report = match &result {
+                Ok(v) => v.clone(),
+                Err(e) => json!({"error":format!("{e:#}"),"task":task_id}),
+            };
+            let status = if result.is_ok() && report["accepted"] == true {
+                "completed"
+            } else {
+                "failed"
+            };
+            self.db.execute(
+                "UPDATE native_cycles SET status=?2,report=?3 WHERE id=?1",
+                params![
+                    cycle,
+                    status,
+                    json!({"kind":"user_revision","result":report}).to_string()
+                ],
+            )?;
+            result
         })();
-        let report = match &result {
-            Ok(v) => v.clone(),
-            Err(e) => json!({"error":format!("{e:#}"),"task":task_id}),
-        };
-        let status = if result.is_ok() && report["accepted"] == true {
-            "completed"
-        } else {
-            "failed"
-        };
-        self.db.execute(
-            "UPDATE native_cycles SET status=?2,report=?3 WHERE id=?1",
-            params![
-                cycle,
-                status,
-                json!({"kind":"user_revision","result":report}).to_string()
-            ],
-        )?;
         drop(lock);
         let next: Option<i64> = self
             .db

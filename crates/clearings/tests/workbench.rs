@@ -709,3 +709,39 @@ fn pending_revision_follows_preparation_order_even_when_timestamps_tie() {
         a
     );
 }
+
+#[test]
+fn early_revision_errors_restart_queued_learning() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = Fixture::new();
+    let mut store = Store::open(&f.db).unwrap();
+    let db = rusqlite::Connection::open(&f.db).unwrap();
+    db.execute("INSERT INTO native_cycles(project,started,status,revision,project_revision,scope,automatic) VALUES(?1,0,'queued',1,1,'project',0)", [&f.project]).unwrap();
+    let cycle = db.last_insert_rowid();
+    let launcher = f.root.join("learning-launcher");
+    std::fs::write(
+        &launcher,
+        "#!/bin/sh\nprintf '%s' \"$4\" > \"$2.launched\"\n",
+    )
+    .unwrap();
+    std::fs::set_permissions(&launcher, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let mut request = f.request();
+    request.examples.clear();
+    assert!(
+        store
+            .propose_revision(&launcher, &f.project, request)
+            .unwrap_err()
+            .to_string()
+            .contains("add 1 to 8 examples")
+    );
+    let marker = std::path::PathBuf::from(format!("{}.launched", f.db.display()));
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while !marker.exists() && std::time::Instant::now() < deadline {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    assert_eq!(std::fs::read_to_string(marker).unwrap(), cycle.to_string());
+    assert_eq!(
+        store.active(&f.task).unwrap().as_deref(),
+        Some(f.version.as_str())
+    );
+}
