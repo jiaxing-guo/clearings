@@ -33,10 +33,20 @@ impl Store {
         );
         Ok(())
     }
+    fn require_shared_inspection(&self, project: &str, task: &str) -> Result<()> {
+        self.project(project)?;
+        let shared: bool = self.db.query_row(
+            "SELECT EXISTS(SELECT 1 FROM routine_library WHERE task=?1)",
+            [task],
+            |row| row.get(0),
+        )?;
+        ensure!(shared, "routine is not shared");
+        Ok(())
+    }
     pub fn library_routine(&self, project: &str, task: &str) -> Result<Value> {
         let t: Task = self.get("task", task)?;
         if t.project.as_deref() != Some(project) {
-            self.require_shared(project, task)?;
+            self.require_shared_inspection(project, task)?;
         }
         let applicability: Option<String> = self
             .db
@@ -67,7 +77,7 @@ impl Store {
         }
         let t: Task = self.get("task", task)?;
         if t.project.as_deref() != Some(project) {
-            self.require_shared(project, task)?;
+            self.require_shared_inspection(project, task)?;
         }
         match part {
             Some("task") => {

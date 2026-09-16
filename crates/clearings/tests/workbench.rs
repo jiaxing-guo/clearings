@@ -541,3 +541,114 @@ fn existing_workbench_tokens_do_not_inherit_changed_project_grants() {
         200
     );
 }
+
+#[test]
+fn paused_shared_routines_remain_inspectable_and_can_resume_without_owner_control() {
+    let f = Fixture::new();
+    let mut store = Store::open(&f.db).unwrap();
+    let root = f.root.join("receiver");
+    std::fs::create_dir(&root).unwrap();
+    let receiver = store
+        .configure_project(&root, "Receiver", Settings::default(), None)
+        .unwrap();
+    store
+        .share_routine(&f.project, "multiply", "Double a number")
+        .unwrap();
+    store.pause_shared(&receiver.id, &f.task, true).unwrap();
+    let (server, listener) =
+        Workbench::bind(f.db.clone(), receiver.id.clone(), exe().into()).unwrap();
+    let url = server.url();
+    let (origin, token) = url.split_once("/#").unwrap();
+    let detail = format!("/api/routine/{}", f.task);
+    assert_eq!(
+        exchange(
+            &server,
+            &listener,
+            request(&listener, token, "GET", &detail, None, &json!({}))
+        )
+        .0,
+        200
+    );
+    assert!(
+        store
+            .library_part(&receiver.id, &f.task, Some("task"))
+            .is_ok()
+    );
+    let run = json!({"id":f.task,"expected_version":f.version,"input":{"value":7}});
+    assert_eq!(
+        exchange(
+            &server,
+            &listener,
+            request(&listener, token, "POST", "/api/run", Some(origin), &run)
+        )
+        .0,
+        400
+    );
+    let resume = json!({"id":f.task,"expected_version":f.version,"action":"resume"});
+    assert_eq!(
+        exchange(
+            &server,
+            &listener,
+            request(
+                &listener,
+                token,
+                "POST",
+                "/api/control",
+                Some(origin),
+                &resume
+            )
+        )
+        .0,
+        200
+    );
+    assert_eq!(
+        exchange(
+            &server,
+            &listener,
+            request(&listener, token, "POST", "/api/run", Some(origin), &run)
+        )
+        .0,
+        200
+    );
+    store
+        .manage(&f.project, "multiply", Control::Pause, None)
+        .unwrap();
+    assert_eq!(
+        exchange(
+            &server,
+            &listener,
+            request(
+                &listener,
+                token,
+                "POST",
+                "/api/control",
+                Some(origin),
+                &resume
+            )
+        )
+        .0,
+        200
+    );
+    assert_eq!(
+        exchange(
+            &server,
+            &listener,
+            request(&listener, token, "POST", "/api/run", Some(origin), &run)
+        )
+        .0,
+        400
+    );
+    rusqlite::Connection::open(&f.db)
+        .unwrap()
+        .execute("DELETE FROM routine_library WHERE task=?1", [&f.task])
+        .unwrap();
+    assert_eq!(
+        exchange(
+            &server,
+            &listener,
+            request(&listener, token, "GET", &detail, None, &json!({}))
+        )
+        .0,
+        400
+    );
+}
