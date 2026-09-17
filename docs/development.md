@@ -69,7 +69,7 @@ The documentation keeps Fumadocs navigation, static search, anchors, and code-co
 
 ### Public site deployment
 
-The [public site](https://clearings.ai/) is hosted by GitHub Pages. The Documentation workflow builds and checks the static export on pull requests. Successful pushes to `main` publish `website/out` through the `github-pages` environment. A manual workflow run on `main` can redeploy the site.
+The [public site](https://clearings.ai/) is hosted by GitHub Pages. The Website workflow builds and checks the static export on pull requests. Successful pushes to `main` publish `website/out` through the `github-pages` environment. A manual workflow run on `main` can redeploy the site.
 
 GitHub Pages must use **GitHub Actions** as its publishing source. The workflow uses an empty `DOCS_BASE_PATH` for both build and validation because the custom domain serves the site at `/`. Before publishing, it verifies that GitHub Pages reports the same base path. Only the deployment job receives Pages and identity-token write permissions; pull requests do not upload or deploy the site. Concurrent deployments are serialized.
 
@@ -105,3 +105,5 @@ Use Conventional Commits, concrete capability names and small changes tied to re
 The `CI / required` job rejects failures, cancellations, missing plans, and unexpected skips. Rust caches are separated by target and build profile; only main pushes save shared caches. Workbench tests consume the Linux binary from the runtime job rather than compiling again. A full manual CI run produces package artifacts even when the latest change is documentation-only.
 
 `release.yml` verifies main ancestry and plugin version pins, then invokes full CI on the tagged commit before naming and publishing its verified archives. A manual Release run validates and uploads a release candidate without publishing. Live coding-client acceptance remains a separate release requirement.
+
+`website.yml` builds all authored pages and runs browser smoke tests against the static export before its `Website / required` check passes. Failed browser runs retain a screenshot and trace. Main deployments then verify the public HTML, referenced scripts/stylesheets, documentation, and search index with bounded retries. Validation invoked by Release or Maintenance cannot deploy the site.

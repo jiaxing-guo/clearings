@@ -29,8 +29,15 @@ jobs:
     uses: ./.github/workflows/ci.yml
     with:
       full: true
+  website:
+    needs: identity
+    uses: ./.github/workflows/website.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
   publish:
-    needs: [identity, validate]
+    needs: [identity, validate, website]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
