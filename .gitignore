@@ -24,3 +24,6 @@ __pycache__/
 # Local developer tools.
 .venv-tools/
 .ruff_cache/
+
+# Local CI diagnostics.
+.ci-artifacts/

@@ -1,19 +1,26 @@
-name: Documentation
+name: Website
 
 on:
   pull_request:
   push:
     branches: [main]
+  merge_group:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
+
+concurrency:
+  group: website-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   DOCS_BASE_PATH: ''
 
 jobs:
   documentation:
+    name: Website / required
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -32,14 +39,23 @@ jobs:
       - run: npm run docs:build
       - run: npm run docs:check
       - run: npm run sdk:check
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: node tests/website-browser.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: website-browser-failure
+          path: .ci-artifacts/website/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Upload checked site
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.workflow == 'Website'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: website/out
 
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.workflow == 'Website'
     needs: documentation
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -68,3 +84,16 @@ jobs:
       - name: Deploy checked site
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm --prefix website ci --ignore-scripts
+      - name: Verify public assets, documentation and search
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/check-site.mjs "$SITE_URL"
