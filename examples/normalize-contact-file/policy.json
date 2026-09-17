@@ -1,0 +1,5 @@
+{
+  "roots": {
+    "contacts": "examples/normalize-contact-file/data"
+  }
+}
