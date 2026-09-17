@@ -12,7 +12,7 @@ website/public/reference.json
 package-lock.json
 website/package-lock.json
 
-# User-owned records and checkouts from historical versions.
+# User-owned records and local benchmark checkouts.
 .clearings/
 runs/
 benchmark-checkouts/

@@ -1,33 +1,15 @@
 # Third-party notices
 
-Clearings source is licensed under Apache License 2.0, except material carrying a separate notice. Third-party notices take precedence for that material. Dependencies installed through npm retain their own licenses.
+Clearings source is licensed under Apache License 2.0, except material carrying a separate notice. Dependency licenses and notices apply to their respective material.
 
-## Hono
+## Native packages
 
-Historical revisions contain Hono source excerpts in benchmark inputs, authored proposals, specifications, frozen experiments, and generated reports and review archives. The active tree no longer includes those materials; see [project history](docs/history.md) to retrieve them. These excerpts come from [Hono](https://github.com/honojs/hono) and remain available under its MIT license. Existing `LICENSE` and `LICENSE-HONO` copies in those directories and archives must be retained when redistributing the material.
+Packages include license texts collected from locked Rust dependencies and bundled native sources, plus a `dependencies.json` inventory. Dependencies include Oxc, rquickjs/QuickJS, rusqlite/SQLite, JSON Schema validation, cap-std, reqwest and rustls.
 
-MIT License
+The inventory identifies original license files, files recovered from pinned upstream commits, and explicitly recorded license declarations distributed with their complete source and standard terms. Consult those included materials for redistribution terms.
 
-Copyright (c) 2021 - present, Yusuke Wada and Hono contributors
+## Documentation and development tools
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The documentation site uses Next.js, React, Fumadocs and Tailwind CSS. Development checks use tools including TypeScript, Prettier, ESLint, Ruff and Playwright. Installed npm and Python dependencies retain their own licenses. These toolchains are separate from the native runtime distributed to users.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-## Embedded runtime
-
-Review packages include license texts collected from the locked Rust dependencies and their bundled native sources, plus a `dependencies.json` inventory. These include Oxc, rquickjs/QuickJS, SQLite through rusqlite, JSON Schema validation, cap-std, and reqwest/rustls. The package inventory distinguishes original license files, files recovered from pinned upstream commits, and the two explicitly recorded MIT declarations distributed with their complete source and standard terms. Consult the included materials for redistribution terms. The website dependency inventory above is separate from the native runtime.
+The workbench UI is authored in this repository and embedded in the native executable. Its browser tests use Playwright as a development dependency.

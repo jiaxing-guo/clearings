@@ -11,11 +11,6 @@ const generated = [
   'website/tsconfig.tsbuildinfo',
   'website/content/docs',
   'website/public/reference.json',
-  // Earlier generated outputs can remain when switching an existing checkout.
-  'dist',
-  'coverage',
-  'compiled',
-  'runtime/rust/target',
   'website/public/demo',
   'website/public/technical-reference.json',
   'website/public/operation-explorer.json',

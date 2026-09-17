@@ -1,40 +1,45 @@
-# Manage reusable work
+# Manage Clearings
 
-Ask the coding agent to pause or resume learning, change the schedule, inspect what was learned or used, exclude a project, or undo the last automatic change. The bundled manage-clearings skill resolves names and revisions; users do not need IDs or configuration files.
+Use ordinary language in the coding client. The bundled management skill resolves names, reads current state, applies the requested change, and reports the result.
 
-`learning-status` is user-wide. `pause-learning`, `resume-learning`, `learning-schedule weekly`, `exclude-learning PROJECT`, `include-learning PROJECT`, and `undo-learning` use the default private store. The management tools update only requested preferences. Pausing learning preserves routine execution; muting suggestions preserves learning. Undo compares the currently active version before restoring a previous accepted version or deactivating a new automatic routine.
+## Common requests
 
-For agent authors and advanced hosts, ordinary CLI commands select the current project automatically. Explicit `--store` and `--project` remain available:
+| Request                                      | Behavior                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------ |
+| Show Clearings status                        | Report learning, client access, recent results, and service health |
+| What did you learn?                          | Show the working project's routine library                         |
+| Open the workbench                           | Open the local visual library and test interface                   |
+| Pause learning                               | Stop automatic learning; keep saved routines usable                |
+| Learn twice daily, every two days, or weekly | Change the interval                                                |
+| Stop suggestions                             | Disable prompt hints independently of learning                     |
+| Exclude this project or workflow             | Remove it from learning scope                                      |
+| Pause this routine                           | Preserve its records but stop reuse                                |
+| Undo the last automatic change               | Restore the prior accepted version or deactivate the new routine   |
 
-| Command                                                   | Result                                                            |
-| --------------------------------------------------------- | ----------------------------------------------------------------- |
-| `discover`                                                | Names, active versions, origins and pause/exclusion status        |
-| `routine NAME`                                            | Requirements, source, acceptance and controls                     |
-| `save NAME --source routine.ts --expected-active VERSION` | Evaluate and activate a source revision                           |
-| `manage NAME pause` / `resume`                            | Stop or resume routine execution                                  |
-| `manage NAME exclude` / `include`                         | Exclude or restore participation in reuse and improvement         |
-| `manage NAME retire --expected-active VERSION`            | Deactivate and leave an excluded, paused tombstone                |
-| `manage NAME rollback --expected-active VERSION`          | Restore the previous automatic version                            |
-| `digest --after CHANGE_ID`                                | Changes since the preceding digest cursor and latest job status   |
-| `background-jobs`                                         | Job progress and failures                                         |
-| `performance NAME`                                        | Version-linked retained runtime measurements                      |
-| `model-usage`                                             | Provider usage when present, request failures and reserved budget |
-| `prune` / `prune --apply`                                 | Preview or remove expired observation and run records             |
+Workbench updates are user-directed changes. Use the named routine's undo control for them; the global automatic-change marker tracks automatic learning and improvement.
 
-Pause and exclusion controls do not alter the routine's source or grant additional access. Resume does not remove an exclusion. Retirement keeps immutable evidence and prevents automatic rediscovery under the same name. It is not permanent erasure of stored source or acceptance cases. Requirements, versions, evaluations, change history and budget accounting remain available; an explicit future erasure feature would need to account for their references.
+## Library and history
 
-Authorized background cycles apply the configured retention period to raw observations and runtime reports. This does not delete the original transcript files or the examples already frozen into an accepted task. Performance reports describe retained run records. Compact routine-use aggregates survive raw-run pruning and report seven-, 30-, and 90-day windows. Digests and usage reports are local; no email, Slack message or telemetry is sent.
+`clearings_library` and `library` expose a bounded, project-scoped view shared with the workbench. It includes names, examples, current versions, controls, recent calls, and whether undo is available. Follow `next_after` for more entries.
 
-`model-usage` distinguishes provider-reported counters from conservative operator-priced budget reservations. A credential availability flag checks only whether the configured host environment variable exists. Session usage in `activity` remains separate because surrounding conversation tokens cannot reliably be assigned to a routine. Missing usage and total savings remain unknown.
+Run history is paginated and scoped to the receiving project. Large records and missing evidence remain explicit. A history record identifies the version used, not just the current routine name.
 
-Rollback compares the current active and previous versions atomically, clears the consumed previous-version pointer and records the manual change in the digest. Digests expose job reports as structured JSON. Ungranted observation groups are reported as blocked while other eligible work and retention continue; evidence records identify the exact cases selected after deduplication.
+## Usage
 
-Retirement records the last active version in the component digest, so its source remains discoverable even without run history. Authorized background cycles apply retention before learning or improvement; a later optimization error remains explicit and cannot indefinitely block expiry.
+Usage windows cover 7, 30, and 90 UTC calendar days, including today. `reuse_calls`, `test_calls`, and `unclassified_calls` are separate. These are caller-labelled observations, not a proof of savings. Acceptance evaluations are separate from real use.
 
-## Routine library
+Explicit trials use `run-routine --purpose test` or `purpose: test` through MCP. Test failures do not trigger automatic regression rollback. Only labelled reuse influences usage ranking and automatic-improvement eligibility.
 
-Ask “what did you learn?” to see the project library. `clearings_library` and the `library` CLI command return the same bounded view: names, examples, active versions, pause state, undo availability, and recent calls. Follow `next_after` to continue.
+Do not retire a routine merely because test or unclassified counts are low. Consider its purpose, age, recent real use, and whether another routine replaces it.
 
-`run-routine --purpose test` and `clearings_run_routine` with `purpose: test` try fresh inputs under the same grants and isolation as normal reuse. Tests do not trigger automatic regression rollback. Usage reports separate `reuse_calls`, `test_calls`, and `unclassified_calls`; older records remain unclassified. These caller-labelled counts do not prove savings. Only labelled reuse influences matching frequency and eligibility for automatic improvement.
+## Retention and retirement
 
-Open the [personal workbench](workbench.md) to inspect the same library, try inputs, and propose tested updates without editing source or managing IDs.
+`prune` previews expired activity and run records; `prune --apply` removes those records under the configured retention period. Compact usage totals, immutable requirements, versions, evaluations, budget records, and change history remain available. Pruning does not modify source conversations.
+
+Retiring a routine deactivates it and preserves a paused, excluded record. It is not permanent data erasure. Pause, exclusion, and retirement never grant additional access.
+
+## Advanced commands
+
+The CLI and MCP also expose `routine`, `manage`, `digest`, `background-jobs`, `performance`, `model-usage`, and `runs`. Update operations use current revisions or versions where required. After a stale-state error, reread the target before retrying.
+
+See [daily use](default-experience.md), [workbench](workbench.md), and [background learning](background.md).

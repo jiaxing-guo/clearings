@@ -1,60 +1,43 @@
-# Product requirements
+# Product
 
 ## Purpose
 
-The implementation follows the [default experience](default-experience.md): immediate use after installation, on-request conversation learning, daily learning across projects, quiet reuse, and natural-language controls. That page records the requirements; host acceptance remains a separate launch gate.
+Reduce repeated model work by turning authorized, repeatable agent steps into reusable routines. The agent chooses suitable work, helps establish its requirements, and handles interpretation. Clearings prepares, evaluates, stores, and executes the code.
 
-Turn authorized repeated agent work into reusable programs. The initial experience is: select completed work, describe what should vary, have the active agent author a TypeScript routine, evaluate it, and reuse it with new inputs. Users customize behavior through their existing Codex or Claude Code conversation. Plugin installation is user-wide: working projects receive their own identity, private state and read grant automatically, without per-project setup. Existing restrictions remain in force. Daily conversation learning uses the signed-in coding client without a separate model connection.
+The product targets users of local Codex and Claude Code. Installation uses defaults. Users customize behavior through conversation or the [workbench](workbench.md), without writing source or managing routine IDs.
 
-The same execution interface supports repository context gathering, log grouping, data normalization and other read-and-transform work. These are examples, not special cases in the runtime. The first release does not require a specific SaaS integration or a prescribed workflow template.
+## Choose the right work
 
-## Implementation sequence
+Use a skill for instructions, decision rules, and context that an agent needs to understand. Use a routine for a repeatable sequence that code can perform with explicit inputs and checkable results.
 
-| Change                              | Scope                                                                                                                  | Acceptance                                                                                               |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Embedded TypeScript execution       | Native Rust CLI, Oxc, QuickJS, OS-isolated worker, schemas, file capabilities                                          | Parameters, asynchronous routine results, denied access, timeouts, malformed results and worker failures |
-| Reusable routine versions           | SQLite registry, immutable contracts and bundles, evaluation, activation, configured JSON HTTP operations, run records | Restart and revision, independent cases, failed-candidate isolation, credential scoping                  |
-| Agent teaching and reuse            | CLI/MCP lifecycle and thin Codex/Claude integrations                                                                   | User-selected evidence leads to a submitted routine; the user revises it conversationally                |
-| Complete workflows and distribution | Three distinct workflows, portable native packages and end-to-end verification                                         | New inputs, changed sources, explicit fallback, no user language-toolchain dependencies                  |
+Strong candidates collect and validate research receipts, normalize file-backed data, group logs, or compare observations from known sources. Open-ended research, writing, and strategic judgment remain agent work. Complex tasks often benefit from a routine for one mechanical part, rather than code for the whole task.
 
-These are capability boundaries for dependent implementation PRs. Only implemented behavior should be described as available in the README.
+Savings depend on the work replaced. Discovery, approval, tool invocation, and the final model answer still have costs. [Performance](performance.md) separates those costs from native execution.
 
-## Routine contract
+## Default experience
 
-Each routine has a stable name, ABI version, input and output JSON schemas, a capability request list and execution limits. Executable versions contain original TypeScript, generated JavaScript, a source map and their preparation identity. Credentials and user grants live outside these bundles.
+- One user-wide plugin installation serves working projects.
+- Trusted client startup registers the actual project and its read grant.
+- An explicit learning request starts with the current project.
+- Daily learning reviews recent local conversations across projects through the existing coding client.
+- A bounded local prompt lookup supplies relevant accepted routines. A clear match can run directly.
+- Empty and unchanged checks stay quiet.
+- Natural-language controls cover status, frequency, pause, exclusion, and undo.
 
-Outcomes are `completed`, `not_applicable`, `needs_agent` and `failed`. Completed output must satisfy the output schema. A timeout, unavailable source or incomplete observation must never become a successful empty result. Handoff carries structured context; it does not restore a model's internal state.
+The defaults are daily learning, a seven-day initial lookback, up to three candidate workflows per cycle, and six authoring requests per UTC day. One candidate repair uses the same allowance. Request counts are not a dollar spending guarantee.
 
-The agent can propose acceptance cases before authoring a candidate. Once a task contract is prepared, candidate submission cannot modify its acceptance criteria. Additional independent cases are necessary to demonstrate reuse; one successful trace only demonstrates that execution. Evidence supplied as an agent summary must be labeled accordingly.
+## Routine lifecycle
 
-## Runtime and installation
+A routine has a contract: its name, behavior, JSON input/output schemas, requested capabilities, and resource limits. Acceptance cases define expected outcomes independently of candidate source. Preparation freezes those criteria. Source submission cannot change them.
 
-One Rust executable provides CLI, MCP and internal worker modes. Oxc transforms supported TypeScript to JavaScript. QuickJS is embedded through rquickjs. Runtime users need no Node, Python, npm or Rust compiler. Release builds still require Rust and a C compiler, and the existing documentation site retains its development dependencies.
+Oxc transforms TypeScript and QuickJS runs the derived JavaScript. Transpilation does not provide full TypeScript type checking. Evaluation and runtime schemas establish different parts of the boundary.
 
-The privileged host owns grants and tool operations. A separate worker runs each preparation or execution with OS isolation and resource limits. No generated routine executes inside the privileged host. The initial platform targets are Linux x86_64/aarch64 and macOS; unsupported isolation fails explicitly. Actual platform support requires passing its runtime gate.
+Only a passing version can be activated. Replacements check the version they expect to replace. Requirement changes create another immutable task; the workbench preserves existing cases, stages a tested proposal, and lets the user apply or undo it.
 
-The minimal authoring environment has one default-exported async function, ordinary TypeScript syntax and a small capability SDK. It has no ambient Node/OS APIs or dependency installer. Full TypeScript type checking is not supplied by the source transform. Only the embedded engine's compatible language features are supported.
+## Execution boundary
 
-## Initial capabilities
+Generated code runs outside the privileged host. It has no ambient Node APIs, package installation, direct filesystem access, or direct network access. Named capabilities pass through a broker that checks the manifest, the current project's grants, input shape, limits, and deadline. Failure to establish OS isolation stops execution.
 
-The first implementation reads and lists files under named, explicitly granted roots. The following implementation adds configured HTTP JSON operations: fixed endpoint, permitted query parameters, response schema, bounded timeout/body, and broker-owned credential reference. The host checks every request; routine declarations cannot widen grants. No arbitrary shell access is used as an integration shortcut.
+The runtime supports bounded file reading/listing and configured JSON HTTP GET operations. It does not provide arbitrary shell execution, general browser automation, or file writes to routines.
 
-Executing a routine against fresh inputs is different from caching its output. Cross-run result caching, automatic batching and write effects are later capabilities requiring their own semantics. Ordinary host projects and installed agents remain external dependencies; Clearings cannot make their tools disappear.
-
-## User-directed learning
-
-Project-scoped observation scheduling and structured-observation synthesis are implemented. A completed cycle reports whether learning created a component, deferred work or found no eligible observations.
-
-The active host agent supplies selected task evidence and authors source using a bundled SDK. Clearings provides the execution and evaluation lifecycle through the same interface in each host. On-request review selects relevant local history; daily review considers recent local conversations across projects. Reconstructed summaries are not exact tool recordings.
-
-On-demand teaching remains available without a separate model connection. Project authorization also supports selected transcript imports, explicitly enabled conversational observation, background source proposals, evaluation, activation and measured improvement. Background conversation generation uses the coding client and bounded request allowance. Explicit HTTP model connections remain optional. Shared routine definitions are available across local projects; grants remain project-specific.
-
-Conversation learning proposes requirements and examples from transcript evidence, with interpretations labeled explicitly. It does not treat arbitrary shell commands as reproducible authenticated tool fixtures. The configured structured-observation path remains available. See [background execution](background.md) for the acceptance limits and [management](management.md) for pause, exclusion, retirement, rollback and retention.
-
-## Success and limits
-
-A complete release must show three materially different tasks using the same lifecycle, at least one previously unseen supported input for each, conversational revision, and an explicit unsupported or failing case. Runtime correctness is necessary but does not by itself show agent benefit.
-
-Record elapsed time, capability requests and results, evaluation and preparation costs, and model usage when the host actually exposes it. Missing usage stays unknown. Distinguish user-supplied estimates from recorded usage. Interactive invocation still uses the host agent; report avoided intermediate work and count generation, repairs and fallback against savings.
-
-No percentage saving or general correctness guarantee is claimed by this plan. The original Clearings implementation and its results remain in [history](history.md).
+Saved code runs against fresh inputs. Reuse is not output caching. Test runs, real reuse, and unclassified calls are reported separately. Missing usage remains unknown.

@@ -1,15 +1,11 @@
-# Contributing to Clearings
+# Contributing
 
-Start with the [product requirements](docs/product.md). Clearings turns repeated coding-agent work into reusable TypeScript routines executed by an isolated native runtime. Follow the README's implementation status; the teaching and persistence interfaces are introduced by their own changes.
+Clearings turns repeatable agent work into tested routines. Start with the [product](docs/product.md), [architecture](docs/architecture.md), and [development guide](docs/development.md).
 
-The [development guide](docs/development.md) contains setup commands, validation and documentation conventions. The [historical revision](docs/history.md) preserves the earlier implementation and its evidence.
+A useful change has a concrete user need, a clear caller, and checks for its behavior. Keep grants, isolation, immutable acceptance criteria and explicit failures intact. Do not make users configure a model or write code to complete the normal installation and daily flows.
 
-For a change:
+Keep `docs/` as the authored reference and Fumadocs as its presentation. Document implemented behavior in plain language. Mark measurements, test fixtures and proposed interfaces accurately.
 
-1. Identify the user need and relevant requirement. Resolve API or behavior decisions before building abstractions around them.
-2. Implement a coherent change with documentation that states what is available and what remains proposed.
-3. Run the checks for the affected behavior and `npm run check`. Describe validation and any remaining limitations in the PR.
+Use Conventional Commits. Run the relevant runtime or browser tests and the maintained-content checks. A PR should explain the problem, resulting behavior, validation, and any migration or operational limit. Do not merge, publish a package, or deploy as an incidental step.
 
-Use Conventional Commit messages and capability names in code and PR metadata. Keep dependencies and abstractions tied to current work. Add examples and tests with the feature they exercise, rather than copying the retired test corpus into new packages.
-
-The repository is licensed under [Apache License 2.0](LICENSE). Preserve applicable [third-party attribution](THIRD_PARTY_NOTICES.md).
+The source is licensed under [Apache License 2.0](LICENSE). Preserve applicable [third-party notices](THIRD_PARTY_NOTICES.md).

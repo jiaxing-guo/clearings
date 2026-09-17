@@ -1,87 +1,47 @@
-# Background execution
+# Background learning
 
-## Conversation learning through the coding client
+Clearings reviews recent local coding-client conversations through the existing signed-in client. No separate API key or model-selection step is required for the default path.
 
-`learn-now` performs a bounded recent-conversation review using the existing signed-in coding client. Its MCP counterpart queues the cycle and returns immediately; `learning_status` exposes completion, failures, preferences, and reported usage. Closing the MCP connection does not stop an already queued worker. The CLI command waits for its result. A queued cycle uses the same executable and private store, and overlapping requests are coordinated through a user-wide lock.
+## Schedule and scope
 
-The cycle reads bounded local conversation pages, interprets candidate requirements, freezes source evidence and examples, and requests TypeScript in a separate authoring session. One case is withheld from source authoring. Passing candidates are activated and can be shared with applicability information. Conversation-derived cases remain agent interpretations, not authenticated observations. Existing task requirements, paused routines, exclusions, and concurrent changes are preserved.
+The user-session service checks hourly. Learning runs daily by default, beginning 24 hours after installation, with a seven-day initial lookback. Missed intervals coalesce into one due check rather than a burst of catch-up requests.
 
-Defaults allow three candidate groups and six client authoring requests per UTC day, with at most two per group. Client-internal provider retries and billing are separate from this request count. Requests reserve allowance before launch. Completed responses and pending source packets survive interruption, so resumed work can reuse them without another model call. An uncertain interrupted request retains its allowance; explicit signed-out responses can be retried after login. Candidates with inadequate evidence or failed evaluation remain unactivated. No provider fallback follows an authentication failure.
+Scheduled review considers recent work across projects. An explicit request starts with the current project unless the user asks for broader scope. Persistent cursors let longer conversations and history backlogs progress across bounded cycles.
 
-Codex authoring uses its local client with tools, hooks, plugins, and host skill discovery disabled for the authoring session; Claude uses print mode with no tools or MCP servers. These sessions do not persist their own transcripts, preventing recursive learning. Source executes only in Clearings' isolated worker. An explicitly configured project HTTP model remains supported and uses its existing conservative budget reservations. Native client usage does not claim a dollar spending bound.
+Repetition is judged within workflow episodes, not by the number of conversations. One long project conversation can contain enough repeated work. Explicit learning can also generalize one demonstrated mechanical step when its behavior and future inputs are clear.
 
-The existing structured-observation background path remains available for configured projects.
+## Candidate pipeline
 
-## Default daily learning
+1. Read bounded conversation evidence and preserve coverage limits.
+2. Propose one reusable read/transform workflow with applicability and varied examples.
+3. Validate the proposal before preparing an immutable task.
+4. Author source with one acceptance case withheld.
+5. Evaluate all cases and activate only a passing candidate.
 
-Trusted plugin startup installs a user-level schedule. A standalone package can register the coding-client plugin and schedule through `clearings install`. Defaults need no model key or setup questionnaire. The first automatic review is due 24 hours after the schedule's first check. The operating system checks hourly; one missed interval produces one catch-up review. Closed laptops do not replay every missed interval.
+Automatic candidates use file reading/listing or pure transformations. They cannot add shell, write, or arbitrary network effects. File-backed inputs keep artifact contents inside execution rather than model-generated call arguments.
 
-Daily review uses all-project scope and a seven-day conversation-update lookback. It refreshes the newest metadata page and continues saved listing cursors. It reads least-recently-reviewed eligible sessions first, alternating updated heads with older pages. Each cycle reads at most 12 conversation pages, giving eligible conversations one turn before continuing their remaining pages. A project with one long conversation can use the full page allowance. The cycle retains a 1 MiB evidence budget and saves bounded candidate packets before advancing progress. Request exhaustion retains pending work. Complete and failed packets are deduplicated. Small evidence packets stay pending and combine with later conversations within the lookback window. Partial reads and unavailable clients appear in coverage; a review is not a claim to have read every message in a seven-day window.
+## Stronger proposals
 
-Automatic improvements consider routines used at least three times within 90 days. One improvement can occupy a candidate slot. The same frozen cases, withheld case, paired measurements, and atomic promotion checks apply. The internal library project has no user-wide filesystem grant. Shared routines execute with the receiving project's grants. A receiving-project access failure cannot roll back a shared source version for other projects.
+The response format has `schema_version: 1` and a structured `candidate`, or `candidate: null` when no workflow qualifies. Candidates contain a task and an applicability description. JSON-encoded candidate strings are not accepted as the structured response.
 
-“Pause learning” cancels unfinished promotion and preserves routine use. “Mute suggestions” changes only discovery hints. Schedule changes do not invalidate active authoring. Model, source, and learning changes do. `learning-status` reports next due time, installation failures, recent work, request usage, and routine calls over seven, 30, and 90 days. `undo-learning` deactivates the latest automatic creation or restores its previous accepted version; source and evidence remain inspectable.
+The host validates ownership fields, schemas, examples, capability requests and applicability. A malformed response gets one repair request with precise feedback and the original evidence. A second invalid response stops. Repair never edits already-frozen acceptance criteria.
 
-macOS uses a LaunchAgent; Linux uses a systemd user timer. The schedule runs only while the user session supports that service manager. It uses a private stable copy of the native executable. Plugin-bound schedules check whether Clearings remains enabled in a supported client before authoring or promotion and stop when disabled or removed. Custom stores selected by plugin `--data-dir` or `CLEARINGS_DATA_DIR` do not automatically install an OS service. Standalone installations can explicitly use the service without a plugin.
+A normal candidate uses two authoring requests, or three when proposal repair is needed. The default allowance is six requests per UTC day and three candidates per cycle. Repairs share that allowance and any configured spending ceiling. Request limits do not guarantee a particular dollar cost.
 
-## Configured structured-observation mode
+## Improvement and recovery
 
-Hard-linked database files are rejected before opening SQLite and before acquiring a background lock, because SQLite WAL sidecars belong to a single database path. Symlink aliases resolve to the same canonical database and lock.
+Automatic improvement considers accepted routines with recorded real reuse. Tests and unclassified usage do not establish eligibility. A replacement must preserve frozen criteria, pass evaluation, and demonstrate fewer capability calls or a consistent measured runtime improvement.
 
-A cycle with observation errors is recorded as failed and retains the structured source errors, even when no records were imported. `background --once` returns an unsuccessful exit status for that result. A valid empty source can still complete successfully.
+Failed candidates remain explicit and do not replace active work. Owning-project regressions after automatic replacement can restore the prior accepted version. Receiving-project permission failures must not roll back a shared definition globally.
 
-After project authorization, run `clearings --store /private/state.db --project PROJECT_ID background`. It remains a foreground process suitable for a service manager. `background --once` executes one due cycle, which also makes it suitable for an external timer. Neither command installs or enables a system service.
+## Controls and failures
 
-A kernel file lock prevents concurrent cycles for the same database and project. The lock is released on process exit, including a crash. The next cycle marks interrupted work explicitly. Checkpoints and deduplicated observations prevent duplicate capture. Missed schedule intervals coalesce into one catch-up cycle; they are not replayed repeatedly.
+“Pause learning,” “learn weekly,” and “exclude this project” use the existing preferences. `install --no-service` persists on-request operation. Saved routines remain usable while learning is paused.
 
-`background-cancel` stops current work at a bounded phase boundary. It does not permanently disable scheduling; update the project settings to turn off `automatic`. Changed authorization cancels an older job before it can promote a component. Ordinary agent work and already saved routines remain available when the optimizer is disabled, unavailable or out of budget.
+Sign-in failures, unsupported history interfaces, incomplete coverage, exhausted allowance, and unavailable sources appear in status. Clearings does not silently select another provider. Disabling the plugin stops integration-bound background work before new authoring or promotion.
 
-`background-jobs` reports completion, interruption and failures. Model requests reserve a conservative amount against a persisted UTC daily budget before sending. Reservations survive crashes and uncertain responses. A reservation is a local spending bound using configured prices, not a provider invoice. Unknown token usage remains unknown.
+## Custom hosts
 
-## Automatic component creation
+Operators can configure structured observation sources and a model connection for a project, then use `background` or `background --once`. This path has explicit project authorization, conservative spending reservations, cancellation, and retention. It does not change the default client-based setup.
 
-When `automatic` is enabled, each due cycle imports selected records and considers one eligible workflow. It requires at least three distinct inputs across at least `min_occurrences` distinct sessions, consistent outcomes, and a read-only file or pure transformation contract. It excludes configured names and existing named routines. Plain conversational text is not treated as behavioral evidence.
-
-An integration may supply structured records through the selected trace files. If the project also explicitly enables `record_conversations`, the active agent can call `clearings_record_observation` after completing work, using actual input, output and tool results. This records evidence without asking the user to save each workflow. Agent-supplied observations retain that provenance. General automatic reconstruction of arbitrary shell commands or free-text histories is not supported.
-
-Acceptance cases are stored before requesting source. One recorded example is withheld from the authoring request. The configured model returns a JSON source proposal; the isolated TypeScript runtime prepares and evaluates it. Passing candidates become discoverable and reusable in later project sessions. This establishes agreement on recorded cases, not general correctness or measured token savings.
-
-A workflow has at most two authoring attempts, using the same frozen cases, across scheduled cycles. Failed attempts and their budget reservations remain visible. Model responses cannot change grants, acceptance cases or host settings. A configuration change, cancellation, concurrent manual replacement, pause or exclusion prevents automatic promotion.
-
-## Measured improvement and recovery
-
-With `improve` enabled, cycles without an eligible new workflow consider one existing active routine. The optimizer uses the same immutable task and capability requirements. It evaluates a source proposal, then runs three alternating baseline/candidate measurement pairs. Replacement requires fewer capability calls in every pair without a material median latency increase, or equal calls with at least 20 percent and more than 2 ms improvement in every pair. This is local fixture evidence; it is not a claim about end-to-end agent cost.
-
-Each active version gets one terminal improvement trial. Interrupted measurements resume the stored candidate when available; otherwise a resumed proposal needs a new budget reservation. Budget refusal remains retryable. The next improved version can receive a later trial. A cycle has a 120-second phase budget, checked between bounded operations and individual measurement cases. Current bounded work can finish after cancellation or the phase deadline. Candidate creation and improvements share the same daily model budget.
-
-Promotion checks the current project revision, cancellation, task identity, activation state and pause/exclusion controls in one database transaction. The previous active version remains available. A candidate execution failure after automatic replacement restores that previous version for subsequent runs and returns the failed result with recovery details. It does not conceal the failure or silently rerun the task. Intentional handoffs, failed capability operations, invalid inputs, host policy and worker-runtime failures do not trigger automatic rollback. No cross-routine call graph exists in the current runtime; dependency checks concern the engine, immutable task and configured capability bindings.
-
-Observation scans retain a cursor across bounded cycles so older groups remain reachable. Budget refusal does not consume an authoring attempt. `background-jobs` includes request reservations, status and reported usage. Cancellation or changed authorization fails the job explicitly.
-
-MCP observation tools use one host-generated session identity per server connection; the caller cannot supply it. Transcript imports and the host CLI retain host-supplied session identities. These are provenance boundaries, not proof that supplied observations are true or that sessions are statistically independent.
-
-Reconfiguration resets the due time, disabled ticks reconcile interrupted work, and failed `background --once` jobs return an unsuccessful exit status.
-
-Learning groups observations by contract before applying its scan cursor, so unrelated records cannot split a workflow across pages. Each cycle reads at most 500 contract groups and 8 MiB of observations; each group supplies at most 500 records and 4 MiB. Groups without any completed case remain observations and cannot become acceptance tasks.
-
-Improvement selection skips tasks outside the supported 3-to-8-case range. Automatic rollback distinguishes an actual worker error from an authored `failed` outcome, even when authored code uses the same public failure-code text.
-
-Oversized or otherwise invalid combined acceptance groups are reported and skipped before storage. A group that cannot reserve a model request yields to other eligible groups, so a cheaper request can still fit the remaining budget. No attempt is consumed before reservation.
-
-A resumed candidate that fails validation or measurement is recorded as a terminal failed trial, so it cannot repeatedly block later routines. Trials that exhaust the cycle time budget also fail terminally. Other cancellations remain resumable; requests that were never reserved can remain deferred.
-
-Background coordination supports processes that share the same canonical database path within one filesystem namespace. Symlink aliases resolve to that path; hard-linked database files are rejected. Exposing one database through different bind-mount paths or filesystem namespaces is not a supported storage layout.
-
-Observation sampling represents distinct input/outcome pairs and session identities within the existing per-group record and byte limits. Failed proposals retain bounded source diagnostics even when TypeScript preparation fails before a version is created.
-
-An assembled model request above 512 KiB is rejected permanently for that frozen workflow without spending an authoring attempt. Later cycles skip the rejected group and continue considering other work. Budget refusal remains retryable.
-
-Improvement trials with oversized model requests are terminal; actual budget refusals remain retryable. Live recovery also recognizes call-count exhaustion, undeclared capabilities and malformed capability arguments as candidate failures. Missing resources, unavailable workers and endpoint failures do not cause automatic rollback.
-
-## Candidate validation and repair
-
-Automatic proposals use a versioned JSON envelope: `schema_version: 1` and a structured `candidate` object, or `candidate: null` when no workflow qualifies. The host validates the contract, examples, applicability and allowed capabilities before preparing an immutable task.
-
-A malformed proposal receives one repair request containing the validation error and original evidence. Repair shares the existing daily request allowance and configured spending ceiling. A second invalid response stops; source generation does not start. A normal new routine uses two requests, or three when candidate repair is needed. Acceptance criteria are frozen before source generation and are never rewritten to make a failed candidate pass.
-
-Candidate responses use native JSON with host validation because their schemas and examples contain open JSON values that Codex strict output schemas cannot represent. Source responses retain the coding client's constrained string response.
+Background learning creates and improves routines. It is not a general scheduler for running saved routines or monitoring arbitrary remote systems without a model.

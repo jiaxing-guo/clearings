@@ -3,29 +3,43 @@ import { HomeLayout } from 'fumadocs-ui/layouts/home';
 import { getLayoutOptions } from '@/lib/layout-options';
 const paths = [
   [
-    'Product requirements',
-    'User-selected routines, explicit capabilities and reusable execution.',
-    '/docs/product',
+    'Start with repeatable work',
+    'Save the collection, parsing and checks your agent would otherwise rebuild.',
+    '/docs/workflows',
   ],
-  ['Development', 'Set up the documentation site and run the current checks.', '/docs/development'],
-  ['Current status', 'What this repository contains and what remains to be built.', '/docs'],
   [
-    'Project history',
-    'Retrieve the earlier implementation and its recorded experiments.',
-    '/docs/history',
+    'Try a routine',
+    'Open the local workbench, change an input, and inspect the result.',
+    '/docs/workbench',
+  ],
+  [
+    'Keep control',
+    'Pause learning, inspect use, and undo a change through conversation.',
+    '/docs/management',
+  ],
+  [
+    'Understand the boundary',
+    'Fresh inputs, frozen examples, project grants and isolated execution.',
+    '/docs/execution',
   ],
 ];
 export default function Home() {
   return (
     <HomeLayout {...getLayoutOptions()}>
       <main className="home-intro">
-        <p className="eyebrow">Clearings · In development</p>
-        <h1>Let your agent discover the work. Reuse what it learns.</h1>
-        <p>
-          Clearings runs parameterized TypeScript routines inside a Rust executable. Your coding
-          agent can turn repeated work into code with explicit inputs, outputs and host
-          capabilities.
-        </p>
+        <p className="eyebrow">Reusable work for your coding agent</p>
+        <h1>
+          Save the work.
+          <br />
+          Run it again.
+        </h1>
+        <p>Clearings turns repeatable agent steps into tested routines that run on fresh inputs.</p>
+        <div className="home-actions">
+          <Link className="home-primary" href="/docs/installation">
+            Get Clearings
+          </Link>
+          <Link href="/docs">Read the guide</Link>
+        </div>
         <div className="reading-paths">
           {paths.map(([title, description, href]) => (
             <Link href={href} key={href} className="reading-path">
@@ -38,8 +52,8 @@ export default function Home() {
           ))}
         </div>
         <p className="home-note">
-          The local runtime includes routine versions, acceptance checks, CLI and MCP interfaces,
-          and three complete examples. Token savings remain to be measured.
+          Use skills for guidance and routines for executable steps. Clearings works with local
+          Codex and Claude Code, using your existing authoring connection.
         </p>
       </main>
     </HomeLayout>
