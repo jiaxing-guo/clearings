@@ -105,10 +105,18 @@ try {
         `${route} overflows at ${width}px`,
       );
     }
-    await page.getByRole('button', { name: 'Open Sidebar', exact: true }).click();
+    await page
+      .locator('.docs-header')
+      .getByRole('button', { name: 'Open Sidebar', exact: true })
+      .click();
     await page.getByRole('link', { name: 'Install Clearings', exact: true }).click();
     await page.waitForURL(`${origin}${base}/docs/installation/`);
-    await page.getByRole('button', { name: 'Open Sidebar', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Install Clearings', exact: true }).waitFor();
+    await page.locator('#nd-sidebar-mobile').waitFor({ state: 'hidden' });
+    await page
+      .locator('.docs-header')
+      .getByRole('button', { name: 'Open Sidebar', exact: true })
+      .waitFor();
   }
   assert.deepEqual(errors, []);
   console.log(
