@@ -1,19 +1,29 @@
 name: Maintenance
 on:
+  pull_request:
+    paths:
+      - .github/workflows/maintenance.yml
+      - .github/dependabot.yml
+      - Cargo.lock
+      - package-lock.json
+      - website/package-lock.json
+      - requirements-dev.txt
   schedule:
     - cron: '23 4 * * 1'
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: maintenance
+  group: maintenance-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 jobs:
   full-validation:
+    if: github.event_name != 'pull_request'
     uses: ./.github/workflows/ci.yml
     with:
       full: true
   website:
+    if: github.event_name != 'pull_request'
     uses: ./.github/workflows/website.yml
     permissions:
       contents: read
@@ -58,6 +68,7 @@ jobs:
           "$RUNNER_TEMP/audit/bin/pip" install pip-audit==2.10.1
           "$RUNNER_TEMP/audit/bin/pip-audit" -r requirements-dev.txt
   rust-compatibility:
+    if: github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:
