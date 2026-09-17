@@ -12,7 +12,7 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
     <DocsPage toc={page.data.toc} full={page.data.full}>
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
-      <DocsBody>
+      <DocsBody id="main-content">
         <Content components={getMDXComponents()} />
       </DocsBody>
     </DocsPage>

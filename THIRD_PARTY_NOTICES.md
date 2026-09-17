@@ -13,3 +13,5 @@ The inventory identifies original license files, files recovered from pinned ups
 The documentation site uses Next.js, React, Fumadocs and Tailwind CSS. Development checks use tools including TypeScript, Prettier, ESLint, Ruff and Playwright. Installed npm and Python dependencies retain their own licenses. These toolchains are separate from the native runtime distributed to users.
 
 The workbench UI is authored in this repository and embedded in the native executable. Its browser tests use Playwright as a development dependency.
+
+The documentation site bundles Geist and Geist Mono, distributed under the SIL Open Font License 1.1. The complete notice is in [website/fonts/OFL.txt](website/fonts/OFL.txt).

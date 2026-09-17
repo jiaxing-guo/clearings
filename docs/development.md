@@ -63,6 +63,10 @@ The development server uses the site root. Static exports use `/clearings` by de
 
 Keep relative links valid and use one H1 per page. The generator records source hashes and links each page to its Markdown source. The site owns presentation, navigation and search; product facts stay in authored documentation.
 
+The landing page lives in `website/app/page.tsx`, with styles in `website/app/landing.css`. Its sample and workflow story are small client components under `website/components/landing/`; the rest is rendered on the server. The sample uses synthetic browser data and makes no runtime or model calls.
+
+The documentation keeps Fumadocs navigation, static search, anchors, and code-copy controls. Shared typography and reading styles live in `website/app/global.css`. Geist fonts are bundled with their license under `website/fonts/`. Keep both surfaces in the same light theme and respect reduced-motion preferences.
+
 ## Prompts and skills
 
 Host instructions live in `crates/clearings/prompts/` and are embedded at build time. Keep structured contracts, cases and evidence as data in their calling modules. Short tool descriptions stay beside their schemas.
