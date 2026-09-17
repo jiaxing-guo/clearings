@@ -97,3 +97,11 @@ Before a release, align plugin manifests, runtime pins, and the release tag. A n
 `npm run clean` removes named build outputs. It preserves source, dependencies and saved records. Never treat a user's routine store or source conversations as build garbage.
 
 Use Conventional Commits, concrete capability names and small changes tied to real callers. Preserve locks and authorization boundaries. Add tests for meaningful behavior and failures; report the checks actually run.
+
+## Continuous integration
+
+`ci.yml` classifies changed paths and runs formatting, lint, workflow syntax, hook, plugin metadata, and packaging-source checks. Runtime changes, prompts, and skills run native tests and Clippy on Linux x86-64 and Apple-silicon macOS. Package changes verify extracted release builds on both targets. Ordinary documentation and website edits avoid native rebuilds. Unknown paths and workflow changes request full validation.
+
+The `CI / required` job rejects failures, cancellations, missing plans, and unexpected skips. Rust caches are separated by target and build profile; only main pushes save shared caches. Workbench tests consume the Linux binary from the runtime job rather than compiling again. A full manual CI run produces package artifacts even when the latest change is documentation-only.
+
+`release.yml` verifies main ancestry and plugin version pins, then invokes full CI on the tagged commit before naming and publishing its verified archives. A manual Release run validates and uploads a release candidate without publishing. Live coding-client acceptance remains a separate release requirement.

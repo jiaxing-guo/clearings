@@ -1,0 +1,200 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  merge_group:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Run all platform and package checks
+        type: boolean
+        default: true
+  workflow_call:
+    inputs:
+      full:
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      runtime: ${{ steps.plan.outputs.runtime }}
+      workbench: ${{ steps.plan.outputs.workbench }}
+      packages: ${{ steps.plan.outputs.packages }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - id: plan
+        run: node scripts/ci-plan.mjs
+        env:
+          CI_FULL: ${{ inputs.full == true }}
+  quality:
+    needs: plan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Install Python checks
+        run: |
+          python3 -m venv .venv-tools
+          .venv-tools/bin/python -m pip install -r requirements-dev.txt
+      - uses: taiki-e/install-action@26e9283f268b880168bdbd2c545dfcd60ec2c6ab # v2
+        with:
+          tool: actionlint@1.7.12
+      - run: actionlint -color
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run test:hooks
+      - run: node --test tests/ci.test.mjs
+      - run: node scripts/check-plugin-metadata.mjs
+      - run: python3 -m unittest discover -s tests -p 'test_*.py'
+      - name: Rust formatting
+        if: needs.plan.outputs.runtime == 'true'
+        run: cargo fmt --all --check
+      - name: Minimum supported Node version
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24.0.0'
+      - run: npm run lint
+      - run: node --test tests/ci.test.mjs
+      - run: node --test --test-name-pattern='lint command' tests/check-hooks.test.mjs
+  runtime:
+    needs: [plan, quality]
+    if: needs.plan.outputs.runtime == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - os: macos-15
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      RUST_TEST_THREADS: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: rustup show
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: debug-${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+      - run: cargo test --locked --workspace
+      - run: cargo clippy --locked --workspace --all-targets -- -D warnings
+      - name: Prepare Linux binary for browser tests
+        if: runner.os == 'Linux' && needs.plan.outputs.workbench == 'true'
+        run: |
+          cargo build --locked --bin clearings
+          tar -czf "$RUNNER_TEMP/linux-binary.tar.gz" -C target/debug clearings
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: runner.os == 'Linux' && needs.plan.outputs.workbench == 'true'
+        with:
+          name: ci-linux-binary
+          path: ${{ runner.temp }}/linux-binary.tar.gz
+          retention-days: 1
+          if-no-files-found: error
+  workbench:
+    needs: [plan, runtime]
+    if: needs.plan.outputs.workbench == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: ci-linux-binary
+          path: ${{ runner.temp }}/workbench-binary
+      - run: tar -xzf "$RUNNER_TEMP/workbench-binary/linux-binary.tar.gz" -C "$RUNNER_TEMP/workbench-binary"
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: node tests/workbench-browser.mjs
+        env:
+          CLEARINGS_TEST_BINARY: ${{ runner.temp }}/workbench-binary/clearings
+  packages:
+    needs: [plan, quality]
+    if: needs.plan.outputs.packages == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - os: macos-15
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s tests -p 'test_*.py'
+      - run: rustup show
+      - name: Verify native target
+        env:
+          EXPECTED_TARGET: ${{ matrix.target }}
+        run: |
+          rustc -vV | grep -Fx "host: $EXPECTED_TARGET"
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: release-${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+      - run: python3 scripts/package.py target/release/clearings "$RUNNER_TEMP/clearings-package" --licenses-only
+      - run: cargo build --release --locked --workspace
+      - run: python3 scripts/package.py target/release/clearings "$RUNNER_TEMP/clearings-package"
+      - name: Verify extracted package without language runtimes
+        run: |
+          mkdir "$RUNNER_TEMP/clearings-installed"
+          tar -xzf "$RUNNER_TEMP/clearings-package/clearings.tar.gz" -C "$RUNNER_TEMP/clearings-installed"
+          python3 scripts/verify-package.py "$RUNNER_TEMP/clearings-installed/clearings"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: clearings-${{ matrix.target }}
+          path: |
+            ${{ runner.temp }}/clearings-package/clearings.tar.gz
+            ${{ runner.temp }}/clearings-package/SHA256SUMS
+          retention-days: 7
+          if-no-files-found: error
+  required:
+    name: CI / required
+    if: always()
+    needs: [plan, quality, runtime, workbench, packages]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - run: node scripts/ci-gate.mjs
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
