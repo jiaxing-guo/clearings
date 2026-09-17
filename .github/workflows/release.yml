@@ -1,0 +1,70 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: git merge-base --is-ancestor HEAD origin/main
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - run: node scripts/check-plugin-metadata.mjs
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+  validate:
+    needs: identity
+    uses: ./.github/workflows/ci.yml
+    with:
+      full: true
+  publish:
+    needs: [identity, validate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: clearings-*
+          path: packages
+      - name: Prepare the verified archives
+        run: |
+          tag=$(cat plugins/clearings/runtime-version)
+          for target in x86_64-unknown-linux-gnu aarch64-apple-darwin; do
+            (cd "packages/clearings-$target" && sha256sum -c SHA256SUMS)
+            python3 scripts/release-asset.py "packages/clearings-$target/clearings.tar.gz" release "$tag"
+          done
+          cat release/*.sha256 > release/SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-candidate
+          path: release/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish checked native packages
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          case "$RELEASE_TAG" in
+            *-*) gh release create "$RELEASE_TAG" --verify-tag --prerelease --generate-notes release/*.tar.gz release/SHA256SUMS ;;
+            *) gh release create "$RELEASE_TAG" --verify-tag --generate-notes release/*.tar.gz release/SHA256SUMS ;;
+          esac

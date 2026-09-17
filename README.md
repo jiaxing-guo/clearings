@@ -33,7 +33,7 @@ The agent can also handle these requests directly:
 
 ## Install
 
-Use a bundled package from a successful [Packages build](https://github.com/jiaxing-guo/clearings/actions/workflows/package.yml) for the revision you want to try. Your coding agent can download, verify, and install it. The plugin's pinned public runtime is not published yet, so a source-only marketplace installation cannot complete its first download.
+Use a bundled package from a successful [CI build](https://github.com/jiaxing-guo/clearings/actions/workflows/ci.yml) for the revision you want to try. Your coding agent can download, verify, and install it. The plugin's pinned public runtime is not published yet, so a source-only marketplace installation cannot complete its first download.
 
 [Installation](docs/installation.md) explains the working preview-package path and client trust steps. Installed packages include the runtime; users do not need Node, Python, npm, or a Rust compiler.
 

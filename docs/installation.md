@@ -4,7 +4,7 @@ Clearings runs through your existing Codex or Claude Code client. The packaged n
 
 ## Use a bundled preview package
 
-The plugin's pinned public runtime is not published yet. Use a bundled artifact from a successful [Packages build](https://github.com/jiaxing-guo/clearings/actions/workflows/package.yml) for the revision you are reviewing. A source-only marketplace installation cannot download an unavailable release.
+The plugin's pinned public runtime is not published yet. Use a bundled artifact from a successful [CI build](https://github.com/jiaxing-guo/clearings/actions/workflows/ci.yml) for the revision you are reviewing. A source-only marketplace installation cannot download an unavailable release.
 
 Ask your coding agent to handle the installation:
 
