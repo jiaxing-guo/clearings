@@ -16,7 +16,7 @@ function walk(dir) {
 walk(root);
 const home = readFileSync(join(root, 'index.html'), 'utf8');
 const base = home.match(/(?:src|href)="([^"?]*)\/_next\//)?.[1] ?? '';
-const expected = process.env.DOCS_BASE_PATH ?? '/clearings';
+const expected = process.env.DOCS_BASE_PATH ?? '';
 assert.equal(
   base,
   expected,

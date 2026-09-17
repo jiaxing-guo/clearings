@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  DOCS_BASE_PATH: /clearings
+  DOCS_BASE_PATH: ''
 
 jobs:
   documentation:
@@ -55,7 +55,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Configure GitHub Pages
+        id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Verify Pages path matches the build
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          if [ "$PAGES_BASE_PATH" != "$DOCS_BASE_PATH" ]; then
+            echo 'Pages domain path differs from DOCS_BASE_PATH. Rebuild with the configured domain path.' >&2
+            exit 1
+          fi
       - name: Deploy checked site
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
