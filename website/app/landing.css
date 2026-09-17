@@ -416,21 +416,21 @@
   position: relative;
   z-index: 2;
   margin: auto;
-  width: 640px;
+  width: 780px;
   max-width: 100%;
 }
 .marketing .hero h1 {
   font-weight: 650;
-  font-size: clamp(74px, 8.3vw, 116px);
-  line-height: 0.99;
-  letter-spacing: -0.073em;
+  font-size: clamp(48px, 5.5vw, 76px);
+  line-height: 1.08;
+  letter-spacing: -0.06em;
 }
 .marketing .hero h1 span:before {
   content: '';
   position: absolute;
   z-index: -1;
   background: var(--yellow);
-  inset: 17% -7% -4%;
+  inset: 17% -3% -4%;
   transform: rotate(-4deg);
   border-radius: 50% 44% 48% 42%;
   animation: highlight-in 0.8s 0.15s both;
@@ -439,7 +439,7 @@
 .marketing .hero-copy > p {
   margin: 26px auto 0;
   font-size: 19px;
-  max-width: 490px;
+  max-width: 620px;
   line-height: 1.55;
   margin-top: 30px;
 }
@@ -1050,7 +1050,7 @@
 }
 @media (min-width: 1441px) {
   .marketing .hero h1 {
-    font-size: 106px;
+    font-size: 76px;
   }
 }
 @media (max-width: 1050px) {
@@ -1204,10 +1204,10 @@
     left: -4px;
   }
   .marketing .hero-copy {
-    width: 570px;
+    width: 660px;
   }
   .marketing .hero h1 {
-    font-size: 90px;
+    font-size: 60px;
   }
   .marketing .demo-stage {
     grid-template-columns: 220px minmax(0, 1fr);
@@ -1240,6 +1240,9 @@
   }
 }
 @media (max-width: 950px) {
+  .marketing .paper-scene {
+    display: none;
+  }
   .marketing .paper {
     width: 113px;
     padding: 12px;
@@ -1272,14 +1275,14 @@
     top: 175px;
   }
   .marketing .hero-copy {
-    width: 510px;
+    width: 590px;
   }
   .marketing .hero h1 {
-    font-size: 85px;
+    font-size: 52px;
   }
   .marketing .hero-copy > p {
     font-size: 17px;
-    max-width: 400px;
+    max-width: 540px;
   }
   .marketing .demo-stage {
     grid-template-columns: 185px minmax(0, 1fr);
@@ -1332,11 +1335,11 @@
   }
   .marketing .hero h1 {
     line-height: 1.03;
-    font-size: clamp(48px, 15.1vw, 84px);
+    font-size: clamp(26px, 7.8vw, 52px);
   }
   .marketing .hero-copy > p {
     font-size: 17px;
-    max-width: 335px;
+    max-width: 540px;
     margin-top: 30px;
   }
   .marketing .paper-scene {

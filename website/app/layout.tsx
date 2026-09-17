@@ -16,9 +16,12 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: { default: 'Clearings · Useful work, on file.', template: '%s · Clearings' },
+  title: {
+    default: 'Clearings · Turn repeated AI work into reusable code.',
+    template: '%s · Clearings',
+  },
   description:
-    'Turn repeated agent work into reusable code. Clearings helps Codex and Claude Code save, check, and reuse routines on fresh inputs.',
+    "Clearings turns repeatable steps from your local agent's conversations into tested routines your agent can run again on fresh inputs.",
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -30,14 +30,13 @@ export default function Home() {
       <section className="hero">
         <div className="hero-copy">
           <h1>
-            Useful work,
+            Turn repeated AI work
             <br />
-            <span>on file.</span>
+            <span>into reusable code.</span>
           </h1>
           <p>
-            Turn repeated agent work into reusable code.
-            <br />
-            Make room for what comes next.
+            Clearings turns repeatable steps from your local agent's conversations into tested
+            routines your agent can run again on fresh inputs.
           </p>
           <div className="hero-actions">
             <a className="button" href="#example">
