@@ -2,17 +2,20 @@
 
 Clearings runs through your existing Codex or Claude Code client. The packaged native executable includes its TypeScript transformer, JavaScript engine, and storage support. Installed users do not need Node, Python, npm, or a Rust compiler.
 
-## Use a bundled preview package
+## Install the beta release
 
-The plugin's pinned public runtime is not published yet. Use a bundled artifact from a successful [CI build](https://github.com/jiaxing-guo/clearings/actions/workflows/ci.yml) for the revision you are reviewing. A source-only marketplace installation cannot download an unavailable release.
+Download the matching archive and `SHA256SUMS` from [v0.1.0-beta.1](https://github.com/jiaxing-guo/clearings/releases/tag/v0.1.0-beta.1). Ask your coding agent to handle the installation:
 
-Ask your coding agent to handle the installation:
+> Install Clearings v0.1.0-beta.1 for my operating system and coding client. Verify the release checksum, extract the package, and register it with my coding client.
 
-> Install the bundled Clearings package for this revision and my operating system. Verify its checksum and register it with my coding client.
+| Platform            | Release archive                                           |
+| ------------------- | --------------------------------------------------------- |
+| Apple-silicon macOS | `clearings-v0.1.0-beta.1-aarch64-apple-darwin.tar.gz`     |
+| Linux x86-64        | `clearings-v0.1.0-beta.1-x86_64-unknown-linux-gnu.tar.gz` |
 
-The package contains `clearings.tar.gz` and `SHA256SUMS`. Its `build.txt` identifies the exact platform and compiler. Package checks run on Linux x86-64 and macOS; local runtime testing also covers Apple silicon. Use the artifact's actual target. Linux packages built on Ubuntu 24.04 need compatible system libraries. Windows isolation and Linux ARM release validation are not available.
+Each archive extracts to a `clearings` directory containing the executable, both plugins, and `build.txt` with the exact platform and compiler. Linux packages are built on Ubuntu 24.04 and require compatible system libraries. Intel macOS, Windows, and Linux ARM are not included in this release.
 
-The agent verifies the checksum, extracts the package, and registers the extracted directory as a local marketplace. The package carries the executable inside each plugin, so no runtime download is needed.
+The agent verifies the archive against `SHA256SUMS`, extracts it, and registers the extracted directory as a local marketplace. Both plugins contain the executable, so they do not need a separate runtime download. Keep the extracted package in a permanent location while it is registered as the marketplace.
 
 ## Client registration
 
@@ -55,6 +58,6 @@ State is kept separately from the package:
 
 Work normally, then ask **“Make this workflow reusable”** or **“Open the Clearings workbench.”** Say **“Show Clearings status”** if a connection or schedule needs attention.
 
-A source-installed plugin verifies and caches its pinned release on first start once that release is available. Bundled packages are the supported preview path now. Disabling or uninstalling the plugin stops its background learning checks; saved routines and evidence remain stored.
+A source-installed plugin verifies and caches its pinned release on first start. The bundled release packages include that runtime and support offline restart after installation. Disabling or uninstalling the plugin stops its background learning checks; saved routines and evidence remain stored.
 
-See [daily use](default-experience.md), [management](management.md), and [development](development.md). Publication requires a matching release tag and verified packages; opening or merging a normal PR does not publish a release.
+See [daily use](default-experience.md), [management](management.md), and [development](development.md). The beta supports evaluated routines on fresh inputs; acceptance examples do not establish general correctness. Client tool approval can still be required, including on first use.

@@ -38,9 +38,11 @@ The agent can also handle these requests directly:
 
 ## Install
 
-Use a bundled package from a successful [CI build](https://github.com/jiaxing-guo/clearings/actions/workflows/ci.yml) for the revision you want to try. Your coding agent can download, verify, and install it. The plugin's pinned public runtime is not published yet, so a source-only marketplace installation cannot complete its first download.
+Download [v0.1.0-beta.1](https://github.com/jiaxing-guo/clearings/releases/tag/v0.1.0-beta.1) for Apple-silicon macOS or Linux x86-64. Ask your coding agent to verify the checksum and install the bundled plugin for your client.
 
-[Installation](docs/installation.md) explains the working preview-package path and client trust steps. Installed packages include the runtime; users do not need Node, Python, npm, or a Rust compiler.
+> Install Clearings v0.1.0-beta.1 for my operating system and coding client. Verify the release checksum and help me complete the normal client trust steps.
+
+[Installation](docs/installation.md) covers the release packages and client trust steps. Installed packages include the runtime; users do not need Node, Python, npm, or a Rust compiler. This is a beta release; Windows and Linux ARM packages are not available.
 
 ## How it runs
 
