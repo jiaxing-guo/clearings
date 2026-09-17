@@ -262,10 +262,12 @@ impl Store {
     ) -> Result<(Vec<Value>, Option<String>)> {
         let process = codex()?;
         // Filter canonical repository roots after listing, so subdirectory sessions are included.
+        // Empty sourceKinds means interactive sessions only. Include headless user work,
+        // while leaving internal review, compaction and other subagent sessions out.
         let page = process.call(
             2,
             "thread/list",
-            json!({"limit":20,"cursor":cursor,"sortKey":"updated_at","sourceKinds":[]}),
+            json!({"limit":20,"cursor":cursor,"sortKey":"updated_at","sourceKinds":["cli","vscode","exec","appServer"]}),
         )?;
         let threads = page["data"]
             .as_array()

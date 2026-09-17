@@ -44,6 +44,7 @@ if sys.argv[1]=='app-server':
    total=int(os.environ.get('HISTORY_SESSIONS','1'));start=int(v['params'].get('cursor') or 0);end=min(total,start+20)
    descending=os.environ.get('DESC_IDS')
    ids=range(total-start,total-end,-1) if descending else range(start,end)
+   if os.environ.get('HISTORY_SOURCE','cli') not in (v['params'].get('sourceKinds') or ['cli','vscode','appServer']):ids=[]
    r={'data':[{'id':'fixture-session-'+str(i),'cwd':root,'updatedAt':int(os.environ['FIXTURE_TIME'])+i if descending else int(time.time())+int(os.environ.get('NEW_EVIDENCE','0')),'name':'Double integer values'} for i in ids],'nextCursor':str(end) if end<total else None}
   elif method=='thread/read':r={'thread':{'cwd':root,'historyMode':'paginated' if os.environ.get('PAGED_TOTAL') else 'full'}}
   elif method=='thread/items/list':
@@ -156,6 +157,41 @@ else:
         );
         serde_json::from_slice(&out.stdout).unwrap()
     }
+}
+#[test]
+fn conversation_discovery_includes_exec_and_interactive_sources() {
+    let f = Fixture::new();
+    for source in ["cli", "vscode", "exec", "appServer"] {
+        let out = f
+            .command()
+            .env("HISTORY_SOURCE", source)
+            .args(["recent-conversations", "--client", "codex"])
+            .output()
+            .unwrap();
+        assert!(out.status.success());
+        let page: Value = serde_json::from_slice(&out.stdout).unwrap();
+        assert_eq!(
+            page["conversations"].as_array().unwrap().len(),
+            1,
+            "{source}: {page}"
+        );
+        let id = page["conversations"][0]["id"].as_str().unwrap();
+        let read = f.run(&["read-conversation", id]);
+        assert_eq!(read["items"].as_array().unwrap().len(), 3, "{read}");
+        assert_eq!(read["conversation"], id);
+    }
+    let out = f
+        .command()
+        .env("HISTORY_SOURCE", "subAgentReview")
+        .args(["recent-conversations", "--client", "codex"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let page: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(
+        page["conversations"].as_array().unwrap().is_empty(),
+        "{page}"
+    );
 }
 #[test]
 fn client_cycle_freezes_cases_creates_shared_routine_and_deduplicates() {

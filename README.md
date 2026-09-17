@@ -1,5 +1,10 @@
 # Clearings
 
+[![CI](https://github.com/jiaxing-guo/clearings/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jiaxing-guo/clearings/actions/workflows/ci.yml?query=branch%3Amain)
+[![Test coverage: not measured](https://img.shields.io/badge/test_coverage-not_measured-lightgrey)](docs/development.md#validate-changes)
+[![Documentation](https://img.shields.io/badge/docs-clearings.ai-blue)](https://clearings.ai/docs/)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-blue)](LICENSE)
+
 **Turn repeated agent work into reusable routines.**
 
 Clearings helps your coding agent save the parts of a workflow that can run as code: collecting files, parsing records, checking results, and comparing changes. The next time that work comes up, the agent can run a tested routine on fresh inputs.
