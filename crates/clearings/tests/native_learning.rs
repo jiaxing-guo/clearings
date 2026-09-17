@@ -56,27 +56,33 @@ else:
  claude=os.path.basename(sys.argv[0])=='claude'
  if claude:
   assert sys.argv[sys.argv.index('--tools')+1]==''
-  schema=json.loads(sys.argv[sys.argv.index('--json-schema')+1])
+  schema=json.loads(sys.argv[sys.argv.index('--json-schema')+1]) if '--json-schema' in sys.argv else {'properties':{'candidate':{}}}
  else:
   assert '--ephemeral' in sys.argv and '--ignore-user-config' in sys.argv
-  schema=json.load(open(sys.argv[sys.argv.index('--output-schema')+1]))
+  schema=json.load(open(sys.argv[sys.argv.index('--output-schema')+1])) if '--output-schema' in sys.argv else {'properties':{'candidate':{}}}
  assert os.getcwd()!=root
  prompt=sys.stdin.read()
  if os.environ.get('AUTHOR_DELAY'):time.sleep(.3)
  if claude and os.environ.get('AUTH_MISSING'):
   emit({'type':'result','is_error':True,'result':'Not logged in · Please run /login','usage':{'input_tokens':0,'output_tokens':0}})
   sys.exit(1)
- field=next(iter(schema['properties']))
- if field=='candidate_json':
+ field='candidate' if 'candidate' in schema['properties'] else next(iter(schema['properties']))
+ if field=='candidate':
   task={'contract':{'abi':1,'name':'double-integer','description':'Double any integer input','input_schema':{'type':'integer'},'output_schema':{'type':'integer'},'capabilities':[]},'cases':[{'name':str(i),'input':i,'expected':{'status':'completed','output':i*2}} for i in [1,3,5]]}
-  answer=json.dumps({'task':task,'applicability':'X'*4001 if os.environ.get('INVALID_SHARING') else 'Double integer inputs in any project'})
+  answer={'schema_version':1,'candidate':{'task':task,'applicability':'X'*4001 if os.environ.get('INVALID_SHARING') else 'Double integer inputs in any project'}}
+  packet=json.loads(prompt[prompt.index('{'):])
+  repairing='validation_error' in packet
+  if repairing:
+   assert 'conversations' in packet and 'invalid_response' in packet
+   assert packet['validation_error']
+  if os.environ.get('ALWAYS_BAD_CANDIDATE') or (os.environ.get('BAD_CANDIDATE_ONCE') and not repairing):answer={'schema_version':1,'candidate':'not a structured candidate'}
   if os.environ.get('EXPECT_LEARNING_MODE'):
    packet=json.loads(prompt[prompt.index('{'):])
    mode=os.environ['EXPECT_LEARNING_MODE']
    assert packet['learning_mode']==mode
    assert 'one demonstrated mechanical step' in packet['instruction']
    assert 'scheduled' in packet['instruction'] and 'repeated' in packet['instruction']
-   if mode=='scheduled':answer='null'
+   if mode=='scheduled':answer={'schema_version':1,'candidate':None}
 
  else:
   if os.environ.get('CHANGE_PREFS'):
@@ -88,9 +94,9 @@ else:
   if os.environ.get('BAD_SOURCE'):answer='export default async x=>({status:"completed",output:2})'
   if os.environ.get('IMPROVE_SOURCE'):answer=os.environ['IMPROVE_SOURCE']
  if claude:
-  emit({'type':'result','is_error':False,'structured_output':{field:answer},'usage':{'input_tokens':100,'output_tokens':50}})
+  emit({'type':'result','is_error':False,'structured_output':answer if field=='candidate' else {field:answer},'usage':{'input_tokens':100,'output_tokens':50}})
  else:
-  emit({'type':'item.completed','item':{'type':'agent_message','text':json.dumps({field:answer})}})
+  emit({'type':'item.completed','item':{'type':'agent_message','text':json.dumps(answer if field=='candidate' else {field:answer})}})
   emit({'type':'turn.completed','usage':{'input_tokens':100,'output_tokens':50}})
 "#).unwrap();
         fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
@@ -342,7 +348,7 @@ fn explicit_http_connection_uses_the_same_learning_pipeline_and_reserves_its_bud
             assert_eq!(request["model"], "fixture");
             let content = if handled == 0 {
                 let task = json!({"contract":{"abi":1,"name":"http-double","description":"Double integers","input_schema":{"type":"integer"},"output_schema":{"type":"integer"},"capabilities":[]},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":2}},{"name":"two","input":2,"expected":{"status":"completed","output":4}},{"name":"negative","input":-1,"expected":{"status":"completed","output":-2}}]});
-                json!({"candidate_json":json!({"task":task,"applicability":"Double integers"}).to_string()})
+                json!({"schema_version":1,"candidate":{"task":task,"applicability":"Double integers"}})
             } else {
                 json!({"source":"export default async x=>({status:'completed',output:x*2})"})
             };
@@ -395,7 +401,7 @@ fn invalid_sharing_metadata_cannot_leave_a_failed_candidate_active() {
         .unwrap();
     let result: Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(result["status"], "failed");
-    assert_eq!(f.run(&["learning-status"])["requests_today"], 1);
+    assert_eq!(f.run(&["learning-status"])["requests_today"], 2);
     let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
     assert_eq!(
         db.query_row("SELECT count(*) FROM active", [], |r| r.get::<_, i64>(0))
@@ -981,4 +987,75 @@ fn explicit_and_scheduled_extraction_receive_distinct_learning_criteria() {
             if automatic { 1 } else { 2 }
         );
     }
+}
+
+#[test]
+fn malformed_candidate_is_repaired_once_before_acceptance_is_frozen() {
+    let f = Fixture::new();
+    let out = f
+        .command()
+        .arg("learn-now")
+        .env("BAD_CANDIDATE_ONCE", "1")
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let value: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(
+        value["report"]["outcomes"][0]["status"], "created",
+        "{value}"
+    );
+    assert_eq!(f.run(&["learning-status"])["requests_today"], 3);
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    let purposes: Vec<String> = db
+        .prepare("SELECT purpose FROM native_requests ORDER BY id")
+        .unwrap()
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .collect::<rusqlite::Result<_>>()
+        .unwrap();
+    assert_eq!(purposes, vec!["extract", "repair_candidate", "source"]);
+}
+
+#[test]
+fn failed_repair_stops_without_source_or_activation() {
+    let f = Fixture::new();
+    let out = f
+        .command()
+        .arg("learn-now")
+        .env("ALWAYS_BAD_CANDIDATE", "1")
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    let value: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(value.to_string().contains("after one repair"), "{value}");
+    assert_eq!(f.run(&["learning-status"])["requests_today"], 2);
+    assert_eq!(f.run(&["discover"])["routines"], json!([]));
+}
+
+#[test]
+fn repair_consumes_the_existing_daily_allowance() {
+    let f = Fixture::new();
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    db.execute("INSERT OR REPLACE INTO installation(key,body) VALUES('preferences','{\"max_requests_per_day\":2}')",[]).unwrap();
+    drop(db);
+    let out = f
+        .command()
+        .arg("learn-now")
+        .env("BAD_CANDIDATE_ONCE", "1")
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    let value: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(value.to_string().contains("allowance exhausted"), "{value}");
+    assert_eq!(f.run(&["learning-status"])["requests_today"], 2);
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    assert_eq!(
+        db.query_row("SELECT count(*) FROM active", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
 }

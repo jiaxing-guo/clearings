@@ -77,3 +77,11 @@ Observation sampling represents distinct input/outcome pairs and session identit
 An assembled model request above 512 KiB is rejected permanently for that frozen workflow without spending an authoring attempt. Later cycles skip the rejected group and continue considering other work. Budget refusal remains retryable.
 
 Improvement trials with oversized model requests are terminal; actual budget refusals remain retryable. Live recovery also recognizes call-count exhaustion, undeclared capabilities and malformed capability arguments as candidate failures. Missing resources, unavailable workers and endpoint failures do not cause automatic rollback.
+
+## Candidate validation and repair
+
+Automatic proposals use a versioned JSON envelope: `schema_version: 1` and a structured `candidate` object, or `candidate: null` when no workflow qualifies. The host validates the contract, examples, applicability and allowed capabilities before preparing an immutable task.
+
+A malformed proposal receives one repair request containing the validation error and original evidence. Repair shares the existing daily request allowance and configured spending ceiling. A second invalid response stops; source generation does not start. A normal new routine uses two requests, or three when candidate repair is needed. Acceptance criteria are frozen before source generation and are never rewritten to make a failed candidate pass.
+
+Candidate responses use native JSON with host validation because their schemas and examples contain open JSON values that Codex strict output schemas cannot represent. Source responses retain the coding client's constrained string response.

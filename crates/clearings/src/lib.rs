@@ -19,6 +19,7 @@ pub mod native_learning;
 pub mod plugin;
 pub mod project;
 mod prompts;
+mod proposal;
 pub mod reuse;
 pub mod service;
 pub mod store;
