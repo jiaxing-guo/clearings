@@ -63,6 +63,11 @@ try {
   });
   await page.goto(`${origin}${base}/`);
   assert.match(await page.locator('h1').innerText(), /reusable code/);
+  const favicon = page.locator('link[rel="icon"][type="image/svg+xml"]');
+  assert.equal(await favicon.getAttribute('href'), `${base}/favicon.svg`);
+  const iconResponse = await page.request.get(`${origin}${base}/favicon.svg`);
+  assert.equal(iconResponse.status(), 200);
+  assert.match(iconResponse.headers()['content-type'], /image\/svg\+xml/);
   assert(
     (await page.locator('h1').evaluate((e) => parseFloat(getComputedStyle(e).fontSize))) > 40,
     'Landing CSS must load',
@@ -85,7 +90,10 @@ try {
     .locator('.story-tabs [data-state="active"]')
     .filter({ hasText: 'Let it do that again.' })
     .waitFor();
-  await page.getByRole('link', { name: 'Read the docs', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: 'Main', exact: true })
+    .getByRole('link', { name: 'Documentation', exact: true })
+    .click();
   await page.getByRole('heading', { name: 'Clearings guide', exact: true }).waitFor();
   assert.equal(await page.locator('h1').innerText(), 'Clearings guide');
   await page.getByRole('button', { name: /^Search/ }).click();

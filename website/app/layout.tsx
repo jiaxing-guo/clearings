@@ -1,5 +1,6 @@
 import localFont from 'next/font/local';
 import './global.css';
+import { assetPath } from '@/lib/paths';
 import { DocumentationProvider } from '@/components/documentation-provider';
 
 const geist = localFont({
@@ -16,6 +17,7 @@ const geistMono = localFont({
 });
 
 export const metadata = {
+  icons: { icon: { url: assetPath('/favicon.svg'), type: 'image/svg+xml', sizes: 'any' } },
   title: {
     default: 'Clearings · Turn repeated AI work into reusable code.',
     template: '%s · Clearings',
