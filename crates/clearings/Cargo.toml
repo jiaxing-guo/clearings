@@ -15,7 +15,7 @@ jsonschema = { version = "0.33", default-features = false }
 libc = "0.2"
 oxc_allocator = "=0.140.0"
 oxc_parser = "=0.140.0"
-oxc_span = "=0.140.0"
+oxc_span = "=0.149.0"
 oxc_semantic = "=0.140.0"
 oxc_transformer = "=0.140.0"
 oxc_codegen = "=0.140.0"
