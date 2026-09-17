@@ -119,6 +119,7 @@ This metric covers instrumented Rust source, not the website, Python packaging t
 To reproduce locally, install `cargo-llvm-cov` 0.9.1 and the pinned toolchain's `llvm-tools-preview` component, then run:
 
 ```sh
+mkdir -p coverage
 cargo llvm-cov --locked --workspace --lcov --output-path coverage/lcov.info
 ```
 

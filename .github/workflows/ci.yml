@@ -141,6 +141,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
       - name: Measure Rust line coverage
         run: |
+          mkdir -p coverage
           cargo llvm-cov --locked --workspace --lcov --output-path coverage/lcov.info
           cargo llvm-cov report --summary-only | tee coverage/summary.txt
           cat coverage/summary.txt >> "$GITHUB_STEP_SUMMARY"
