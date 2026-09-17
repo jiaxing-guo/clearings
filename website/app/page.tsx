@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Brand } from '@/components/brand';
+import { Brand, BrandMark } from '@/components/brand';
 import { RoutineDemo } from '@/components/landing/routine-demo';
 import { RoutineStory } from '@/components/landing/routine-story';
 import './landing.css';
@@ -23,58 +23,42 @@ export default function Home() {
           Get Clearings
         </Link>
       </header>
-      <div className="product-context">
-        <span>For work worth repeating.</span>
-        <span>Codex · Claude Code</span>
-      </div>
-      <section className="hero">
-        <div className="hero-copy">
-          <h1>
-            Turn repeated AI work
-            <br />
-            <span>into reusable code.</span>
-          </h1>
-          <p>
-            Clearings turns repeatable steps from your local agent's conversations into tested
-            routines your agent can run again on fresh inputs.
-          </p>
-          <div className="hero-actions">
-            <a className="button" href="#example">
-              Try a routine
-              <span aria-hidden={true}>↗</span>
-            </a>
-            <Link className="text-link" href="/docs">
-              Read the docs
-              <span aria-hidden={true}>→</span>
-            </Link>
-          </div>
+      <div className="hero-field">
+        <div className="product-context">
+          <span>For work worth repeating.</span>
+          <span>Codex / Claude Code</span>
         </div>
-        <div className="paper-scene" aria-hidden={true}>
-          <div className="paper input-paper">
-            <span className="paper-label">The work</span>
-            <span className="paper-title">
-              Read.
+        <section className="hero">
+          <div className="hero-copy">
+            <h1>
+              Turn repeated AI work
               <br />
-              Check.
-              <br />
-              Compare.
-            </span>
-            <div className="paper-lines">
-              <i></i>
-              <i></i>
-              <i></i>
+              <span>into reusable code.</span>
+            </h1>
+            <p>
+              Clearings turns repeatable steps from your local agent's conversations into tested
+              routines your agent can run again on fresh inputs.
+            </p>
+            <div className="hero-actions">
+              <Link className="button" href="/docs/installation">
+                Get Clearings <span aria-hidden="true">↗</span>
+              </Link>
+              <a className="text-link" href="#example">
+                Try a routine <span aria-hidden="true">↓</span>
+              </a>
             </div>
-            <span className="paper-caption">research / receipts</span>
           </div>
-          <div className="paper saved-paper">
-            <span className="paper-label">The part you keep</span>
-            <span className="paper-code">{'{ }'}</span>
-            <span className="paper-title">receipt-audit.ts</span>
-            <span className="paper-caption">Ready for the next run</span>
-            <span className="paper-stamp">REUSABLE</span>
+          <div className="hero-emblem" aria-hidden="true">
+            <BrandMark />
+            <span>Good work. Kept.</span>
           </div>
+        </section>
+        <div className="hero-index">
+          <span>01 / Find the repeatable</span>
+          <span>02 / Test the routine</span>
+          <span>03 / Run it again</span>
         </div>
-      </section>
+      </div>
       <div className="demo-stage">
         <div className="sample-intro">
           <span className="sample-note">Take it for a spin</span>
@@ -165,20 +149,13 @@ export default function Home() {
             <span aria-hidden={true}>↗</span>
           </Link>
         </div>
-        <div className="closing-stack" aria-hidden={true}>
-          <div className="closing-file">
-            <span>clearings</span>
-            <strong>
-              Good work.
-              <br />
-              Kept.
-            </strong>
-            <small>Ready when it fits.</small>
-          </div>
-        </div>
+        <BrandMark className="closing-mark" />
       </section>
       <footer className="site-footer">
-        <span className="footer-word">clearings</span>
+        <div className="footer-brand">
+          <BrandMark />
+          <span className="footer-word">clearings</span>
+        </div>
         <div>
           <Link href="/docs">Documentation</Link>
           <a href="https://github.com/jiaxing-guo/clearings">Source code ↗</a>
