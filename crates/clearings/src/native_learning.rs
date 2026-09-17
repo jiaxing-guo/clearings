@@ -1035,7 +1035,7 @@ impl Store {
         scope: Scope,
         prefs: &Preferences,
     ) -> Result<Option<(String, String, String)>> {
-        let mut statement=self.db.prepare("SELECT t.id,a.version,p.project,t.body FROM objects t JOIN active a ON a.task=t.id JOIN project_routines p ON p.task=t.id AND p.project=json_extract(t.body,'$.project') JOIN routine_usage u ON u.task=t.id AND u.version=a.version WHERE t.kind='task' AND p.paused=0 AND p.excluded=0 AND json_array_length(t.body,'$.cases') BETWEEN 3 AND 8 AND (?1 OR p.project=?2 OR (u.project=?2 AND EXISTS(SELECT 1 FROM routine_library WHERE task=t.id))) AND u.day>=date('now','-89 days') GROUP BY t.id,a.version,p.project HAVING sum(u.calls)>=3 ORDER BY sum(u.calls) DESC,t.id LIMIT 20")?;
+        let mut statement=self.db.prepare("SELECT t.id,a.version,p.project,t.body FROM objects t JOIN active a ON a.task=t.id JOIN project_routines p ON p.task=t.id AND p.project=json_extract(t.body,'$.project') JOIN routine_usage u ON u.task=t.id AND u.version=a.version WHERE t.kind='task' AND p.paused=0 AND p.excluded=0 AND json_array_length(t.body,'$.cases') BETWEEN 3 AND 8 AND (?1 OR p.project=?2 OR (u.project=?2 AND EXISTS(SELECT 1 FROM routine_library WHERE task=t.id))) AND u.day>=date('now','-89 days') GROUP BY t.id,a.version,p.project HAVING sum(u.reuse_calls)>=3 ORDER BY sum(u.reuse_calls) DESC,t.id LIMIT 20")?;
         let rows = statement.query_map(params![scope == Scope::All, project], |r| {
             Ok((
                 r.get::<_, String>(0)?,

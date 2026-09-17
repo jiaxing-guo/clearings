@@ -3,6 +3,7 @@ pub mod api;
 pub mod background;
 mod blocking_io;
 pub mod capabilities;
+mod catalog;
 mod client_process;
 pub mod contract;
 pub mod conversations;

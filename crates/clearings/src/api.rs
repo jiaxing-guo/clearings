@@ -30,6 +30,9 @@ pub enum Operation {
         #[serde(default)]
         scope: crate::conversations::Scope,
     },
+    Library {
+        after: Option<String>,
+    },
     FindRoutines {
         query: String,
     },
@@ -42,6 +45,8 @@ pub enum Operation {
         part: Option<String>,
     },
     RunRoutine {
+        #[serde(default)]
+        purpose: crate::store::RunPurpose,
         id: String,
         input: Value,
         expected_version: Option<String>,
@@ -236,6 +241,12 @@ impl Api {
                 &evidence_ids,
                 scope,
             )?,
+            Operation::Library { after } => self.store.routine_library_page(
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                after.as_deref(),
+            )?,
             Operation::FindRoutines { query } => self.store.find_routines(
                 self.project
                     .as_deref()
@@ -260,6 +271,7 @@ impl Api {
                 part.as_deref(),
             )?,
             Operation::RunRoutine {
+                purpose,
                 id,
                 input,
                 expected_version,
@@ -278,7 +290,7 @@ impl Api {
                         anyhow::bail!("provide expected_version and expected_capabilities together")
                     }
                 };
-                self.store.run_in_project(
+                self.store.run_selected(
                     &self.executable,
                     &id,
                     input,
@@ -288,7 +300,7 @@ impl Api {
                             .as_deref()
                             .ok_or_else(|| anyhow::anyhow!("select a project"))?,
                     ),
-                    expected,
+                    crate::store::RunOptions { expected, purpose },
                 )?
             }
             Operation::PauseShared { id, paused } => self.store.pause_shared(

@@ -90,6 +90,7 @@ fn incompatible_improvement_keeps_error_explicit_and_does_not_block_retention() 
     )
     .unwrap();
     conn.execute("INSERT INTO runs(version,input_digest,report,created_at,project) VALUES(?1,'input','{}','2000-01-01',?2)", rusqlite::params![old_id,p.id]).unwrap();
+    conn.execute("INSERT INTO routine_usage(task,version,project,day,calls,completed,handoffs,failed,elapsed_ms,capability_calls,last_used,reuse_calls,test_calls) VALUES(?1,?2,?3,date('now'),3,3,0,0,0,0,datetime('now'),3,0)",rusqlite::params![task_id,old_id,p.id]).unwrap();
     let result = store.background_tick(&p.id, exe).unwrap();
     assert_eq!(result["status"], "failed", "{result}");
     assert!(

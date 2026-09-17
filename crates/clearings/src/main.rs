@@ -70,6 +70,10 @@ enum Action {
         #[arg(long)]
         all: bool,
     },
+    Library {
+        #[arg(long)]
+        after: Option<String>,
+    },
     FindRoutines {
         query: String,
     },
@@ -84,6 +88,8 @@ enum Action {
         part: Option<String>,
     },
     RunRoutine {
+        #[arg(long, value_enum, default_value = "reuse")]
+        purpose: clearings::store::RunPurpose,
         id: String,
         #[arg(long)]
         input: PathBuf,
@@ -604,6 +610,7 @@ fn main() -> Result<()> {
                         clearings::conversations::Scope::Project
                     },
                 },
+                Action::Library { after } => Operation::Library { after },
                 Action::FindRoutines { query } => Operation::FindRoutines { query },
                 Action::ShareRoutine {
                     name,
@@ -613,7 +620,8 @@ fn main() -> Result<()> {
                     applicability,
                 },
                 Action::LibraryRoutine { id, part } => Operation::LibraryRoutine { id, part },
-                Action::RunRoutine { id, input } => Operation::RunRoutine {
+                Action::RunRoutine { id, input, purpose } => Operation::RunRoutine {
+                    purpose,
                     id,
                     input: read(input)?,
                     expected_version: None,
