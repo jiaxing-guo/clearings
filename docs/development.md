@@ -59,7 +59,7 @@ Lint-staged backs up changes, hides unstaged tracked edits, then restores them. 
 npm run docs:dev
 ```
 
-The development server uses the site root. Static exports use `/clearings` by default. Set the same `DOCS_BASE_PATH` for build and check when using another prefix.
+Development and static exports use the site root by default, matching `clearings.ai`. Set the same `DOCS_BASE_PATH` for build and check when hosting under a subpath.
 
 Keep relative links valid and use one H1 per page. The generator records source hashes and links each page to its Markdown source. The site owns presentation, navigation and search; product facts stay in authored documentation.
 
@@ -69,9 +69,9 @@ The documentation keeps Fumadocs navigation, static search, anchors, and code-co
 
 ### Public site deployment
 
-The [public site](https://jiaxing-guo.github.io/clearings/) is hosted by GitHub Pages. The Documentation workflow builds and checks the static export on pull requests. Successful pushes to `main` publish `website/out` through the `github-pages` environment. A manual workflow run on `main` can redeploy the site.
+The [public site](https://clearings.ai/) is hosted by GitHub Pages. The Documentation workflow builds and checks the static export on pull requests. Successful pushes to `main` publish `website/out` through the `github-pages` environment. A manual workflow run on `main` can redeploy the site.
 
-GitHub Pages must use **GitHub Actions** as its publishing source. The workflow fixes `DOCS_BASE_PATH` to `/clearings` for both build and validation. Only the deployment job receives Pages and identity-token write permissions; pull requests do not upload or deploy the site. Concurrent deployments are serialized.
+GitHub Pages must use **GitHub Actions** as its publishing source. The workflow uses an empty `DOCS_BASE_PATH` for both build and validation because the custom domain serves the site at `/`. Before publishing, it verifies that GitHub Pages reports the same base path. Only the deployment job receives Pages and identity-token write permissions; pull requests do not upload or deploy the site. Concurrent deployments are serialized.
 
 Do not commit generated exports or use a separate publishing branch. Website deployment does not publish native runtime packages.
 
