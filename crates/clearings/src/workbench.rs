@@ -168,7 +168,7 @@ impl Workbench {
                     {
                         break;
                     }
-                    std::thread::sleep(Duration::from_millis(50));
+                    wait_for_connection(&listener)?;
                 }
                 Err(e) => return Err(e.into()),
             }
@@ -468,6 +468,24 @@ fn publish_ready(session: &Path, value: &Value) -> Result<()> {
     file.write_all(&serde_json::to_vec(value)?)?;
     file.as_file().sync_all()?;
     file.persist_noclobber(session.join("ready.json"))?;
+    Ok(())
+}
+
+fn wait_for_connection(listener: &TcpListener) -> Result<()> {
+    use std::os::fd::AsRawFd;
+    let mut descriptor = libc::pollfd {
+        fd: listener.as_raw_fd(),
+        events: libc::POLLIN,
+        revents: 0,
+    };
+    // Wake immediately for a connection and periodically for idle/lifetime checks.
+    let result = unsafe { libc::poll(&mut descriptor, 1, 500) };
+    if result < 0 {
+        let error = std::io::Error::last_os_error();
+        if error.kind() != std::io::ErrorKind::Interrupted {
+            return Err(error.into());
+        }
+    }
     Ok(())
 }
 

@@ -76,7 +76,7 @@ fn incomplete_background_authorization_is_rejected_and_legacy_database_migrates(
     assert_eq!(
         conn.pragma_query_value(None, "user_version", |r| r.get::<_, i32>(0))
             .unwrap(),
-        14
+        15
     );
     conn.pragma_update(None, "user_version", 99).unwrap();
     assert!(Store::open(&db).is_err());
@@ -117,4 +117,41 @@ fn populated_v7_runs_backfill_ownership_and_daily_usage_once() {
         let totals=db.query_row("SELECT calls,completed,handoffs,failed,elapsed_ms,capability_calls FROM routine_usage WHERE task='task' AND project='p' AND day='2026-09-15'",[],|r|Ok((r.get::<_,i64>(0)?,r.get::<_,i64>(1)?,r.get::<_,i64>(2)?,r.get::<_,i64>(3)?,r.get::<_,i64>(4)?,r.get::<_,i64>(5)?))).unwrap();
         assert_eq!(totals, (3, 1, 1, 1, 13, 3));
     }
+}
+
+#[test]
+fn opening_a_current_store_does_not_require_a_schema_write_lock() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("state.db");
+    drop(Store::open(&path).unwrap());
+    let writer = rusqlite::Connection::open(&path).unwrap();
+    writer.execute_batch("BEGIN IMMEDIATE; INSERT INTO installation(key,body) VALUES('preferences','{\"learning_enabled\":false}');").unwrap();
+    let reader = Store::open(&path).unwrap();
+    assert!(
+        reader.preferences().unwrap().learning_enabled,
+        "uncommitted preferences leaked"
+    );
+    writer.execute_batch("COMMIT").unwrap();
+    assert!(
+        !reader.preferences().unwrap().learning_enabled,
+        "preferences were cached across calls"
+    );
+}
+
+#[test]
+fn version_fourteen_stores_gain_recent_call_indexes() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("state.db");
+    drop(clearings::store::Store::open(&path).unwrap());
+    let db = rusqlite::Connection::open(&path).unwrap();
+    db.execute_batch("DROP INDEX objects_version_task; DROP INDEX runs_project_version_page; PRAGMA user_version=14;").unwrap();
+    drop(db);
+    drop(clearings::store::Store::open(&path).unwrap());
+    let db = rusqlite::Connection::open(&path).unwrap();
+    assert_eq!(
+        db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))
+            .unwrap(),
+        15
+    );
+    assert_eq!(db.query_row("SELECT count(*) FROM sqlite_master WHERE type='index' AND name IN ('objects_version_task','runs_project_version_page')",[],|r|r.get::<_,u32>(0)).unwrap(),2);
 }
