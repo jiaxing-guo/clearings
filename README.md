@@ -45,6 +45,7 @@ Acceptance checks establish behavior on recorded examples. They do not prove gen
 
 ## Learn more
 
+- [Website](https://jiaxing-guo.github.io/clearings/) · [Online documentation](https://jiaxing-guo.github.io/clearings/docs/)
 - [Documentation](docs/README.md)
 - [Daily use](docs/default-experience.md)
 - [Personal workbench](docs/workbench.md)

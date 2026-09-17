@@ -67,6 +67,14 @@ The landing page lives in `website/app/page.tsx`, with styles in `website/app/la
 
 The documentation keeps Fumadocs navigation, static search, anchors, and code-copy controls. Shared typography and reading styles live in `website/app/global.css`. Geist fonts are bundled with their license under `website/fonts/`. Keep both surfaces in the same light theme and respect reduced-motion preferences.
 
+### Public site deployment
+
+The [public site](https://jiaxing-guo.github.io/clearings/) is hosted by GitHub Pages. The Documentation workflow builds and checks the static export on pull requests. Successful pushes to `main` publish `website/out` through the `github-pages` environment. A manual workflow run on `main` can redeploy the site.
+
+GitHub Pages must use **GitHub Actions** as its publishing source. The workflow fixes `DOCS_BASE_PATH` to `/clearings` for both build and validation. Only the deployment job receives Pages and identity-token write permissions; pull requests do not upload or deploy the site. Concurrent deployments are serialized.
+
+Do not commit generated exports or use a separate publishing branch. Website deployment does not publish native runtime packages.
+
 ## Prompts and skills
 
 Host instructions live in `crates/clearings/prompts/` and are embedded at build time. Keep structured contracts, cases and evidence as data in their calling modules. Short tool descriptions stay beside their schemas.
