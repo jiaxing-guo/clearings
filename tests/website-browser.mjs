@@ -86,6 +86,7 @@ try {
     .filter({ hasText: 'Let it do that again.' })
     .waitFor();
   await page.getByRole('link', { name: 'Read the docs', exact: true }).click();
+  await page.getByRole('heading', { name: 'Clearings guide', exact: true }).waitFor();
   assert.equal(await page.locator('h1').innerText(), 'Clearings guide');
   await page.getByRole('button', { name: /^Search/ }).click();
   await page.getByRole('textbox', { name: 'Search', exact: true }).fill('workbench');
@@ -93,6 +94,7 @@ try {
     .getByRole('button', { name: 'Clearings Personal automation workbench', exact: true })
     .click();
   await page.waitForURL(`${origin}${base}/docs/workbench/`);
+  await page.getByRole('heading', { name: 'Personal automation workbench', exact: true }).waitFor();
   assert.equal(await page.locator('h1').innerText(), 'Personal automation workbench');
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 });
