@@ -20,6 +20,9 @@ jobs:
   full-validation:
     if: github.event_name != 'pull_request'
     uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      id-token: write
     with:
       full: true
   website:
