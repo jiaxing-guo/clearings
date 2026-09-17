@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clearings Workbench</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">Clearings<span>Workbench</span></a
+      ><span id="project-name">Your local routine library</span>
+    </header>
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Routine library">
+        <div class="sidebar-heading">
+          <h1>Your routines</h1>
+          <button id="refresh" class="quiet">Refresh</button>
+        </div>
+        <label for="filter">Find a routine</label
+        ><input id="filter" type="search" placeholder="Name or description" />
+        <p class="subtle">Examples, recent use, and controls in one place.</p>
+        <div id="library" aria-live="polite"><p>Loading your library…</p></div>
+        <button id="more" class="quiet" hidden>Load more</button>
+        <p class="sidebar-note">
+          Test calls are separate from real reuse. Counts alone do not establish savings.
+        </p>
+      </aside>
+      <main id="detail">
+        <section class="welcome">
+          <p class="kicker">Reusable work, within reach</p>
+          <h2>Try it. Inspect it.<br />Make it yours.</h2>
+          <p>Select a routine to explore its examples, try a new input, or describe a change.</p>
+        </section>
+      </main>
+    </div>
+    <div id="notice" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>

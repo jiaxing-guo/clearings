@@ -21,13 +21,15 @@
     "dev:setup": "node scripts/setup-dev.mjs",
     "lint": "node scripts/lint.mjs",
     "test:hooks": "node --test tests/check-hooks.test.mjs",
-    "web:typecheck": "node scripts/prepare-docs.mjs && npm --prefix website run typegen && npm --prefix website run typecheck"
+    "web:typecheck": "node scripts/prepare-docs.mjs && npm --prefix website run typegen && npm --prefix website run typecheck",
+    "test:workbench": "cargo build --locked && node tests/workbench-browser.mjs"
   },
   "devDependencies": {
     "@typescript-eslint/parser": "8.70.0",
     "eslint": "10.10.0",
     "husky": "9.1.7",
     "lint-staged": "17.5.1",
+    "playwright": "1.62.1",
     "prettier": "3.9.6"
   },
   "license": "Apache-2.0"

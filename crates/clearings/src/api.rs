@@ -2,7 +2,7 @@ use crate::{
     contract::Policy,
     store::{Store, Task},
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -30,6 +30,7 @@ pub enum Operation {
         #[serde(default)]
         scope: crate::conversations::Scope,
     },
+    Workbench,
     Library {
         after: Option<String>,
     },
@@ -161,8 +162,11 @@ fn history_days() -> u32 {
 }
 impl Api {
     pub fn call(&mut self, op: Operation) -> Result<Value> {
+        let mut project_revision = None;
         if let Some(project) = &self.project {
-            let grants = self.store.project(project)?.settings.grants;
+            let selected = self.store.project(project)?;
+            project_revision = Some(selected.revision);
+            let grants = selected.settings.grants;
             if !matches!(
                 op,
                 Operation::ProjectStatus
@@ -188,12 +192,15 @@ impl Api {
                 .check_version_scope(self.project.as_deref(), version)?,
             Operation::Inspect { id } => {
                 let inspected = self.store.inspect(id)?;
-                if inspected["kind"] == "version" {
-                    self.store
-                        .check_version_scope(self.project.as_deref(), id)?;
+                let task = if inspected["kind"] == "version" {
+                    inspected["object"]["task"]
+                        .as_str()
+                        .ok_or_else(|| anyhow::anyhow!("version lacks its task"))?
                 } else {
-                    self.store.check_task_scope(self.project.as_deref(), id)?;
-                }
+                    id.as_str()
+                };
+                self.store
+                    .check_task_read_scope(self.project.as_deref(), task)?;
             }
             Operation::PrepareTask { task } => anyhow::ensure!(
                 task.project.is_none(),
@@ -240,6 +247,14 @@ impl Api {
                 task,
                 &evidence_ids,
                 scope,
+            )?,
+            Operation::Workbench => crate::workbench::launch(
+                &self.store,
+                self.project
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("select a project"))?,
+                &self.executable,
+                project_revision.context("select a project")?,
             )?,
             Operation::Library { after } => self.store.routine_library_page(
                 self.project
@@ -300,7 +315,11 @@ impl Api {
                             .as_deref()
                             .ok_or_else(|| anyhow::anyhow!("select a project"))?,
                     ),
-                    crate::store::RunOptions { expected, purpose },
+                    crate::store::RunOptions {
+                        expected,
+                        purpose,
+                        capture_fixtures: false,
+                    },
                 )?
             }
             Operation::PauseShared { id, paused } => self.store.pause_shared(

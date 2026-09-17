@@ -9,6 +9,14 @@ use serde_json::{Value, json};
 use std::path::Path;
 
 impl Store {
+    pub(crate) fn check_task_read_scope(&self, project: Option<&str>, id: &str) -> Result<()> {
+        let task: Task = self.get("task", id)?;
+        ensure!(
+            task.project.as_deref() == project,
+            "task belongs to a different project"
+        );
+        Ok(())
+    }
     pub fn check_task_scope(&self, project: Option<&str>, id: &str) -> Result<()> {
         if let Some(project) = project {
             return self.owns_task(project, id);

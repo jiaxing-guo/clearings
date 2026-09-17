@@ -42,10 +42,20 @@ impl Store {
                 )?;
             }
             Control::Resume => {
-                self.db.execute(
-                    "UPDATE project_routines SET paused=0 WHERE project=?1 AND name=?2",
-                    params![project, name],
+                let tx = self
+                    .db
+                    .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+                ensure!(tx.execute(
+                    "UPDATE project_routines SET paused=0 WHERE project=?1 AND name=?2 AND task=?3",
+                    params![project, name, task],
+                )? == 1, "routine changed; refresh before resuming");
+                // The shared-pause API can also have been used by the owner. Resume
+                // clears this project's pause without changing receiving projects.
+                tx.execute(
+                    "UPDATE library_controls SET paused=0 WHERE project=?1 AND task=?2",
+                    params![project, task],
                 )?;
+                tx.commit()?;
             }
             Control::Exclude => {
                 self.db.execute(
@@ -89,7 +99,15 @@ impl Store {
                     )
                     .context("no previous automatic version is available")?;
                 let version: Version = self.get("version", &previous)?;
-                ensure!(version.task == task, "rollback belongs to another task");
+                if version.task != task {
+                    return self.undo_requirement_revision(
+                        project,
+                        &task,
+                        expected_active
+                            .context("supply the current active version before rollback")?,
+                        &previous,
+                    );
+                }
                 ensure!(
                     version.engine == crate::store::ENGINE
                         && self.inspect(&previous)?["evaluation"]["accepted"] == true,
