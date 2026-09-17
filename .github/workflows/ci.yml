@@ -117,6 +117,48 @@ jobs:
           path: ${{ runner.temp }}/linux-binary.tar.gz
           retention-days: 1
           if-no-files-found: error
+  coverage:
+    needs: [plan, quality]
+    if: needs.plan.outputs.runtime == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RUST_TEST_THREADS: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: rustup component add llvm-tools-preview
+      - uses: taiki-e/install-action@26e9283f268b880168bdbd2c545dfcd60ec2c6ab # v2
+        with:
+          tool: cargo-llvm-cov@0.9.1
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: coverage-x86_64-unknown-linux-gnu
+          save-if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+      - name: Measure Rust line coverage
+        run: |
+          cargo llvm-cov --locked --workspace --lcov --output-path coverage/lcov.info
+          cargo llvm-cov report --summary-only | tee coverage/summary.txt
+          cat coverage/summary.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rust-coverage
+          path: coverage/
+          retention-days: 30
+          if-no-files-found: error
+      - name: Publish coverage to Codecov
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
+        with:
+          use_oidc: true
+          files: coverage/lcov.info
+          disable_search: true
+          flags: rust-linux
+          fail_ci_if_error: true
   workbench:
     needs: [plan, runtime]
     if: needs.plan.outputs.workbench == 'true'
@@ -187,7 +229,7 @@ jobs:
   required:
     name: CI / required
     if: always()
-    needs: [plan, quality, runtime, workbench, packages]
+    needs: [plan, quality, runtime, workbench, packages, coverage]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

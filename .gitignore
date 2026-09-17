@@ -27,3 +27,5 @@ __pycache__/
 
 # Local CI diagnostics.
 .ci-artifacts/
+
+/coverage/

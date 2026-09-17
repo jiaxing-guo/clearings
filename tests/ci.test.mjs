@@ -62,6 +62,7 @@ function needs(required) {
       outputs: Object.fromEntries(Object.keys(full).map((k) => [k, String(required)])),
     },
     quality: { result: 'success' },
+    coverage: { result: required ? 'success' : 'skipped' },
     ...Object.fromEntries(
       Object.keys(full).map((k) => [k, { result: required ? 'success' : 'skipped' }]),
     ),
@@ -80,4 +81,15 @@ test('gate accepts only planned successful jobs or intentional skips', () => {
   assert(failedChecks(n).includes('plan'));
   delete n.plan.outputs.workbench;
   assert(failedChecks(n).includes('workbench: missing plan'));
+});
+
+test('coverage must pass when runtime validation is planned', () => {
+  for (const state of ['failure', 'cancelled', 'skipped', undefined]) {
+    const n = needs(true);
+    n.coverage.result = state;
+    assert(failedChecks(n).includes('coverage'));
+  }
+  const n = needs(false);
+  n.coverage.result = 'success';
+  assert(failedChecks(n).includes('coverage'));
 });

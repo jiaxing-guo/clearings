@@ -27,6 +27,9 @@ jobs:
   validate:
     needs: identity
     uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      id-token: write
     with:
       full: true
   website:

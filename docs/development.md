@@ -108,6 +108,20 @@ The `CI / required` job rejects failures, cancellations, missing plans, and unex
 
 `website.yml` builds all authored pages and runs browser smoke tests against the static export before its `Website / required` check passes. Failed browser runs retain a screenshot and trace. Main deployments then verify the public HTML, referenced scripts/stylesheets, documentation, and search index with bounded retries. Validation invoked by Release or Maintenance cannot deploy the site.
 
+### Test coverage
+
+The CI coverage job measures Rust line coverage on Linux with pinned `cargo-llvm-cov`. It runs when native validation is planned and contributes to `CI / required`. CI retains the LCOV report and summary as the `rust-coverage` artifact for 30 days.
+
+Codecov receives the report using GitHub OIDC credentials. The README badge shows the latest reported coverage for `main`; it is not a count of passing tests. Fork pull requests measure coverage and retain artifacts but do not upload. Documentation-only changes keep the previous native coverage result.
+
+This metric covers instrumented Rust source, not the website, Python packaging tools, generated TypeScript routines, or platform-specific macOS paths. Isolated workers clear their environment and cannot write coverage profiles outside the sandbox; coverage can therefore undercount worker execution. Keep isolation intact rather than granting profile writes for a higher percentage. Tests remain the correctness gate; no minimum percentage is imposed yet.
+
+To reproduce locally, install `cargo-llvm-cov` 0.9.1 and the pinned toolchain's `llvm-tools-preview` component, then run:
+
+```sh
+cargo llvm-cov --locked --workspace --lcov --output-path coverage/lcov.info
+```
+
 ### Dependency maintenance
 
 Dependabot checks Actions, Cargo, both npm projects, and Python development requirements each Monday. Routine minor and patch updates are grouped by ecosystem; security updates have separate groups. Major library upgrades remain separate, and no dependency PR merges automatically. The toolchain remains pinned until an explicit update passes validation.

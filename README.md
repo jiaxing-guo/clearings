@@ -1,7 +1,7 @@
 # Clearings
 
 [![CI](https://github.com/jiaxing-guo/clearings/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jiaxing-guo/clearings/actions/workflows/ci.yml?query=branch%3Amain)
-[![Test coverage: not measured](https://img.shields.io/badge/test_coverage-not_measured-lightgrey)](docs/development.md#validate-changes)
+[![Rust coverage](https://codecov.io/gh/jiaxing-guo/clearings/branch/main/graph/badge.svg)](https://app.codecov.io/gh/jiaxing-guo/clearings)
 [![Documentation](https://img.shields.io/badge/docs-clearings.ai-blue)](https://clearings.ai/docs/)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-blue)](LICENSE)
 

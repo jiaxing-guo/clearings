@@ -3,8 +3,8 @@ import { pathToFileURL } from 'node:url';
 export function failedChecks(needs) {
   const failed = [];
   for (const job of ['plan', 'quality']) if (needs[job]?.result !== 'success') failed.push(job);
-  for (const job of ['runtime', 'workbench', 'packages']) {
-    const expected = needs.plan?.outputs?.[job];
+  for (const job of ['runtime', 'workbench', 'packages', 'coverage']) {
+    const expected = needs.plan?.outputs?.[job === 'coverage' ? 'runtime' : job];
     if (!['true', 'false'].includes(expected)) failed.push(`${job}: missing plan`);
     else if (needs[job]?.result !== (expected === 'true' ? 'success' : 'skipped')) failed.push(job);
   }
