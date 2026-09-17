@@ -17,7 +17,7 @@ oxc_allocator = "=0.140.0"
 oxc_parser = "=0.140.0"
 oxc_span = "=0.140.0"
 oxc_semantic = "=0.140.0"
-oxc_transformer = "=0.140.0"
+oxc_transformer = "=0.149.0"
 oxc_codegen = "=0.140.0"
 rquickjs = { version = "=0.13.0", features = ["loader"] }
 serde = { version = "1.0", features = ["derive"] }
