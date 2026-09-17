@@ -1,0 +1,93 @@
+name: Maintenance
+on:
+  pull_request:
+    paths:
+      - .github/workflows/maintenance.yml
+      - .github/dependabot.yml
+      - Cargo.lock
+      - package-lock.json
+      - website/package-lock.json
+      - requirements-dev.txt
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: maintenance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  full-validation:
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/ci.yml
+    with:
+      full: true
+  website:
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/website.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+  rust-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: taiki-e/install-action@26e9283f268b880168bdbd2c545dfcd60ec2c6ab # v2
+        with:
+          tool: cargo-audit@0.22.2
+      - run: cargo audit --file Cargo.lock
+  javascript-audit:
+    strategy:
+      fail-fast: false
+      matrix:
+        directory: ['.', website]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - run: npm audit --package-lock-only --audit-level=high
+        working-directory: ${{ matrix.directory }}
+  python-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: |
+          python3 -m venv "$RUNNER_TEMP/audit"
+          "$RUNNER_TEMP/audit/bin/pip" install pip-audit==2.10.1
+          "$RUNNER_TEMP/audit/bin/pip-audit" -r requirements-dev.txt
+  rust-compatibility:
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: ['1.98.0', stable]
+    continue-on-error: ${{ matrix.toolchain == 'stable' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RUST_TOOLCHAIN: ${{ matrix.toolchain }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          shared-key: compatibility-${{ matrix.toolchain }}
+          save-if: false
+      - run: cargo +"$RUST_TOOLCHAIN" check --locked --workspace --all-targets
+      - name: Report future-toolchain failure
+        if: failure() && matrix.toolchain == 'stable'
+        run: echo '::warning::The latest stable Rust compatibility check failed. The pinned release toolchain is validated separately.'

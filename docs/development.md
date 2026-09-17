@@ -107,3 +107,9 @@ The `CI / required` job rejects failures, cancellations, missing plans, and unex
 `release.yml` verifies main ancestry and plugin version pins, then invokes full CI on the tagged commit before naming and publishing its verified archives. A manual Release run validates and uploads a release candidate without publishing. Live coding-client acceptance remains a separate release requirement.
 
 `website.yml` builds all authored pages and runs browser smoke tests against the static export before its `Website / required` check passes. Failed browser runs retain a screenshot and trace. Main deployments then verify the public HTML, referenced scripts/stylesheets, documentation, and search index with bounded retries. Validation invoked by Release or Maintenance cannot deploy the site.
+
+### Dependency maintenance
+
+Dependabot checks Actions, Cargo, both npm projects, and Python development requirements each Monday. Routine minor and patch updates are grouped by ecosystem; security updates have separate groups. Major library upgrades remain separate, and no dependency PR merges automatically. The toolchain remains pinned until an explicit update passes validation.
+
+`maintenance.yml` runs weekly or manually. Its dependency audits also run on dependency-lock and maintenance-configuration pull requests. It invokes full CI and website validation without publishing, audits Rust, JavaScript and Python dependencies, and checks the minimum declared Rust version. The latest stable Rust check is informational; its failure emits a warning while release validation continues to use the pinned toolchain. Audit findings fail their maintenance jobs rather than being silently ignored. Main branch protection requires `CI / required` and `Website / required`, with no mandatory human reviewer count for solo maintenance.
