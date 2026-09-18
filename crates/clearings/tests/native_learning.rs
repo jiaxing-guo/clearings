@@ -69,10 +69,18 @@ else:
   sys.exit(1)
  field='candidate' if 'candidate' in schema['properties'] else next(iter(schema['properties']))
  if field=='candidate':
-  task={'contract':{'abi':1,'name':'double-integer','description':'Double any integer input','input_schema':{'type':'integer'},'output_schema':{'type':'integer'},'capabilities':[]},'cases':[{'name':str(i),'input':i,'expected':{'status':'completed','output':i*2}} for i in [1,3,5]]}
-  answer={'schema_version':1,'candidate':{'task':task,'applicability':'X'*4001 if os.environ.get('INVALID_SHARING') else 'Double integer inputs in any project'}}
+  name='double-integer-values' if os.environ.get('RENAMED_CANDIDATE') else 'double-integer'
+  task={'contract':{'abi':1,'name':name,'description':'Double any integer input','input_schema':{'type':'integer'},'output_schema':{'type':'integer'},'capabilities':[]},'cases':[{'name':str(i),'input':i,'expected':{'status':'completed','output':i*2}} for i in [1,3,5]]}
+  answer={'schema_version':1,'candidate':{'decision':'create','task':task,'applicability':'X'*4001 if os.environ.get('INVALID_SHARING') else 'Double integer inputs in any project'}}
   packet=json.loads(prompt[prompt.index('{'):])
   repairing='validation_error' in packet
+  if os.environ.get('EXPECT_CATALOG'):
+   listed=[r['name'] for r in packet['existing_routines']]
+   assert os.environ['EXPECT_CATALOG'] in listed,listed
+   for r in packet['existing_routines']:assert set(r)=={'name','description','capabilities','input_keys','state'},r
+   assert 'reuse' in packet['instruction'] and 'existing_routines' in packet['instruction']
+   answer={'schema_version':1,'candidate':{'decision':'reuse','existing':os.environ['EXPECT_CATALOG']}}
+  if os.environ.get('RENAMED_CANDIDATE'):assert 'existing_routines' in packet
   if repairing:
    assert 'conversations' in packet and 'invalid_response' in packet
    assert packet['validation_error']
@@ -81,6 +89,7 @@ else:
    packet=json.loads(prompt[prompt.index('{'):])
    mode=os.environ['EXPECT_LEARNING_MODE']
    assert packet['learning_mode']==mode
+   assert 'existing_routines' not in packet
    assert 'one demonstrated mechanical step' in packet['instruction']
    assert 'scheduled' in packet['instruction'] and 'repeated' in packet['instruction']
    for page in packet['conversations']:
@@ -388,7 +397,7 @@ fn explicit_http_connection_uses_the_same_learning_pipeline_and_reserves_its_bud
             assert_eq!(request["model"], "fixture");
             let content = if handled == 0 {
                 let task = json!({"contract":{"abi":1,"name":"http-double","description":"Double integers","input_schema":{"type":"integer"},"output_schema":{"type":"integer"},"capabilities":[]},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":2}},{"name":"two","input":2,"expected":{"status":"completed","output":4}},{"name":"negative","input":-1,"expected":{"status":"completed","output":-2}}]});
-                json!({"schema_version":1,"candidate":{"task":task,"applicability":"Double integers"}})
+                json!({"schema_version":1,"candidate":{"decision":"create","task":task,"applicability":"Double integers"}})
             } else {
                 json!({"source":"export default async x=>({status:'completed',output:x*2})"})
             };
@@ -1147,4 +1156,54 @@ fn missing_registered_transcript_is_reported_once_then_skipped() {
         )
         .unwrap();
     assert_eq!(stale, 1);
+}
+
+#[test]
+fn catalog_lets_proposals_reuse_existing_work_without_authoring() {
+    let f = Fixture::new();
+    let first = f.run(&["learn-now"]);
+    assert_eq!(first["report"]["outcomes"][0]["status"], "created");
+    assert_eq!(f.run(&["learning-status"])["requests_today"], 2);
+    let reuse = f
+        .command()
+        .env("NEW_EVIDENCE", "1")
+        .env("EXPECT_CATALOG", "double-integer")
+        .arg("learn-now")
+        .output()
+        .unwrap();
+    assert!(
+        reuse.status.success(),
+        "{}",
+        String::from_utf8_lossy(&reuse.stderr)
+    );
+    let reuse: Value = serde_json::from_slice(&reuse.stdout).unwrap();
+    assert_eq!(
+        reuse["report"]["outcomes"][0],
+        json!({"status":"existing_requirements","name":"double-integer","decision":"reuse"}),
+        "{reuse}"
+    );
+    assert_eq!(f.run(&["learning-status"])["requests_today"], 3);
+    let renamed = f
+        .command()
+        .env("NEW_EVIDENCE", "2")
+        .env("RENAMED_CANDIDATE", "1")
+        .arg("learn-now")
+        .output()
+        .unwrap();
+    assert!(
+        renamed.status.success(),
+        "{}",
+        String::from_utf8_lossy(&renamed.stderr)
+    );
+    let renamed: Value = serde_json::from_slice(&renamed.stdout).unwrap();
+    assert_eq!(
+        renamed["report"]["outcomes"][0],
+        json!({"status":"existing_requirements","name":"double-integer","proposed":"double-integer-values","decision":"structural_overlap"}),
+        "{renamed}"
+    );
+    assert_eq!(f.run(&["learning-status"])["requests_today"], 4);
+    assert_eq!(
+        f.run(&["discover"])["routines"].as_array().unwrap().len(),
+        1
+    );
 }

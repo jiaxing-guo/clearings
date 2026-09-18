@@ -59,6 +59,132 @@ impl Preferences {
 /// older history remains unread, and record content only. Evidence identifiers, offsets
 /// and cursor values stay in the stored packet and its fingerprint; they are host
 /// bookkeeping, not learning material.
+/// One routine the proposal step must decide against, in a few dozen tokens.
+fn catalog_entry(name: &str, contract: &Value, state: &str) -> Value {
+    json!({"name":name,"description":contract["description"].as_str().unwrap_or("").chars().take(240).collect::<String>(),"capabilities":contract["capabilities"],"input_keys":input_keys(&contract["input_schema"]),"state":state})
+}
+/// Sorted top-level input property names; empty for scalar or unconstrained inputs.
+fn input_keys(input_schema: &Value) -> Vec<String> {
+    let mut keys: Vec<String> = input_schema["properties"]
+        .as_object()
+        .map(|p| p.keys().cloned().collect())
+        .unwrap_or_default();
+    keys.sort();
+    keys
+}
+/// Key names compared without case or separators, so `allocated_cores` and
+/// `allocatedCores` are the same parameter.
+fn normalized_keys(keys: &[String]) -> std::collections::BTreeSet<String> {
+    keys.iter()
+        .map(|k| {
+            k.chars()
+                .filter(char::is_ascii_alphanumeric)
+                .collect::<String>()
+                .to_lowercase()
+        })
+        .collect()
+}
+fn name_tokens(name: &str) -> std::collections::BTreeSet<String> {
+    name.split(|c: char| !c.is_alphanumeric())
+        .filter(|t| t.len() >= 3)
+        .map(str::to_lowercase)
+        .collect()
+}
+/// Same capabilities, two shared name words, and input keys that are the same set or
+/// a subset once naming style is ignored describe existing work: renamed parameters
+/// or one omitted optional step do not earn another routine. This is a backstop for a
+/// proposal that ignores the catalog; the model judges everything less obvious.
+fn structural_match<'a>(
+    name: &str,
+    capabilities: &[String],
+    input_schema: &Value,
+    catalog: &'a [Value],
+) -> Option<&'a str> {
+    let mut capabilities = capabilities.to_vec();
+    capabilities.sort();
+    let keys = normalized_keys(&input_keys(input_schema));
+    let tokens = name_tokens(name);
+    catalog
+        .iter()
+        .find(|entry| {
+            let mut listed: Vec<String> = entry["capabilities"]
+                .as_array()
+                .map(|c| {
+                    c.iter()
+                        .filter_map(|v| v.as_str().map(str::to_owned))
+                        .collect()
+                })
+                .unwrap_or_default();
+            listed.sort();
+            let listed_keys = normalized_keys(
+                &entry["input_keys"]
+                    .as_array()
+                    .map(|k| {
+                        k.iter()
+                            .filter_map(|v| v.as_str().map(str::to_owned))
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default(),
+            );
+            listed == capabilities
+                && (listed_keys.is_subset(&keys) || keys.is_subset(&listed_keys))
+                && name_tokens(entry["name"].as_str().unwrap_or(""))
+                    .intersection(&tokens)
+                    .count()
+                    >= 2
+        })
+        .and_then(|entry| entry["name"].as_str())
+}
+/// Lexical lookup text for the routine catalog: message text, commands and file
+/// references from every record, never tool output. A packet can hold only commands
+/// and agent messages, so requests alone are not enough.
+fn catalog_query(packet: &[Value]) -> String {
+    fn push(query: &mut String, text: &str) {
+        query.extend(text.chars().take(300));
+        query.push(' ');
+    }
+    fn part(query: &mut String, value: &Value) {
+        if let Some(text) = value["text"].as_str() {
+            push(query, text);
+        }
+        for key in ["command", "file_path", "path"] {
+            match &value[key] {
+                Value::String(text) => push(query, text),
+                Value::Array(words) => {
+                    push(
+                        query,
+                        &words
+                            .iter()
+                            .filter_map(Value::as_str)
+                            .collect::<Vec<_>>()
+                            .join(" "),
+                    );
+                }
+                _ => {}
+            }
+        }
+        if value["input"].is_object() {
+            part(query, &value["input"]);
+        }
+    }
+    let mut query = String::new();
+    let items = packet
+        .iter()
+        .filter_map(|p| p["items"].as_array())
+        .flatten();
+    for item in items {
+        match &item["content"] {
+            Value::String(text) => push(&mut query, text),
+            Value::Array(parts) => parts.iter().for_each(|p| part(&mut query, p)),
+            Value::Object(_) => part(&mut query, &item["content"]),
+            _ => {}
+        }
+        if query.len() >= 4000 {
+            break;
+        }
+    }
+    query.chars().take(4000).collect()
+}
 fn evidence_view(packet: &[Value]) -> Vec<Value> {
     packet
         .iter()
@@ -441,6 +567,29 @@ impl Store {
             self.launch_learning(next, executable)?;
         }
         Ok(json!({"cycle":cycle,"status":status,"report":report}))
+    }
+    /// Active routines whose text matches the packet's work. Empty when nothing
+    /// matches, so the extraction request then carries no catalog at all.
+    fn routine_catalog(&self, project: &str, packet: &[Value]) -> Result<Vec<Value>> {
+        let found = self.find_routines(project, &catalog_query(packet))?;
+        let mut catalog = vec![];
+        for routine in found["routines"].as_array().into_iter().flatten() {
+            let (Some(id), Some(name)) = (routine["routine"].as_str(), routine["name"].as_str())
+            else {
+                continue;
+            };
+            let contract: String = self.db.query_row(
+                "SELECT json_extract(body,'$.contract') FROM objects WHERE id=?1",
+                [id],
+                |r| r.get(0),
+            )?;
+            catalog.push(catalog_entry(
+                name,
+                &serde_json::from_str(&contract)?,
+                "active",
+            ));
+        }
+        Ok(catalog)
     }
     fn pending_conversation_groups(
         &self,
@@ -901,6 +1050,8 @@ impl Store {
             .saturating_sub(usize::from(improvement.is_some()));
         let mut attempts = 0;
         let mut author_unavailable = false;
+        // Routines created earlier in this cycle join the catalog of later packets.
+        let mut created_this_cycle: Vec<Value> = vec![];
         for (fingerprint, packet) in &groups {
             if attempts >= new_limit {
                 break;
@@ -945,8 +1096,17 @@ impl Store {
             }
             attempts += 1;
             let mut prepared_task = None;
+            let mut catalog = self.routine_catalog(project, packet)?;
+            for entry in &created_this_cycle {
+                if !catalog.iter().any(|c| c["name"] == entry["name"]) {
+                    catalog.push(entry.clone());
+                }
+            }
             let result = (|| -> Result<Value> {
-                let extraction = json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"learning_mode":if automatic {"scheduled"} else {"explicit"},"sdk":crate::api::sdk_definition(),"response_schema":crate::proposal::response_schema("candidate"),"excluded_workflows":prefs.excluded_workflows,"conversations":evidence_view(packet)});
+                let mut extraction = json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"learning_mode":if automatic {"scheduled"} else {"explicit"},"sdk":crate::api::sdk_definition(),"response_schema":crate::proposal::response_schema("candidate"),"excluded_workflows":prefs.excluded_workflows,"conversations":evidence_view(packet)});
+                if !catalog.is_empty() {
+                    extraction["existing_routines"] = json!(catalog);
+                }
                 let extracted = self.native_request(
                     cycle,
                     client,
@@ -979,8 +1139,35 @@ impl Store {
                 let Some(candidate) = proposal else {
                     return Ok(json!({"status":"no_candidate"}));
                 };
-                let task = candidate.task;
-                let applicability = Some(candidate.applicability.as_str());
+                let listed = |name: &str| catalog.iter().any(|c| c["name"] == name);
+                let (task, applicability, extends, distinct_capability) = match candidate {
+                    crate::proposal::Candidate::Reuse { existing } => {
+                        if !listed(&existing) {
+                            return Ok(
+                                json!({"status":"no_candidate","decision":"reuse","reason":"reuse names a routine outside the supplied catalog","existing":existing}),
+                            );
+                        }
+                        return Ok(
+                            json!({"status":"existing_requirements","name":existing,"decision":"reuse"}),
+                        );
+                    }
+                    crate::proposal::Candidate::Extend {
+                        existing,
+                        task,
+                        applicability,
+                    } => (
+                        task,
+                        applicability,
+                        listed(&existing).then_some(existing),
+                        None,
+                    ),
+                    crate::proposal::Candidate::Create {
+                        distinct_capability,
+                        task,
+                        applicability,
+                    } => (task, applicability, None, distinct_capability),
+                };
+                let applicability = Some(applicability.as_str());
                 let name = task.contract.name.clone();
                 if prefs
                     .excluded_workflows
@@ -1017,6 +1204,17 @@ impl Store {
                         return Ok(json!({"status":"existing_requirements","name":name}));
                     }
                 }
+                if let Some(matched) = structural_match(
+                    &name,
+                    &task.contract.capabilities,
+                    &task.contract.input_schema,
+                    &catalog,
+                ) && extends.as_deref() != Some(matched)
+                {
+                    return Ok(
+                        json!({"status":"existing_requirements","name":matched,"proposed":name,"decision":"structural_overlap"}),
+                    );
+                }
                 let prepared =
                     self.prepare_conversation_task(project, task.clone(), &ids, scope)?;
                 let task_id = prepared["task"].as_str().context("task not prepared")?;
@@ -1038,7 +1236,7 @@ impl Store {
                 );
                 self.promote_conversation(cycle, project, task_id, &version, applicability)?;
                 Ok(
-                    json!({"status":"created","name":name,"task":task_id,"version":version,"evidence":"conversation interpretation with a withheld case","savings":null}),
+                    json!({"status":"created","name":name,"task":task_id,"version":version,"extends":extends,"distinct_capability":distinct_capability,"evidence":"conversation interpretation with a withheld case","savings":null}),
                 )
             })();
             let unavailable = result.as_ref().is_err_and(|e| {
@@ -1065,6 +1263,20 @@ impl Store {
                     "UPDATE native_candidates SET status=?2,report=?3 WHERE fingerprint=?1",
                     params![fingerprint, report["status"].as_str(), report.to_string()],
                 )?;
+            }
+            if report["status"] == "created"
+                && let (Some(task), Some(name)) = (report["task"].as_str(), report["name"].as_str())
+            {
+                let contract: String = self.db.query_row(
+                    "SELECT json_extract(body,'$.contract') FROM objects WHERE id=?1",
+                    [task],
+                    |r| r.get(0),
+                )?;
+                created_this_cycle.push(catalog_entry(
+                    name,
+                    &serde_json::from_str(&contract)?,
+                    "created_this_cycle",
+                ));
             }
             outcomes.push(report);
             if is_budget || interrupted || unavailable {
@@ -1389,6 +1601,69 @@ mod tests {
         assert!(complete[0].get("coverage").is_none());
         assert!(complete[0].get("more_history").is_none());
         assert!(json!(view).to_string().len() < packet[0].to_string().len());
+    }
+    #[test]
+    fn catalog_query_uses_commands_and_agent_text_but_not_tool_output() {
+        let packet = vec![json!({"items":[
+            {"kind":"commandExecution","content":{"command":["qstat","-f","12345"],"output":"resources_used.walltime = 01:02:03 SECRET_OUTPUT","exit_code":0}},
+            {"kind":"agentMessage","content":"Converted walltime to allocated core hours"},
+            {"kind":"assistant","content":[{"type":"tool_use","name":"Read","input":{"file_path":"/runs/heartbeat.json"}},{"type":"tool_result","content":"HIDDEN"}]},
+            {"kind":"user","content":[{"type":"text","text":"check the scheduler report"}]}
+        ]})];
+        let query = catalog_query(&packet);
+        for expected in [
+            "qstat -f 12345",
+            "allocated core hours",
+            "/runs/heartbeat.json",
+            "scheduler report",
+        ] {
+            assert!(query.contains(expected), "{query}");
+        }
+        assert!(!query.contains("SECRET_OUTPUT") && !query.contains("HIDDEN"));
+        let long = vec![json!({"items":[{"kind":"user","content":"x".repeat(9000)}]})];
+        assert!(catalog_query(&long).chars().count() <= 4000);
+    }
+    #[test]
+    fn structural_match_needs_same_capabilities_keys_and_two_shared_name_words() {
+        let contract = json!({"description":"Sum allocated core hours from a scheduler report","capabilities":["files.read"],"input_schema":{"type":"object","properties":{"root":{},"path":{}}}});
+        let catalog = vec![catalog_entry("scheduler-core-hours", &contract, "active")];
+        assert_eq!(catalog[0]["input_keys"], json!(["path", "root"]));
+        let files = json!({"type":"object","properties":{"path":{},"root":{}}});
+        let read = vec!["files.read".to_owned()];
+        assert_eq!(
+            structural_match("pbs-allocated-core-hours", &read, &files, &catalog),
+            Some("scheduler-core-hours")
+        );
+        assert_eq!(
+            structural_match("pbs-core-usage", &read, &files, &catalog),
+            None,
+            "one shared word is left to the model"
+        );
+        assert_eq!(
+            structural_match("scheduler-core-hours-report", &[], &files, &catalog),
+            None,
+            "different capabilities"
+        );
+        // The observed duplicate: camel-case keys and one omitted optional parameter.
+        let observed =
+            json!({"type":"object","properties":{"allocatedCores":{},"path":{},"root":{}}});
+        let accounting = json!({"description":"Convert walltime to core hours","capabilities":["files.read"],"input_schema":{"type":"object","properties":{"allocated_cores":{},"path":{},"prior_core_hours":{},"root":{}}}});
+        assert_eq!(
+            structural_match(
+                "pbs-allocated-core-hours",
+                &read,
+                &observed,
+                &[catalog_entry("scheduler-core-hours", &accounting, "active")]
+            ),
+            Some("scheduler-core-hours")
+        );
+        let disjoint = json!({"type":"object","properties":{"root":{},"paths":{}}});
+        assert_eq!(
+            structural_match("scheduler-core-hours-report", &read, &disjoint, &catalog),
+            None,
+            "neither key set contains the other"
+        );
+        assert!(catalog[0]["description"].as_str().unwrap().len() <= 240);
     }
     #[test]
     fn connected_client_does_not_overwrite_explicit_client_preference() {

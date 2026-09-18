@@ -10,11 +10,26 @@ struct Envelope {
     schema_version: u32,
     candidate: Option<Candidate>,
 }
+/// The proposal step's decision against the supplied routine catalog.
 #[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct Candidate {
-    pub task: Task,
-    pub applicability: String,
+#[serde(tag = "decision", rename_all = "snake_case", deny_unknown_fields)]
+pub(crate) enum Candidate {
+    /// A listed routine already handles the observed work.
+    Reuse { existing: String },
+    /// A listed routine lacks one concrete capability. The new task records it; the
+    /// listed routine is not modified.
+    Extend {
+        existing: String,
+        task: Task,
+        applicability: String,
+    },
+    /// A distinct user-visible capability.
+    Create {
+        #[serde(default)]
+        distinct_capability: Option<String>,
+        task: Task,
+        applicability: String,
+    },
 }
 pub(crate) fn parse(value: Value) -> Result<Option<Candidate>> {
     ensure!(
@@ -29,12 +44,37 @@ pub(crate) fn parse(value: Value) -> Result<Option<Candidate>> {
     }
     let envelope: Envelope = serde_json::from_value(value).context("candidate response")?;
     ensure!(envelope.schema_version == 1, "schema_version must be 1");
-    if let Some(candidate) = &envelope.candidate {
+    let (task, applicability) = match &envelope.candidate {
+        None => return Ok(None),
+        Some(Candidate::Reuse { existing }) => {
+            ensure!(
+                !existing.trim().is_empty() && existing.len() <= 200,
+                "candidate.existing must name a supplied routine"
+            );
+            return Ok(envelope.candidate);
+        }
+        Some(Candidate::Extend {
+            existing,
+            task,
+            applicability,
+        }) => {
+            ensure!(
+                !existing.trim().is_empty() && existing.len() <= 200,
+                "candidate.existing must name a supplied routine"
+            );
+            (task, applicability)
+        }
+        Some(Candidate::Create {
+            task,
+            applicability,
+            ..
+        }) => (task, applicability),
+    };
+    {
         ensure!(
-            !candidate.applicability.trim().is_empty() && candidate.applicability.len() <= 4000,
+            !applicability.trim().is_empty() && applicability.len() <= 4000,
             "candidate.applicability must contain 1 to 4000 bytes of plain text"
         );
-        let task = &candidate.task;
         ensure!(
             task.evidence.is_none() && task.project.is_none(),
             "candidate.task must omit host-owned project and evidence"
@@ -125,7 +165,12 @@ pub(crate) fn response_schema(field: &str) -> Value {
     }
     json!({"type":"object","properties":{
         "schema_version":{"type":"integer","const":1},
-        "candidate":{"anyOf":[{"type":"null"},{"type":"object","properties":{
+        "candidate":{"anyOf":[{"type":"null"},
+        {"type":"object","properties":{"decision":{"const":"reuse"},"existing":{"type":"string"}},"required":["decision","existing"],"additionalProperties":false},
+        {"type":"object","properties":{
+            "decision":{"enum":["extend","create"]},
+            "existing":{"type":"string"},
+            "distinct_capability":{"type":"string"},
             "applicability":{"type":"string"},
             "task":{"type":"object","properties":{
                 "contract":{"type":"object","properties":{
@@ -139,7 +184,7 @@ pub(crate) fn response_schema(field: &str) -> Value {
                 },"required":["name","input","expected","calls"],"additionalProperties":false}},
                 "evaluation":{"enum":["exact_calls","read_only_behavior"]}
             },"required":["contract","cases","evaluation"],"additionalProperties":false}
-        },"required":["task","applicability"],"additionalProperties":false}]}
+        },"required":["decision","task","applicability"],"additionalProperties":false}]}
     },"required":["schema_version","candidate"],"additionalProperties":false})
 }
 
@@ -242,12 +287,38 @@ mod tests {
         let task = json!({"project":"forged","contract":{"abi":1,"name":"echo","description":"Echo","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":1}},{"name":"two","input":2,"expected":{"status":"completed","output":2}},{"name":"three","input":3,"expected":{"status":"completed","output":3}}]});
         assert!(
             parse(
-                json!({"schema_version":1,"candidate":{"task":task,"applicability":"Any number"}})
+                json!({"schema_version":1,"candidate":{"decision":"create","task":task,"applicability":"Any number"}})
             )
             .err()
             .unwrap()
             .to_string()
             .contains("host-owned")
         );
+    }
+    #[test]
+    fn decisions_require_their_fields() {
+        let task = json!({"contract":{"abi":1,"name":"echo","description":"Echo","input_schema":{},"output_schema":{},"capabilities":[]},"cases":[{"name":"one","input":1,"expected":{"status":"completed","output":1}},{"name":"two","input":2,"expected":{"status":"completed","output":2}},{"name":"three","input":3,"expected":{"status":"completed","output":3}}]});
+        assert!(matches!(
+            parse(json!({"schema_version":1,"candidate":{"decision":"reuse","existing":"echo"}})).unwrap(),
+            Some(Candidate::Reuse { existing }) if existing == "echo"
+        ));
+        assert!(
+            parse(json!({"schema_version":1,"candidate":{"decision":"reuse","existing":""}}))
+                .is_err()
+        );
+        assert!(parse(json!({"schema_version":1,"candidate":{"decision":"reuse","existing":"echo","task":task}})).is_err());
+        assert!(
+            parse(json!({"schema_version":1,"candidate":{"task":task,"applicability":"Any"}}))
+                .is_err()
+        );
+        assert!(parse(json!({"schema_version":1,"candidate":{"decision":"extend","task":task,"applicability":"Any"}})).is_err());
+        assert!(matches!(
+            parse(json!({"schema_version":1,"candidate":{"decision":"extend","existing":"echo","task":task,"applicability":"Any"}})).unwrap(),
+            Some(Candidate::Extend { existing, .. }) if existing == "echo"
+        ));
+        assert!(matches!(
+            parse(json!({"schema_version":1,"candidate":{"decision":"create","distinct_capability":"Also handles floats","task":task,"applicability":"Any"}})).unwrap(),
+            Some(Candidate::Create { distinct_capability: Some(_), .. })
+        ));
     }
 }
