@@ -39,15 +39,35 @@ impl Client {
 fn clipped(s: &str, max: usize) -> String {
     s.chars().take(max).collect()
 }
-/// A record whose visible parts were all omitted carries no evidence.
+/// A record whose visible parts were all omitted or blank carries no evidence.
 fn empty_content(body: &Value) -> bool {
     match body {
         Value::Null => true,
-        Value::String(s) => s.is_empty(),
-        Value::Array(a) => a.is_empty(),
+        Value::String(s) => s.trim().is_empty(),
+        Value::Array(parts) => parts.iter().all(empty_part),
         Value::Object(o) => o.is_empty(),
         _ => false,
     }
+}
+fn empty_part(part: &Value) -> bool {
+    match part["type"].as_str() {
+        Some("text") => part["text"].as_str().is_none_or(|t| t.trim().is_empty()),
+        Some("tool_result") => empty_content(&part["content"]),
+        Some(_) => false,
+        None => empty_content(part),
+    }
+}
+/// The transcript file of a listed conversation no longer exists.
+#[derive(Debug)]
+pub(crate) struct TranscriptMissing;
+impl std::fmt::Display for TranscriptMissing {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("conversation transcript is missing")
+    }
+}
+impl std::error::Error for TranscriptMissing {}
+pub(crate) fn transcript_missing(error: &anyhow::Error) -> bool {
+    error.downcast_ref::<TranscriptMissing>().is_some()
 }
 fn codex() -> Result<JsonProcess> {
     let mut command = Command::new(client_process::executable("codex")?);
@@ -113,22 +133,18 @@ impl Store {
         source: Option<&Path>,
         updated: i64,
         title: &str,
-    ) -> Result<Value> {
+    ) -> Result<Option<Value>> {
         ensure!(
             !host_id.is_empty() && host_id.len() <= 200,
             "invalid conversation identity"
         );
         let id = digest(&(client, host_id, project))?;
         let body = json!({"id":id,"client":client,"session":host_id,"project":project,"updated_at":updated,"title":clipped(title,300)});
-        // Several transcripts or listing rows can describe one conversation. Keep the
-        // newest metadata so an older duplicate cannot move freshness or source backwards.
-        self.db.execute("INSERT INTO conversations(id,client,host_id,root,source,updated,body) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(id) DO UPDATE SET source=excluded.source,updated=excluded.updated,body=excluded.body WHERE excluded.updated>=conversations.updated",params![id,client,host_id,project.to_string_lossy(),source.map(|p|p.to_string_lossy().to_string()),updated,body.to_string()])?;
-        let stored: String =
-            self.db
-                .query_row("SELECT body FROM conversations WHERE id=?1", [&id], |r| {
-                    r.get(0)
-                })?;
-        Ok(serde_json::from_str(&stored)?)
+        // Several transcripts or listing rows can describe one conversation. Only the
+        // newest metadata is stored and listed, so an older duplicate cannot move
+        // freshness or source backwards or reappear on a later page.
+        let fresh = self.db.execute("INSERT INTO conversations(id,client,host_id,root,source,updated,body) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(id) DO UPDATE SET source=excluded.source,updated=excluded.updated,body=excluded.body WHERE excluded.updated>=conversations.updated",params![id,client,host_id,project.to_string_lossy(),source.map(|p|p.to_string_lossy().to_string()),updated,body.to_string()])?==1;
+        Ok(fresh.then_some(body))
     }
     pub(crate) fn register_transcript(&self, context: &Value, project: &Path) -> Result<()> {
         self.authorize_history()?;
@@ -312,7 +328,7 @@ impl Store {
             if scope == Scope::Project && project != selected {
                 continue;
             }
-            found.push(
+            found.extend(
                 self.remember_conversation(
                     "codex",
                     thread["id"].as_str().context("Codex session lacks ID")?,
@@ -385,7 +401,7 @@ impl Store {
                 Ok(Some((session,project,title))) => {
                     if self.preferences()?.excludes(project.to_string_lossy().as_ref()){continue;}
                     if scope==Scope::Project && project!=selected {continue;}
-                    found.push(self.remember_conversation("claude",&session,&project,Some(path),*updated,&title)?);
+                    found.extend(self.remember_conversation("claude",&session,&project,Some(path),*updated,&title)?);
                 }
                 Ok(None) => errors.push(json!({"client":"claude","source":path,"error":"transcript lacks readable session metadata"})),
                 Err(e) => errors.push(json!({"client":"claude","source":path,"error":e.to_string()})),
@@ -509,7 +525,18 @@ impl Store {
 }
 fn open_transcript(path: &Path) -> Result<fs::File> {
     // Hold directory handles and reject symlink parents as well as symlink files.
-    crate::activity::open_absolute(path)
+    crate::activity::open_absolute(path).map_err(|error| {
+        let missing = error.chain().any(|cause| {
+            cause
+                .downcast_ref::<std::io::Error>()
+                .is_some_and(|io| io.kind() == std::io::ErrorKind::NotFound)
+        });
+        if missing {
+            error.context(TranscriptMissing)
+        } else {
+            error
+        }
+    })
 }
 fn claude_files(
     path: &Path,
@@ -673,10 +700,18 @@ fn read_claude(path: &Path, cursor: Option<&str>) -> Result<Value> {
         }
         offset += n as u64;
     }
-    let before = items
-        .front()
-        .and_then(|v| v["offset"].as_u64())
-        .unwrap_or(window_start.min(end.saturating_sub(1024 * 1024)));
+    // Continue from the first kept record, or from the aligned window start when every
+    // record was omitted. A record longer than the window keeps the raw boundary so
+    // paging still progresses.
+    let before =
+        items
+            .front()
+            .and_then(|v| v["offset"].as_u64())
+            .unwrap_or(if window_start < end {
+                window_start
+            } else {
+                end.saturating_sub(1024 * 1024)
+            });
     let items: Vec<_> = items.into_iter().rev().collect();
     Ok(
         json!({"items":items,"next_cursor":(before>0).then(||format!("before:{before}")),"coverage":if partial{"partial_final_record"}else{"page"},"order":"newest_first"}),
@@ -800,9 +835,10 @@ mod tests {
         let row = json!({"sessionId":"s","cwd":temp.path(),"type":"assistant","uuid":"message","message":{"content":[{"type":"text","text":"answer"},{"type":"thinking","thinking":"private reasoning"},{"type":"tool_use","name":"Read","input":{"file":"sample"}}]}});
         let thinking_only = json!({"type":"assistant","uuid":"silent","message":{"content":[{"type":"thinking","thinking":"private"}]}});
         let empty_text = json!({"type":"user","uuid":"blank","message":{"content":""}});
+        let blank_parts = json!({"type":"user","uuid":"blank-parts","message":{"content":[{"type":"text","text":" "},{"type":"tool_result","tool_use_id":"t","content":[]}]}});
         fs::write(
             &path,
-            format!("{row}\n{thinking_only}\n{empty_text}\n{{\"partial\":"),
+            format!("{row}\n{thinking_only}\n{empty_text}\n{blank_parts}\n{{\"partial\":"),
         )
         .unwrap();
         assert_eq!(claude_identity(&path, None).unwrap().unwrap().0, "s");
@@ -878,12 +914,71 @@ mod tests {
         assert!(codex_item(&json!({"type":"reasoning","text":"private"})).is_none());
         assert!(codex_item(&json!({"type":"agentMessage","id":"a","text":""})).is_none());
         assert!(codex_item(&json!({"type":"fileChange","id":"f","changes":[]})).is_none());
+        assert!(
+            codex_item(
+                &json!({"type":"userMessage","id":"u","content":[{"type":"text","text":""}]})
+            )
+            .is_none()
+        );
+        assert!(
+            codex_item(
+                &json!({"type":"userMessage","id":"u","content":[{"type":"image","url":"x"}]})
+            )
+            .is_some()
+        );
         let item = codex_item(
             &json!({"type":"commandExecution","id":"c","aggregatedOutput":"a".repeat(20000)}),
         )
         .unwrap();
         assert_eq!(item["truncated"], true);
         assert!(item.to_string().len() < 5000);
+    }
+    #[test]
+    fn only_a_missing_transcript_file_counts_as_a_missing_source() {
+        let temp = tempfile::tempdir().unwrap();
+        let gone = temp.path().canonicalize().unwrap().join("gone.jsonl");
+        assert!(transcript_missing(&open_transcript(&gone).unwrap_err()));
+        let elsewhere = anyhow::Error::new(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "working directory vanished",
+        ));
+        assert!(!transcript_missing(&elsewhere));
+    }
+    #[test]
+    fn omitted_window_continues_at_a_record_boundary() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().canonicalize().unwrap().join("session.jsonl");
+        let visible = |id: &str, text: String| {
+            json!({"type":"user","uuid":id,"message":{"content":text}}).to_string() + "\n"
+        };
+        let first = visible("first", "keep".into());
+        let straddling = visible("straddling", "x".repeat(600));
+        let silent = json!({"type":"assistant","uuid":"silent","message":{"content":[{"type":"thinking","thinking":"private"}]}}).to_string()+"\n";
+        let mut omitted = String::new();
+        while omitted.len() + silent.len() <= 1024 * 1024 - 300 {
+            omitted.push_str(&silent);
+        }
+        fs::write(&path, format!("{first}{straddling}{omitted}")).unwrap();
+        let raw = (first.len() + straddling.len() + omitted.len()) as u64 - 1024 * 1024;
+        assert!(raw > first.len() as u64 && raw < (first.len() + straddling.len()) as u64);
+        let newest = read_claude(&path, None).unwrap();
+        assert_eq!(newest["items"], json!([]));
+        assert_eq!(
+            newest["next_cursor"],
+            format!("before:{}", first.len() + straddling.len())
+        );
+        let older = read_claude(&path, newest["next_cursor"].as_str()).unwrap();
+        assert_eq!(older["coverage"], "page");
+        assert_eq!(
+            older["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|i| i["id"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            vec!["straddling", "first"]
+        );
+        assert_eq!(older["next_cursor"], Value::Null);
     }
     #[test]
     fn repeated_listing_keeps_the_newest_conversation_metadata() {
@@ -893,12 +988,16 @@ mod tests {
         let older = temp.path().join("older.jsonl");
         let first = store
             .remember_conversation("claude", "s", temp.path(), Some(&newer), 200, "newest")
+            .unwrap()
             .unwrap();
-        let second = store
-            .remember_conversation("claude", "s", temp.path(), Some(&older), 100, "stale")
-            .unwrap();
-        assert_eq!(first, second);
-        assert_eq!(second["title"], "newest");
+        assert_eq!(first["title"], "newest");
+        // An older duplicate, for example on a later listing page, is not listed again.
+        assert!(
+            store
+                .remember_conversation("claude", "s", temp.path(), Some(&older), 100, "stale")
+                .unwrap()
+                .is_none()
+        );
         let (updated, source): (i64, String) = store
             .db
             .query_row("SELECT updated,source FROM conversations", [], |r| {
@@ -909,6 +1008,7 @@ mod tests {
         assert_eq!(Path::new(&source), newer);
         let third = store
             .remember_conversation("claude", "s", temp.path(), None, 300, "later")
+            .unwrap()
             .unwrap();
         assert_eq!(third["title"], "later");
         assert_eq!(third["updated_at"], 300);
@@ -930,6 +1030,7 @@ mod tests {
         fs::create_dir(&other).unwrap();
         let row = store
             .remember_conversation("claude", "session", &other, None, 1, "example")
+            .unwrap()
             .unwrap();
         let error = store
             .read_conversation(

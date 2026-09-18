@@ -82,13 +82,6 @@ fn evidence_view(packet: &[Value]) -> Vec<Value> {
         })
         .collect()
 }
-fn source_missing(error: &anyhow::Error) -> bool {
-    error.chain().any(|cause| {
-        cause
-            .downcast_ref::<std::io::Error>()
-            .is_some_and(|io| io.kind() == std::io::ErrorKind::NotFound)
-    })
-}
 impl Store {
     pub fn preferences(&self) -> Result<Preferences> {
         let body: Option<String> = self
@@ -866,7 +859,7 @@ impl Store {
                         ));
                     }
                 }
-                Err(e) if source_missing(&e) => {
+                Err(e) if crate::conversations::transcript_missing(&e) => {
                     // A deleted or never-written transcript stays unreadable until its
                     // listing metadata changes. Report it once instead of every cycle.
                     coverage.push(
