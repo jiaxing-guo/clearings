@@ -13,7 +13,7 @@ Repetition is judged within workflow episodes, not by the number of conversation
 ## Candidate pipeline
 
 1. Read bounded conversation evidence and preserve coverage limits.
-2. Propose one reusable read/transform workflow with applicability and varied examples.
+2. Propose one reusable read/transform workflow with applicability and varied examples. The request carries record content, order and coverage limits; host identifiers, offsets and cursors stay in the stored evidence.
 3. Validate the proposal before preparing an immutable task.
 4. Author source with one acceptance case withheld.
 5. Evaluate all cases and activate only a passing candidate.
@@ -38,7 +38,7 @@ Failed candidates remain explicit and do not replace active work. Owning-project
 
 “Pause learning,” “learn weekly,” and “exclude this project” use the existing preferences. `install --no-service` persists on-request operation. Saved routines remain usable while learning is paused.
 
-Sign-in failures, unsupported history interfaces, incomplete coverage, exhausted allowance, and unavailable sources appear in status. Clearings does not silently select another provider. Disabling the plugin stops integration-bound background work before new authoring or promotion.
+Sign-in failures, unsupported history interfaces, incomplete coverage, exhausted allowance, and unavailable sources appear in status. A registered transcript that is missing is reported once and skipped until its listing changes. Clearings does not silently select another provider. Disabling the plugin stops integration-bound background work before new authoring or promotion.
 
 ## Custom hosts
 

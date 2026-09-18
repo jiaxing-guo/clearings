@@ -39,6 +39,16 @@ impl Client {
 fn clipped(s: &str, max: usize) -> String {
     s.chars().take(max).collect()
 }
+/// A record whose visible parts were all omitted carries no evidence.
+fn empty_content(body: &Value) -> bool {
+    match body {
+        Value::Null => true,
+        Value::String(s) => s.is_empty(),
+        Value::Array(a) => a.is_empty(),
+        Value::Object(o) => o.is_empty(),
+        _ => false,
+    }
+}
 fn codex() -> Result<JsonProcess> {
     let mut command = Command::new(client_process::executable("codex")?);
     command.args(["app-server", "--stdio"]);
@@ -110,8 +120,15 @@ impl Store {
         );
         let id = digest(&(client, host_id, project))?;
         let body = json!({"id":id,"client":client,"session":host_id,"project":project,"updated_at":updated,"title":clipped(title,300)});
-        self.db.execute("INSERT INTO conversations(id,client,host_id,root,source,updated,body) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(id) DO UPDATE SET source=excluded.source,updated=excluded.updated,body=excluded.body",params![id,client,host_id,project.to_string_lossy(),source.map(|p|p.to_string_lossy().to_string()),updated,body.to_string()])?;
-        Ok(body)
+        // Several transcripts or listing rows can describe one conversation. Keep the
+        // newest metadata so an older duplicate cannot move freshness or source backwards.
+        self.db.execute("INSERT INTO conversations(id,client,host_id,root,source,updated,body) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(id) DO UPDATE SET source=excluded.source,updated=excluded.updated,body=excluded.body WHERE excluded.updated>=conversations.updated",params![id,client,host_id,project.to_string_lossy(),source.map(|p|p.to_string_lossy().to_string()),updated,body.to_string()])?;
+        let stored: String =
+            self.db
+                .query_row("SELECT body FROM conversations WHERE id=?1", [&id], |r| {
+                    r.get(0)
+                })?;
+        Ok(serde_json::from_str(&stored)?)
     }
     pub(crate) fn register_transcript(&self, context: &Value, project: &Path) -> Result<()> {
         self.authorize_history()?;
@@ -201,6 +218,8 @@ impl Store {
             }
         }
         entries.sort_by_key(|v| std::cmp::Reverse(v["updated_at"].as_i64().unwrap_or(0)));
+        let mut seen = std::collections::HashSet::new();
+        entries.retain(|v| seen.insert(v["id"].to_string()));
         Ok(
             json!({"conversations":entries,"continuations":continuations,"errors":errors,"coverage":if errors.is_empty(){"page"}else{"partial"},"scope":scope,"untrusted_evidence":true}),
         )
@@ -575,6 +594,9 @@ fn codex_item(item: &Value) -> Option<Value> {
         "fileChange" => item["changes"].clone(),
         _ => return None,
     };
+    if empty_content(&body) {
+        return None;
+    }
     let serialized = body.to_string();
     Some(
         json!({"id":item["id"],"kind":kind,"content":if serialized.len()>16000{json!(clipped(&serialized,4000))}else{body},"truncated":serialized.len()>16000}),
@@ -641,10 +663,12 @@ fn read_claude(path: &Path, cursor: Option<&str>) -> Result<Value> {
                 Value::String(s) => json!(s),
                 _ => Value::Null,
             };
-            let text = body.to_string();
-            items.push_back(json!({"id":value["uuid"],"kind":kind,"offset":offset,"content":if text.len()>16000{json!(clipped(&text,4000))}else{body},"truncated":text.len()>16000}));
-            if items.len() > 64 {
-                items.pop_front();
+            if !empty_content(&body) {
+                let text = body.to_string();
+                items.push_back(json!({"id":value["uuid"],"kind":kind,"offset":offset,"content":if text.len()>16000{json!(clipped(&text,4000))}else{body},"truncated":text.len()>16000}));
+                if items.len() > 64 {
+                    items.pop_front();
+                }
             }
         }
         offset += n as u64;
@@ -774,9 +798,17 @@ mod tests {
             .unwrap()
             .join("conversation.jsonl");
         let row = json!({"sessionId":"s","cwd":temp.path(),"type":"assistant","uuid":"message","message":{"content":[{"type":"text","text":"answer"},{"type":"thinking","thinking":"private reasoning"},{"type":"tool_use","name":"Read","input":{"file":"sample"}}]}});
-        fs::write(&path, format!("{row}\n{{\"partial\":")).unwrap();
+        let thinking_only = json!({"type":"assistant","uuid":"silent","message":{"content":[{"type":"thinking","thinking":"private"}]}});
+        let empty_text = json!({"type":"user","uuid":"blank","message":{"content":""}});
+        fs::write(
+            &path,
+            format!("{row}\n{thinking_only}\n{empty_text}\n{{\"partial\":"),
+        )
+        .unwrap();
         assert_eq!(claude_identity(&path, None).unwrap().unwrap().0, "s");
         let page = read_claude(&path, None).unwrap();
+        assert_eq!(page["items"].as_array().unwrap().len(), 1);
+        assert_eq!(page["items"][0]["id"], "message");
         assert_eq!(page["items"][0]["content"].as_array().unwrap().len(), 2);
         assert_eq!(page["coverage"], "partial_final_record");
         assert_eq!(page["next_cursor"], Value::Null);
@@ -844,12 +876,42 @@ mod tests {
     #[test]
     fn codex_omits_reasoning_and_bounds_large_tool_results() {
         assert!(codex_item(&json!({"type":"reasoning","text":"private"})).is_none());
+        assert!(codex_item(&json!({"type":"agentMessage","id":"a","text":""})).is_none());
+        assert!(codex_item(&json!({"type":"fileChange","id":"f","changes":[]})).is_none());
         let item = codex_item(
             &json!({"type":"commandExecution","id":"c","aggregatedOutput":"a".repeat(20000)}),
         )
         .unwrap();
         assert_eq!(item["truncated"], true);
         assert!(item.to_string().len() < 5000);
+    }
+    #[test]
+    fn repeated_listing_keeps_the_newest_conversation_metadata() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = Store::open(&temp.path().join("state.db")).unwrap();
+        let newer = temp.path().join("newer.jsonl");
+        let older = temp.path().join("older.jsonl");
+        let first = store
+            .remember_conversation("claude", "s", temp.path(), Some(&newer), 200, "newest")
+            .unwrap();
+        let second = store
+            .remember_conversation("claude", "s", temp.path(), Some(&older), 100, "stale")
+            .unwrap();
+        assert_eq!(first, second);
+        assert_eq!(second["title"], "newest");
+        let (updated, source): (i64, String) = store
+            .db
+            .query_row("SELECT updated,source FROM conversations", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(updated, 200);
+        assert_eq!(Path::new(&source), newer);
+        let third = store
+            .remember_conversation("claude", "s", temp.path(), None, 300, "later")
+            .unwrap();
+        assert_eq!(third["title"], "later");
+        assert_eq!(third["updated_at"], 300);
     }
     #[test]
     fn history_requires_installation_and_explicit_cross_project_scope() {
