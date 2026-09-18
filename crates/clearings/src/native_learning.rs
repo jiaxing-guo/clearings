@@ -72,15 +72,28 @@ fn input_keys(input_schema: &Value) -> Vec<String> {
     keys.sort();
     keys
 }
+/// Key names compared without case or separators, so `allocated_cores` and
+/// `allocatedCores` are the same parameter.
+fn normalized_keys(keys: &[String]) -> std::collections::BTreeSet<String> {
+    keys.iter()
+        .map(|k| {
+            k.chars()
+                .filter(char::is_ascii_alphanumeric)
+                .collect::<String>()
+                .to_lowercase()
+        })
+        .collect()
+}
 fn name_tokens(name: &str) -> std::collections::BTreeSet<String> {
     name.split(|c: char| !c.is_alphanumeric())
         .filter(|t| t.len() >= 3)
         .map(str::to_lowercase)
         .collect()
 }
-/// Same capabilities, same top-level input keys and two shared name words describe
-/// existing work. This is a backstop for a proposal that ignores the catalog; the
-/// model judges everything less obvious.
+/// Same capabilities, two shared name words, and input keys that are the same set or
+/// a subset once naming style is ignored describe existing work: renamed parameters
+/// or one omitted optional step do not earn another routine. This is a backstop for a
+/// proposal that ignores the catalog; the model judges everything less obvious.
 fn structural_match<'a>(
     name: &str,
     capabilities: &[String],
@@ -89,7 +102,7 @@ fn structural_match<'a>(
 ) -> Option<&'a str> {
     let mut capabilities = capabilities.to_vec();
     capabilities.sort();
-    let keys = input_keys(input_schema);
+    let keys = normalized_keys(&input_keys(input_schema));
     let tokens = name_tokens(name);
     catalog
         .iter()
@@ -103,22 +116,74 @@ fn structural_match<'a>(
                 })
                 .unwrap_or_default();
             listed.sort();
-            let listed_keys: Vec<String> = entry["input_keys"]
-                .as_array()
-                .map(|k| {
-                    k.iter()
-                        .filter_map(|v| v.as_str().map(str::to_owned))
-                        .collect()
-                })
-                .unwrap_or_default();
+            let listed_keys = normalized_keys(
+                &entry["input_keys"]
+                    .as_array()
+                    .map(|k| {
+                        k.iter()
+                            .filter_map(|v| v.as_str().map(str::to_owned))
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or_default(),
+            );
             listed == capabilities
-                && listed_keys == keys
+                && (listed_keys.is_subset(&keys) || keys.is_subset(&listed_keys))
                 && name_tokens(entry["name"].as_str().unwrap_or(""))
                     .intersection(&tokens)
                     .count()
                     >= 2
         })
         .and_then(|entry| entry["name"].as_str())
+}
+/// Lexical lookup text for the routine catalog: message text, commands and file
+/// references from every record, never tool output. A packet can hold only commands
+/// and agent messages, so requests alone are not enough.
+fn catalog_query(packet: &[Value]) -> String {
+    fn push(query: &mut String, text: &str) {
+        query.extend(text.chars().take(300));
+        query.push(' ');
+    }
+    fn part(query: &mut String, value: &Value) {
+        if let Some(text) = value["text"].as_str() {
+            push(query, text);
+        }
+        for key in ["command", "file_path", "path"] {
+            match &value[key] {
+                Value::String(text) => push(query, text),
+                Value::Array(words) => {
+                    push(
+                        query,
+                        &words
+                            .iter()
+                            .filter_map(Value::as_str)
+                            .collect::<Vec<_>>()
+                            .join(" "),
+                    );
+                }
+                _ => {}
+            }
+        }
+        if value["input"].is_object() {
+            part(query, &value["input"]);
+        }
+    }
+    let mut query = String::new();
+    let items = packet
+        .iter()
+        .filter_map(|p| p["items"].as_array())
+        .flatten();
+    for item in items {
+        match &item["content"] {
+            Value::String(text) => push(&mut query, text),
+            Value::Array(parts) => parts.iter().for_each(|p| part(&mut query, p)),
+            Value::Object(_) => part(&mut query, &item["content"]),
+            _ => {}
+        }
+        if query.len() >= 4000 {
+            break;
+        }
+    }
+    query.chars().take(4000).collect()
 }
 fn evidence_view(packet: &[Value]) -> Vec<Value> {
     packet
@@ -503,32 +568,10 @@ impl Store {
         }
         Ok(json!({"cycle":cycle,"status":status,"report":report}))
     }
-    /// Active routines whose text matches the packet's requests. Empty when nothing
+    /// Active routines whose text matches the packet's work. Empty when nothing
     /// matches, so the extraction request then carries no catalog at all.
     fn routine_catalog(&self, project: &str, packet: &[Value]) -> Result<Vec<Value>> {
-        let mut query = String::new();
-        let requests = packet
-            .iter()
-            .filter_map(|p| p["items"].as_array())
-            .flatten()
-            .filter(|i| matches!(i["kind"].as_str(), Some("user" | "userMessage")));
-        for item in requests {
-            match &item["content"] {
-                Value::String(text) => query.push_str(text),
-                Value::Array(parts) => {
-                    for text in parts.iter().filter_map(|p| p["text"].as_str()) {
-                        query.push_str(text);
-                    }
-                }
-                _ => {}
-            }
-            query.push(' ');
-            if query.len() >= 4000 {
-                break;
-            }
-        }
-        let query: String = query.chars().take(4000).collect();
-        let found = self.find_routines(project, &query)?;
+        let found = self.find_routines(project, &catalog_query(packet))?;
         let mut catalog = vec![];
         for routine in found["routines"].as_array().into_iter().flatten() {
             let (Some(id), Some(name)) = (routine["routine"].as_str(), routine["name"].as_str())
@@ -1560,6 +1603,27 @@ mod tests {
         assert!(json!(view).to_string().len() < packet[0].to_string().len());
     }
     #[test]
+    fn catalog_query_uses_commands_and_agent_text_but_not_tool_output() {
+        let packet = vec![json!({"items":[
+            {"kind":"commandExecution","content":{"command":["qstat","-f","12345"],"output":"resources_used.walltime = 01:02:03 SECRET_OUTPUT","exit_code":0}},
+            {"kind":"agentMessage","content":"Converted walltime to allocated core hours"},
+            {"kind":"assistant","content":[{"type":"tool_use","name":"Read","input":{"file_path":"/runs/heartbeat.json"}},{"type":"tool_result","content":"HIDDEN"}]},
+            {"kind":"user","content":[{"type":"text","text":"check the scheduler report"}]}
+        ]})];
+        let query = catalog_query(&packet);
+        for expected in [
+            "qstat -f 12345",
+            "allocated core hours",
+            "/runs/heartbeat.json",
+            "scheduler report",
+        ] {
+            assert!(query.contains(expected), "{query}");
+        }
+        assert!(!query.contains("SECRET_OUTPUT") && !query.contains("HIDDEN"));
+        let long = vec![json!({"items":[{"kind":"user","content":"x".repeat(9000)}]})];
+        assert!(catalog_query(&long).chars().count() <= 4000);
+    }
+    #[test]
     fn structural_match_needs_same_capabilities_keys_and_two_shared_name_words() {
         let contract = json!({"description":"Sum allocated core hours from a scheduler report","capabilities":["files.read"],"input_schema":{"type":"object","properties":{"root":{},"path":{}}}});
         let catalog = vec![catalog_entry("scheduler-core-hours", &contract, "active")];
@@ -1580,11 +1644,24 @@ mod tests {
             None,
             "different capabilities"
         );
-        let extra = json!({"type":"object","properties":{"root":{},"path":{},"since":{}}});
+        // The observed duplicate: camel-case keys and one omitted optional parameter.
+        let observed =
+            json!({"type":"object","properties":{"allocatedCores":{},"path":{},"root":{}}});
+        let accounting = json!({"description":"Convert walltime to core hours","capabilities":["files.read"],"input_schema":{"type":"object","properties":{"allocated_cores":{},"path":{},"prior_core_hours":{},"root":{}}}});
         assert_eq!(
-            structural_match("scheduler-core-hours-since", &read, &extra, &catalog),
+            structural_match(
+                "pbs-allocated-core-hours",
+                &read,
+                &observed,
+                &[catalog_entry("scheduler-core-hours", &accounting, "active")]
+            ),
+            Some("scheduler-core-hours")
+        );
+        let disjoint = json!({"type":"object","properties":{"root":{},"paths":{}}});
+        assert_eq!(
+            structural_match("scheduler-core-hours-report", &read, &disjoint, &catalog),
             None,
-            "different input keys"
+            "neither key set contains the other"
         );
         assert!(catalog[0]["description"].as_str().unwrap().len() <= 240);
     }
