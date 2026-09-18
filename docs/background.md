@@ -24,6 +24,8 @@ Automatic candidates use file reading/listing or pure transformations. They cann
 
 The response format has `schema_version: 1` and a structured `candidate`, or `candidate: null` when no workflow qualifies. Candidates contain a task and an applicability description. JSON-encoded candidate strings are not accepted as the structured response.
 
+When active routines match the packet's requests, the extraction request also carries a compact catalog: each routine's name, description, capabilities, input keys and state, plus routines created earlier in the same cycle. The proposal then decides. `reuse` names the routine that already handles the work and spends no source request. `extend` supplies a full task for one missing capability and leaves the listed routine unchanged. `create` states what the listed routines cannot do. Before authoring, the host also treats a proposal with the same capabilities, the same input keys and two shared name words as existing work. Without matches, the request carries no catalog.
+
 The host validates ownership fields, schemas, examples, capability requests and applicability. A malformed response gets one repair request with precise feedback and the original evidence. A second invalid response stops. Repair never edits already-frozen acceptance criteria.
 
 A normal candidate uses two authoring requests, or three when proposal repair is needed. The default allowance is six requests per UTC day and three candidates per cycle. Repairs share that allowance and any configured spending ceiling. Request limits do not guarantee a particular dollar cost.
