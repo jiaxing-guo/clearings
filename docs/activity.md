@@ -6,7 +6,9 @@ Clearings separates conversation evidence, routine executions, acceptance evalua
 
 `recent_conversations` lists recent supported local work; `read_conversation` returns bounded content pages. The default is the current project and seven days. All-project scope is explicit for manual requests and used by scheduled learning.
 
-Codex history is read through its client interface. Claude Code history is read from local project transcripts. Cloud ChatGPT conversations are outside this local interface. Private model reasoning is omitted.
+Codex history is read through its client interface. Claude Code history is read from local project transcripts. Cloud ChatGPT conversations are outside this local interface. Private model reasoning is omitted, and records left with no visible content are not returned.
+
+A conversation listed more than once, for example through several transcript files, appears once with its newest metadata. Continuation cursors still follow the client's own paging.
 
 Reads preserve conversation and item references, label truncation, report partial coverage, and use client continuation cursors. An incomplete page is not a complete recording. The agent should follow relevant pages when the newest messages do not contain enough evidence.
 

@@ -83,6 +83,10 @@ else:
    assert packet['learning_mode']==mode
    assert 'one demonstrated mechanical step' in packet['instruction']
    assert 'scheduled' in packet['instruction'] and 'repeated' in packet['instruction']
+   for page in packet['conversations']:
+    assert set(page)<={'project','order','coverage','more_history','items'},sorted(page)
+    for item in page['items']:
+     assert set(item)<={'kind','content','truncated'} and item['content'],item
    if mode=='scheduled':answer={'schema_version':1,'candidate':None}
 
  else:
@@ -1094,4 +1098,53 @@ fn repair_consumes_the_existing_daily_allowance() {
             .unwrap(),
         0
     );
+}
+
+#[test]
+fn missing_registered_transcript_is_reported_once_then_skipped() {
+    let f = Fixture::new();
+    let transcript = f.home.join(".claude/projects/example/gone.jsonl");
+    fs::create_dir_all(transcript.parent().unwrap()).unwrap();
+    let mut hook = Command::new(env!("CARGO_BIN_EXE_clearings"))
+        .args(["plugin-register", "--all-projects", "--data-dir"])
+        .arg(&f.data)
+        .env("HOME", &f.home)
+        .stdin(Stdio::piped())
+        .spawn()
+        .unwrap();
+    writeln!(
+        hook.stdin.take().unwrap(),
+        "{}",
+        json!({"hook_event_name":"SessionStart","cwd":f.root,"session_id":"gone","transcript_path":transcript})
+    )
+    .unwrap();
+    assert!(hook.wait().unwrap().success());
+    let first = f.run(&["learn-now"]);
+    let missing: Vec<&Value> = first["report"]["coverage"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|c| c["status"] == "source_missing")
+        .collect();
+    assert_eq!(missing.len(), 1, "{first}");
+    assert_eq!(first["report"]["outcomes"][0]["status"], "created");
+    let second = f.run(&["learn-now"]);
+    assert!(
+        second["report"]["coverage"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|c| c["status"] != "source_missing"
+                && !(c.get("conversation").is_some() && c.get("error").is_some())),
+        "{second}"
+    );
+    let db = rusqlite::Connection::open(f.data.join("state.db")).unwrap();
+    let stale: i64 = db
+        .query_row(
+            "SELECT count(*) FROM conversations c JOIN conversation_progress p ON p.conversation=c.id WHERE c.host_id='gone' AND p.head_updated=c.updated",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(stale, 1);
 }

@@ -55,6 +55,37 @@ impl Preferences {
         })
     }
 }
+/// Model-facing view of stored evidence pages: project, order, coverage limits, whether
+/// older history remains unread, and record content only. Evidence identifiers, offsets
+/// and cursor values stay in the stored packet and its fingerprint; they are host
+/// bookkeeping, not learning material.
+fn evidence_view(packet: &[Value]) -> Vec<Value> {
+    packet
+        .iter()
+        .map(|page| {
+            let items: Vec<Value> = page["items"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .map(|item| {
+                    let mut view = json!({"kind":item["kind"],"content":item["content"]});
+                    if item["truncated"] == true {
+                        view["truncated"] = json!(true);
+                    }
+                    view
+                })
+                .collect();
+            let mut view = json!({"project":page["project"],"order":page["order"],"items":items});
+            if page["coverage"] != "page" {
+                view["coverage"] = page["coverage"].clone();
+            }
+            if !page["next_cursor"].is_null() {
+                view["more_history"] = json!(true);
+            }
+            view
+        })
+        .collect()
+}
 impl Store {
     pub fn preferences(&self) -> Result<Preferences> {
         let body: Option<String> = self
@@ -832,6 +863,14 @@ impl Store {
                         ));
                     }
                 }
+                Err(e) if crate::conversations::transcript_missing(&e) => {
+                    // A deleted or never-written transcript stays unreadable until its
+                    // listing metadata changes. Report it once instead of every cycle.
+                    coverage.push(
+                        json!({"conversation":id,"status":"source_missing","error":e.to_string()}),
+                    );
+                    self.db.execute("INSERT INTO conversation_progress(conversation,head_updated,reviewed_at) VALUES(?1,?2,?3) ON CONFLICT(conversation) DO UPDATE SET head_updated=excluded.head_updated,reviewed_at=excluded.reviewed_at,tail_cursor=NULL,tail_next=0,head_cursor=NULL,head_anchor=NULL",params![id,updated,crate::background::now()?])?;
+                }
                 Err(e) => {
                     coverage.push(json!({"conversation":id,"error":e.to_string()}));
                     self.db.execute("INSERT INTO conversation_progress(conversation,reviewed_at) VALUES(?1,?2) ON CONFLICT(conversation) DO UPDATE SET reviewed_at=excluded.reviewed_at",params![id,crate::background::now()?])?;
@@ -907,7 +946,7 @@ impl Store {
             attempts += 1;
             let mut prepared_task = None;
             let result = (|| -> Result<Value> {
-                let extraction = json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"learning_mode":if automatic {"scheduled"} else {"explicit"},"sdk":crate::api::sdk_definition(),"response_schema":crate::proposal::response_schema("candidate"),"excluded_workflows":prefs.excluded_workflows,"conversations":packet});
+                let extraction = json!({"instruction":crate::prompts::EXTRACT_WORKFLOW,"learning_mode":if automatic {"scheduled"} else {"explicit"},"sdk":crate::api::sdk_definition(),"response_schema":crate::proposal::response_schema("candidate"),"excluded_workflows":prefs.excluded_workflows,"conversations":evidence_view(packet)});
                 let extracted = self.native_request(
                     cycle,
                     client,
@@ -1322,6 +1361,34 @@ mod tests {
                 0
             );
         }
+    }
+    #[test]
+    fn evidence_view_keeps_content_and_limits_without_host_bookkeeping() {
+        let packet = vec![json!({
+            "conversation":"c".repeat(64),"project":"/work","client":"claude","order":"newest_first",
+            "coverage":"partial_final_record","next_cursor":"before:10","untrusted_evidence":true,
+            "items":[
+                {"id":"u1","kind":"user","offset":10,"evidence_id":"e".repeat(64),"content":"parse the log","truncated":false},
+                {"id":"a1","kind":"assistant","offset":20,"evidence_id":"f".repeat(64),"content":[{"type":"text","text":"cut"}],"truncated":true}
+            ]
+        })];
+        let view = evidence_view(&packet);
+        assert_eq!(
+            view,
+            json!([{"project":"/work","order":"newest_first","coverage":"partial_final_record","more_history":true,"items":[
+                {"kind":"user","content":"parse the log"},
+                {"kind":"assistant","content":[{"type":"text","text":"cut"}],"truncated":true}
+            ]}])
+            .as_array()
+            .unwrap()
+            .clone()
+        );
+        let complete = evidence_view(&[
+            json!({"project":"/w","order":"newest_first","coverage":"page","next_cursor":null,"items":[]}),
+        ]);
+        assert!(complete[0].get("coverage").is_none());
+        assert!(complete[0].get("more_history").is_none());
+        assert!(json!(view).to_string().len() < packet[0].to_string().len());
     }
     #[test]
     fn connected_client_does_not_overwrite_explicit_client_preference() {

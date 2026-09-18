@@ -139,3 +139,69 @@ fn existing_claude_history_from_subdirectory_becomes_a_reusable_task() {
     );
     assert_eq!(again["conversations"][0]["id"], conversation);
 }
+
+#[test]
+fn duplicate_transcripts_for_one_session_list_once_with_newest_metadata() {
+    let temp = tempfile::tempdir().unwrap();
+    let base = temp.path().canonicalize().unwrap();
+    let home = base.join("home");
+    let project = base.join("repo");
+    let data = base.join("state");
+    fs::create_dir_all(&project).unwrap();
+    fs::create_dir_all(home.join(".claude/projects/example")).unwrap();
+    // Whole-second modification times tie, so the smaller path is the listed copy and
+    // the listed metadata must match the transcript that reading uses.
+    let listed = home.join(".claude/projects/example/a.jsonl");
+    let other = home.join(".claude/projects/example/b.jsonl");
+    let same = std::time::SystemTime::UNIX_EPOCH
+        + std::time::Duration::from_secs(
+            std::time::SystemTime::now()
+                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        );
+    for (path, title) in [(&other, "other copy"), (&listed, "latest copy")] {
+        fs::write(path,format!("{}\n",json!({"sessionId":"shared","cwd":project,"type":"user","uuid":title,"message":{"content":title}}))).unwrap();
+        fs::File::open(path).unwrap().set_modified(same).unwrap();
+    }
+    let mut hook = Command::new(env!("CARGO_BIN_EXE_clearings"))
+        .args(["plugin-register", "--all-projects", "--data-dir"])
+        .arg(&data)
+        .env("HOME", &home)
+        .stdin(Stdio::piped())
+        .spawn()
+        .unwrap();
+    writeln!(
+        hook.stdin.take().unwrap(),
+        "{}",
+        json!({"hook_event_name":"SessionStart","cwd":project})
+    )
+    .unwrap();
+    assert!(hook.wait().unwrap().success());
+    let id = clearings::store::digest(&project).unwrap();
+    let list = run(
+        &data,
+        &home,
+        &[
+            "--project",
+            &id,
+            "recent-conversations",
+            "--client",
+            "claude",
+        ],
+    );
+    let conversations = list["conversations"].as_array().unwrap();
+    assert_eq!(conversations.len(), 1, "{list}");
+    assert_eq!(conversations[0]["title"], "latest copy");
+    let history = run(
+        &data,
+        &home,
+        &[
+            "--project",
+            &id,
+            "read-conversation",
+            conversations[0]["id"].as_str().unwrap(),
+        ],
+    );
+    assert_eq!(history["items"][0]["content"], "latest copy");
+}
