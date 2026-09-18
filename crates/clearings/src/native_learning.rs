@@ -55,9 +55,10 @@ impl Preferences {
         })
     }
 }
-/// Model-facing view of stored evidence pages: project, order, coverage limits and
-/// record content only. Evidence identifiers, offsets and cursors stay in the stored
-/// packet and its fingerprint; they are host bookkeeping, not learning material.
+/// Model-facing view of stored evidence pages: project, order, coverage limits, whether
+/// older history remains unread, and record content only. Evidence identifiers, offsets
+/// and cursor values stay in the stored packet and its fingerprint; they are host
+/// bookkeeping, not learning material.
 fn evidence_view(packet: &[Value]) -> Vec<Value> {
     packet
         .iter()
@@ -77,6 +78,9 @@ fn evidence_view(packet: &[Value]) -> Vec<Value> {
             let mut view = json!({"project":page["project"],"order":page["order"],"items":items});
             if page["coverage"] != "page" {
                 view["coverage"] = page["coverage"].clone();
+            }
+            if !page["next_cursor"].is_null() {
+                view["more_history"] = json!(true);
             }
             view
         })
@@ -1371,7 +1375,7 @@ mod tests {
         let view = evidence_view(&packet);
         assert_eq!(
             view,
-            json!([{"project":"/work","order":"newest_first","coverage":"partial_final_record","items":[
+            json!([{"project":"/work","order":"newest_first","coverage":"partial_final_record","more_history":true,"items":[
                 {"kind":"user","content":"parse the log"},
                 {"kind":"assistant","content":[{"type":"text","text":"cut"}],"truncated":true}
             ]}])
@@ -1380,9 +1384,10 @@ mod tests {
             .clone()
         );
         let complete = evidence_view(&[
-            json!({"project":"/w","order":"newest_first","coverage":"page","items":[]}),
+            json!({"project":"/w","order":"newest_first","coverage":"page","next_cursor":null,"items":[]}),
         ]);
         assert!(complete[0].get("coverage").is_none());
+        assert!(complete[0].get("more_history").is_none());
         assert!(json!(view).to_string().len() < packet[0].to_string().len());
     }
     #[test]

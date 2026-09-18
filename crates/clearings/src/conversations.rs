@@ -142,8 +142,10 @@ impl Store {
         let body = json!({"id":id,"client":client,"session":host_id,"project":project,"updated_at":updated,"title":clipped(title,300)});
         // Several transcripts or listing rows can describe one conversation. Only the
         // newest metadata is stored and listed, so an older duplicate cannot move
-        // freshness or source backwards or reappear on a later page.
-        let fresh = self.db.execute("INSERT INTO conversations(id,client,host_id,root,source,updated,body) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(id) DO UPDATE SET source=excluded.source,updated=excluded.updated,body=excluded.body WHERE excluded.updated>=conversations.updated",params![id,client,host_id,project.to_string_lossy(),source.map(|p|p.to_string_lossy().to_string()),updated,body.to_string()])?==1;
+        // freshness or source backwards or reappear on a later page. Whole-second
+        // timestamps can tie; the smaller source path then wins deterministically, and a
+        // row with the same source refreshes its own metadata.
+        let fresh = self.db.execute("INSERT INTO conversations(id,client,host_id,root,source,updated,body) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(id) DO UPDATE SET source=excluded.source,updated=excluded.updated,body=excluded.body WHERE excluded.updated>conversations.updated OR (excluded.updated=conversations.updated AND (excluded.source IS conversations.source OR (excluded.source IS NOT NULL AND (conversations.source IS NULL OR excluded.source<conversations.source))))",params![id,client,host_id,project.to_string_lossy(),source.map(|p|p.to_string_lossy().to_string()),updated,body.to_string()])?==1;
         Ok(fresh.then_some(body))
     }
     pub(crate) fn register_transcript(&self, context: &Value, project: &Path) -> Result<()> {
@@ -1012,6 +1014,44 @@ mod tests {
             .unwrap();
         assert_eq!(third["title"], "later");
         assert_eq!(third["updated_at"], 300);
+        // Whole-second timestamps tie between transcript copies: the smaller path wins,
+        // a repeat of the stored source refreshes itself, and the loser is never listed.
+        let a = temp.path().join("a.jsonl");
+        let b = temp.path().join("b.jsonl");
+        let stored_source = || -> Option<String> {
+            store
+                .db
+                .query_row("SELECT source FROM conversations", [], |r| r.get(0))
+                .unwrap()
+        };
+        assert!(
+            store
+                .remember_conversation("claude", "s", temp.path(), Some(&b), 400, "b copy")
+                .unwrap()
+                .is_some()
+        );
+        assert_eq!(
+            store
+                .remember_conversation("claude", "s", temp.path(), Some(&a), 400, "a copy")
+                .unwrap()
+                .unwrap()["title"],
+            "a copy"
+        );
+        assert_eq!(stored_source().as_deref(), a.to_str());
+        assert!(
+            store
+                .remember_conversation("claude", "s", temp.path(), Some(&b), 400, "b copy")
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(
+            store
+                .remember_conversation("claude", "s", temp.path(), Some(&a), 400, "a again")
+                .unwrap()
+                .unwrap()["title"],
+            "a again"
+        );
+        assert_eq!(stored_source().as_deref(), a.to_str());
     }
     #[test]
     fn history_requires_installation_and_explicit_cross_project_scope() {

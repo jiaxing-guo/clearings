@@ -149,13 +149,21 @@ fn duplicate_transcripts_for_one_session_list_once_with_newest_metadata() {
     let data = base.join("state");
     fs::create_dir_all(&project).unwrap();
     fs::create_dir_all(home.join(".claude/projects/example")).unwrap();
-    let older = home.join(".claude/projects/example/older.jsonl");
-    let newer = home.join(".claude/projects/example/newer.jsonl");
-    for (path, title) in [(&older, "stale copy"), (&newer, "latest copy")] {
+    // Whole-second modification times tie, so the smaller path is the listed copy and
+    // the listed metadata must match the transcript that reading uses.
+    let listed = home.join(".claude/projects/example/a.jsonl");
+    let other = home.join(".claude/projects/example/b.jsonl");
+    let same = std::time::SystemTime::UNIX_EPOCH
+        + std::time::Duration::from_secs(
+            std::time::SystemTime::now()
+                .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        );
+    for (path, title) in [(&other, "other copy"), (&listed, "latest copy")] {
         fs::write(path,format!("{}\n",json!({"sessionId":"shared","cwd":project,"type":"user","uuid":title,"message":{"content":title}}))).unwrap();
+        fs::File::open(path).unwrap().set_modified(same).unwrap();
     }
-    let past = std::time::SystemTime::now() - std::time::Duration::from_secs(3600);
-    fs::File::open(&older).unwrap().set_modified(past).unwrap();
     let mut hook = Command::new(env!("CARGO_BIN_EXE_clearings"))
         .args(["plugin-register", "--all-projects", "--data-dir"])
         .arg(&data)

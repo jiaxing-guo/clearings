@@ -84,7 +84,7 @@ else:
    assert 'one demonstrated mechanical step' in packet['instruction']
    assert 'scheduled' in packet['instruction'] and 'repeated' in packet['instruction']
    for page in packet['conversations']:
-    assert set(page)<={'project','order','coverage','items'},sorted(page)
+    assert set(page)<={'project','order','coverage','more_history','items'},sorted(page)
     for item in page['items']:
      assert set(item)<={'kind','content','truncated'} and item['content'],item
    if mode=='scheduled':answer={'schema_version':1,'candidate':None}
