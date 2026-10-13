@@ -25,12 +25,12 @@
     "test:workbench": "cargo build --locked && node tests/workbench-browser.mjs"
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "8.70.0",
-    "eslint": "10.10.0",
+    "@typescript-eslint/parser": "8.71.1",
+    "eslint": "10.12.0",
     "husky": "9.1.7",
-    "lint-staged": "17.5.1",
-    "playwright": "1.63.0",
-    "prettier": "3.9.6"
+    "lint-staged": "17.6.0",
+    "playwright": "1.64.0",
+    "prettier": "3.9.10"
   },
   "license": "Apache-2.0"
 }
